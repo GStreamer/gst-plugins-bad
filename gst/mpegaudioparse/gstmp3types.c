@@ -33,13 +33,13 @@ mp3_type_find(GstBuffer *buf, gpointer private)
 {
   guint8 *data;
   gint size;
-  gulong head;
+  guint32 head;
   GstCaps *caps;
 
   data = GST_BUFFER_DATA (buf);
   size = GST_BUFFER_SIZE (buf);
 
-  GST_DEBUG (0,"mp3typefind: typefind");
+  GST_DEBUG (0,"mp3typefind: typefinding on buffer of size %d", size);
 
   /* gracefully ripped from libid3 */
   if (size >= 3 &&
@@ -78,8 +78,13 @@ mp3_type_find(GstBuffer *buf, gpointer private)
       goto done;
     }
   }
+
+  /* make sure there is enough of a buffer to check without running over */
+  if (size < 4)
+    return NULL;
+
   /* now with the right postion, do typefinding */
-  head = GULONG_FROM_BE(*((gulong *)data));
+  head = GUINT32_FROM_BE(*((gulong *)data));
   if ((head & 0xffe00000) != 0xffe00000)
     return NULL;
   if (!((head >> 17) & 3))
