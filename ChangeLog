@@ -1,3 +1,50 @@
+2005-01-11  Wim Taymans  <wim@fluendo.com>
+
+	* configure.ac:
+	* examples/seeking/seek.c: (dynamic_link), (make_vorbis_pipeline),
+	(make_theora_pipeline), (make_vorbis_theora_pipeline), (do_seek):
+	* ext/ogg/gstoggdemux.c: (gst_ogg_pad_get_type),
+	(gst_ogg_pad_init), (gst_ogg_pad_dispose), (gst_ogg_pad_src_query),
+	(gst_ogg_pad_event), (gst_ogg_demux_factory_filter),
+	(compare_ranks), (gst_ogg_pad_internal_chain),
+	(gst_ogg_pad_typefind), (gst_ogg_pad_submit_packet),
+	(gst_ogg_pad_submit_page), (gst_ogg_chain_new),
+	(gst_ogg_chain_free), (gst_ogg_chain_new_stream),
+	(gst_ogg_chain_get_stream), (gst_ogg_chain_has_stream),
+	(gst_ogg_demux_base_init), (gst_ogg_demux_init),
+	(gst_ogg_demux_submit_buffer), (gst_ogg_demux_seek),
+	(gst_ogg_demux_get_data), (gst_ogg_demux_get_next_page),
+	(gst_ogg_demux_get_prev_page),
+	(gst_ogg_demux_deactivate_current_chain),
+	(gst_ogg_demux_activate_chain), (gst_ogg_demux_perform_seek),
+	(gst_ogg_demux_bisect_forward_serialno),
+	(gst_ogg_demux_read_chain), (gst_ogg_demux_read_end_chain),
+	(gst_ogg_demux_find_pad), (gst_ogg_demux_find_chain),
+	(gst_ogg_demux_find_chains), (gst_ogg_demux_chain_unlocked),
+	(gst_ogg_demux_chain), (gst_ogg_demux_send_eos),
+	(gst_ogg_demux_loop), (gst_ogg_demux_sink_activate),
+	(gst_ogg_print):
+	* ext/theora/theoradec.c: (_inc_granulepos),
+	(theora_dec_sink_event), (theora_dec_chain):
+	* gst-libs/gst/audio/audioclock.c: (gst_audio_clock_class_init):
+	* gst/playback/gstplaybasebin.c: (gst_play_base_bin_class_init),
+	(gst_play_base_bin_init), (gen_source_element), (setup_source),
+	(play_base_eos), (gst_play_base_bin_change_state),
+	(gst_play_base_bin_add_element),
+	(gst_play_base_bin_remove_element):
+	* gst/playback/gstplaybin.c: (gst_play_bin_init),
+	(gst_play_bin_send_event):
+	* gst/playback/gststreaminfo.c: (gst_stream_info_dispose):
+	* sys/oss/gstosselement.c: (gst_osselement_parse_caps),
+	(gst_osselement_open_audio):
+	* sys/oss/gstosssink.c: (gst_osssink_init), (gst_osssink_setcaps),
+	(gst_osssink_finish_preroll), (gst_osssink_handle_event),
+	(gst_osssink_chain), (gst_osssink_change_state):
+	Clock fixes.
+	Added seeking in theora/vorbis ogg files.
+	Make playbin compile.
+	
+
 2005-01-07  Wim Taymans  <wim@fluendo.com>
 
 	* ext/ogg/gstoggdemux.c: (gst_ogg_pad_get_type),

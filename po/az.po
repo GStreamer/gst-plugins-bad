@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gst-plugins-0.8.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2004-11-12 19:06+0100\n"
+"POT-Creation-Date: 2005-01-11 12:11+0100\n"
 "PO-Revision-Date: 2004-03-19 18:29+0200\n"
 "Last-Translator: Metin Amiroff <metin@karegen.com>\n"
 "Language-Team: Azerbaijani <translation-team-az@lists.sourceforge.net>\n"
@@ -185,32 +185,32 @@ msgstr "\"%s\" video avadanlığı bağlana bilmədi."
 msgid "Could not write to device \"%s\"."
 msgstr "\"%s\" avadanlığına yazıla bilmədi."
 
-#: sys/oss/gstosselement.c:725
+#: sys/oss/gstosselement.c:730
 #, c-format
 msgid "OSS device \"%s\" is already in use by another program."
 msgstr "\"%s\" OSS avadanlığı başqa bir proqram tərəfindən istifadədədir."
 
-#: sys/oss/gstosselement.c:732 sys/oss/gstosselement.c:736
+#: sys/oss/gstosselement.c:737 sys/oss/gstosselement.c:741
 #, c-format
 msgid "Could not access device \"%s\", check its permissions."
 msgstr "\"%s\" avadanlığına yetişə bilmədi, səlahiyyətlərini yoxlayın."
 
-#: sys/oss/gstosselement.c:743 sys/v4l/v4l_calls.c:168
+#: sys/oss/gstosselement.c:748 sys/v4l/v4l_calls.c:168
 #, c-format
 msgid "Device \"%s\" does not exist."
 msgstr "\"%s\" avadanlığı mövcud deyil."
 
-#: sys/oss/gstosselement.c:750
+#: sys/oss/gstosselement.c:754
 #, c-format
 msgid "Could not open device \"%s\" for writing."
 msgstr "\"%s\" avadanlığı yazma üçün açıla bilmədi."
 
-#: sys/oss/gstosselement.c:754
+#: sys/oss/gstosselement.c:758
 #, c-format
 msgid "Could not open device \"%s\" for reading."
 msgstr "\"%s\" avadanlığı oxuma üçün açıla bilmədi."
 
-#: sys/oss/gstosselement.c:1131
+#: sys/oss/gstosselement.c:1135
 msgid "Your OSS device could not be probed correctly"
 msgstr ""
 

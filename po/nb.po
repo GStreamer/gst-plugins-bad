@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gst-plugins 0.8.3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2004-11-12 19:06+0100\n"
+"POT-Creation-Date: 2005-01-11 12:11+0100\n"
 "PO-Revision-Date: 2004-10-04 15:54+0200\n"
 "Last-Translator: Kjartan Maraas <kmaraas@broadpark.no>\n"
 "Language-Team: Norwegian Bokmaal <i18n-nb@lister.ping.uio.no>\n"
@@ -181,32 +181,32 @@ msgstr ""
 msgid "Could not write to device \"%s\"."
 msgstr ""
 
-#: sys/oss/gstosselement.c:725
+#: sys/oss/gstosselement.c:730
 #, c-format
 msgid "OSS device \"%s\" is already in use by another program."
 msgstr ""
 
-#: sys/oss/gstosselement.c:732 sys/oss/gstosselement.c:736
+#: sys/oss/gstosselement.c:737 sys/oss/gstosselement.c:741
 #, c-format
 msgid "Could not access device \"%s\", check its permissions."
 msgstr ""
 
-#: sys/oss/gstosselement.c:743 sys/v4l/v4l_calls.c:168
+#: sys/oss/gstosselement.c:748 sys/v4l/v4l_calls.c:168
 #, c-format
 msgid "Device \"%s\" does not exist."
 msgstr "Enhet «%s» eksisterer ikke."
 
-#: sys/oss/gstosselement.c:750
+#: sys/oss/gstosselement.c:754
 #, c-format
 msgid "Could not open device \"%s\" for writing."
 msgstr ""
 
-#: sys/oss/gstosselement.c:754
+#: sys/oss/gstosselement.c:758
 #, c-format
 msgid "Could not open device \"%s\" for reading."
 msgstr ""
 
-#: sys/oss/gstosselement.c:1131
+#: sys/oss/gstosselement.c:1135
 msgid "Your OSS device could not be probed correctly"
 msgstr ""
 

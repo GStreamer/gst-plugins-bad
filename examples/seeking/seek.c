@@ -317,12 +317,14 @@ make_theora_pipeline (const gchar * location)
 {
   GstElement *pipeline, *video_bin;
   GstElement *src, *demux, *decoder, *convert, *videosink;
+  GstElement *queue;
   GstPad *seekable;
 
   pipeline = gst_pipeline_new ("app");
 
   src = gst_element_factory_make_or_warn (SOURCE, "src");
   demux = gst_element_factory_make_or_warn ("oggdemux", "demux");
+  queue = gst_element_factory_make_or_warn ("queue", "queue");
   decoder = gst_element_factory_make_or_warn ("theoradec", "decoder");
   convert = gst_element_factory_make_or_warn ("ffmpegcolorspace", "convert");
   videosink = gst_element_factory_make_or_warn ("xvimagesink", "sink");
@@ -333,16 +335,18 @@ make_theora_pipeline (const gchar * location)
 
   gst_bin_add (GST_BIN (pipeline), src);
   gst_bin_add (GST_BIN (pipeline), demux);
+  gst_bin_add (GST_BIN (pipeline), queue);
   gst_bin_add (GST_BIN (video_bin), decoder);
   gst_bin_add (GST_BIN (video_bin), convert);
   gst_bin_add (GST_BIN (video_bin), videosink);
   gst_bin_add (GST_BIN (pipeline), video_bin);
 
   gst_element_link (src, demux);
+  gst_element_link (queue, decoder);
   gst_element_link (decoder, convert);
   gst_element_link (convert, videosink);
 
-  setup_dynamic_link (demux, NULL, gst_element_get_pad (decoder, "sink"), NULL);
+  setup_dynamic_link (demux, NULL, gst_element_get_pad (queue, "sink"), NULL);
 
   seekable = gst_element_get_pad (decoder, "src");
   seekable_pads = g_list_prepend (seekable_pads, seekable);
@@ -351,6 +355,72 @@ make_theora_pipeline (const gchar * location)
 
   return pipeline;
 }
+
+static GstElement *
+make_vorbis_theora_pipeline (const gchar * location)
+{
+  GstElement *pipeline, *audio_bin, *video_bin;
+  GstElement *src, *demux, *a_decoder, *a_convert, *v_decoder, *v_convert;
+  GstElement *audiosink, *videosink;
+  GstElement *a_queue, *v_queue;
+  GstPad *seekable;
+
+  pipeline = gst_pipeline_new ("app");
+
+  src = gst_element_factory_make_or_warn (SOURCE, "src");
+  g_object_set (G_OBJECT (src), "location", location, NULL);
+
+  demux = gst_element_factory_make_or_warn ("oggdemux", "demux");
+
+  gst_bin_add (GST_BIN (pipeline), src);
+  gst_bin_add (GST_BIN (pipeline), demux);
+  gst_element_link (src, demux);
+
+  audio_bin = gst_bin_new ("a_decoder_bin");
+  a_queue = gst_element_factory_make_or_warn ("queue", "a_queue");
+  a_decoder = gst_element_factory_make_or_warn ("vorbisdec", "a_dec");
+  a_convert = gst_element_factory_make_or_warn ("audioconvert", "a_convert");
+  audiosink = gst_element_factory_make_or_warn ("osssink", "a_sink");
+
+  gst_element_link (a_queue, a_decoder);
+  gst_element_link (a_decoder, a_convert);
+  gst_element_link (a_convert, audiosink);
+
+  gst_bin_add (GST_BIN (audio_bin), a_queue);
+  gst_bin_add (GST_BIN (audio_bin), a_decoder);
+  gst_bin_add (GST_BIN (audio_bin), a_convert);
+  gst_bin_add (GST_BIN (audio_bin), audiosink);
+
+  gst_bin_add (GST_BIN (pipeline), audio_bin);
+
+  setup_dynamic_link (demux, NULL, gst_element_get_pad (a_queue, "sink"), NULL);
+
+  video_bin = gst_bin_new ("v_decoder_bin");
+  v_queue = gst_element_factory_make_or_warn ("queue", "v_queue");
+  v_decoder = gst_element_factory_make_or_warn ("theoradec", "v_dec");
+  v_convert =
+      gst_element_factory_make_or_warn ("ffmpegcolorspace", "v_convert");
+  videosink = gst_element_factory_make_or_warn ("xvimagesink", "v_sink");
+  gst_element_link_many (v_queue, v_decoder, v_convert, videosink, NULL);
+
+  gst_bin_add (GST_BIN (video_bin), v_queue);
+  gst_bin_add (GST_BIN (video_bin), v_decoder);
+  gst_bin_add (GST_BIN (video_bin), v_convert);
+  gst_bin_add (GST_BIN (video_bin), videosink);
+
+  gst_bin_add (GST_BIN (pipeline), video_bin);
+
+  setup_dynamic_link (demux, NULL, gst_element_get_pad (v_queue, "sink"), NULL);
+
+  seekable = gst_element_get_pad (a_decoder, "src");
+  seekable_pads = g_list_prepend (seekable_pads, seekable);
+  rate_pads = g_list_prepend (rate_pads, seekable);
+  rate_pads =
+      g_list_prepend (rate_pads, gst_element_get_pad (a_decoder, "sink"));
+
+  return pipeline;
+}
+
 static GstElement *
 make_mp3_pipeline (const gchar * location)
 {
@@ -972,6 +1042,7 @@ static Pipeline pipelines[] = {
   {"mpegparse", make_parse_pipeline},
   {"vorbis", make_vorbis_pipeline},
   {"theora", make_theora_pipeline},
+  {"ogg/v/t", make_vorbis_theora_pipeline},
   {"sid", make_sid_pipeline},
   {"flac", make_flac_pipeline},
   {"wav", make_wav_pipeline},

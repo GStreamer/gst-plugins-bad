@@ -30,10 +30,11 @@ static void gst_audio_clock_class_init (GstAudioClockClass * klass);
 static void gst_audio_clock_init (GstAudioClock * clock);
 
 static GstClockTime gst_audio_clock_get_internal_time (GstClock * clock);
-static GstClockEntryStatus gst_audio_clock_id_wait_async (GstClock * clock,
-    GstClockEntry * entry);
-static void gst_audio_clock_id_unschedule (GstClock * clock,
-    GstClockEntry * entry);
+
+//static GstClockEntryStatus gst_audio_clock_id_wait_async (GstClock * clock,
+//    GstClockEntry * entry);
+//static void gst_audio_clock_id_unschedule (GstClock * clock,
+//    GstClockEntry * entry);
 
 static GstSystemClockClass *parent_class = NULL;
 
@@ -79,8 +80,8 @@ gst_audio_clock_class_init (GstAudioClockClass * klass)
   parent_class = g_type_class_ref (GST_TYPE_SYSTEM_CLOCK);
 
   gstclock_class->get_internal_time = gst_audio_clock_get_internal_time;
-  gstclock_class->wait_async = gst_audio_clock_id_wait_async;
-  gstclock_class->unschedule = gst_audio_clock_id_unschedule;
+  //gstclock_class->wait_async = gst_audio_clock_id_wait_async;
+  //gstclock_class->unschedule = gst_audio_clock_id_unschedule;
 }
 
 static void
@@ -178,6 +179,7 @@ gst_audio_clock_update_time (GstAudioClock * aclock, GstClockTime time)
   }
 }
 
+#if 0
 static gint
 compare_clock_entries (GstClockEntry * entry1, GstClockEntry * entry2)
 {
@@ -203,3 +205,4 @@ gst_audio_clock_id_unschedule (GstClock * clock, GstClockEntry * entry)
 
   aclock->async_entries = g_slist_remove (aclock->async_entries, entry);
 }
+#endif
