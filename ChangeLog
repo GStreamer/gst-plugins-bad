@@ -1,5 +1,16 @@
 2005-03-31  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* ext/ogg/gstoggdemux.c: (gst_ogg_demux_push), (gst_ogg_sync),
+	(gst_ogg_pad_push):
+	* ext/ogg/gstogmparse.c: (gst_ogm_parse_init),
+	(gst_ogm_parse_kick_event), (gst_ogm_parse_chain):
+	* ext/pango/gsttextoverlay.c: (gst_textoverlay_event),
+	(gst_textoverlay_loop):
+	  Try to fix seeking problems in OGM files, especially those
+	  containing non-continuous data streams (a.o. #171777).
+
+2005-03-31  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* gst/videotestsrc/videotestsrc.c: (oil_splat_u8):
 	  Fix oilless compile.
 
