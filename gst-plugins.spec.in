@@ -1394,25 +1394,28 @@ This plugin provides a videotest plugin. This plugin can be used to generate a v
 %{_bindir}/gst-compprep > /dev/null 2> /dev/null
 
 # Snapshot plugin
-@USE_LIBPNG_TRUE@%package -n gstreamer-snapshot
-@USE_LIBPNG_TRUE@Summary:        GStreamer plug-in for grabbing images from videostreams
-@USE_LIBPNG_TRUE@Group:          Libraries/Multimedia
-@USE_LIBPNG_TRUE@Requires:       gstreamer-plugins = %{version}
-@USE_LIBPNG_TRUE@
-@USE_LIBPNG_TRUE@%description -n gstreamer-snapshot
-@USE_LIBPNG_TRUE@This plugin grabs images from videostreams and saves them as PNG format images.
-@USE_LIBPNG_TRUE@
-@USE_LIBPNG_TRUE@%files -n gstreamer-snapshot
-@USE_LIBPNG_TRUE@%defattr(-, root, root)
-@USE_LIBPNG_TRUE@%{_libdir}/gst/libgstsnapshot.so
-@USE_LIBPNG_TRUE@
-@USE_LIBPNG_TRUE@%post -n gstreamer-snapshot
-@USE_LIBPNG_TRUE@%{_bindir}/gst-register --gst-mask=0 > /dev/null 2> /dev/null
-@USE_LIBPNG_TRUE@%{_bindir}/gst-compprep > /dev/null 2> /dev/null
-@USE_LIBPNG_TRUE@
-@USE_LIBPNG_TRUE@%postun -n gstreamer-snapshot
-@USE_LIBPNG_TRUE@%{_bindir}/gst-register --gst-mask=0 > /dev/null 2> /dev/null
-@USE_LIBPNG_TRUE@%{_bindir}/gst-compprep > /dev/null 2> /dev/null
+@USE_HERMES_TRUE@@USE_LIBPNG_TRUE@%package -n gstreamer-snapshot
+@USE_HERMES_TRUE@@USE_LIBPNG_TRUE@Summary:        GStreamer plug-in for grabbing images from videostreams
+@USE_HERMES_TRUE@@USE_LIBPNG_TRUE@Group:          Libraries/Multimedia
+@USE_HERMES_TRUE@@USE_LIBPNG_TRUE@Requires:       gstreamer-plugins = %{version}
+@USE_HERMES_TRUE@@USE_LIBPNG_TRUE@
+@USE_HERMES_TRUE@@USE_LIBPNG_TRUE@%description -n gstreamer-snapshot
+@USE_HERMES_TRUE@@USE_LIBPNG_TRUE@This plugin grabs images from videostreams and saves them as PNG format images.
+@USE_HERMES_TRUE@@USE_LIBPNG_TRUE@Requires:	libpng
+@USE_HERMES_TRUE@@USE_LIBPNG_TRUE@Requires:	gstreamer-colorspace = %{version}
+@USE_HERMES_TRUE@@USE_LIBPNG_TRUE@BuildRequires:	libpng-devel
+@USE_HERMES_TRUE@@USE_LIBPNG_TRUE@
+@USE_HERMES_TRUE@@USE_LIBPNG_TRUE@%files -n gstreamer-snapshot
+@USE_HERMES_TRUE@@USE_LIBPNG_TRUE@%defattr(-, root, root)
+@USE_HERMES_TRUE@@USE_LIBPNG_TRUE@%{_libdir}/gst/libgstsnapshot.so
+@USE_HERMES_TRUE@@USE_LIBPNG_TRUE@
+@USE_HERMES_TRUE@@USE_LIBPNG_TRUE@%post -n gstreamer-snapshot
+@USE_HERMES_TRUE@@USE_LIBPNG_TRUE@%{_bindir}/gst-register --gst-mask=0 > /dev/null 2> /dev/null
+@USE_HERMES_TRUE@@USE_LIBPNG_TRUE@%{_bindir}/gst-compprep > /dev/null 2> /dev/null
+@USE_HERMES_TRUE@@USE_LIBPNG_TRUE@
+@USE_HERMES_TRUE@@USE_LIBPNG_TRUE@%postun -n gstreamer-snapshot
+@USE_HERMES_TRUE@@USE_LIBPNG_TRUE@%{_bindir}/gst-register --gst-mask=0 > /dev/null 2> /dev/null
+@USE_HERMES_TRUE@@USE_LIBPNG_TRUE@%{_bindir}/gst-compprep > /dev/null 2> /dev/null
 
 # Dependency free Quicktime demuxer
 %package -n gstreamer-quicktime
@@ -1479,6 +1482,9 @@ This package contains a basic audio and video playback library.
 
 #
 %changelog
+* Wed Oct 30 2002 Thomas Vander Stichele <thomas at apestaart dot org>
+- fixed snapshot deps and added hermes conditionals
+
 * Tue Oct 29 2002 Thomas Vander Stichele <thomas at apestaart dot org>
 - added -play package, libs, and .pc files
 
