@@ -1,3 +1,12 @@
+2005-02-24  Jan Schmidt  <thaytan@mad.scientist.com>
+	* ext/gdk_pixbuf/pixbufscale.c: (pixbufscale_scale):
+	  Remove bogus gdk_pixbuf_scale_simple call, so now we
+	  don't scale each buffer _twice_. Fixes #168271
+
+	* sys/ximage/ximagesink.c: (gst_ximagesink_chain):
+	* sys/xvimage/xvimagesink.c: (gst_xvimagesink_chain):
+	  Don't lock the stream_lock until after the gst_element_wait
+
 2005-02-23  Edward Hervey  <bilboed@bilboed.com>
 
 	* gst/videotestsrc/gstvideotestsrc.c: (gst_videotestsrc_handle_src_event):
