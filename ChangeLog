@@ -1,3 +1,10 @@
+2005-02-01  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/playback/NOTE:
+	  Add note on autoplugging in 0.9 (basically duplicate of Dave´s
+	  0.9-suggested-changes, but in a separate document so people
+	  specifically looking at porting decodebin don´t miss it).
+
 2005-01-31  Wim Taymans  <wim@fluendo.com>
 
 	* ext/ogg/gstoggdemux.c: (gst_ogg_pad_get_type),
