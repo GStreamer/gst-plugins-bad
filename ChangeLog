@@ -1,3 +1,9 @@
+2005-03-23  Benjamin Otte  <in7y118@public.uni-hamburg.de>
+
+	* ext/mad/gstid3tag.c: (gst_id3_tag_chain):
+	  It's enough to parse ID#v1 tags with our own function. No need to
+	  ask libmad first.
+
 2005-03-21  Tim-Philipp Müller  <tim at centricular dot net>
 
 	* ext/mad/gstid3demuxbin.c: (probe_cb), (gst_id3demux_bin_init),
