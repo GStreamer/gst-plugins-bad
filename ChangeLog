@@ -1,3 +1,19 @@
+2005-02-18  Ross Burton  <ross@burtonini.com>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst-libs/gst/tag/tag.h:
+	  Add the MusicBrainz tags and prototype
+	  gst_tag_register_musicbrainz_tags().
+	* gst/tags/Makefile.am:
+	  Add tags.c.
+	* gst/tags/tags.c:
+	  Implement gst_tag_register_musicbrainz_tags().
+	* ext/vorbis/oggvorbisenc.c:
+	  Register the MusicBrainz tags.
+	* gst/tags/gstvorbistag.c:
+	  Add mapping for MusicBrainz tags. All above fixes #167639.
+
 2005-02-25  Luca Ognibene  <luogni@tin.it>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
