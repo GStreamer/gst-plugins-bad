@@ -10,7 +10,7 @@ AM_DISABLE_STATIC
 dnl when going to/from release please set the nano (fourth number) right !
 dnl We disable static building for development, for time savings
 AM_DISABLE_STATIC
-AS_VERSION(gst-plugins, GST_PLUGINS, 0, 3, 4, 4)
+AS_VERSION(gst-plugins, GST_PLUGINS, 0, 4, 0, 0)
 AM_INIT_AUTOMAKE($PACKAGE,$VERSION)
 AS_LIBTOOL(GST_PLUGINS, 0, 0, 0, yes)
 
@@ -406,13 +406,12 @@ dnl AC_CHECK_LIB(cdda_paranoia, paranoia_init, : , HAVE_CDPARANOIA=no, -lcdda_in
 dnl AC_CHECK_HEADER(cdda_paranoia.h, :, HAVE_CDPARANOIA=no)
 
 dnl *** libdv ***
-translit(dnm, m, l) AM_CONDITIONAL(USE_LIBDV, true)
-GST_CHECK_FEATURE(LIBDV, [libdv DV/video decoder], dvdec, [
-  dnl use this when gtk deps are removed from its pkg-config .pc
-  dnl PKG_CHECK_MODULES(LIBDV, libdv, HAVE_LIBDV="yes", HAVE_LIBDV="no")
-  AM_PATH_LIBDV(HAVE_LIBDV="yes", HAVE_LIBDV="no")
-  AC_SUBST(LIBDV_CFLAGS)
-  AC_SUBST(LIBDV_LIBS)
+translit(dnm, m, l) AM_CONDITIONAL(USE_DV, true)
+GST_CHECK_FEATURE(DV, [libdv DV/video decoder], dvdec, [
+  dnl use pkg-config when gtk deps are removed from its pkg-config .pc
+  AM_PATH_LIBDV(HAVE_DV="yes", HAVE_DV="no")
+  AC_SUBST(DV_CFLAGS)
+  AC_SUBST(DV_LIBS)
 ])
 
 dnl *** dvdread ***
