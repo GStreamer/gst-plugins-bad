@@ -53,7 +53,6 @@ CDROM_DIR=
 endif
 
 SUBDIRS=$(DXR3_DIR) $(OSS_DIR) $(QCAM_DIR) $(V4L_DIR) $(V4L2_DIR) \
-	$(VCD_DIR) $(VGA_DIR) $(XVIDEO_DIR) $(CDROM_DIR) glsink
+	$(VCD_DIR) $(VGA_DIR) $(XVIDEO_DIR) $(CDROM_DIR)
 
-DIST_SUBDIRS=dxr3 oss qcam v4l v4l2 vcd vga xvideo videosink cdrom glsink
-
+DIST_SUBDIRS=dxr3 oss qcam v4l v4l2 vcd vga xvideo videosink cdrom
