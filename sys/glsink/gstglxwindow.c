@@ -1,3 +1,5 @@
+/* This stores the common OpenGL initialization stuff for all instances */
+
 /* gcc -ansi -pedantic on GNU/Linux causes warnings and errors
  * unless this is defined:
  * warning: #warning "Files using this header must be compiled with _SVID_SOURCE or _XOPEN_SOURCE"
@@ -90,17 +92,13 @@ gst_glxwindow_callback(GObject *object, GParamSpec *pspec, GstGLImageInfo *data)
       XMapRaised (data->dpy, data->win);
 
       // resize OpenGL
-      g_warning("resizing in OpenGL");
+      //g_warning("resizing in OpenGL");
       glViewport(0, 0, (GLint) w, (GLint) h);
       glMatrixMode(GL_PROJECTION);
       glLoadIdentity();
       
       GLfloat aspect = (GLfloat) h / (GLfloat) w;
       glFrustum(-1.0, 1.0, -aspect, aspect, 5.0, 500.0);
-
-      glMatrixMode(GL_MODELVIEW);
-      glLoadIdentity();
-      glTranslatef(0.0, -3.0, -50.0);
     }
   }
   if (attr.width != data->width || attr.height != data->height)
@@ -229,6 +227,9 @@ gst_glxwindow_new (GstElement *sink)
 
   glPolygonMode(GL_FRONT, GL_FILL);
   glPolygonMode(GL_BACK, GL_FILL);
+
+  glShadeModel(GL_SMOOTH);
+  glHint(GL_PERSPECTIVE_CORRECTION_HINT,GL_NICEST);
 
   XSelectInput (new->dpy, new->win, ExposureMask | StructureNotifyMask);
 

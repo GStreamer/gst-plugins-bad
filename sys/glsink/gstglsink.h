@@ -33,6 +33,8 @@ extern "C" {
 typedef struct _GstImageInfo GstImageInfo;
 struct _GstImageInfo {
   gulong id;
+  int demo;
+  int dumpvideo;
   void (*free_info) (GstImageInfo *info);
 };
 
@@ -82,7 +84,7 @@ struct _GstGLImageInfo {
   /* window specific from here */
   GstElement *sink;
   gulong handler_id;
-  float rotX,rotY,zoom;
+  float rotX,rotY,zoom, zoomdir;
 };
 
 

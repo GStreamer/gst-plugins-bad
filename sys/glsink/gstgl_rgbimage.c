@@ -237,6 +237,10 @@ gst_gl_rgbimage_put_image (GstImageInfo *info, GstImageData *image)
   // both upload the video, and redraw the screen
   glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+  glTranslatef(0.0, 0.0, -50.0);
+
   glEnable(GL_TEXTURE_2D);
 
   glPushMatrix();
@@ -259,16 +263,16 @@ gst_gl_rgbimage_put_image (GstImageInfo *info, GstImageData *image)
   glNormal3f(0, -1, 0);
   
   glTexCoord2f(xmax, 0);
-  glVertex3f(4,0,-4);
+  glVertex3f(4,4,0);
 
   glTexCoord2f(0, 0);
-  glVertex3f(-4,0,-4);
+  glVertex3f(-4,4,0);
 
   glTexCoord2f(0, ymax);
-  glVertex3f(-4,0,4);
+  glVertex3f(-4,-4,0);
 
   glTexCoord2f(xmax, ymax);
-  glVertex3f(4,0,4);
+  glVertex3f(4,-4,0);
 
   glEnd();
 

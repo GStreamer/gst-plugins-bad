@@ -56,7 +56,9 @@ enum {
   ARG_FRAME_TIME,
   ARG_HOOK,
   ARG_MUTE,
-  ARG_REPAINT
+  ARG_REPAINT,
+  ARG_DEMO,
+  ARG_DUMP
 };
 
 /* GLsink class */
@@ -78,6 +80,8 @@ struct _GstGLSink {
   guint64 frame_time;
   gint width, height;
   gboolean muted;
+  gint demo; // some kind of fun demo mode to let GL show its 3D capabilities
+  gboolean dumpvideo; // dump the video down to .ppm:s 
   GstBuffer *last_image; /* not thread safe ? */
   
   GstClock *clock;
@@ -197,6 +201,10 @@ gst_glsink_class_init (GstGLSinkClass *klass)
     g_param_spec_boolean ("mute", "Mute", "mute the output ?", FALSE, G_PARAM_READWRITE));
   g_object_class_install_property (gobject_class, ARG_REPAINT,
     g_param_spec_boolean ("repaint", "Repaint", "repaint the current frame", FALSE, G_PARAM_WRITABLE));
+  g_object_class_install_property (gobject_class, ARG_DEMO,
+    g_param_spec_int ("demo", "Demo", "demo mode (shows 3D capabilities)",0, 1, 0, G_PARAM_READWRITE)); 
+  g_object_class_install_property (gobject_class, ARG_DUMP,
+    g_param_spec_boolean ("dump", "Dump", "stores sequence of frames in .ppm files", FALSE, G_PARAM_READWRITE));
 
   /* gobject_class->dispose = gst_glsink_dispose; */
   
@@ -206,7 +214,8 @@ gst_glsink_class_init (GstGLSinkClass *klass)
   /* plugins */
   klass->plugins = NULL;
   //klass->plugins = g_list_append (klass->plugins, get_xvimage_plugin ());
-  klass->plugins = g_list_append (klass->plugins, get_gl_rgbimage_plugin ());
+  //klass->plugins = g_list_append (klass->plugins, get_gl_rgbimage_plugin ());
+  klass->plugins = g_list_append (klass->plugins, get_gl_nvimage_plugin ());
 }
 
 
@@ -299,12 +308,14 @@ gst_glsink_buffer_new (GstBufferPool *pool, gint64 location,
   
   sink = GST_GLSINK (user_data);
   
+  /* If cache is non-empty, get buffer from there */
   if (sink->cache != NULL) {
     g_mutex_lock (sink->cache_lock);
     image = (GstImageData *) sink->cache->data;
     sink->cache = g_list_delete_link (sink->cache, sink->cache);
     g_mutex_unlock (sink->cache_lock);
   } else {
+    /* otherwise, get one from the plugin */
     image = sink->plugin->get_image (sink->hook, sink->conn);
   }
   
@@ -489,6 +500,10 @@ gst_glsink_chain (GstPad *pad, GstBuffer *buf)
     if (sink->last_image != NULL)
       gst_buffer_unref (sink->last_image);
     if (sink->bufferpool && GST_BUFFER_BUFFERPOOL (buf) == sink->bufferpool) {
+      // awful hack ! But I currently have no other solution without changing the API
+      sink->hook->demo = sink->demo;
+      sink->hook->dumpvideo = sink->dumpvideo;
+
       sink->plugin->put_image (sink->hook, (GstImageData *) GST_BUFFER_POOL_PRIVATE (buf));
       sink->last_image = buf;
     } else {
@@ -537,6 +552,14 @@ gst_glsink_set_property (GObject *object, guint prop_id, const GValue *value, GP
       sink->muted = g_value_get_boolean (value);
       g_object_notify (object, "mute");
       break;
+    case ARG_DEMO:
+      sink->demo = g_value_get_int (value);
+      g_object_notify (object, "demo");
+      break;
+    case ARG_DUMP:
+      sink->dumpvideo = g_value_get_boolean (value);
+      g_object_notify (object, "dump");
+      break;
     case ARG_REPAINT:
       if (sink->last_image != NULL) {
 	sink->plugin->put_image (sink->hook, (GstImageData *) GST_BUFFER_POOL_PRIVATE (sink->last_image));
@@ -571,6 +594,12 @@ gst_glsink_get_property (GObject *object, guint prop_id, GValue *value, GParamSp
       break;
     case ARG_MUTE:
       g_value_set_boolean (value, sink->muted);
+      break;
+    case ARG_DEMO:
+      g_value_set_int (value, sink->demo);
+      break;
+    case ARG_DUMP:
+      g_value_set_boolean (value, sink->dumpvideo);
       break;
     default: 
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
