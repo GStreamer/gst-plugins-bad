@@ -17,6 +17,7 @@ static gboolean elem_seek = FALSE;
 static gboolean verbose = FALSE;
 
 static guint update_id;
+static gulong changed_id;
 
 //#define SOURCE "gnomevfssrc"
 #define SOURCE "filesrc"
@@ -847,16 +848,7 @@ update_scale (gpointer data)
 }
 
 static gboolean
-start_seek (GtkWidget * widget, GdkEventButton * event, gpointer user_data)
-{
-  gst_element_set_state (pipeline, GST_STATE_PAUSED);
-  gtk_timeout_remove (update_id);
-
-  return FALSE;
-}
-
-static gboolean
-stop_seek (GtkWidget * widget, GdkEventButton * event, gpointer user_data)
+do_seek (GtkWidget * widget, gpointer user_data)
 {
   gint64 real = gtk_range_get_value (GTK_RANGE (widget)) * duration / 100;
   gboolean res;
@@ -895,6 +887,28 @@ stop_seek (GtkWidget * widget, GdkEventButton * event, gpointer user_data)
       walk = g_list_next (walk);
     }
   }
+
+  GST_PIPELINE (pipeline)->stream_time = real;
+
+  return FALSE;
+}
+
+static gboolean
+start_seek (GtkWidget * widget, GdkEventButton * event, gpointer user_data)
+{
+  gst_element_set_state (pipeline, GST_STATE_PAUSED);
+  gtk_timeout_remove (update_id);
+
+  changed_id = gtk_signal_connect (GTK_OBJECT (hscale),
+      "value_changed", G_CALLBACK (do_seek), pipeline);
+
+  return FALSE;
+}
+
+static gboolean
+stop_seek (GtkWidget * widget, gpointer user_data)
+{
+  g_signal_handler_disconnect (GTK_OBJECT (hscale), changed_id);
 
   gst_element_set_state (pipeline, GST_STATE_PLAYING);
   update_id =
