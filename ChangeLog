@@ -1,3 +1,15 @@
+2003-05-31  Thomas Vander Stichele <thomas at apestaart dot org>
+
+	* gst-libs/gst/play/play.c: (gst_play_get_length_callback),
+	(gst_play_idle_signal), (callback_pipeline_error),
+	(callback_pipeline_deep_notify), (gst_play_dispose),
+	(gst_play_class_init), (gst_play_init):
+	* gst-libs/gst/play/play.h:
+	* gst-libs/gst/play/playpipelines.c: (gst_play_audio_setup),
+	(gst_play_audiot_setup), (gst_play_audioht_setup),
+	(gst_play_video_setup), (gst_play_video_vis_setup):
+        backport Julien's error handling stuff
+
 2003-02-06  Colin Walters  <walters@debian.org>
 
 	* ext/gnomevfs/gstgnomevfssrc.c (gst_gnomevfssrc_open_file): Don't
