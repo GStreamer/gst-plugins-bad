@@ -5,7 +5,7 @@
       <applyto>/system/gstreamer/default/audiosink</applyto>
       <owner>gstreamer</owner>
       <type>string</type>
-      <default>osssink</default>
+      <default>osssink sync=false</default>
       <locale name="C">
         <short>default GStreamer audiosink</short>
         <long>GStreamer can play audio using any number of output elements.  Some possible choices are osssink, esdsink and alsasink.  The audiosink can be a partial pipeline instead of just one element.</long>

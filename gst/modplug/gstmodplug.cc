@@ -359,8 +359,6 @@ gst_modplug_init (GstModPlug *modplug)
   modplug->_16bit          = TRUE;
   modplug->channel         = 2;
   modplug->frequency       = 44100;
-  
-  modplug->state = MODPLUG_STATE_NEED_TUNE;
 }
 
 
@@ -412,7 +410,6 @@ gst_modplug_get_query_types (GstPad *pad)
     GST_QUERY_POSITION,
     (GstQueryType)0
   };
-  
   return gst_modplug_src_query_types;
 }
 
@@ -478,7 +475,6 @@ gst_modplug_src_event (GstPad *pad, GstEvent *event)
       flush = GST_EVENT_SEEK_FLAGS (event) & GST_SEEK_FLAG_FLUSH;
 
       modplug->seek_at = GST_EVENT_SEEK_OFFSET (event);
-      break;
     }
     default:
       res = FALSE;
@@ -579,29 +575,6 @@ modplug_negotiate (GstModPlug *modplug)
   return TRUE;
 }
 
-
-static void
-gst_modplug_handle_event (GstModPlug *modplug)
-{
-  guint32 remaining;
-  GstEvent *event;
-
-  gst_bytestream_get_status (modplug->bs, &remaining, &event);
-
-  if (!event) {
-    g_warning ("modplug: no bytestream event");
-    return;
-  }
-
-  switch (GST_EVENT_TYPE (event)) {
-    case GST_EVENT_DISCONTINUOUS:
-      gst_bytestream_flush_fast (modplug->bs, remaining);
-    default:
-      gst_pad_event_default (modplug->sinkpad, event);
-      break;
-  }
-}
-
 static void
 gst_modplug_loop (GstElement *element)
 {
@@ -616,7 +589,8 @@ gst_modplug_loop (GstElement *element)
   if (modplug->state == MODPLUG_STATE_NEED_TUNE) 
   {            
 /*    GstBuffer *buf;*/
-       
+    
+    modplug->total_samples = 0;
     modplug->seek_at = -1;
     modplug->need_discont = FALSE;
     modplug->eos = FALSE;
@@ -650,21 +624,10 @@ gst_modplug_loop (GstElement *element)
     }
 */
 
-    if (modplug->bs)
-    {
-      guint64 got;
-      
-      modplug->song_size = gst_bytestream_length (modplug->bs);
-
-      got = gst_bytestream_peek_bytes (modplug->bs, &modplug->buffer_in,  modplug->song_size);
-
-      if ( got < modplug->song_size )
-      {
-        gst_modplug_handle_event (modplug);
-        return;
-      }
-      modplug->state = MODPLUG_STATE_LOAD_TUNE; 
-    }  
+    modplug->song_size = gst_bytestream_length (modplug->bs);
+  
+    gst_bytestream_peek_bytes (modplug->bs, &modplug->buffer_in,  modplug->song_size);
+    modplug->state = MODPLUG_STATE_LOAD_TUNE; 
   }  
   
   if (modplug->state == MODPLUG_STATE_LOAD_TUNE) 
@@ -678,9 +641,6 @@ gst_modplug_loop (GstElement *element)
         
     modplug->mSoundFile->Create (modplug->buffer_in, modplug->song_size);    
       
-    gst_bytestream_flush (modplug->bs, modplug->song_size);
-    modplug->buffer_in = NULL;
-
     modplug->audiobuffer = (guchar *) g_malloc (modplug->length);
     
     gst_modplug_update_metadata (modplug);
@@ -689,7 +649,7 @@ gst_modplug_loop (GstElement *element)
     modplug->state = MODPLUG_STATE_PLAY_TUNE;
   }
       
-  if (modplug->state == MODPLUG_STATE_PLAY_TUNE && !modplug->eos) 
+  if (modplug->state == MODPLUG_STATE_PLAY_TUNE) 
   {
     if (modplug->seek_at != -1)
     {
@@ -735,15 +695,11 @@ gst_modplug_loop (GstElement *element)
         gst_pad_push (modplug->srcpad, buffer_out);   
     }
     else
-      if (GST_PAD_IS_LINKED (modplug->srcpad))
+      if (GST_PAD_IS_USABLE (modplug->srcpad))
       {        
-        /* FIXME, hack, pull final EOS from peer */
-        gst_bytestream_flush (modplug->bs, 1);
-	
         event = gst_event_new (GST_EVENT_EOS);
-        gst_pad_push (modplug->srcpad, GST_BUFFER (event));
-        gst_element_set_eos (element);
-        modplug->eos = TRUE;
+        gst_pad_push (modplug->srcpad, GST_BUFFER (event));	      
+        gst_element_set_eos (element);   
       }
   }
 }
@@ -774,9 +730,9 @@ gst_modplug_change_state (GstElement *element)
       gst_bytestream_destroy (modplug->bs);          
       modplug->mSoundFile->Destroy ();      
       g_free (modplug->audiobuffer);      
-      modplug->buffer_in = NULL;
+      g_free (modplug->buffer_in);
       modplug->audiobuffer = NULL;
-      gst_caps_unref (modplug->streaminfo);
+      modplug->buffer_in = NULL;
       modplug->state = MODPLUG_STATE_NEED_TUNE;
       break;
     case GST_STATE_READY_TO_NULL:         
