@@ -80,6 +80,7 @@ struct _GstModPlug {
   guint64 bytes_read;
 
   CSoundFile *mSoundFile;
+  gboolean opened; /* set to TRUE when mSoundFile is created */
 };
 
 struct _GstModPlugClass {

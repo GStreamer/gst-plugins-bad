@@ -371,6 +371,8 @@ gst_modplug_init (GstModPlug *modplug)
   modplug->_16bit          = TRUE;
   modplug->channel         = 2;
   modplug->frequency       = 44100;
+  modplug->audiobuffer = NULL;
+  modplug->buffer_in = NULL;
 }
 
 
@@ -656,6 +658,7 @@ gst_modplug_loop (GstElement *element)
     }
         
     modplug->mSoundFile->Create (modplug->buffer_in, modplug->song_size);    
+    modplug->opened = TRUE;
       
     modplug->audiobuffer = (guchar *) g_malloc (modplug->length);
     
@@ -744,9 +747,13 @@ gst_modplug_change_state (GstElement *element)
       break;
     case GST_STATE_PAUSED_TO_READY:     
       gst_bytestream_destroy (modplug->bs);          
-      modplug->mSoundFile->Destroy ();      
-      g_free (modplug->audiobuffer);      
-      g_free (modplug->buffer_in);
+      modplug->bs = NULL;
+      if (modplug->opened)
+      {
+        modplug->mSoundFile->Destroy ();      
+        modplug->opened = FALSE;
+      }
+      if (modplug->audiobuffer) g_free (modplug->audiobuffer);      
       modplug->audiobuffer = NULL;
       modplug->buffer_in = NULL;
       modplug->state = MODPLUG_STATE_NEED_TUNE;

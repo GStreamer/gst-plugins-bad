@@ -1,3 +1,8 @@
+2003-06-28  Thomas Vander Stichele  <thomas at apestaart dot org>
+
+	* gst/modplug/gstmodplug.cc:
+	* gst/modplug/gstmodplug.h: fix state change cleanup
+
 2003-06-12  Thomas Vander Stichele  <thomas at apestaart dot org>
 
 	* gst/videotestsrc/gstvideotestsrc.c:
