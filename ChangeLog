@@ -1,3 +1,12 @@
+2005-03-19  David Schleef  <ds@schleef.org>
+
+	* configure.ac: bump swfdec requirement
+	* ext/swfdec/gstswfdec.c: (gst_swfdec_class_init),
+	(gst_swfdec_video_link), (gst_swfdec_loop), (gst_swfdec_init),
+	(gst_swfdec_get_event_masks), (gst_swfdec_get_src_formats),
+	(gst_swfdec_src_event): Add support for navigation
+	* ext/swfdec/gstswfdec.h:
+
 2005-03-18  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* gst/mpegstream/gstmpegdemux.c: (gst_mpeg_demux_send_discont),

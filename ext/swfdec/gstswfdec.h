@@ -71,11 +71,18 @@ struct _GstSwfdec
   gint height;
   gint64 total_frames;
 
+  double x, y;
+  int button;
+
+  int skip_frames;
+  int skip_index;
 };
 
 struct _GstSwfdecClass
 {
   GstElementClass parent_class;
+
+  void (*embed_url) (GstElement *element, const char *url);
 };
 
 GType gst_swfdec_get_type (void);

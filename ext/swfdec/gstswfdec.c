@@ -36,6 +36,7 @@ GST_ELEMENT_DETAILS ("SWF video decoder",
 /* Swfdec signals and args */
 enum
 {
+  SIGNAL_EMBED_URL,
   /* FILL ME */
   LAST_SIGNAL
 };
@@ -85,6 +86,7 @@ static void gst_swfdec_get_property (GObject * object, guint prop_id,
 static gboolean gst_swfdec_src_event (GstPad * pad, GstEvent * event);
 static gboolean gst_swfdec_src_query (GstPad * pad, GstQueryType type,
     GstFormat * format, gint64 * value);
+static const GstFormat *gst_swfdec_get_src_formats (GstPad * pad);
 static const GstQueryType *gst_swfdec_get_query_types (GstPad * pad);
 static const GstEventMask *gst_swfdec_get_event_masks (GstPad * pad);
 
@@ -92,6 +94,7 @@ static GstElementStateReturn gst_swfdec_change_state (GstElement * element);
 
 
 static GstElementClass *parent_class = NULL;
+static guint gst_swfdec_signals[LAST_SIGNAL];
 
 GType
 gst_swfdec_get_type (void)
@@ -131,6 +134,7 @@ gst_swfdec_base_init (gpointer g_class)
   gst_element_class_add_pad_template (element_class,
       gst_static_pad_template_get (&sink_template_factory));
 }
+
 static void
 gst_swfdec_class_init (GstSwfdecClass * klass)
 {
@@ -147,6 +151,12 @@ gst_swfdec_class_init (GstSwfdecClass * klass)
   gobject_class->dispose = gst_swfdec_dispose;
 
   gstelement_class->change_state = gst_swfdec_change_state;
+
+  gst_swfdec_signals[SIGNAL_EMBED_URL] =
+      g_signal_new ("embed-url", G_TYPE_FROM_CLASS (klass),
+      G_SIGNAL_RUN_LAST,
+      G_STRUCT_OFFSET (GstSwfdecClass, embed_url), NULL, NULL,
+      g_cclosure_marshal_VOID__STRING, G_TYPE_NONE, 1, G_TYPE_STRING);
 }
 
 static GstCaps *
@@ -185,7 +195,6 @@ gst_swfdec_video_link (GstPad * pad, const GstCaps * caps)
   gst_structure_get_int (structure, "width", &width);
   gst_structure_get_int (structure, "height", &height);
 
-  g_print ("setting size to %d x %d\n", width, height);
   ret = swfdec_decoder_set_image_size (swfdec->decoder, width, height);
   if (ret == SWF_OK) {
     swfdec->width = width;
@@ -281,7 +290,10 @@ gst_swfdec_loop (GstElement * element)
     GstBuffer *videobuf;
     GstBuffer *audiobuf;
     gboolean ret;
+    const char *url;
 
+    swfdec_decoder_set_mouse (swfdec->decoder, swfdec->x, swfdec->y,
+        swfdec->button);
     ret = swfdec_render_iterate (swfdec->decoder);
     if (!ret) {
       gst_pad_push (swfdec->videopad, GST_DATA (gst_event_new (GST_EVENT_EOS)));
@@ -313,13 +325,20 @@ gst_swfdec_loop (GstElement * element)
 
     GST_DEBUG ("pushing image/sound %" G_GINT64_FORMAT, swfdec->timestamp);
 
-    video_buffer = swfdec_render_get_image (swfdec->decoder);
-    videobuf = gst_buffer_new ();
-    GST_BUFFER_DATA (videobuf) = video_buffer->data;
-    GST_BUFFER_SIZE (videobuf) = video_buffer->length;
-    GST_BUFFER_TIMESTAMP (videobuf) = swfdec->timestamp;
+    if (swfdec->skip_index) {
+      video_buffer = NULL;
+      swfdec->skip_index--;
+    } else {
+      video_buffer = swfdec_render_get_image (swfdec->decoder);
+      swfdec->skip_index = swfdec->skip_frames - 1;
 
-    gst_pad_push (swfdec->videopad, GST_DATA (videobuf));
+      videobuf = gst_buffer_new ();
+      GST_BUFFER_DATA (videobuf) = video_buffer->data;
+      GST_BUFFER_SIZE (videobuf) = video_buffer->length;
+      GST_BUFFER_TIMESTAMP (videobuf) = swfdec->timestamp;
+
+      gst_pad_push (swfdec->videopad, GST_DATA (videobuf));
+    }
 
     audio_buffer = swfdec_render_get_audio (swfdec->decoder);
     audiobuf = gst_buffer_new ();
@@ -330,6 +349,12 @@ gst_swfdec_loop (GstElement * element)
     gst_pad_push (swfdec->audiopad, GST_DATA (audiobuf));
 
     swfdec->timestamp += swfdec->interval;
+
+    url = swfdec_decoder_get_url (swfdec->decoder);
+    if (url) {
+      g_signal_emit (G_OBJECT (swfdec), gst_swfdec_signals[SIGNAL_EMBED_URL],
+          0, url);
+    }
   }
 }
 
@@ -353,6 +378,7 @@ gst_swfdec_init (GstSwfdec * swfdec)
       gst_swfdec_get_event_masks);
   gst_pad_set_query_type_function (swfdec->videopad,
       gst_swfdec_get_query_types);
+  gst_pad_set_formats_function (swfdec->videopad, gst_swfdec_get_src_formats);
   gst_element_add_pad (GST_ELEMENT (swfdec), swfdec->videopad);
 
   swfdec->audiopad =
@@ -364,6 +390,7 @@ gst_swfdec_init (GstSwfdec * swfdec)
       gst_swfdec_get_event_masks);
   gst_pad_set_query_type_function (swfdec->audiopad,
       gst_swfdec_get_query_types);
+  gst_pad_set_formats_function (swfdec->audiopad, gst_swfdec_get_src_formats);
   gst_element_add_pad (GST_ELEMENT (swfdec), swfdec->audiopad);
 
   gst_element_set_loop_function (GST_ELEMENT (swfdec), gst_swfdec_loop);
@@ -377,6 +404,11 @@ gst_swfdec_init (GstSwfdec * swfdec)
   GST_FLAG_SET (GST_ELEMENT (swfdec), GST_ELEMENT_EVENT_AWARE);
 
   swfdec->frame_rate = 0.;
+  swfdec->x = -1;
+  swfdec->y = -1;
+
+  swfdec->skip_frames = 2;
+  swfdec->skip_index = 0;
 }
 
 static void
@@ -459,10 +491,22 @@ gst_swfdec_get_event_masks (GstPad * pad)
 {
   static const GstEventMask gst_swfdec_event_masks[] = {
     {GST_EVENT_SEEK, GST_SEEK_METHOD_SET | GST_SEEK_FLAG_FLUSH},
+    {GST_EVENT_NAVIGATION, 0},
     {0,}
   };
 
   return gst_swfdec_event_masks;
+}
+
+static const GstFormat *
+gst_swfdec_get_src_formats (GstPad * pad)
+{
+  static const GstFormat src_formats[] = {
+    GST_FORMAT_TIME,
+    0
+  };
+
+  return src_formats;
 }
 
 static gboolean
@@ -506,6 +550,27 @@ gst_swfdec_src_event (GstPad * pad, GstEvent * event)
       }
 
       res = TRUE;
+      break;
+    }
+    case GST_EVENT_NAVIGATION:
+    {
+      GstStructure *structure = event->event_data.structure.structure;
+      const char *type;
+
+      type = gst_structure_get_string (structure, "event");
+      GST_DEBUG ("got nav event %s", type);
+      if (g_str_equal (type, "mouse-move")) {
+        gst_structure_get_double (structure, "pointer_x", &swfdec->x);
+        gst_structure_get_double (structure, "pointer_y", &swfdec->y);
+      } else if (g_str_equal (type, "mouse-button-press")) {
+        gst_structure_get_double (structure, "pointer_x", &swfdec->x);
+        gst_structure_get_double (structure, "pointer_y", &swfdec->y);
+        swfdec->button = 1;
+      } else if (g_str_equal (type, "mouse-button-release")) {
+        gst_structure_get_double (structure, "pointer_x", &swfdec->x);
+        gst_structure_get_double (structure, "pointer_y", &swfdec->y);
+        swfdec->button = 0;
+      }
       break;
     }
     default:
