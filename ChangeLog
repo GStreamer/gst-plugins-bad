@@ -1,5 +1,12 @@
 2004-03-03  Thomas Vander Stichele  <thomas at apestaart dot org>
 
+	* common/gst-autogen.sh:
+	  fix sed bug
+	* ext/alsa/gstalsa.h:
+	  use old ALSA API so it builds against 1.0 ALSA
+
+2004-03-03  Thomas Vander Stichele  <thomas at apestaart dot org>
+
 	* ext/mpeg2dec/gstmpeg2dec.c:
           compile against mpeg2dec 0.4.0 as well (Johan Dahlin)
 
