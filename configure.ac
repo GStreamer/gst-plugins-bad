@@ -161,8 +161,14 @@ if test -z $GST_TOOLS_DIR; then
 fi
 AC_SUBST(GST_TOOLS_DIR)
 
-dnl additional gstcontrol libs
-GST_CONTROL_LIBS=`pkg-config --variable=gstcontrol_libs gstreamer-$GST_MAJORMINOR`
+dnl check for gstreamer control libs
+PKG_CHECK_MODULES(GST_CONTROL, gstreamer-control-$GST_MAJORMINOR >= $GST_PLUGINS_VERSION_MAJOR.$GST_PLUGINS_VERSION_MINOR.$GST_PLUGINS_VERSION_MICRO,
+  HAVE_GST_CONTROL="yes", HAVE_GST_CONTROL="no")
+                                                                                
+if test "x$HAVE_GST_CONTROL" = "xno"; then
+  AC_MSG_ERROR(no GStreamer Control Libs found)
+fi
+
 AC_SUBST(GST_CONTROL_LIBS)
 
 dnl Set up conditionals for (target) architecture:
