@@ -602,6 +602,10 @@ GST_CHECK_FEATURE(FFMPEG, [ffmpeg plug-ins], ffmpeg, [
                       HAVE_FFMPEG=yes, HAVE_FFMPEG=no)
     fi
   fi
+  # ffmpeg requires gcc
+  if test "x$GCC" != xyes ; then
+    HAVE_FFMPEG=no
+  fi
   # we only bother with uninstalled (included) ffmpeg for now
   AC_DEFINE_UNQUOTED(HAVE_FFMPEG_UNINSTALLED, 1,
                      [defined if we use uninstalled ffmpeg])
