@@ -82,8 +82,8 @@ enum {
 };
 
 static GType 	gst_snapshot_get_type 	(void);
-static void	gst_snapshot_class_init	(GstSnapshotClass *klass);
-static void	gst_snapshot_init	(GstSnapshot *snapshot);
+static void	gst_snapshot_class_init	(GstShotClass *klass);
+static void	gst_snapshot_init	(GstShot *snapshot);
 
 static void	gst_snapshot_chain	(GstPad *pad, GstBuffer *buf);
 
@@ -113,20 +113,20 @@ gst_snapshot_get_type (void)
 
   if (!snapshot_type) {
     static const GTypeInfo snapshot_info = {
-      sizeof (GstSnapshotClass), NULL, NULL, 
-      (GClassInitFunc) gst_snapshot_class_init, NULL, NULL,
-      sizeof (GstSnapshot),
+      sizeof(GstShotClass),      NULL,      NULL,      (GClassInitFunc)gst_snapshot_class_init,
+      NULL,
+      NULL,
+      sizeof(GstShot),
       0,
-      (GInstanceInitFunc) gst_snapshot_init,
+      (GInstanceInitFunc)gst_snapshot_init,
     };
-    snapshot_type = g_type_register_static (GST_TYPE_ELEMENT, "GstSnapshot", 
-		                            &snapshot_info, 0);
+    snapshot_type = g_type_register_static(GST_TYPE_ELEMENT, "GstShot", &snapshot_info, 0);
   }
   return snapshot_type;
 }
 
 static void
-gst_snapshot_class_init (GstSnapshotClass *klass)
+gst_snapshot_class_init (GstShotClass *klass)
 {
   GObjectClass *gobject_class;
   GstElementClass *gstelement_class;
@@ -145,7 +145,7 @@ gst_snapshot_class_init (GstSnapshotClass *klass)
 	
   gst_snapshot_signals[SNAPSHOT_SIGNAL] =
 	      g_signal_new("snapshot", G_TYPE_FROM_CLASS(klass),
-	 	            G_SIGNAL_RUN_LAST, G_STRUCT_OFFSET(GstSnapshotClass, snapshot),
+	 	            G_SIGNAL_RUN_LAST, G_STRUCT_OFFSET(GstShotClass, snapshot),
 		            NULL, NULL, g_cclosure_marshal_VOID__VOID,  G_TYPE_NONE, 0);
 
   klass->snapshot = snapshot_handler;
@@ -157,7 +157,7 @@ gst_snapshot_class_init (GstSnapshotClass *klass)
 static void
 snapshot_handler(GstElement *element)
 {
-  GstSnapshot *snapshot;
+  GstShot *snapshot;
 
   snapshot = GST_SNAPSHOT( element );
   snapshot->snapshot_asked=TRUE;
@@ -167,7 +167,7 @@ snapshot_handler(GstElement *element)
 static gboolean
 gst_snapshot_sinkconnect (GstPad *pad, GstCaps *caps)
 {
-  GstSnapshot *filter;
+  GstShot *filter;
   GstCaps *from_caps, *to_caps;
 
   filter = GST_SNAPSHOT (gst_pad_get_parent (pad));
@@ -187,9 +187,9 @@ gst_snapshot_sinkconnect (GstPad *pad, GstCaps *caps)
       "format",   GST_PROPS_FOURCC (GST_STR_FOURCC ("RGB ")),
       "width",    GST_PROPS_INT( filter->width ),
       "height",   GST_PROPS_INT( filter->height ),
-      "red_mask",   GST_PROPS_INT (0xFF0000),
+      "red_mask",   GST_PROPS_INT (0x0000FF),
       "green_mask", GST_PROPS_INT (0x00FF00),
-      "blue_mask",  GST_PROPS_INT (0x0000FF),
+      "blue_mask",  GST_PROPS_INT (0xFF0000),
       "bpp",        GST_PROPS_INT( 24 ) 
   );
 
@@ -202,11 +202,7 @@ gst_snapshot_sinkconnect (GstPad *pad, GstCaps *caps)
          "video/raw",
          "format", GST_PROPS_FOURCC (GST_STR_FOURCC ("I420")),
          "width",    GST_PROPS_INT( filter->width ),
-         "height",   GST_PROPS_INT( filter->height ),
-         "red_mask",   GST_PROPS_INT (0xFF0000),
-         "green_mask", GST_PROPS_INT (0x00FF00),
-         "blue_mask",  GST_PROPS_INT (0x0000FF),
-         "bpp",        GST_PROPS_INT( 24 ) 
+         "height",   GST_PROPS_INT( filter->height )
        );
 
        filter->converter = gst_colorspace_yuv2rgb_get_converter ( from_caps, to_caps );
@@ -231,7 +227,7 @@ gst_snapshot_sinkconnect (GstPad *pad, GstCaps *caps)
 }
 
 static void
-gst_snapshot_init (GstSnapshot *snapshot)
+gst_snapshot_init (GstShot *snapshot)
 {
   snapshot->sinkpad = gst_pad_new_from_template (GST_PAD_TEMPLATE_GET (snapshot_sink_factory), "sink");
   gst_pad_set_connect_function (snapshot->sinkpad, gst_snapshot_sinkconnect);
@@ -250,61 +246,57 @@ gst_snapshot_init (GstSnapshot *snapshot)
 static void
 gst_snapshot_chain (GstPad *pad, GstBuffer *buf)
 {
-  GstSnapshot *snapshot;
+  GstShot *snapshot;
   guchar *data, *data_to_convert, *buffer_i420, *data_converted;
   gulong size,image_size;
   GstBuffer *outbuf;
   gint i;
-  png_byte *row_pointers[MAX_HEIGHT];
+  png_byte *row_pointers[ MAX_HEIGHT ];
   FILE *fp;
 
-  g_return_if_fail (pad != NULL);
-  g_return_if_fail (GST_IS_PAD (pad));
-  g_return_if_fail (buf != NULL);
+  g_return_if_fail(pad != NULL);
+  g_return_if_fail(GST_IS_PAD(pad));
+  g_return_if_fail(buf != NULL);
 
   snapshot = GST_SNAPSHOT (GST_OBJECT_PARENT (pad));
 
-  data = GST_BUFFER_DATA (buf);
-  size = GST_BUFFER_SIZE (buf);
+  data = GST_BUFFER_DATA(buf);
+  size = GST_BUFFER_SIZE(buf);
 
-  GST_DEBUG (0, "snapshot: have buffer of %d", GST_BUFFER_SIZE (buf));
+  GST_DEBUG (0,"snapshot: have buffer of %d\n", GST_BUFFER_SIZE(buf));
 
-  outbuf = gst_buffer_new ();
-  GST_BUFFER_DATA (outbuf) = g_malloc (GST_BUFFER_SIZE (buf));
-  GST_BUFFER_SIZE (outbuf) = GST_BUFFER_SIZE (buf);
+  outbuf = gst_buffer_new();
+  GST_BUFFER_DATA(outbuf) = g_malloc(GST_BUFFER_SIZE(buf));
+  GST_BUFFER_SIZE(outbuf) = GST_BUFFER_SIZE(buf);
 
   snapshot->cur_frame++;
-  if (snapshot->cur_frame == snapshot->frame || 
-      snapshot->snapshot_asked == TRUE )
+  if ( snapshot->cur_frame == snapshot->frame || snapshot->snapshot_asked == TRUE )
   {
     snapshot->snapshot_asked = FALSE;
     image_size = snapshot->width * snapshot->height;
-    data_converted = g_malloc ((image_size * (snapshot->to_bpp/8)));
+    data_converted = g_malloc ((image_size * (snapshot->to_bpp/8)) );
 
-    if (snapshot->format == GST_MAKE_FOURCC('Y','U','Y','2'))
+    if ( snapshot->format == GST_MAKE_FOURCC('Y','U','Y','2') )
     {
-      GST_DEBUG(0, "YUY2 => RGB");
-      buffer_i420 = g_malloc ((image_size * (snapshot->to_bpp/8)));
-      gst_colorspace_yuy2_to_i420 (data, buffer_i420, 
-		                   snapshot->width, snapshot->height);
+      GST_DEBUG(0, "YUY2 => RGB\n");
+      buffer_i420 = g_malloc ((image_size * (snapshot->to_bpp/8)) );
+      gst_colorspace_yuy2_to_i420( data, buffer_i420, snapshot->width, snapshot->height);
       data_to_convert = buffer_i420;
     }
     else
       data_to_convert = data;
 
-    gst_colorspace_convert (snapshot->converter, data_to_convert, 
-		            data_converted); 
+    gst_colorspace_convert (snapshot->converter, data_to_convert, data_converted); 
 
-    GST_INFO (0,"dumpfile : %s", snapshot->location);
-    fp = fopen (snapshot->location, "wb");
-    if (fp == NULL)
-      g_warning("Can not open %s\n", snapshot->location);
+    GST_INFO (0,"dumpfile : %s\n", snapshot->location );
+    fp = fopen( snapshot->location, "wb" );
+    if ( fp == NULL )
+      g_warning(" Can not open %s\n", snapshot->location );
     else
     {
-      png_set_filter (snapshot->png_struct_ptr, 0, 
-		      PNG_FILTER_NONE | PNG_FILTER_VALUE_NONE);
-      png_init_io (snapshot->png_struct_ptr, fp);
-      png_set_compression_level (snapshot->png_struct_ptr, 9);
+      png_set_filter( snapshot->png_struct_ptr, 0, PNG_FILTER_NONE  | PNG_FILTER_VALUE_NONE );
+      png_init_io(snapshot->png_struct_ptr, fp);
+      png_set_compression_level( snapshot->png_struct_ptr, 9);
       png_set_IHDR(
        snapshot->png_struct_ptr,
        snapshot->png_info_ptr,
@@ -317,39 +309,39 @@ gst_snapshot_chain (GstPad *pad, GstBuffer *buf)
        PNG_FILTER_TYPE_DEFAULT
       );
   
-     for (i = 0; i < snapshot->height; i++)
-       row_pointers[i] = data_converted 
-	               + (snapshot->width * i * snapshot->to_bpp / 8);
+     for ( i = 0; i < snapshot->height; i++ )
+       row_pointers[i] = data_converted + (snapshot->width * i * snapshot->to_bpp/8 );
      
-     png_write_info (snapshot->png_struct_ptr, snapshot->png_info_ptr);
-     png_write_image (snapshot->png_struct_ptr, row_pointers);
-     png_write_end (snapshot->png_struct_ptr, NULL);
-     png_destroy_info_struct (snapshot->png_struct_ptr, 
-		              &snapshot->png_info_ptr);
-     png_destroy_write_struct(&snapshot->png_struct_ptr, (png_infopp) NULL);
-     fclose (fp);
+     png_write_info( snapshot->png_struct_ptr, snapshot->png_info_ptr );
+     png_write_image( snapshot->png_struct_ptr, row_pointers );
+     png_write_end( snapshot->png_struct_ptr, NULL );
+     png_destroy_info_struct (  snapshot->png_struct_ptr, &snapshot->png_info_ptr );
+     png_destroy_write_struct( &snapshot->png_struct_ptr, (png_infopp)NULL );
+     fclose( fp );
      g_signal_emit (G_OBJECT (snapshot),
 		    gst_snapshot_signals[SNAPSHOT_SIGNAL], 0);
+
+
     }
   }
-  gst_pad_push (snapshot->srcpad, buf);
+
+  gst_pad_push(snapshot->srcpad,buf );
 }
 
 static void
-gst_snapshot_set_property (GObject *object, guint prop_id, 
-		           const GValue *value, GParamSpec *pspec)
+gst_snapshot_set_property (GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec)
 {
-  GstSnapshot *snapshot;
+  GstShot *snapshot;
 
-  g_return_if_fail (GST_IS_SNAPSHOT (object));
-  snapshot = GST_SNAPSHOT (object);
+  g_return_if_fail(GST_IS_SNAPSHOT(object));
+  snapshot = GST_SNAPSHOT(object);
 
   switch (prop_id) {
     case ARG_LOCATION:
-      snapshot->location = g_strdup (g_value_get_string (value));
+      snapshot->location = g_strdup(g_value_get_string (value));
       break;
     case ARG_FRAME:
-      snapshot->frame = g_value_get_long (value);
+      snapshot->frame = g_value_get_long(value);
       break;
     default:
       break;
@@ -357,20 +349,19 @@ gst_snapshot_set_property (GObject *object, guint prop_id,
 }
 
 static void
-gst_snapshot_get_property (GObject *object, guint prop_id, 
-		           GValue *value, GParamSpec *pspec)
+gst_snapshot_get_property (GObject *object, guint prop_id, GValue *value, GParamSpec *pspec)
 {
-  GstSnapshot *snapshot;
+  GstShot *snapshot;
 
-  g_return_if_fail (GST_IS_SNAPSHOT (object));
-  snapshot = GST_SNAPSHOT (object);
+  g_return_if_fail(GST_IS_SNAPSHOT(object));
+  snapshot = GST_SNAPSHOT(object);
 
   switch (prop_id) {
     case ARG_LOCATION:
-      g_value_set_string (value, snapshot->location);
+      g_value_set_string(value, snapshot->location);
       break;
     case ARG_FRAME:
-      g_value_set_long (value, snapshot->frame);
+      g_value_set_long(value, snapshot->frame);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
