@@ -440,8 +440,6 @@ gst_cdaudio_get_query_types (GstElement * element)
   static const GstQueryType query_types[] = {
     GST_QUERY_TOTAL,
     GST_QUERY_POSITION,
-    GST_QUERY_START,
-    GST_QUERY_SEGMENT_END,
     0
   };
 
