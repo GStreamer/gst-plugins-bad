@@ -56,7 +56,7 @@ gst_x_overlay_get_type (void)
 						 "GstXOverlay",
 						 &gst_x_overlay_info, 0);
     g_type_interface_add_prerequisite (gst_x_overlay_type,
-				       GST_TYPE_INTERFACE);
+				       GST_TYPE_IMPLEMENTS_INTERFACE);
   }
 
   return gst_x_overlay_type;
@@ -65,6 +65,7 @@ gst_x_overlay_get_type (void)
 static void
 gst_x_overlay_base_init (gpointer g_class)
 {
+  GstXOverlayClass *overlay_class = (GstXOverlayClass *) g_class;
   static gboolean initialized = FALSE;
   
   if (! initialized)
@@ -79,6 +80,8 @@ gst_x_overlay_base_init (gpointer g_class)
       
       initialized = TRUE;
     }
+
+  overlay_class->set_xwindow_id = NULL;
 }
 
 /**

@@ -1,5 +1,7 @@
-/* GStreamer
- * Copyright (C) <1999> Erik Walthinsen <omega@cse.ogi.edu>
+/* GStreamer mpeg2enc (mjpegtools) wrapper
+ * (c) 2003 Ronald Bultje <rbultje@ronald.bitfreak.net>
+ *
+ * gstmpeg2encstreamwriter.hh: GStreamer/mpeg2enc output wrapper
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -17,31 +19,27 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#ifndef __GST_MPEG2ENCSTREAMWRITER_H__
+#define __GST_MPEG2ENCSTREAMWRITER_H__
 
-#include <riff.h>
+#include <gst/gst.h>
 
+#include <elemstrmwriter.hh>
 
-gulong gst_riff_fourcc_to_id(gchar *fourcc) {
-  g_return_val_if_fail(fourcc != NULL, 0);
+class GstMpeg2EncStreamWriter : public ElemStrmWriter {
+public:
+  GstMpeg2EncStreamWriter (GstPad        *pad,
+			   EncoderParams *params);
 
-  return GUINT32_FROM_LE((gulong)(fourcc[0] << 0) | (fourcc[1] << 8) |
-         (fourcc[2] << 16) | (fourcc[3] << 24));
-}
+  /* output functions */
+  void PutBits (guint32 val, gint n);
+  void FrameBegin ();
+  void FrameFlush ();
+  void FrameDiscard ();
 
-gchar *gst_riff_id_to_fourcc(gulong id) {
-  static gchar fourcc[5];
+private:
+  GstPad *pad;
+  GstBuffer *buf;
+};
 
-  g_return_val_if_fail(fourcc != NULL, NULL);
-
-  id = GUINT32_FROM_LE(id);
-  fourcc[0] = (id >> 0) & 0xff;
-  fourcc[1] = (id >> 8) & 0xff;
-  fourcc[2] = (id >> 16) & 0xff;
-  fourcc[3] = (id >> 24) & 0xff;
-  fourcc[4] = 0;
-
-  return fourcc;
-}
+#endif /* __GST_MPEG2ENCSTREAMWRITER_H__ */

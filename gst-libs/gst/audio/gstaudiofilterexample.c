@@ -165,7 +165,6 @@ GST_PLUGIN_DEFINE (
   plugin_init,
   VERSION,
   "LGPL",
-  NULL,
   GST_PACKAGE,
   GST_ORIGIN
 )
