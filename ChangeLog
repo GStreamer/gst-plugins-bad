@@ -1,3 +1,8 @@
+2005-03-26  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* configure.ac:
+	  Unbreak my breakage.
+
 2005-03-26  Chris Lee <clee@kde.org>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
