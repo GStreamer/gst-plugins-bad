@@ -1,5 +1,49 @@
 2005-02-24  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* configure.ac:
+	* ext/Makefile.am:
+	* ext/gconf/Makefile.am:
+	* ext/gconf/gstgconfaudiosink.c: (gst_gconf_audio_sink_get_type),
+	(gst_gconf_audio_sink_base_init),
+	(gst_gconf_audio_sink_class_init), (gst_gconf_audio_sink_init),
+	(gst_gconf_audio_sink_dispose), (cb_toggle_element),
+	(gst_gconf_audio_sink_change_state):
+	* ext/gconf/gstgconfaudiosink.h:
+	* ext/gconf/gstgconfelements.c: (plugin_init):
+	* ext/gconf/gstgconfelements.h:
+	* ext/gconf/gstgconfvideosink.c: (gst_gconf_video_sink_get_type),
+	(gst_gconf_video_sink_base_init),
+	(gst_gconf_video_sink_class_init), (gst_gconf_video_sink_init),
+	(gst_gconf_video_sink_dispose), (cb_toggle_element),
+	(gst_gconf_video_sink_change_state):
+	* ext/gconf/gstgconfvideosink.h:
+	  Add GConf video/audio sink handling elements. Automagically
+	  change contained element on GConf change.
+	* gst/autodetect/Makefile.am:
+	* gst/autodetect/gstautoaudiosink.c:
+	(gst_auto_audio_sink_get_type), (gst_auto_audio_sink_base_init),
+	(gst_auto_audio_sink_class_init), (gst_auto_audio_sink_init),
+	(gst_auto_audio_sink_factory_filter),
+	(gst_auto_audio_sink_compare_ranks),
+	(gst_auto_audio_sink_find_best), (gst_auto_audio_sink_detect):
+	* gst/autodetect/gstautoaudiosink.h:
+	* gst/autodetect/gstautodetect.c: (plugin_init):
+	* gst/autodetect/gstautodetect.h:
+	* gst/autodetect/gstautovideosink.c:
+	(gst_auto_video_sink_get_type), (gst_auto_video_sink_base_init),
+	(gst_auto_video_sink_class_init), (gst_auto_video_sink_init),
+	(gst_auto_video_sink_factory_filter),
+	(gst_auto_video_sink_compare_ranks),
+	(gst_auto_video_sink_find_best), (gst_auto_video_sink_detect):
+	* gst/autodetect/gstautovideosink.h:
+	  Add video/audio output autodetection elements, based on ranks.
+	  No sound server handling in autoaudiosink yet.
+	* ext/alsa/gstalsaplugin.c: (plugin_init):
+	* sys/oss/gstossaudio.c: (plugin_init):
+	  Change ranks to prefer ALSA over OSS.
+
+2005-02-24  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* ext/ivorbis/vorbis.c: (plugin_init):
 	  Set rank to secondary, we always prefer oggdemux (for obvious
 	  reasons).

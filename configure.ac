@@ -369,6 +369,7 @@ GST_PLUGINS_ALL="\
 	audioscale \
 	audiorate \
 	auparse \
+	autodetect \
 	avi \
 	cdxaparse \
 	chart \
@@ -1951,6 +1952,7 @@ gst/audioconvert/Makefile
 gst/audioscale/Makefile
 gst/audiorate/Makefile
 gst/auparse/Makefile
+gst/autodetect/Makefile
 gst/avi/Makefile
 gst/cdxaparse/Makefile
 gst/chart/Makefile
@@ -2061,6 +2063,7 @@ ext/esd/Makefile
 ext/faac/Makefile
 ext/faad/Makefile
 ext/flac/Makefile
+ext/gconf/Makefile
 ext/gdk_pixbuf/Makefile
 ext/gnomevfs/Makefile
 ext/gsm/Makefile
