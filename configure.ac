@@ -12,7 +12,7 @@ AM_MAINTAINER_MODE
 
 dnl when going to/from release please set the nano (fourth number) right !
 dnl releases only do Wall, cvs and prerelease does Werror too
-AS_VERSION(gst-plugins, GST_PLUGINS_VERSION, 0, 7, 1, 1, GST_CVS="no", GST_CVS="yes")
+AS_VERSION(gst-plugins, GST_PLUGINS_VERSION, 0, 7, 1, 2, GST_CVS="no", GST_CVS="yes")
 
 dnl add a suffix to apps
 if test x$program_suffix = xNONE ; then
@@ -30,7 +30,7 @@ dnl - library source changed -> increment REVISION
 dnl - interfaces added/removed/changed -> increment CURRENT, REVISION = 0
 dnl - interfaces added -> increment AGE
 dnl - interfaces removed -> AGE = 0
-AS_LIBTOOL(GST_PLUGINS, 1, 0, 0)
+AS_LIBTOOL(GST_PLUGINS, 2, 0, 0)
 
 dnl FIXME take something else ?
 AC_CONFIG_SRCDIR([gst/law/alaw.c])
@@ -778,7 +778,7 @@ GST_CHECK_FEATURE(FAAC, [AAC encoder plug-in], faac, [
 dnl **** Free AAC Decoder (FAAD) ****
 translit(dnm, m, l) AM_CONDITIONAL(USE_FAAD, true)
 GST_CHECK_FEATURE(FAAD, [AAC decoder plug-in], faad, [
-  GST_CHECK_LIBHEADER(FAAD, faad, faacDecOpen, , faad.h, FAAD_LIBS="-lfaad")
+  GST_CHECK_LIBHEADER(FAAD, faad, faacDecOpen, -lm, faad.h, FAAD_LIBS="-lfaad -lm")
   AS_SCRUB_INCLUDE(FAAD_CFLAGS)
   AC_SUBST(FAAD_LIBS)
 ])
@@ -970,16 +970,15 @@ dnl FIXME: we could use header checks here as well IMO
 translit(dnm, m, l) AM_CONDITIONAL(USE_MAD, true)
 GST_CHECK_FEATURE(MAD, [mad mp3 decoder], mad, [
   dnl check with pkg-config first
-  PKG_CHECK_MODULES(MAD, mad id3tag, HAVE_MAD="yes", HAVE_MAD="no")
+  PKG_CHECK_MODULES(MAD, mad >= 0.15 id3tag >= 0.15, HAVE_MAD="yes", HAVE_MAD="no")
   if test "x$HAVE_MAD" = "xno"; then
     dnl fall back to oldskool detection
     AC_CHECK_LIB(mad, mad_decoder_finish, HAVE_MAD="yes" MAD_LIBS="-lmad")
     if test "x$HAVE_MAD" = "xyes"; then
-      # installed with mad >= 0.14
       HAVE_MAD="no"
       save_libs=$LIBS
       LIBS="-lz"
-      AC_CHECK_LIB(id3tag, id3_tag_query, HAVE_MAD="yes" MAD_LIBS="$MAD_LIBS -lid3tag")
+      AC_CHECK_LIB(id3tag, id3_tag_options, HAVE_MAD="yes" MAD_LIBS="-lmad -lid3tag -lz")
       LIBS=$save_LIBS
     fi
   fi    

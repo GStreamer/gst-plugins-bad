@@ -63,7 +63,6 @@ BuildRequires:	gstreamer-tools >= 0.6.1
 @USE_GCONF_TRUE@BuildRequires: 	GConf2-devel
 # Snapshot plugin
 @USE_HERMES_TRUE@@USE_LIBPNG_TRUE@Requires:	libpng
-@USE_HERMES_TRUE@@USE_LIBPNG_TRUE@Requires:	gstreamer-colorspace = %{version}
 
 Obsoletes:	gstreamer-plugin-libs
 Obsoletes:	gstreamer-arts
@@ -164,6 +163,7 @@ rm -f $RPM_BUILD_ROOT%{_libdir}/*.a
 rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
 rm -f $RPM_BUILD_ROOT%{_includedir}/gstreamer-%{majorminor}/gst/media-info/media-info.h
 rm -f $RPM_BUILD_ROOT%{_libdir}/libgstmedia-info*.so.0.0.0
+rm -f $RPM_BUILD_ROOT%{_libdir}/gtk-2.0/2.2.0/loaders/gst_loader.la
 
 
 %clean
@@ -182,9 +182,7 @@ rm -f $RPM_BUILD_ROOT%{_libdir}/libgstmedia-info*.so.0.0.0
 %{_libdir}/gstreamer-%{majorminor}/libgstidct.so
 %{_libdir}/gstreamer-%{majorminor}/libgstriff.so
 %{_libdir}/gstreamer-%{majorminor}/libgstvideo.so
-%{_libdir}/libgstmixer.so
 %{_libdir}/gstreamer-%{majorminor}/libgstid3types.so
-%{_libdir}/gstreamer-%{majorminor}/libgstmpegtypes.so
 %{_libdir}/gstreamer-%{majorminor}/libgstvideodrop.so
 # non-core plugins without external dependencies
 %{_libdir}/gstreamer-%{majorminor}/libgstresample.so
@@ -247,8 +245,6 @@ rm -f $RPM_BUILD_ROOT%{_libdir}/libgstmedia-info*.so.0.0.0
 %{_libdir}/gstreamer-%{majorminor}/libgstmpegaudioparse.so
 %{_libdir}/gstreamer-%{majorminor}/libgstmp1videoparse.so
 %{_libdir}/gstreamer-%{majorminor}/libgstmpegstream.so
-%{_libdir}/gstreamer-%{majorminor}/libgstmpeg2enc.so
-%{_libdir}/gstreamer-%{majorminor}/libgstmpeg2dec.so
 %{_libdir}/gstreamer-%{majorminor}/libgstmpeg2subt.so
 %{_libdir}/gstreamer-%{majorminor}/libgstmplex.so
 %{_libdir}/gstreamer-%{majorminor}/libgstoverlay.so
@@ -257,10 +253,14 @@ rm -f $RPM_BUILD_ROOT%{_libdir}/libgstmedia-info*.so.0.0.0
 %{_libdir}/gstreamer-%{majorminor}/libgsttextoverlay.so
 %{_libdir}/gstreamer-%{majorminor}/libgstffmpeg.so
 %{_libdir}/gstreamer-%{majorminor}/libgstxwindowlistener.*
-%{_libdir}/libgstcolorbalance.so
-%{_libdir}/libgsttuner.so
-%{_libdir}/libgstxoverlay.so
-
+%{_libdir}/gstreamer-%{majorminor}/libgstgnomevfs.so
+%{_libdir}/gstreamer-%{majorminor}/libgstmatroska.so
+%{_libdir}/gstreamer-%{majorminor}/libgstnavigationtest.so
+%{_libdir}/gstreamer-%{majorminor}/libgsttypefindfunctions.so
+%{_libdir}/gstreamer-%{majorminor}/libgstximagesink.so
+%{_libdir}/gstreamer-%{majorminor}/libgstxvimagesink.so
+%{_libdir}/gtk-2.0/2.2.0/loaders/gst_loader.so
+%{_libdir}/libgstinterfaces-%{majorminor}.so*
 
 # non-core plugins with external dependencies
 @USE_ARTS_TRUE@%{_libdir}/gstreamer-%{majorminor}/libgstarts.so
@@ -268,8 +268,8 @@ rm -f $RPM_BUILD_ROOT%{_libdir}/libgstmedia-info*.so.0.0.0
 @USE_AUDIOFILE_TRUE@%{_libdir}/gstreamer-%{majorminor}/libgstaudiofile.so
 @USE_CDPARANOIA_TRUE@%{_libdir}/gstreamer-%{majorminor}/libgstcdparanoia.so
 @USE_ESD_TRUE@%{_libdir}/gstreamer-%{majorminor}/libgstesd.so
-@USE_GNOME_VFS_TRUE@%{_libdir}/gstreamer-%{majorminor}/libgstgnomevfssrc.so
-@USE_GNOME_VFS_TRUE@%{_libdir}/gstreamer-%{majorminor}/libgstgnomevfssink.so
+# @USE_GNOME_VFS_TRUE@%{_libdir}/gstreamer-%{majorminor}/libgstgnomevfssrc.so
+# @USE_GNOME_VFS_TRUE@%{_libdir}/gstreamer-%{majorminor}/libgstgnomevfssink.so
 @USE_JPEG_TRUE@%{_libdir}/gstreamer-%{majorminor}/libgstjpeg.so
 @USE_MIKMOD_TRUE@%{_libdir}/gstreamer-%{majorminor}/libgstmikmod.so
 @USE_SDL_TRUE@%{_libdir}/gstreamer-%{majorminor}/libgstsdlvideosink.so
@@ -321,11 +321,12 @@ GStreamer support libraries header files.
 %{_includedir}/gstreamer-%{majorminor}/gst/tuner/tunernorm.h
 %{_includedir}/gstreamer-%{majorminor}/gst/xoverlay/xoverlay.h
 %{_includedir}/gstreamer-%{majorminor}/gst/xwindowlistener/xwindowlistener.h
+%{_includedir}/gstreamer-%{majorminor}/gst/propertyprobe/propertyprobe.h
 %{_libdir}/pkgconfig/gstreamer-libs-%{majorminor}.pc
 %{_libdir}/pkgconfig/gstreamer-play-%{majorminor}.pc
+%{_libdir}/pkgconfig/gstreamer-interfaces-%{majorminor}.pc
 @USE_GCONF_TRUE@%{_libdir}/libgstgconf-%{majorminor}.so
 %{_libdir}/libgstplay-%{majorminor}.so
-%{_libdir}/libgstnavigation.so
 
 # Here are all the packages depending on external libs #
 
@@ -425,19 +426,17 @@ GStreamer support libraries header files.
 Summary:       GStreamer plug-in for AVI movie playback.
 Group:         Libraries/Multimedia
 Requires:      gstreamer-plugins = %{version}
-Requires:      gstreamer-colorspace = %{version}
 
 %description -n gstreamer-avi
 Plug-ins for playback of AVI format media files.
-
+ 
 %files -n gstreamer-avi
 %defattr(-, root, root)
-%{_libdir}/gstreamer-%{majorminor}/libgstavidemux.so
-%{_libdir}/gstreamer-%{majorminor}/libgstavimux.so
+%{_libdir}/gstreamer-%{majorminor}/libgstavi.so
 
 %post -n gstreamer-avi
 %{_bindir}/gst-register-%{majorminor} > /dev/null 2> /dev/null
-### %{_bindir}/gst-compprep > /dev/null 2> /dev/null
+# %{_bindir}/gst-compprep > /dev/null 2> /dev/null
 
 %postun -n gstreamer-avi
 %{_bindir}/gst-register-%{majorminor} > /dev/null 2> /dev/null
@@ -741,7 +740,7 @@ Plug-ins for playback of AVI format media files.
 @USE_MPEG2DEC_TRUE@
 @USE_MPEG2DEC_TRUE@%files -n gstreamer-mpeg
 @USE_MPEG2DEC_TRUE@%defattr(-, root, root)
-@USE_MPEG2DEC_TRUE@/usr/lib/gstreamer-0.7/libgstmpeg2dec.so
+@USE_MPEG2DEC_TRUE@/usr/lib/gstreamer-%{majorminor}/libgstmpeg2dec.so
 @USE_MPEG2DEC_TRUE@%post -n  gstreamer-mpeg
 @USE_MPEG2DEC_TRUE@%{_bindir}/gst-register-%{majorminor} > /dev/null 2> /dev/null
 @USE_MPEG2DEC_TRUE@### %{_bindir}/gst-compprep > /dev/null 2> /dev/null
@@ -749,6 +748,28 @@ Plug-ins for playback of AVI format media files.
 @USE_MPEG2DEC_TRUE@%postun -n  gstreamer-mpeg
 @USE_MPEG2DEC_TRUE@%{_bindir}/gst-register-%{majorminor} > /dev/null 2> /dev/null
 @USE_MPEG2DEC_TRUE@### %{_bindir}/gst-compprep > /dev/null 2> /dev/null
+
+### FAAD ###
+@USE_FAAD_TRUE@%package -n gstreamer-faad
+@USE_FAAD_TRUE@Summary:GStreamer plug-ins for AAC audio playback.
+@USE_FAAD_TRUE@Group:         Libraries/Multimedia
+@USE_FAAD_TRUE@Requires:      gstreamer-plugins = %{version}
+@USE_FAAD_TRUE@Requires:      faad2 => 2.0
+@USE_FAAD_TRUE@BuildRequires: faad2-devel => 2.0
+@USE_FAAD_TRUE@
+@USE_FAAD_TRUE@%description -n gstreamer-faad
+@USE_FAAD_TRUE@Plug-ins for playing AAC audio
+@USE_FAAD_TRUE@
+@USE_FAAD_TRUE@%files -n gstreamer-faad
+@USE_FAAD_TRUE@%defattr(-, root, root)
+@USE_FAAD_TRUE@/usr/lib/gstreamer-%{majorminor}/libgstfaad.so
+@USE_FAAD_TRUE@%post -n  gstreamer-faad
+@USE_FAAD_TRUE@%{_bindir}/gst-register-%{majorminor} > /dev/null 2> /dev/null
+@USE_FAAD_TRUE@### %{_bindir}/gst-compprep > /dev/null 2> /dev/null
+@USE_FAAD_TRUE@
+@USE_FAAD_TRUE@%postun -n  gstreamer-faad
+@USE_FAAD_TRUE@%{_bindir}/gst-register-%{majorminor} > /dev/null 2> /dev/null
+@USE_FAAD_TRUE@### %{_bindir}/gst-compprep > /dev/null 2> /dev/null
 
 ### SIDPLAY ###
 @USE_SIDPLAY_TRUE@%package -n gstreamer-sid
@@ -823,7 +844,6 @@ Plug-ins for playback of AVI format media files.
 Summary:        GStreamer plug-in for asf video format.
 Group:          Libraries/Multimedia
 Requires:       gstreamer-plugins = %{version}
-Requires:       gstreamer-colorspace = %{version}
 %description -n gstreamer-asf
 Plug-in for playing ASF movies under GStreamer.
                                                                                 
@@ -839,6 +859,9 @@ Plug-in for playing ASF movies under GStreamer.
 
 
 %changelog
+* Sun Nov 23 2003 Christian Schaller <Uraeus@gnome.org>
+- Update spec file for latest changes
+- add faad plugin
 * Thu Oct 16 2003 Christian Schaller <Uraeus@gnome.org>
 - Add new colorbalance and tuner and xoverlay stuff
 - Change name of kde-audio-devel to arts-devel
