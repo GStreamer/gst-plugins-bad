@@ -17,6 +17,7 @@ AM_INIT_AUTOMAKE($PACKAGE,$VERSION)
 
 dnl our libraries and install dirs use major.minor as a version
 GST_MAJORMINOR=$GST_PLUGINS_VERSION_MAJOR.$GST_PLUGINS_VERSION_MINOR
+GST_MAJORMINOR=0.6
 AC_SUBST(GST_MAJORMINOR)
 
 dnl CURRENT, REVISION, AGE
@@ -996,10 +997,6 @@ dnl #########################
 
 AC_CONFIG_FILES(
 Makefile
-gstreamer-libs.pc
-gstreamer-libs-uninstalled.pc
-gstreamer-play.pc
-gstreamer-play-uninstalled.pc
 gst-plugins.spec
 gst/Makefile
 gst/ac3parse/Makefile
@@ -1137,6 +1134,11 @@ testsuite/spider/Makefile
 testsuite/Makefile
 tools/Makefile
 gconf/Makefile
+pkgconfig/Makefile
+pkgconfig/gstreamer-libs.pc
+pkgconfig/gstreamer-libs-uninstalled.pc
+pkgconfig/gstreamer-play.pc
+pkgconfig/gstreamer-play-uninstalled.pc
 )
 AC_OUTPUT
 
