@@ -2032,6 +2032,7 @@ gst-libs/gst/xwindowlistener/Makefile
 gst-libs/ext/Makefile
 examples/dynparams/Makefile
 examples/capsfilter/Makefile
+examples/negotiation/Makefile
 examples/seeking/Makefile
 examples/indexing/Makefile
 examples/gstplay/Makefile
