@@ -1,5 +1,15 @@
 2003-02-03  Colin Walters  <walters@verbum.org>
 
+	* ext/gnomevfs/gstgnomevfssrc.c: 
+	(struct _GstGnomeVFSSrc, gst_gnomevfssrc_init): Remove local file bits.
+	(gst_gnomevfssrc_get): Delete special local file code path.
+	(gst_gnomevfssrc_open_file): Ditto.
+	(gst_gnomevfssrc_close_file): Ditto.
+	(gst_gnomevfssrc_srcpad_event): Ditto.
+	(gst_gnomevfssrc_open_file): Always get file info from gnomevfs.
+
+2003-02-03  Colin Walters  <walters@verbum.org>
+
 	* ext/gnomevfs/gstgnomevfssrc.c
 	(gst_gnomevfssrc_received_headers_callback): Remove previous silly
 	code which tried to use Content-Type header.
