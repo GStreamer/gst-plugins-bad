@@ -1,5 +1,10 @@
 2005-03-05  Thomas Vander Stichele  <thomas at apestaart dot org>
 
+	* ext/raw1394/gstdv1394src.c:
+	  fix for gcc 2.95
+
+2005-03-05  Thomas Vander Stichele  <thomas at apestaart dot org>
+
 	Patch by: Ronald Bultje
 
 	* ext/cdparanoia/gstcdparanoia.c:
