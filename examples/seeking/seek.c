@@ -21,7 +21,9 @@ static guint update_id;
 #define UPDATE_INTERVAL 500
 
 #define THREAD
-#define PAD_SEEK
+
+// now deprecated: 
+//#define PAD_SEEK
 
 typedef struct
 {
@@ -59,6 +61,7 @@ setup_dynamic_link (GstElement *element, const gchar *padname, GstPad *target, G
   g_signal_connect (G_OBJECT (element), "new_pad", G_CALLBACK (dynamic_link), connect);
 }
 
+/* A MOD Audio decoder pipe. */
 static GstElement*
 make_mod_pipeline (const gchar *location) 
 {
@@ -87,9 +90,12 @@ make_mod_pipeline (const gchar *location)
   rate_pads = g_list_prepend (rate_pads, seekable);
   rate_pads = g_list_prepend (rate_pads, gst_element_get_pad (decoder, "sink"));
 
+  seekable_elements = g_list_prepend (seekable_elements, audiosink);
+
   return pipeline;
 }
 
+/* A DV A/V decoder pipe. */
 static GstElement*
 make_dv_pipeline (const gchar *location) 
 {
@@ -124,9 +130,13 @@ make_dv_pipeline (const gchar *location)
   rate_pads = g_list_prepend (rate_pads, seekable);
   rate_pads = g_list_prepend (rate_pads, gst_element_get_pad (decoder, "sink"));
 
+  seekable_elements = g_list_prepend (seekable_elements, audiosink);
+  seekable_elements = g_list_prepend (seekable_elements, videosink);
+
   return pipeline;
 }
 
+/* A WAV audio decoder pipe. */
 static GstElement*
 make_wav_pipeline (const gchar *location) 
 {
@@ -155,9 +165,12 @@ make_wav_pipeline (const gchar *location)
   rate_pads = g_list_prepend (rate_pads, seekable);
   rate_pads = g_list_prepend (rate_pads, gst_element_get_pad (decoder, "sink"));
 
+  seekable_elements = g_list_prepend (seekable_elements, audiosink);
+
   return pipeline;
 }
 
+/* A FLAC decoder pipe. */
 static GstElement*
 make_flac_pipeline (const gchar *location) 
 {
@@ -186,9 +199,12 @@ make_flac_pipeline (const gchar *location)
   rate_pads = g_list_prepend (rate_pads, seekable);
   rate_pads = g_list_prepend (rate_pads, gst_element_get_pad (decoder, "sink"));
 
+  seekable_elements = g_list_prepend (seekable_elements, audiosink);
+
   return pipeline;
 }
 
+/* A SID audio decoder pipe. */
 static GstElement*
 make_sid_pipeline (const gchar *location) 
 {
@@ -217,9 +233,12 @@ make_sid_pipeline (const gchar *location)
   rate_pads = g_list_prepend (rate_pads, seekable);
   rate_pads = g_list_prepend (rate_pads, gst_element_get_pad (decoder, "sink"));
 
+  seekable_elements = g_list_prepend (seekable_elements, audiosink);
+
   return pipeline;
 }
 
+/* An MPEG parser pipeline, to get info on an MPEG file. */
 static GstElement*
 make_parse_pipeline (const gchar *location) 
 {
@@ -249,9 +268,12 @@ make_parse_pipeline (const gchar *location)
   rate_pads = g_list_prepend (rate_pads, seekable);
   rate_pads = g_list_prepend (rate_pads, gst_element_get_pad (parser, "sink"));
 
+  seekable_elements = g_list_prepend (seekable_elements, fakesink);
+
   return pipeline;
 }
 
+/* A Vorbis Audio decoder pipe. */
 static GstElement*
 make_vorbis_pipeline (const gchar *location) 
 {
@@ -280,9 +302,12 @@ make_vorbis_pipeline (const gchar *location)
   rate_pads = g_list_prepend (rate_pads, seekable);
   rate_pads = g_list_prepend (rate_pads, gst_element_get_pad (decoder, "sink"));
 
+  seekable_elements = g_list_prepend (seekable_elements, audiosink);
+
   return pipeline;
 }
 
+/* An MP3 Audio decoder pipe. */
 static GstElement*
 make_mp3_pipeline (const gchar *location) 
 {
@@ -322,6 +347,7 @@ make_mp3_pipeline (const gchar *location)
   return pipeline;
 }
 
+/* An AVI A/V decoder pipe. */
 static GstElement*
 make_avi_pipeline (const gchar *location) 
 {
@@ -392,6 +418,7 @@ make_avi_pipeline (const gchar *location)
   return pipeline;
 }
 
+/* An MPEG A/V decoder pipe. */
 static GstElement*
 make_mpeg_pipeline (const gchar *location) 
 {
@@ -408,8 +435,6 @@ make_mpeg_pipeline (const gchar *location)
 
   demux = gst_element_factory_make_or_warn ("mpegdemux", "demux");
   g_object_set (G_OBJECT (demux), "sync", TRUE, NULL);
-
-  seekable_elements = g_list_prepend (seekable_elements, demux);
 
   gst_bin_add (GST_BIN (pipeline), src);
   gst_bin_add (GST_BIN (pipeline), demux);
@@ -450,6 +475,9 @@ make_mpeg_pipeline (const gchar *location)
 
   setup_dynamic_link (demux, "video_00", gst_element_get_pad (v_decoder, "sink"), video_bin);
 
+  seekable_elements = g_list_prepend (seekable_elements, videosink);
+  seekable_elements = g_list_prepend (seekable_elements, audiosink);
+
   seekable = gst_element_get_pad (v_queue, "src");
   seekable_pads = g_list_prepend (seekable_pads, seekable);
   rate_pads = g_list_prepend (rate_pads, seekable);
@@ -458,6 +486,7 @@ make_mpeg_pipeline (const gchar *location)
   return pipeline;
 }
 
+/* The new version of the MPEG A/V decoder pipe */
 static GstElement*
 make_mpegnt_pipeline (const gchar *location) 
 {
@@ -474,8 +503,6 @@ make_mpegnt_pipeline (const gchar *location)
 
   demux = gst_element_factory_make_or_warn ("mpegdemux", "demux");
   //g_object_set (G_OBJECT (demux), "sync", TRUE, NULL);
-
-  seekable_elements = g_list_prepend (seekable_elements, demux);
 
   gst_bin_add (GST_BIN (pipeline), src);
   gst_bin_add (GST_BIN (pipeline), demux);
@@ -516,6 +543,9 @@ make_mpegnt_pipeline (const gchar *location)
   seekable_pads = g_list_prepend (seekable_pads, seekable);
   rate_pads = g_list_prepend (rate_pads, seekable);
   rate_pads = g_list_prepend (rate_pads, gst_element_get_pad (v_decoder, "sink"));
+
+  seekable_elements = g_list_prepend (seekable_elements, audiosink);
+  seekable_elements = g_list_prepend (seekable_elements, videosink);
 
   return pipeline;
 }
@@ -618,6 +648,7 @@ query_durations ()
   }
 }
 
+
 G_GNUC_UNUSED static void
 query_positions ()
 {
@@ -649,6 +680,7 @@ query_positions ()
   }
 }
 
+/* Every 1 s = 1000 ms, update_scale reads the new media time */
 static gboolean
 update_scale (gpointer data) 
 {
@@ -679,6 +711,7 @@ update_scale (gpointer data)
   return TRUE;
 }
 
+/* Make the pipeline play through repeated iteration. */
 static gboolean
 iterate (gpointer data)
 {
@@ -692,6 +725,9 @@ iterate (gpointer data)
   return res;
 }
 
+/* 
+   As soon as the user starts moving the seeking scale, pause playback.
+*/
 static gboolean
 start_seek (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
 {
@@ -701,12 +737,18 @@ start_seek (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
   return FALSE;
 }
 
+/* 
+   After the user has stopped moving the seeking scale, tell the pipeline to seek to the new position.
+*/
 static gboolean
 stop_seek (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
 {
   gint64 real = gtk_range_get_value (GTK_RANGE (widget)) * duration / 100;
   gboolean res;
   GstEvent *s_event;
+
+/* Seeking on sink pads is possible, but deprecated. Use it only
+   if there are no sinks in your application or if element seeking is buggy */
 #ifdef PAD_SEEK
   GList *walk = seekable_pads;
 
@@ -722,7 +764,11 @@ stop_seek (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
 
     walk = g_list_next (walk);
   }
+
 #else
+/* Element seeking is the preferred way of seeking. 
+   Tell each sink element (in the A/V file, but videosink and audiosink) to seek.
+ */
   GList *walk = seekable_elements;
 
   while (walk) {
@@ -746,6 +792,7 @@ stop_seek (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
   return FALSE;
 }
 
+/* Play button handler */
 static void
 play_cb (GtkButton * button, gpointer data)
 {
@@ -756,6 +803,7 @@ play_cb (GtkButton * button, gpointer data)
   }
 }
 
+/* Pause button handler */
 static void
 pause_cb (GtkButton * button, gpointer data)
 {
@@ -765,6 +813,7 @@ pause_cb (GtkButton * button, gpointer data)
   }
 }
 
+/* Stop button handler */
 static void
 stop_cb (GtkButton * button, gpointer data)
 {
