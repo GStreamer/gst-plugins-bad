@@ -47,6 +47,30 @@
 #define G_MASK_15 "0x03e0"
 #define B_MASK_15 "0x001f"
 
+#define R_MASK_32_INT 0xff000000
+#define G_MASK_32_INT 0x00ff0000
+#define B_MASK_32_INT 0x0000ff00
+
+#define R_MASK_32_REVERSE_INT 0x000000ff
+#define G_MASK_32_REVERSE_INT 0x0000ff00
+#define B_MASK_32_REVERSE_INT 0x00ff0000
+
+#define R_MASK_24_INT 0xff0000
+#define G_MASK_24_INT 0x00ff00
+#define B_MASK_24_INT 0x0000ff
+
+#define R_MASK_24_REVERSE_INT 0x0000ff
+#define G_MASK_24_REVERSE_INT 0x00ff00
+#define B_MASK_24_REVERSE_INT 0xff0000
+
+#define R_MASK_16_INT 0xf800
+#define G_MASK_16_INT 0x07e0
+#define B_MASK_16_INT 0x001f
+
+#define R_MASK_15_INT 0x7c00
+#define G_MASK_15_INT 0x03e0
+#define B_MASK_15_INT 0x001f
+
 #define SIZE_RANGE "(int) [ 16, 4096 ]"
 #define FPS_RANGE "(double) [ 0, max ]"
 

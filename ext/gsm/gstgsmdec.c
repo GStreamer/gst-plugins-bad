@@ -75,7 +75,7 @@ gst_gsmdec_get_type(void) {
   return gsmdec_type;
 }
 
-GstStaticPadTemplate gsmdec_sink_template =
+static GstStaticPadTemplate gsmdec_sink_template =
 GST_STATIC_PAD_TEMPLATE (
     "sink",
     GST_PAD_SINK,
@@ -87,7 +87,7 @@ GST_STATIC_PAD_TEMPLATE (
     )
 );
 
-GstStaticPadTemplate gsmdec_src_template =
+static GstStaticPadTemplate gsmdec_src_template =
 GST_STATIC_PAD_TEMPLATE (
     "src",
     GST_PAD_SRC,
