@@ -1,3 +1,10 @@
+2005-03-12  Richard Hult  <richard@imendio.com>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/ogg/gstoggdemux.c: (gst_ogg_pad_push):
+	  Fix memleak (#170066).
+
 2005-03-12  Gergely Nagy  <algernon@bonehunter.rulez.org>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
