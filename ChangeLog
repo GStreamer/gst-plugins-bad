@@ -1,3 +1,48 @@
+2005-02-16  Wim Taymans  <wim@fluendo.com>
+
+	* ext/mad/gstmad.c: (gst_mad_init), (gst_mad_src_event),
+	(gst_mad_update_info), (gst_mad_sink_event),
+	(gst_mad_check_caps_reset), (gst_mad_chain),
+	(gst_mad_change_state):
+	* ext/ogg/gstoggdemux.c: (gst_ogg_pad_get_type),
+	(gst_ogg_pad_init), (gst_ogg_pad_dispose), (gst_ogg_pad_src_query),
+	(gst_ogg_pad_event), (gst_ogg_demux_factory_filter),
+	(compare_ranks), (gst_ogg_pad_internal_chain),
+	(gst_ogg_pad_typefind), (gst_ogg_pad_submit_packet),
+	(gst_ogg_pad_submit_page), (gst_ogg_chain_new),
+	(gst_ogg_chain_free), (gst_ogg_chain_new_stream),
+	(gst_ogg_chain_get_stream), (gst_ogg_chain_has_stream),
+	(gst_ogg_demux_base_init), (gst_ogg_demux_init),
+	(gst_ogg_demux_submit_buffer), (gst_ogg_demux_seek),
+	(gst_ogg_demux_get_data), (gst_ogg_demux_get_next_page),
+	(gst_ogg_demux_get_prev_page),
+	(gst_ogg_demux_deactivate_current_chain),
+	(gst_ogg_demux_activate_chain), (gst_ogg_demux_perform_seek),
+	(gst_ogg_demux_bisect_forward_serialno),
+	(gst_ogg_demux_read_chain), (gst_ogg_demux_read_end_chain),
+	(gst_ogg_demux_find_pad), (gst_ogg_demux_find_chain),
+	(gst_ogg_demux_find_chains), (gst_ogg_demux_chain_unlocked),
+	(gst_ogg_demux_chain), (gst_ogg_demux_send_eos),
+	(gst_ogg_demux_loop), (gst_ogg_demux_sink_activate),
+	(gst_ogg_print):
+	* ext/ogg/gstogmparse.c: (gst_ogm_parse_chain):
+	* gst/audioconvert/gstaudioconvert.c: (gst_audio_convert_chain),
+	(gst_audio_convert_caps_remove_format_info),
+	(gst_audio_convert_setcaps), (gst_audio_convert_fixate),
+	(gst_audio_convert_channels):
+	* gst/avi/gstavidemux.c: (gst_avi_demux_src_convert),
+	(gst_avi_demux_handle_src_query), (gst_avi_demux_handle_src_event),
+	(gst_avi_demux_loop):
+	* gst/ffmpegcolorspace/gstffmpegcolorspace.c:
+	(gst_ffmpegcsp_caps_remove_format_info),
+	(gst_ffmpegcsp_configure_context), (gst_ffmpegcsp_setcaps),
+	(gst_ffmpegcsp_chain):
+	* sys/xvimage/xvimagesink.c: (gst_xvimagesink_sink_link),
+	(gst_xvimagesink_change_state), (gst_xvimagesink_event),
+	(gst_xvimagesink_show_frame), (gst_xvimagesink_finish_preroll),
+	(gst_xvimagesink_chain), (gst_xvimagesink_buffer_alloc):
+	Fix compilation again.
+
 2005-02-05  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* examples/seeking/seek.c: (make_avi_msmpeg4v3_mp3_pipeline):
