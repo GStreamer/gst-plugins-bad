@@ -1,3 +1,13 @@
+2005-03-18  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/mpegstream/gstmpegdemux.c: (gst_mpeg_demux_send_discont),
+	(gst_mpeg_demux_parse_packet), (gst_mpeg_demux_send_subbuffer):
+	* gst/mpegstream/gstmpegparse.c: (gst_mpeg_parse_new_pad),
+	(gst_mpeg_parse_parse_packhead):
+	  Fix for integer overflows in SCR discont detection. Workaround
+	  for broken incoming streams that encounter apparent integer
+	  overflows in server-side header rewriting. Some more debug.
+
 2005-03-15  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* gst/playback/gstdecodebin.c: (gst_decode_bin_class_init),
