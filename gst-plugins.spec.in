@@ -133,7 +133,6 @@ GStreamer support libraries header files.
 %{_includedir}/gstreamer-%{majorminor}/gst/video/video.h
 %{_libdir}/pkgconfig/gstreamer-libs-%{majorminor}.pc
 %{_libdir}/pkgconfig/gstreamer-play-%{majorminor}.pc
-%{_datadir}/aclocal/gst-element-check-%{majorminor}.m4
 @USE_GCONF_TRUE@%{_libdir}/pkgconfig/gstreamer-gconf-%{majorminor}.pc
 @USE_GCONF_TRUE@%{_libdir}/libgstgconf-%{majorminor}.so
 %{_libdir}/libgstplay-%{majorminor}.so
