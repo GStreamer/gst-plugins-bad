@@ -1,0 +1,9 @@
+This is GStreamer Plugins 0.6.5
+
+Changes since 0.6.4:
+
+      * Provides versioned binaries
+      * Provides versioned GConf installation
+      * compile fixes for mpeg2dec 0.4.0
+      * compile fixes for ALSA 1.0.x
+      * fixes for uninstalled pkg-config files

@@ -58,11 +58,11 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-, root, root)
-%doc AUTHORS COPYING README RELEASE REQUIREMENTS
-%{_bindir}/gst-launch-ext
-%{_bindir}/gst-visualise
-%{_mandir}/man1/gst-launch-ext.*
-%{_mandir}/man1/gst-visualise.1.*
+%doc AUTHORS ChangeLog COPYING README RELEASE REQUIREMENTS
+%{_bindir}/gst-launch-ext-@GST_MAJORMINOR@
+%{_bindir}/gst-visualise-@GST_MAJORMINOR@
+%{_mandir}/man1/gst-launch-ext-@GST_MAJORMINOR@.1.*
+%{_mandir}/man1/gst-visualise-@GST_MAJORMINOR@.1.*
 %{_libdir}/gstreamer-%{majorminor}/libgstaudioscale.so
 %{_libdir}/gstreamer-%{majorminor}/libgstaudio.so
 %{_libdir}/gstreamer-%{majorminor}/libgstidct.so

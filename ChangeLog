@@ -1,3 +1,39 @@
+=== release 0.6.5 ===
+
+2004-03-05  Thomas Vander Stichele  <thomas at apestaart dot org>
+
+	* RELEASE:
+          release notes
+	* configure.ac:
+          release 0.6.5, "FLUSH"
+	* gconf/Makefile.am:
+	* gconf/gstreamer.schemas:
+	* gconf/gstreamer.schemas.in:
+	* gst-libs/gst/gconf/Makefile.am:
+	* gst-libs/gst/gconf/gconf.c:
+	* gst-libs/gst/gconf/gstreamer-gconf-uninstalled.pc.in:
+	* gst-libs/gst/gconf/test-gconf.c: (main):
+          version gconf path
+	* gst-plugins.spec.in:
+          small fixes
+	* pkgconfig/gstreamer-libs-uninstalled.pc.in:
+	* pkgconfig/gstreamer-play-uninstalled.pc.in:
+          fix uninstalled pc files
+	* testsuite/Makefile.am:
+	* testsuite/autoplug/autoplug.c: (main):
+	* testsuite/spider/spider1.c: (main):
+	* testsuite/spider/spider2.c: (main):
+	* testsuite/spider/spider3.c: (main):
+          update to use _link over _connect
+	* tools/Makefile.am:
+	* tools/gst-launch-ext:
+	* tools/gst-launch-ext.1:
+	* tools/gst-launch-ext.1.in:
+	* tools/gst-visualise:
+	* tools/gst-visualise.1:
+	* tools/gst-visualise.1.in:
+          version tools
+
 2004-03-03  Thomas Vander Stichele  <thomas at apestaart dot org>
 
 	* common/gst-autogen.sh:
