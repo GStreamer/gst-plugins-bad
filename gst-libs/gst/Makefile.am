@@ -27,8 +27,7 @@ SUBDIRS = \
 	video \
 	xoverlay \
 	$(X_DIR) \
-	. \
-	play
+	.
 
 DIST_SUBDIRS = \
 	audio \

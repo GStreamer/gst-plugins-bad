@@ -1,3 +1,87 @@
+2004-12-20  Wim Taymans  <wim@fluendo.com>
+
+	* configure.ac:
+	* examples/negotiation/Makefile.am:
+	* examples/negotiation/colorspace.c: (message_received),
+	(my_chain), (main):
+	* examples/negotiation/queue.c: (message_received), (block_done),
+	(do_block), (do_renegotiate), (main):
+	* ext/mad/gstid3tag.c: (gst_id3_tag_class_init),
+	(gst_id3_tag_init), (gst_id3_tag_sink_event),
+	(gst_id3_tag_do_caps_nego), (gst_id3_tag_src_link),
+	(gst_id3_tag_send_tag_event), (gst_id3_tag_chain),
+	(gst_id3_tag_change_state):
+	* ext/mad/gstmad.c: (gst_mad_init), (gst_mad_update_info),
+	(gst_mad_sink_event), (gst_mad_check_caps_reset), (gst_mad_chain):
+	* gst-libs/gst/Makefile.am:
+	* gst-libs/gst/audio/gstaudiofilter.c: (gst_audiofilter_link),
+	(gst_audiofilter_init), (gst_audiofilter_chain):
+	* gst-libs/gst/audio/testchannels.c: (main):
+	* gst-libs/gst/gconf/gconf.c: (gst_bin_find_unconnected_pad),
+	(gst_gconf_render_bin_from_description):
+	* gst-libs/gst/media-info/media-info-priv.c: (gmip_reset),
+	(gmip_find_type), (gmip_find_stream), (gmip_find_track_metadata),
+	(gmip_find_track_streaminfo), (gmip_find_track_format):
+	* gst-libs/gst/media-info/media-info.c:
+	(gst_media_info_read_idler):
+	* gst-libs/gst/riff/riff-read.c: (gst_riff_read_use_event),
+	(gst_riff_read_info):
+	* gst/ac3parse/gstac3parse.c: (gst_ac3parse_class_init),
+	(gst_ac3parse_init), (gst_ac3parse_chain):
+	* gst/effectv/gstaging.c: (gst_agingtv_class_init):
+	* gst/effectv/gstdice.c: (gst_dicetv_class_init):
+	* gst/effectv/gstquark.c: (gst_quarktv_class_init),
+	(gst_quarktv_link), (gst_quarktv_init), (gst_quarktv_chain):
+	* gst/effectv/gstrev.c: (gst_revtv_class_init):
+	* gst/effectv/gstvertigo.c: (gst_vertigotv_class_init):
+	* gst/effectv/gstwarp.c: (gst_warptv_class_init):
+	* gst/ffmpegcolorspace/gstffmpegcolorspace.c:
+	(gst_ffmpegcsp_getcaps), (gst_ffmpegcsp_configure_context),
+	(gst_ffmpegcsp_setcaps), (gst_ffmpegcsp_init),
+	(gst_ffmpegcsp_chain):
+	* gst/tags/gstvorbistag.c: (gst_vorbis_tag_chain):
+	* gst/typefind/gsttypefindfunctions.c: (aac_type_find),
+	(mp3_type_find), (mpeg2_sys_type_find), (mpeg1_sys_type_find),
+	(mpeg_video_type_find), (mpeg_video_stream_type_find),
+	(dv_type_find):
+	* gst/videofilter/gstgamma.c: (gst_gamma_class_init):
+	* gst/videofilter/gstvideobalance.c: (gst_videobalance_class_init):
+	* gst/videofilter/gstvideofilter.c: (gst_videofilter_getcaps),
+	(gst_videofilter_setcaps), (gst_videofilter_init),
+	(gst_videofilter_chain), (gst_videofilter_set_output_size):
+	* gst/videofilter/gstvideoflip.c: (gst_videoflip_class_init):
+	* gst/videotestsrc/gstvideotestsrc.c:
+	(gst_videotestsrc_class_init), (gst_videotestsrc_src_negotiate),
+	(gst_videotestsrc_src_link), (gst_videotestsrc_parse_caps),
+	(gst_videotestsrc_src_accept_caps), (gst_videotestsrc_setcaps),
+	(gst_videotestsrc_src_unlink), (gst_videotestsrc_activate),
+	(gst_videotestsrc_change_state), (gst_videotestsrc_getcaps),
+	(gst_videotestsrc_init), (gst_videotestsrc_src_query),
+	(gst_videotestsrc_handle_src_event), (gst_videotestsrc_loop):
+	* gst/videotestsrc/gstvideotestsrc.h:
+	* sys/oss/gstosselement.c: (gst_osselement_class_init),
+	(gst_osselement_parse_caps), (gst_osselement_open_audio),
+	(gst_osselement_close_audio), (gst_osselement_set_property):
+	* sys/oss/gstossmixer.c: (gst_ossmixer_build_list):
+	* sys/oss/gstosssink.c: (gst_osssink_class_init),
+	(gst_osssink_init), (gst_osssink_setcaps), (gst_osssink_getcaps),
+	(gst_osssink_handle_event), (gst_osssink_chain),
+	(gst_osssink_convert), (gst_osssink_sink_query),
+	(gst_osssink_change_state):
+	* sys/oss/gstosssrc.c: (gst_osssrc_class_init), (gst_osssrc_init),
+	(gst_osssrc_getcaps), (gst_osssrc_src_link),
+	(gst_osssrc_negotiate), (gst_osssrc_loop), (gst_osssrc_convert),
+	(gst_osssrc_src_event), (gst_osssrc_src_query):
+	* sys/xvimage/xvimagesink.c: (gst_xvimagesink_get_xv_support),
+	(gst_xvimagesink_xcontext_clear), (gst_xvimagesink_fixate),
+	(gst_xvimagesink_getcaps), (gst_xvimagesink_sink_link),
+	(gst_xvimagesink_parse_caps), (gst_xvimagesink_change_state),
+	(gst_xvimagesink_event), (gst_xvimagesink_chain),
+	(gst_xvimagesink_buffer_alloc), (gst_xvimagesink_init),
+	(gst_xvimagesink_class_init):
+	* sys/xvimage/xvimagesink.h:
+	Various plugin updates to have something to play with.
+
 2004-12-07  Christian Fredrik Kalager Schaller  <set EMAIL_ADDRESS environment variable>
 
 	Woooho Monoscope is now effectivly LGPL licensed

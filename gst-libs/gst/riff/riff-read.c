@@ -174,10 +174,6 @@ gst_riff_read_use_event (GstRiffRead * riff, GstEvent * event)
       gst_pad_event_default (riff->sinkpad, event);
       return FALSE;
 
-    case GST_EVENT_INTERRUPT:
-      gst_event_unref (event);
-      return FALSE;
-
     case GST_EVENT_DISCONTINUOUS:
       GST_WARNING_OBJECT (riff, "Unexpected discont - might lose sync");
       gst_event_unref (event);
@@ -941,15 +937,16 @@ gst_riff_read_info (GstRiffRead * riff)
     const GList *padlist;
 
     /* let the world know about this wonderful thing */
-    for (padlist = gst_element_get_pad_list (element);
-        padlist != NULL; padlist = padlist->next) {
+    /* FIXME, MT unsafe */
+    for (padlist = element->pads; padlist != NULL; padlist = padlist->next) {
       if (GST_PAD_IS_SRC (padlist->data) && GST_PAD_IS_USABLE (padlist->data)) {
         gst_event_ref (event);
-        gst_pad_push (GST_PAD (padlist->data), GST_DATA (event));
+        gst_pad_push_event (GST_PAD (padlist->data), event);
       }
     }
 
-    gst_element_found_tags (element, taglist);
+    gst_element_post_message (GST_ELEMENT (element),
+        gst_message_new_tag (GST_OBJECT (element), taglist));
 
     gst_event_unref (event);
   } else {

@@ -55,25 +55,34 @@ gst_bin_find_unconnected_pad (GstBin * bin, GstPadDirection direction)
   const GList *pads = NULL;
   GstElement *element = NULL;
 
-  elements = (GList *) gst_bin_get_list (bin);
+  GST_LOCK (bin);
+  elements = bin->children;
   /* traverse all elements looking for unconnected pads */
   while (elements && pad == NULL) {
     element = GST_ELEMENT (elements->data);
-    pads = gst_element_get_pad_list (element);
+    GST_LOCK (element);
+    pads = element->pads;
     while (pads) {
+      GstPad *testpad = GST_PAD (pads->data);
+
       /* check if the direction matches */
-      if (GST_PAD_DIRECTION (GST_PAD (pads->data)) == direction) {
-        if (GST_PAD_PEER (GST_PAD (pads->data)) == NULL) {
+      if (GST_PAD_DIRECTION (testpad) == direction) {
+        GST_LOCK (pad);
+        if (GST_PAD_PEER (testpad) == NULL) {
+          GST_UNLOCK (pad);
           /* found it ! */
-          pad = GST_PAD (pads->data);
+          pad = testpad;
+          break;
         }
+        GST_UNLOCK (pad);
       }
-      if (pad)
-        break;                  /* found one already */
       pads = g_list_next (pads);
     }
+    GST_UNLOCK (element);
     elements = g_list_next (elements);
   }
+  GST_UNLOCK (bin);
+
   return pad;
 }
 
@@ -147,7 +156,7 @@ gst_gconf_render_bin_from_description (const gchar * description)
 
   /* parse the pipeline to a bin */
   desc = g_strdup_printf ("bin.( %s )", description);
-  bin = GST_ELEMENT (gst_parse_launch (desc, &error));
+  //bin = GST_ELEMENT (gst_parse_launch (desc, &error));
   g_free (desc);
   if (error) {
     g_print ("DEBUG: gstgconf: error parsing pipeline %s\n%s\n",
