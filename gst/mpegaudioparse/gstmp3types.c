@@ -81,6 +81,10 @@ mp3_type_find(GstBuffer *buf, gpointer private)
   if (size < 4)
     return NULL;
 
+  /* disabled because on a random buffer of 4096 bytes,
+   * this has a chance of 35% or so for false positives.
+   * -> rather not */
+#if 0
   /* Now search through the entire rest of the buffer for a valid header.
    * This is a very rough initial cut, it should be checking the length of
    * the frame and verifying that there is indeed a second frame.  The mp3
@@ -109,6 +113,7 @@ mp3_type_find(GstBuffer *buf, gpointer private)
          (((head >> 10) & 0x3) != 0x3) )
       goto success;
   }
+#endif
 
   return NULL;
 
