@@ -16,7 +16,7 @@ PATCHES = patch/function.patch
 
 patches:
 	@echo -n Patching ffmpeg if necessary ...
-	@patch -p0 -N -r rejects < $(srcdir)/patch/function.patch > /dev/null || true
+	@patch -p0 -N -r rejects < patch/function.patch > /dev/null || true
 	@rm -f rejects || true
 	@echo done.
 
@@ -32,6 +32,7 @@ DISTFILES = \
 	ffmpeg/INSTALL \
 	ffmpeg/README \
 	ffmpeg/VERSION \
+	ffmpeg/config.mak \
 	ffmpeg/configure \
 	ffmpeg/Makefile \
 	ffmpeg/cygwin_inttypes.h \
@@ -72,8 +73,8 @@ checkout:
 	cvs -d:pserver:anonymous@cvs.ffmpeg.sourceforge.net:/cvsroot/ffmpeg co ffmpeg
 
 # on running make install, make sure make has been run first
-install:
-	cd ffmpeg && $(MAKE)
+install: all
+	@true
 
 # we don't install stuff so no need to uninstall
 uninstall:
