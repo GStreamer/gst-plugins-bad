@@ -3,7 +3,13 @@ EXTRA_DIST = Tag
 # this doesn't trigger the distdir target in the ffmpeg checkout
 DIST_SUBDIRS =
 
-SUBDIRS = ffmpeg
+if USE_FFMPEG
+FFMPEG_DIR=ffmpeg
+else
+FFMPEG_DIR=
+endif
+
+SUBDIRS = $(FFMPEG_DIR)
 
 DISTFILES = \
 	ffmpeg/Changelog \
