@@ -147,7 +147,7 @@ gst_videodrop_class_init (GstVideodropClass *klass)
                                   min, max)
 
 static GstPadLinkReturn
-gst_videodrop_link (GstPad *pad, const GstCaps2 *caps)
+gst_videodrop_link (GstPad *pad, const GstCaps *caps)
 {
   GstVideodrop *videodrop;
   GstStructure *structure;
@@ -156,7 +156,7 @@ gst_videodrop_link (GstPad *pad, const GstCaps2 *caps)
 
   videodrop = GST_VIDEODROP (gst_pad_get_parent (pad));
 
-  structure = gst_caps2_get_nth_cap (caps, 0);
+  structure = gst_caps_get_structure (caps, 0);
   ret = gst_structure_get_double (structure, "framerate", &fps);
 
   if (!ret) return GST_PAD_LINK_REFUSED;

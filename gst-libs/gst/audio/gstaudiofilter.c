@@ -48,7 +48,7 @@ static void	gst_audiofilter_set_property		(GObject *object, guint prop_id, const
 static void	gst_audiofilter_get_property		(GObject *object, guint prop_id, GValue *value, GParamSpec *pspec);
 
 static void	gst_audiofilter_chain		(GstPad *pad, GstData *_data);
-GstCaps2 * gst_audiofilter_class_get_capslist(GstAudiofilterClass *klass);
+GstCaps * gst_audiofilter_class_get_capslist(GstAudiofilterClass *klass);
 
 static GstElementClass *parent_class = NULL;
 
@@ -105,11 +105,11 @@ static void gst_audiofilter_class_init (gpointer g_class, gpointer class_data)
   gobject_class->get_property = gst_audiofilter_get_property;
 }
 
-static GstCaps2 *
+static GstCaps *
 gst_audiofilter_getcaps (GstPad *pad)
 {
   GstAudiofilter *audiofilter;
-  GstCaps2 *othercaps;
+  GstCaps *othercaps;
   GstAudiofilterClass *audiofilter_class;
 
   GST_DEBUG("gst_audiofilter_sink_getcaps");
@@ -124,11 +124,11 @@ gst_audiofilter_getcaps (GstPad *pad)
     othercaps = gst_pad_get_allowed_caps (audiofilter->srcpad);
   }
 
-  return gst_caps2_intersect (othercaps, audiofilter_class->caps);
+  return gst_caps_intersect (othercaps, audiofilter_class->caps);
 }
 
 static GstPadLinkReturn
-gst_audiofilter_link (GstPad *pad, const GstCaps2 *caps)
+gst_audiofilter_link (GstPad *pad, const GstCaps *caps)
 {
   GstAudiofilter *audiofilter;
   GstPadLinkReturn ret;
@@ -150,7 +150,7 @@ gst_audiofilter_link (GstPad *pad, const GstCaps2 *caps)
 
   if (link_ret != GST_PAD_LINK_OK) return link_ret;
 
-  structure = gst_caps2_get_nth_cap (caps, 0);
+  structure = gst_caps_get_structure (caps, 0);
 
   if (strcmp (gst_structure_get_name (structure), "audio/x-raw-int") == 0) {
     ret = gst_structure_get_int (structure, "depth", &audiofilter->depth);
@@ -287,19 +287,19 @@ gst_audiofilter_get_property (GObject *object, guint prop_id, GValue *value, GPa
 }
 
 void gst_audiofilter_class_add_pad_templates (
-    GstAudiofilterClass *audiofilter_class, const GstCaps2 *caps)
+    GstAudiofilterClass *audiofilter_class, const GstCaps *caps)
 {
   GstElementClass *element_class = GST_ELEMENT_CLASS (audiofilter_class);
 
-  audiofilter_class->caps = gst_caps2_copy(caps);
+  audiofilter_class->caps = gst_caps_copy(caps);
 
   gst_element_class_add_pad_template (element_class,
       gst_pad_template_new("src", GST_PAD_SRC, GST_PAD_ALWAYS,
-        gst_caps2_copy(caps)));
+        gst_caps_copy(caps)));
 
   gst_element_class_add_pad_template (element_class,
       gst_pad_template_new("sink", GST_PAD_SINK, GST_PAD_ALWAYS,
-        gst_caps2_copy(caps)));
+        gst_caps_copy(caps)));
 }
 
 static gboolean

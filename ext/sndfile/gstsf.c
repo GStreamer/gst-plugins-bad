@@ -156,7 +156,7 @@ static GstPad*		gst_sf_request_new_pad	(GstElement *element, GstPadTemplate *tem
 static void		gst_sf_release_request_pad (GstElement *element, GstPad *pad);
 static GstElementStateReturn gst_sf_change_state (GstElement *element);
 
-static GstPadLinkReturn gst_sf_link		(GstPad *pad, const GstCaps2 *caps);
+static GstPadLinkReturn gst_sf_link		(GstPad *pad, const GstCaps *caps);
 
 static void		gst_sf_loop		(GstElement *element);
 
@@ -524,12 +524,12 @@ gst_sf_release_request_pad (GstElement *element, GstPad *pad)
 }
 
 static GstPadLinkReturn
-gst_sf_link (GstPad *pad, const GstCaps2 *caps)
+gst_sf_link (GstPad *pad, const GstCaps *caps)
 {
   GstSF *this = (GstSF*)GST_OBJECT_PARENT (pad);
   GstStructure *structure;
 
-  structure = gst_caps2_get_nth_cap (caps, 0);
+  structure = gst_caps_get_structure (caps, 0);
   
   gst_structure_get_int  (structure, "rate", &this->rate);
   gst_structure_get_int  (structure, "buffer-frames", &this->buffer_frames);
@@ -695,11 +695,11 @@ gst_sf_loop (GstElement *element)
           continue;
 
         if (!channel->caps_set) {
-          GstCaps2 *caps = GST_PAD_CAPS (GST_SF_CHANNEL (l)->pad);
+          GstCaps *caps = GST_PAD_CAPS (GST_SF_CHANNEL (l)->pad);
           if (!caps)
-            caps = gst_caps2_copy
+            caps = gst_caps_copy
               (GST_PAD_TEMPLATE_CAPS (GST_PAD_PAD_TEMPLATE (GST_SF_CHANNEL (l)->pad)));
-          gst_caps2_set_simple (caps,
+          gst_caps_set_simple (caps,
               "rate", G_TYPE_INT, this->rate,
               "buffer-frames", G_TYPE_INT, this->buffer_frames,
               NULL);

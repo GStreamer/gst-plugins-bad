@@ -249,7 +249,7 @@ gst_qcamsrc_get (GstPad *pad)
 
   qc_set (qcamsrc->qcam);
   if (!GST_PAD_CAPS (pad)) {
-    gst_pad_try_set_caps (pad, gst_caps2_new_simple("video/x-raw-yuv",
+    gst_pad_try_set_caps (pad, gst_caps_new_simple("video/x-raw-yuv",
 	  "format",    GST_TYPE_FOURCC, "I420",
 	  "width",     G_TYPE_INT, qcamsrc->qcam->width / scale,
 	  "height",    G_TYPE_INT, qcamsrc->qcam->height / scale,

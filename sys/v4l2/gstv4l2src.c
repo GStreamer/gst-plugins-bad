@@ -70,8 +70,8 @@ static gboolean			gst_v4l2src_srcconvert		(GstPad          *pad,
 								 GstFormat       *dest_format,
 								 gint64          *dest_value);
 static GstPadLinkReturn		gst_v4l2src_srcconnect		(GstPad          *pad,
-								 const GstCaps2         *caps);
-static GstCaps2 *		gst_v4l2src_getcaps		(GstPad          *pad);
+								 const GstCaps         *caps);
+static GstCaps *		gst_v4l2src_getcaps		(GstPad          *pad);
 static GstData *		gst_v4l2src_get			(GstPad          *pad);
 
 /* get/set params */
@@ -644,7 +644,7 @@ gst_v4l2_caps_to_v4l2fourcc (GstV4l2Src *v4l2src,
 
 static GstPadLinkReturn
 gst_v4l2src_srcconnect (GstPad  *pad,
-                        const GstCaps2 *vscapslist)
+                        const GstCaps *vscapslist)
 {
 	GstV4l2Src *v4l2src;
 	GstV4l2Element *v4l2element;
@@ -655,7 +655,7 @@ gst_v4l2src_srcconnect (GstPad  *pad,
 	v4l2src = GST_V4L2SRC(gst_pad_get_parent (pad));
 	v4l2element = GST_V4L2ELEMENT(v4l2src);
 
-        structure = gst_caps2_get_nth_cap (vscapslist, 0);
+        structure = gst_caps_get_structure (vscapslist, 0);
 
 	/* clean up if we still haven't cleaned up our previous
 	 * capture session */
@@ -685,11 +685,11 @@ gst_v4l2src_srcconnect (GstPad  *pad,
 }
 
 
-static GstCaps2 *
+static GstCaps *
 gst_v4l2src_getcaps (GstPad  *pad)
 {
 	GstV4l2Src *v4l2src = GST_V4L2SRC(gst_pad_get_parent (pad));
-	GstCaps2 *caps;
+	GstCaps *caps;
 	gint i;
 	struct v4l2_fmtdesc *format;
 	int min_w, max_w, min_h, max_h;
@@ -699,7 +699,7 @@ gst_v4l2src_getcaps (GstPad  *pad)
 	}
 
 	/* build our own capslist */
-        caps = gst_caps2_new_empty();
+        caps = gst_caps_new_empty();
 	for (i=0;i<g_list_length(v4l2src->formats);i++) {
                 GstStructure *structure;
 
@@ -722,7 +722,7 @@ gst_v4l2src_getcaps (GstPad  *pad)
 		    "framerate", GST_TYPE_DOUBLE_RANGE, 0, G_MAXDOUBLE,
                     NULL);
 
-		gst_caps2_append_cap (caps, structure);
+		gst_caps_append_structure (caps, structure);
 	}
 
 	return caps;

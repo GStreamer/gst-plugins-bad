@@ -137,7 +137,7 @@ gst_y4mencode_class_init (GstY4mEncodeClass *klass)
 }
 
 static GstPadLinkReturn
-gst_y4mencode_sinkconnect (GstPad *pad, const GstCaps2 *caps)
+gst_y4mencode_sinkconnect (GstPad *pad, const GstCaps *caps)
 {
   GstY4mEncode *filter;
   gint idx = -1, i;
@@ -154,7 +154,7 @@ gst_y4mencode_sinkconnect (GstPad *pad, const GstCaps2 *caps)
 
   filter = GST_Y4MENCODE (gst_pad_get_parent (pad));
 
-  structure = gst_caps2_get_nth_cap (caps, 0);
+  structure = gst_caps_get_structure (caps, 0);
 
   gst_structure_get_int  (structure, "width", &filter->width);
   gst_structure_get_int  (structure, "height", &filter->height);

@@ -164,16 +164,16 @@ snapshot_handler(GstElement *element)
 
 
 static gboolean
-gst_snapshot_sinkconnect (GstPad *pad, const GstCaps2 *caps)
+gst_snapshot_sinkconnect (GstPad *pad, const GstCaps *caps)
 {
   GstSnapshot *filter;
-  GstCaps2 *from_caps, *to_caps;
+  GstCaps *from_caps, *to_caps;
   gdouble fps;
   GstStructure *structure;
 
   filter = GST_SNAPSHOT (gst_pad_get_parent (pad));
 
-  structure = gst_caps2_get_nth_cap (caps, 0);
+  structure = gst_caps_get_structure (caps, 0);
   gst_structure_get_int  (structure, "width", &filter->width);
   gst_structure_get_int  (structure, "height", &filter->height);
   gst_structure_get_double  (structure, "framerate", &fps);
@@ -181,7 +181,7 @@ gst_snapshot_sinkconnect (GstPad *pad, const GstCaps2 *caps)
   filter->to_bpp = 24;
 
 
-  to_caps = gst_caps2_new_simple ("video/x-raw-rgb",
+  to_caps = gst_caps_new_simple ("video/x-raw-rgb",
       "width",      G_TYPE_INT, filter->width,
       "height",     G_TYPE_INT, filter->height,
       "red_mask",   G_TYPE_INT, 0x0000FF,
@@ -195,7 +195,7 @@ gst_snapshot_sinkconnect (GstPad *pad, const GstCaps2 *caps)
   {
     case GST_MAKE_FOURCC('Y','U','Y','2'):
     case GST_MAKE_FOURCC('I','4','2','0'):
-       from_caps = gst_caps2_new_simple ("video/x-raw-yuv",
+       from_caps = gst_caps_new_simple ("video/x-raw-yuv",
          "format",    GST_TYPE_FOURCC, GST_STR_FOURCC ("I420"),
          "width",     G_TYPE_INT, filter->width,
          "height",    G_TYPE_INT, filter->height,

@@ -430,7 +430,7 @@ gst_flxdec_loop (GstElement *element)
   GstBuffer  *buf;  
   GstBuffer  *databuf;
   guchar     *data, *chunk;
-  GstCaps2   *caps;
+  GstCaps   *caps;
 
   GstFlxDec         *flxdec;  
   FlxHeader      *flxh;
@@ -484,8 +484,8 @@ gst_flxdec_loop (GstElement *element)
       flxdec->frame_time = flxh->speed * GST_MSECOND;
     }
     
-    caps = gst_caps2_from_string (GST_VIDEO_RGB_PAD_TEMPLATE_CAPS_32);
-    gst_caps2_set_simple (caps,
+    caps = gst_caps_from_string (GST_VIDEO_RGB_PAD_TEMPLATE_CAPS_32);
+    gst_caps_set_simple (caps,
 	"width", G_TYPE_INT, flxh->width, 
 	"height", G_TYPE_INT, flxh->height,
 	"framerate",  G_TYPE_DOUBLE, GST_SECOND/flxdec->frame_time, NULL);

@@ -32,13 +32,13 @@ G_BEGIN_DECLS
  * Create one caps. strh/strf can be NULL (for non-fixed caps).
  */
 
-GstCaps2 *gst_riff_create_video_caps (guint32             codec_fcc,
+GstCaps *gst_riff_create_video_caps (guint32             codec_fcc,
 				     gst_riff_strh      *strh,
 				     gst_riff_strf_vids *strf);
-GstCaps2 *gst_riff_create_audio_caps (guint16             codec_id,
+GstCaps *gst_riff_create_audio_caps (guint16             codec_id,
 				     gst_riff_strh      *strh,
 				     gst_riff_strf_auds *strf);
-GstCaps2 *gst_riff_create_iavs_caps  (guint32             codec_fcc,
+GstCaps *gst_riff_create_iavs_caps  (guint32             codec_fcc,
 				     gst_riff_strh      *strh,
 				     gst_riff_strf_iavs *strf);
 
@@ -46,9 +46,9 @@ GstCaps2 *gst_riff_create_iavs_caps  (guint32             codec_fcc,
  * Create template caps (includes all known types).
  */
 
-GstCaps2 *gst_riff_create_video_template_caps (void);
-GstCaps2 *gst_riff_create_audio_template_caps (void);
-GstCaps2 *gst_riff_create_iavs_template_caps  (void);
+GstCaps *gst_riff_create_video_template_caps (void);
+GstCaps *gst_riff_create_audio_template_caps (void);
+GstCaps *gst_riff_create_iavs_template_caps  (void);
 
 G_END_DECLS
 

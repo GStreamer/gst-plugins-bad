@@ -49,7 +49,7 @@ static void			gst_gsmdec_class_init	(GstGSMDec *klass);
 static void			gst_gsmdec_init		(GstGSMDec *gsmdec);
 
 static void			gst_gsmdec_chain	(GstPad *pad, GstData *_data);
-static GstPadLinkReturn	gst_gsmdec_sinkconnect 	(GstPad *pad, const GstCaps2 *caps);
+static GstPadLinkReturn	gst_gsmdec_sinkconnect 	(GstPad *pad, const GstCaps *caps);
 
 static GstElementClass *parent_class = NULL;
 /*static guint gst_gsmdec_signals[LAST_SIGNAL] = { 0 }; */
@@ -146,7 +146,7 @@ gst_gsmdec_init (GstGSMDec *gsmdec)
 }
 
 static GstPadLinkReturn
-gst_gsmdec_sinkconnect (GstPad *pad, const GstCaps2 *caps)
+gst_gsmdec_sinkconnect (GstPad *pad, const GstCaps *caps)
 {
   GstGSMDec *gsmdec;
   gint rate;
@@ -154,11 +154,11 @@ gst_gsmdec_sinkconnect (GstPad *pad, const GstCaps2 *caps)
   
   gsmdec = GST_GSMDEC (gst_pad_get_parent (pad));
 
-  structure = gst_caps2_get_nth_cap (caps, 0);
+  structure = gst_caps_get_structure (caps, 0);
   gst_structure_get_int  (structure, "rate", &rate);
 
   if (gst_pad_try_set_caps (gsmdec->srcpad, 
-        gst_caps2_new_simple ("audio/x-raw-int",
+        gst_caps_new_simple ("audio/x-raw-int",
           "endianness", G_TYPE_INT, G_BYTE_ORDER,
           "signed",     G_TYPE_BOOLEAN, TRUE,
           "width",      G_TYPE_INT, 16,

@@ -112,9 +112,9 @@ static void	gst_chart_get_property	(GObject *object, guint prop_id, GValue *valu
 static void	gst_chart_chain		(GstPad *pad, GstData *_data);
 
 static GstPadLinkReturn 
-		gst_chart_sinkconnect 	(GstPad *pad, const GstCaps2 *caps);
+		gst_chart_sinkconnect 	(GstPad *pad, const GstCaps *caps);
 static GstPadLinkReturn 
-		gst_chart_srcconnect 	(GstPad *pad, const GstCaps2 *caps);
+		gst_chart_srcconnect 	(GstPad *pad, const GstCaps *caps);
 
 static GstElementClass *parent_class = NULL;
 
@@ -197,14 +197,14 @@ gst_chart_init (GstChart *chart)
 }
 
 static GstPadLinkReturn
-gst_chart_sinkconnect (GstPad *pad, const GstCaps2 *caps)
+gst_chart_sinkconnect (GstPad *pad, const GstCaps *caps)
 {
   GstChart *chart;
   GstStructure *structure;
 
   chart = GST_CHART (gst_pad_get_parent (pad));
 
-  structure = gst_caps2_get_nth_cap (caps, 0);
+  structure = gst_caps_get_structure (caps, 0);
 
   gst_structure_get_int (structure, "rate", &chart->samplerate);
   chart->samples_between_frames = chart->samplerate / chart->framerate;
@@ -217,14 +217,14 @@ gst_chart_sinkconnect (GstPad *pad, const GstCaps2 *caps)
 }
 
 static GstPadLinkReturn
-gst_chart_srcconnect (GstPad *pad, const GstCaps2*caps)
+gst_chart_srcconnect (GstPad *pad, const GstCaps*caps)
 {
   GstChart *chart;
   GstStructure *structure;
 
   chart = GST_CHART (gst_pad_get_parent (pad));
 
-  structure = gst_caps2_get_nth_cap (caps, 0);
+  structure = gst_caps_get_structure (caps, 0);
 
   if (gst_structure_get_double (structure, "framerate", &chart->framerate)) {
     chart->samples_between_frames = chart->samplerate / chart->framerate;

@@ -59,7 +59,7 @@ struct _GstColorSpaceConverter {
 };
 
 
-GstColorSpaceConverter* 	gst_colorspace_yuv2rgb_get_converter	(const GstCaps2 *from, const GstCaps2 *to);
+GstColorSpaceConverter* 	gst_colorspace_yuv2rgb_get_converter	(const GstCaps *from, const GstCaps *to);
 #define 			gst_colorspace_convert(converter, src, dest) \
 								(converter)->convert((converter), (src), (dest))
 void 				gst_colorspace_converter_destroy	(GstColorSpaceConverter *space);

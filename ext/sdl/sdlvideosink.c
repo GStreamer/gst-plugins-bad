@@ -64,7 +64,7 @@ static void     gst_sdlvideosink_destroy      (GstSDLVideoSink      *sdl);
 
 static GstPadLinkReturn
                 gst_sdlvideosink_sinkconnect  (GstPad               *pad,
-                                               const GstCaps2       *caps);
+                                               const GstCaps       *caps);
 static void     gst_sdlvideosink_chain        (GstPad               *pad,
                                                GstData              *data);
 
@@ -128,7 +128,7 @@ static void
 gst_sdlvideosink_base_init (gpointer g_class)
 {
   GstElementClass *element_class = GST_ELEMENT_CLASS (g_class);
-  GstCaps2 *capslist;
+  GstCaps *capslist;
   gint i;
   gulong format[6] = { GST_MAKE_FOURCC('I','4','2','0'),
                        GST_MAKE_FOURCC('Y','V','1','2'),
@@ -138,9 +138,9 @@ gst_sdlvideosink_base_init (gpointer g_class)
                      };
 
   /* make a list of all available caps */
-  capslist = gst_caps2_new_empty();
+  capslist = gst_caps_new_empty();
   for (i = 0; i < 5; i++) {
-     gst_caps2_append_cap (capslist,
+     gst_caps_append_structure (capslist,
 	 gst_structure_new ("video/x-raw-yuv",
 	   "format", GST_TYPE_FOURCC, format[i],
 	   "width",  GST_TYPE_INT_RANGE, 1, G_MAXINT,
@@ -509,7 +509,7 @@ gst_sdlvideosink_create (GstSDLVideoSink *sdlvideosink)
 
 static GstPadLinkReturn
 gst_sdlvideosink_sinkconnect (GstPad  *pad,
-                              const GstCaps2 *vscapslist)
+                              const GstCaps *vscapslist)
 {
   GstSDLVideoSink *sdlvideosink;
   guint32 format;
@@ -517,7 +517,7 @@ gst_sdlvideosink_sinkconnect (GstPad  *pad,
 
   sdlvideosink = GST_SDLVIDEOSINK (gst_pad_get_parent (pad));
 
-  structure = gst_caps2_get_nth_cap (vscapslist, 0);
+  structure = gst_caps_get_structure (vscapslist, 0);
   gst_structure_get_fourcc (structure, "format", &format);
   sdlvideosink->format =
     gst_sdlvideosink_get_sdl_from_fourcc (sdlvideosink, format);

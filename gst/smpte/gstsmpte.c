@@ -230,7 +230,7 @@ gst_smpte_update_mask (GstSMPTE *smpte, gint type, gint depth, gint width, gint 
 }
 
 static gboolean
-gst_smpte_sinkconnect (GstPad *pad, const GstCaps2 *caps)
+gst_smpte_sinkconnect (GstPad *pad, const GstCaps *caps)
 {
   GstSMPTE *smpte;
   GstStructure *structure;
@@ -238,7 +238,7 @@ gst_smpte_sinkconnect (GstPad *pad, const GstCaps2 *caps)
 
   smpte = GST_SMPTE (gst_pad_get_parent (pad));
 
-  structure = gst_caps2_get_nth_cap (caps, 0);
+  structure = gst_caps_get_structure (caps, 0);
 
   ret = gst_structure_get_int (structure, "width", &smpte->width);
   ret &= gst_structure_get_int (structure, "height", &smpte->height);
@@ -362,10 +362,10 @@ gst_smpte_loop (GstElement *element)
     outbuf = gst_buffer_new_and_alloc (smpte->width * smpte->height * 3);
 
     if (!GST_PAD_CAPS (smpte->srcpad)) {
-      GstCaps2 *caps;
-      caps = gst_caps2_copy (gst_static_caps2_get (
+      GstCaps *caps;
+      caps = gst_caps_copy (gst_static_caps_get (
 	    &gst_smpte_src_template.static_caps));
-      gst_caps2_set_simple (caps,
+      gst_caps_set_simple (caps,
 	  "width", G_TYPE_INT, smpte->width,
 	  "height", G_TYPE_INT, smpte->height,
 	  "framerate", G_TYPE_DOUBLE, smpte->fps, NULL);

@@ -27,11 +27,11 @@ info_print (GstMediaInfoStream *stream)
     g_print ("- track %d\n", i);
     track = (GstMediaInfoTrack *) p->data;
     g_print ("  - metadata:\n");
-    g_print ("%s\n", gst_caps2_to_string (track->metadata));
+    g_print ("%s\n", gst_caps_to_string (track->metadata));
     g_print ("  - streaminfo:\n");
-    g_print ("%s\n", gst_caps2_to_string (track->streaminfo));
+    g_print ("%s\n", gst_caps_to_string (track->streaminfo));
     g_print ("  - format:\n");
-    g_print ("%s\n", gst_caps2_to_string (track->format));
+    g_print ("%s\n", gst_caps_to_string (track->format));
     p = p->next;
   }
 }

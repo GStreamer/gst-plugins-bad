@@ -219,18 +219,18 @@ mp3_type_frame_length_from_header (guint32 header, guint *put_layer,
 #define GST_MP3_TYPEFIND_MIN_HEADERS 3
 #define GST_MP3_TYPEFIND_MIN_DATA (1440 * (GST_MP3_TYPEFIND_MIN_HEADERS + 1) - 1 + 3)
 
-static GstCaps2 *
+static GstCaps *
 mp3_caps_create (guint layer, guint channels,
 		 guint bitrate, guint samplerate)
 {
-  GstCaps2 *new;
+  GstCaps *new;
 
   g_assert (layer);
   g_assert (samplerate);
   g_assert (bitrate);
   g_assert (channels);
 
-  new = gst_caps2_new_simple ("audio/mpeg",
+  new = gst_caps_new_simple ("audio/mpeg",
       "mpegversion", G_TYPE_INT, 1,
       "layer",       G_TYPE_INT, layer,
       "rate",        G_TYPE_INT, samplerate,
@@ -461,7 +461,7 @@ bpf_from_header (GstMPEGAudioParse *parse, unsigned long header)
       rate     != parse->rate     ||
       layer    != parse->layer    ||
       bitrate  != parse->bit_rate) {
-    GstCaps2 *caps = mp3_caps_create (layer, channels, bitrate, rate);
+    GstCaps *caps = mp3_caps_create (layer, channels, bitrate, rate);
 
     if (gst_pad_try_set_caps(parse->srcpad, caps) <= 0) {
       gst_element_error (GST_ELEMENT (parse),

@@ -282,7 +282,7 @@ static gboolean
 gst_afsink_open_file (GstAFSink *sink)
 {
   AFfilesetup outfilesetup;
-  const GstCaps2 *caps;
+  const GstCaps *caps;
   GstStructure *structure;
   int sample_format;			/* audiofile's sample format, look in audiofile.h */
   int byte_order = 0;			/* audiofile's byte order defines */
@@ -306,7 +306,7 @@ gst_afsink_open_file (GstAFSink *sink)
   if (caps == NULL) {
     g_critical ("gstafsink chain : Could not get caps of pad !\n");
   } else {
-    structure = gst_caps2_get_nth_cap (caps, 0);
+    structure = gst_caps_get_structure (caps, 0);
     gst_structure_get_int (structure, "channels",   &sink->channels);
     gst_structure_get_int (structure, "width",      &sink->width);
     gst_structure_get_int (structure, "rate",       &sink->rate);

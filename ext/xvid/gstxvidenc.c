@@ -79,7 +79,7 @@ static void             gst_xvidenc_init         (GstXvidEnc      *xvidenc);
 static void             gst_xvidenc_chain        (GstPad          *pad,
                                                   GstData         *data);
 static GstPadLinkReturn gst_xvidenc_link	 (GstPad          *pad,
-                                                  const GstCaps2  *vscapslist);
+                                                  const GstCaps  *vscapslist);
 
 /* properties */
 static void             gst_xvidenc_set_property (GObject         *object,
@@ -298,7 +298,7 @@ gst_xvidenc_chain (GstPad    *pad,
 
 static GstPadLinkReturn
 gst_xvidenc_link (GstPad  *pad,
-                  const GstCaps2 *vscaps)
+                  const GstCaps *vscaps)
 {
   GstXvidEnc *xvidenc;
   GstStructure *structure;
@@ -315,8 +315,8 @@ gst_xvidenc_link (GstPad  *pad,
     xvidenc->handle = NULL;
   }
 
-  g_return_val_if_fail (gst_caps2_get_n_structures (vscaps) == 1, GST_PAD_LINK_REFUSED);
-  structure = gst_caps2_get_nth_cap (vscaps, 0);
+  g_return_val_if_fail (gst_caps_get_size (vscaps) == 1, GST_PAD_LINK_REFUSED);
+  structure = gst_caps_get_structure (vscaps, 0);
 
   gst_structure_get_int (structure, "width", &w);
   gst_structure_get_int (structure, "height", &h);
@@ -372,9 +372,9 @@ gst_xvidenc_link (GstPad  *pad,
 
   if (gst_xvidenc_setup(xvidenc)) {
     GstPadLinkReturn ret;
-    GstCaps2 *new_caps;
+    GstCaps *new_caps;
 
-    new_caps = gst_caps2_new_simple(
+    new_caps = gst_caps_new_simple(
                             "video/x-xvid",
                             "width",  G_TYPE_INT, w,
                             "height", G_TYPE_INT, h,

@@ -55,7 +55,7 @@ typedef struct _GstRiffRead {
   GList *level;
 
   /* metadata */
-  GstCaps2 *metadata;
+  GstCaps *metadata;
 } GstRiffRead;
 
 typedef struct _GstRiffReadClass {

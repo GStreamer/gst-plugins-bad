@@ -43,7 +43,7 @@ typedef struct _GstMixMatrixClass GstMixMatrixClass;
 struct _GstMixMatrix {
   GstElement element;
 
-  GstCaps2 *caps;
+  GstCaps *caps;
   gint samplerate;
 
   gint grpsize;
@@ -112,7 +112,7 @@ static void	gst_mixmatrix_set_property (GObject *object, guint prop_id, const GV
 static void	gst_mixmatrix_get_property (GObject *object, guint prop_id, GValue *value, GParamSpec *pspec);
 static GstPad *	gst_mixmatrix_request_new_pad (GstElement *element, GstPadTemplate *temp, const gchar *name);
 
-static GstPadLinkReturn gst_mixmatrix_connect (GstPad *pad, const GstCaps2 *caps);
+static GstPadLinkReturn gst_mixmatrix_connect (GstPad *pad, const GstCaps *caps);
 
 static void	gst_mixmatrix_loop (GstElement *element);
 
@@ -319,7 +319,7 @@ gst_mixmatrix_set_all_caps (GstMixMatrix *mix)
 */
 
 static GstPadLinkReturn
-gst_mixmatrix_connect (GstPad *pad, const GstCaps2 *caps)
+gst_mixmatrix_connect (GstPad *pad, const GstCaps *caps)
 {
   GstMixMatrix *mix = GST_MIXMATRIX(GST_PAD_PARENT(pad));
   gint i;
@@ -334,7 +334,7 @@ gst_mixmatrix_connect (GstPad *pad, const GstCaps2 *caps)
     }
   }
 
-  mix->caps = gst_caps2_copy(caps);
+  mix->caps = gst_caps_copy(caps);
 
   return GST_PAD_LINK_OK;
 }

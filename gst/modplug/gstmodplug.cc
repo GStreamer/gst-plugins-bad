@@ -103,7 +103,7 @@ static void	gst_modplug_get_property	(GObject *object,
 						 GValue *value,
 						 GParamSpec *pspec );
 static GstPadLinkReturn
-		gst_modplug_srclink		(GstPad *pad, const GstCaps2 *caps);
+		gst_modplug_srclink		(GstPad *pad, const GstCaps *caps);
 static void  	gst_modplug_loop          	(GstElement *element);
 static void	gst_modplug_setup 		(GstModPlug *modplug);
 static const GstFormat *
@@ -380,17 +380,17 @@ gst_modplug_src_event (GstPad *pad, GstEvent *event)
 }
 
 #if 0
-static GstCaps2*
+static GstCaps*
 gst_modplug_get_streaminfo (GstModPlug *modplug)
 {
-  GstCaps2 *caps;
+  GstCaps *caps;
  
   props = gst_props_empty_new ();
 
   entry = gst_props_entry_new ("Patterns", G_TYPE_INT ((gint)modplug->mSoundFile->GetNumPatterns()));
   gst_props_add_entry (props, (GstPropsEntry *) entry);
   
-  caps = gst_caps2_new_simple ("application/x-gst-streaminfo", NULL);
+  caps = gst_caps_new_simple ("application/x-gst-streaminfo", NULL);
   return caps;
 }
 
@@ -419,7 +419,7 @@ gst_modplug_update_metadata (GstModPlug *modplug)
   entry = gst_props_entry_new ("Title", G_TYPE_STRING (title));
   gst_props_add_entry (props, entry);
 
-  modplug->metadata = gst_caps2_new_simple ("application/x-gst-metadata",
+  modplug->metadata = gst_caps_new_simple ("application/x-gst-metadata",
 		  NULL);
 
   g_object_notify (G_OBJECT (modplug), "metadata");
@@ -446,7 +446,7 @@ modplug_negotiate (GstModPlug *modplug)
   }
     
   if ((ret = gst_pad_try_set_caps (modplug->srcpad, 
-	  gst_caps2_new_simple ("audio/x-raw-int",
+	  gst_caps_new_simple ("audio/x-raw-int",
 	    "endianness",   G_TYPE_INT, G_BYTE_ORDER,
 	    "signed",     	G_TYPE_BOOLEAN, sign,
 	    "width",      	G_TYPE_INT, modplug->bitsPerSample,
@@ -464,7 +464,7 @@ modplug_negotiate (GstModPlug *modplug)
 
 
 static GstPadLinkReturn
-gst_modplug_srclink (GstPad *pad, const GstCaps2 *caps)
+gst_modplug_srclink (GstPad *pad, const GstCaps *caps)
 {
   GstModPlug *modplug; 
   GstStructure *structure;
@@ -472,7 +472,7 @@ gst_modplug_srclink (GstPad *pad, const GstCaps2 *caps)
 
   modplug = GST_MODPLUG (gst_pad_get_parent (pad));
 
-  structure = gst_caps2_get_nth_cap (caps, 0);
+  structure = gst_caps_get_structure (caps, 0);
 
   gst_structure_get_int (structure, "depth", &depth);
   modplug->_16bit = (depth == 16);

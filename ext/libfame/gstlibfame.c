@@ -298,7 +298,7 @@ gst_fameenc_class_init (GstFameEncClass *klass)
 }
 
 static GstPadLinkReturn
-gst_fameenc_sink_link (GstPad *pad, const GstCaps2 *caps)
+gst_fameenc_sink_link (GstPad *pad, const GstCaps *caps)
 {
   gint width, height, fps_idx;
   gdouble fps;
@@ -312,7 +312,7 @@ gst_fameenc_sink_link (GstPad *pad, const GstCaps2 *caps)
     return GST_PAD_LINK_REFUSED;
   }
 
-  structure = gst_caps2_get_nth_cap (caps, 0);
+  structure = gst_caps_get_structure (caps, 0);
   gst_structure_get_int (structure, "width", &width);
   gst_structure_get_int (structure, "height", &height);
   gst_structure_get_double (structure, "framerate", &fps);

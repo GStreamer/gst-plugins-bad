@@ -144,9 +144,9 @@ gst_overlay_class_init (GstOverlayClass *klass)
 }
 
 #if 0
-static GstCaps2 *gst_overlay_getcaps(GstPad *pad)
+static GstCaps *gst_overlay_getcaps(GstPad *pad)
 {
-  GstCaps2 *caps;
+  GstCaps *caps;
   GstOverlay *overlay;
 
   overlay = GST_OVERLAY (gst_pad_get_parent (pad));
@@ -174,14 +174,14 @@ static GstCaps2 *gst_overlay_getcaps(GstPad *pad)
 #endif
 
 static gboolean
-gst_overlay_sinkconnect (GstPad *pad, const GstCaps2 *caps)
+gst_overlay_sinkconnect (GstPad *pad, const GstCaps *caps)
 {
   GstOverlay *overlay;
   GstStructure *structure;
 
   overlay = GST_OVERLAY (gst_pad_get_parent (pad));
 
-  structure = gst_caps2_get_nth_cap (caps, 0);
+  structure = gst_caps_get_structure (caps, 0);
 
   gst_structure_get_int  (structure, "width", &overlay->width);
   gst_structure_get_int  (structure, "height", &overlay->height);

@@ -62,7 +62,7 @@ static gboolean			gst_artsdsink_open_audio		(GstArtsdsink *sink);
 static void			gst_artsdsink_close_audio		(GstArtsdsink *sink);
 static GstElementStateReturn	gst_artsdsink_change_state		(GstElement *element);
 static gboolean			gst_artsdsink_sync_parms		(GstArtsdsink *artsdsink);
-static GstPadLinkReturn		gst_artsdsink_link			(GstPad *pad, const GstCaps2 *caps);
+static GstPadLinkReturn		gst_artsdsink_link			(GstPad *pad, const GstCaps *caps);
 static void			gst_artsdsink_chain			(GstPad *pad, GstData *_data);
 
 static void			gst_artsdsink_set_property		(GObject *object, guint prop_id, 
@@ -158,12 +158,12 @@ gst_artsdsink_sync_parms (GstArtsdsink *artsdsink)
 }
 
 static GstPadLinkReturn
-gst_artsdsink_link (GstPad *pad, const GstCaps2 *caps)
+gst_artsdsink_link (GstPad *pad, const GstCaps *caps)
 {
   GstArtsdsink *artsdsink = GST_ARTSDSINK (gst_pad_get_parent (pad));
   GstStructure *structure;
 
-  structure = gst_caps2_get_nth_cap (caps, 0);
+  structure = gst_caps_get_structure (caps, 0);
   gst_structure_get_int (structure, "rate", &artsdsink->frequency);
   gst_structure_get_int (structure, "depth", &artsdsink->depth);
   gst_structure_get_int (structure, "signed", &artsdsink->signd);

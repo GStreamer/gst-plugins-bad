@@ -105,7 +105,7 @@ static void gst_bpwsinc_get_property	(GObject * object, guint prop_id,
 
 static void gst_bpwsinc_chain		(GstPad * pad, GstData *_data);
 static GstPadLinkReturn
-       gst_bpwsinc_sink_connect 		(GstPad * pad, const GstCaps2 * caps);
+       gst_bpwsinc_sink_connect 		(GstPad * pad, const GstCaps * caps);
 
 static GstElementClass *parent_class = NULL;
 /*static guint gst_bpwsinc_signals[LAST_SIGNAL] = { 0 }; */
@@ -195,7 +195,7 @@ gst_bpwsinc_init (GstBPWSinc * filter)
 }
 
 static GstPadLinkReturn
-gst_bpwsinc_sink_connect (GstPad * pad, const GstCaps2 * caps)
+gst_bpwsinc_sink_connect (GstPad * pad, const GstCaps * caps)
 {
   int i = 0;
   double sum = 0.0;

@@ -909,13 +909,13 @@ gst_play_get_sink_element (GstPlay *play,
         }
         else {
           /* If not a src pad checking caps */
-          const GstCaps2 *caps;
+          const GstCaps *caps;
           GstStructure *structure;
           gboolean has_video_cap = FALSE;
           gboolean has_audio_cap = FALSE;
 
           caps = gst_pad_get_caps (GST_PAD (pads->data));
-          structure = gst_caps2_get_nth_cap (caps, 0);
+          structure = gst_caps_get_structure (caps, 0);
 
           if (strcmp (gst_structure_get_name (structure),
                                   "audio/x-raw-int") == 0) {

@@ -84,7 +84,7 @@ static void		speed_init		(GstSpeed *filter);
 static void		speed_set_property	(GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec);
 static void		speed_get_property        (GObject *object, guint prop_id, GValue *value, GParamSpec *pspec);
 
-static gboolean		speed_parse_caps          (GstSpeed *filter, const GstCaps2 *caps);
+static gboolean		speed_parse_caps          (GstSpeed *filter, const GstCaps *caps);
 
 static void		speed_loop              (GstElement *element);
 
@@ -92,7 +92,7 @@ static GstElementClass *parent_class = NULL;
 /*static guint gst_filter_signals[LAST_SIGNAL] = { 0 }; */
 
 static GstPadLinkReturn
-speed_link (GstPad *pad, const GstCaps2 *caps)
+speed_link (GstPad *pad, const GstCaps *caps)
 {
   GstSpeed *filter;
   GstPad *otherpad;
@@ -108,7 +108,7 @@ speed_link (GstPad *pad, const GstCaps2 *caps)
 }
 
 static gboolean
-speed_parse_caps (GstSpeed *filter, const GstCaps2 *caps)
+speed_parse_caps (GstSpeed *filter, const GstCaps *caps)
 {
   const gchar *mimetype;
   GstStructure *structure;
@@ -117,7 +117,7 @@ speed_parse_caps (GstSpeed *filter, const GstCaps2 *caps)
   g_return_val_if_fail(filter != NULL, FALSE);
   g_return_val_if_fail(caps != NULL, FALSE);
 
-  structure = gst_caps2_get_nth_cap (caps, 0);
+  structure = gst_caps_get_structure (caps, 0);
 
   ret = gst_structure_get_int (structure, "rate", &filter->rate);
   ret &= gst_structure_get_int (structure, "channels", &filter->channels);

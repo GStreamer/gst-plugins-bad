@@ -89,7 +89,7 @@ static void gst_iir_get_property	(GObject * object, guint prop_id,
 
 static void gst_iir_chain		(GstPad * pad, GstData *_data);
 static GstPadLinkReturn
-       gst_iir_sink_connect 		(GstPad * pad, const GstCaps2 * caps);
+       gst_iir_sink_connect 		(GstPad * pad, const GstCaps * caps);
 
 static GstElementClass *parent_class = NULL;
 /*static guint gst_iir_signals[LAST_SIGNAL] = { 0 }; */
@@ -181,7 +181,7 @@ gst_iir_init (GstIIR * filter)
 }
 
 static GstPadLinkReturn
-gst_iir_sink_connect (GstPad * pad, const GstCaps2 * caps)
+gst_iir_sink_connect (GstPad * pad, const GstCaps * caps)
 {
   GstIIR *filter;
   GstPadLinkReturn set_retval;

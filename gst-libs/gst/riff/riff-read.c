@@ -80,7 +80,7 @@ gst_riff_read_class_init (GstRiffReadClass *klass)
 
   g_object_class_install_property (gobject_class, ARG_METADATA,
     g_param_spec_boxed ("metadata", "Metadata", "Metadata",
-                        GST_TYPE_CAPS2, G_PARAM_READABLE));
+                        GST_TYPE_CAPS, G_PARAM_READABLE));
 
   parent_class = g_type_class_ref (GST_TYPE_ELEMENT);
   
@@ -128,7 +128,7 @@ gst_riff_read_change_state (GstElement *element)
       riff->bs = gst_bytestream_new (riff->sinkpad);
       break;
     case GST_STATE_PAUSED_TO_READY:
-      gst_caps2_replace (&riff->metadata, NULL);
+      gst_caps_replace (&riff->metadata, NULL);
       gst_bytestream_destroy (riff->bs);
       while (riff->level) {
         GstRiffLevel *level = riff->level->data;
@@ -714,7 +714,7 @@ gst_riff_read_info (GstRiffRead *riff)
   GstRiffLevel *level;
   GList *last;
   gchar *name, *type;
-  GstCaps2 *caps;
+  GstCaps *caps;
 
   /* What we're doing here is ugly (oh no!); we look
    * at our LIST tag size and assure that we do not
@@ -726,7 +726,7 @@ gst_riff_read_info (GstRiffRead *riff)
   end = level->start + level->length;
   g_free (level);
 
-  caps = gst_caps2_new_simple ("application/x-gst-metadata", NULL);
+  caps = gst_caps_new_simple ("application/x-gst-metadata", NULL);
 
   while (gst_bytestream_tell (riff->bs) < end) {
     if (!gst_riff_peek_head (riff, &tag, NULL, NULL)) {
@@ -816,14 +816,14 @@ gst_riff_read_info (GstRiffRead *riff)
         return FALSE;
       }
 
-      gst_caps2_set_simple (caps, type, G_TYPE_STRING, name, NULL);
+      gst_caps_set_simple (caps, type, G_TYPE_STRING, name, NULL);
     } else {
       gst_riff_read_skip (riff);
     }
   }
 
   /* let the world know about this wonderful thing */
-  gst_caps2_replace (&riff->metadata, caps);
+  gst_caps_replace (&riff->metadata, caps);
   g_object_notify (G_OBJECT (riff), "metadata");
 
   return TRUE;

@@ -37,7 +37,7 @@
 #define LADSPA_VERSION "1.0"
 #endif
 
-static GstStaticCaps2 ladspa_pad_caps =
+static GstStaticCaps ladspa_pad_caps =
 GST_STATIC_CAPS (GST_AUDIO_FLOAT_STANDARD_PAD_TEMPLATE_CAPS);
 
 static void			gst_ladspa_class_init		(GstLADSPAClass *klass);
@@ -45,7 +45,7 @@ static void			gst_ladspa_base_init		(GstLADSPAClass *klass);
 static void			gst_ladspa_init			(GstLADSPA *ladspa);
 
 static void			gst_ladspa_update_int		(const GValue *value, gpointer data);
-static GstPadLinkReturn		gst_ladspa_link			(GstPad *pad, const GstCaps2 *caps);
+static GstPadLinkReturn		gst_ladspa_link			(GstPad *pad, const GstCaps *caps);
 
 static void			gst_ladspa_set_property		(GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec);
 static void			gst_ladspa_get_property		(GObject *object, guint prop_id, GValue *value, GParamSpec *pspec);
@@ -112,11 +112,11 @@ gst_ladspa_base_init (GstLADSPAClass *klass)
       /* the factories take ownership of the name */
       if (LADSPA_IS_PORT_INPUT(desc->PortDescriptors[j])) {
         templ = gst_pad_template_new (name, GST_PAD_SINK, GST_PAD_ALWAYS,
-            gst_caps2_copy (gst_static_caps2_get (&ladspa_pad_caps)));
+            gst_caps_copy (gst_static_caps_get (&ladspa_pad_caps)));
         klass->numsinkpads++;
       } else {
         templ = gst_pad_template_new (name, GST_PAD_SRC, GST_PAD_ALWAYS,
-            gst_caps2_copy (gst_static_caps2_get (&ladspa_pad_caps)));
+            gst_caps_copy (gst_static_caps_get (&ladspa_pad_caps)));
         klass->numsrcpads++;
       }
 
@@ -463,7 +463,7 @@ gst_ladspa_update_int(const GValue *value, gpointer data)
 }
 
 static GstPadLinkReturn
-gst_ladspa_link (GstPad *pad, const GstCaps2 *caps)
+gst_ladspa_link (GstPad *pad, const GstCaps *caps)
 {
   GstElement *element = (GstElement*)GST_PAD_PARENT (pad);
   GstLADSPA *ladspa = (GstLADSPA*)element;
@@ -480,7 +480,7 @@ gst_ladspa_link (GstPad *pad, const GstCaps2 *caps)
   
   /* we assume that the ladspa plugin can handle any sample rate, so this
      check gets put last */
-  structure = gst_caps2_get_nth_cap (caps, 0);
+  structure = gst_caps_get_structure (caps, 0);
   gst_structure_get_int (structure, "rate", &rate);
   /* have to instantiate ladspa plugin when samplerate changes (groan) */
   if (ladspa->samplerate != rate) {

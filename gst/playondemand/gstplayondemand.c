@@ -81,7 +81,7 @@ static void play_on_demand_get_property (GObject *object, guint prop_id, GValue 
 static void play_on_demand_dispose      (GObject *object);
 
 /* GStreamer functionality */
-static GstPadLinkReturn play_on_demand_pad_link       (GstPad *pad, const GstCaps2 *caps);
+static GstPadLinkReturn play_on_demand_pad_link       (GstPad *pad, const GstCaps *caps);
 static void             play_on_demand_loop           (GstElement *elem);
 static void             play_on_demand_set_clock      (GstElement *elem, GstClock *clock);
 
@@ -365,7 +365,7 @@ play_on_demand_dispose (GObject *object)
 }
 
 static GstPadLinkReturn
-play_on_demand_pad_link (GstPad *pad, const GstCaps2 *caps)
+play_on_demand_pad_link (GstPad *pad, const GstCaps *caps)
 {
   const gchar *mimetype;
   GstPlayOnDemand *filter;
@@ -376,7 +376,7 @@ play_on_demand_pad_link (GstPad *pad, const GstCaps2 *caps)
 
   filter = GST_PLAYONDEMAND(GST_PAD_PARENT(pad));
 
-  structure = gst_caps2_get_nth_cap (caps, 0);
+  structure = gst_caps_get_structure (caps, 0);
 
   mimetype = gst_structure_get_name (structure);
   gst_structure_get_int (structure, "rate", &filter->rate);

@@ -79,8 +79,8 @@ struct _GstColorspace {
   gint srcbpp, destbpp;
   gboolean passthru;
 
-  GstCaps2 *sinkcaps;
-  GstCaps2 *srccaps;
+  GstCaps *sinkcaps;
+  GstCaps *srccaps;
 };
 
 struct _GstColorspaceClass {

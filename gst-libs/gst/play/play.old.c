@@ -910,7 +910,7 @@ gst_play_get_sink_element (GstPlay * play,
 		  gboolean has_video_cap = FALSE, has_audio_cap = FALSE;
 		  const char *media_type;
 
-		  media_type = gst_structure_get_name (gst_caps2_get_nth_cap (
+		  media_type = gst_structure_get_name (gst_caps_get_structure (
 		      gst_pad_get_caps (GST_PAD (pads->data)), 0));
 		  if (strcmp (media_type, "audio/x-raw-int") == 0)
 		    {

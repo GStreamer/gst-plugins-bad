@@ -12,25 +12,25 @@ struct probe_context {
 
   gint        total_ls;
 
-  GstCaps2   *metadata;
-  GstCaps2   *streaminfo;
-  GstCaps2   *caps;
+  GstCaps   *metadata;
+  GstCaps   *streaminfo;
+  GstCaps   *caps;
 };
 
 static void
-print_caps (GstCaps2 *caps)
+print_caps (GstCaps *caps)
 {
   char *s;
-  s = gst_caps2_to_string (caps);
+  s = gst_caps_to_string (caps);
   g_print("  %s\n", s);
   g_free (s);
 }
 
 static void
-print_format (GstCaps2 *caps)
+print_format (GstCaps *caps)
 {
   char *s;
-  s = gst_caps2_to_string (caps);
+  s = gst_caps_to_string (caps);
   g_print("  format: %s\n", s);
   g_free (s);
 }

@@ -101,7 +101,7 @@ GST_STATIC_PAD_TEMPLATE (
   "private_stream_2",
   GST_PAD_SINK,
   GST_PAD_REQUEST,
-  GST_STATIC_CAPS2_ANY
+  GST_STATIC_CAPS_ANY
 );
 
 #define GST_TYPE_MPLEX_MUX_FORMAT (gst_mplex_mux_format_get_type())
@@ -253,7 +253,7 @@ gst_mplex_init (GstMPlex *mplex)
 }
 
 static GstPadLinkReturn
-gst_mplex_video_link (GstPad *pad, const GstCaps2 *caps)
+gst_mplex_video_link (GstPad *pad, const GstCaps *caps)
 {   
   GstMPlex *mplex;
   gint version;
@@ -264,7 +264,7 @@ gst_mplex_video_link (GstPad *pad, const GstCaps2 *caps)
 
   stream = (GstMPlexStream *) gst_pad_get_element_private (pad);
 
-  structure = gst_caps2_get_nth_cap (caps, 0);
+  structure = gst_caps_get_structure (caps, 0);
   
   if (!gst_structure_get_int  (structure, "mpegversion", &version)){
     return GST_PAD_LINK_REFUSED;

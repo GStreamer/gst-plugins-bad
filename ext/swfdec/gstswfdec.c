@@ -158,18 +158,18 @@ gst_swfdec_class_init(GstSwfdecClass *klass)
   gstelement_class->change_state = gst_swfdec_change_state;
 }
 
-static GstCaps2 *gst_swfdec_videosrc_getcaps(GstPad *pad)
+static GstCaps *gst_swfdec_videosrc_getcaps(GstPad *pad)
 {
   GstSwfdec *swfdec;
-  GstCaps2 *caps;
+  GstCaps *caps;
 
   swfdec = GST_SWFDEC (gst_pad_get_parent (pad));
 
-  caps = gst_caps2_copy (gst_pad_template_get_caps (
+  caps = gst_caps_copy (gst_pad_template_get_caps (
       gst_static_pad_template_get (&video_template_factory)));
 
   if (swfdec->height) {
-    gst_caps2_set_simple (caps,
+    gst_caps_set_simple (caps,
 	"framerate", G_TYPE_DOUBLE, swfdec->frame_rate,
 	"height",G_TYPE_INT,swfdec->height,
 	"width",G_TYPE_INT,swfdec->width,

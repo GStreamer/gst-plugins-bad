@@ -30,7 +30,7 @@ gdouble
 gst_video_frame_rate (GstPad *pad)
 {
   gdouble fps = 0.;
-  GstCaps2 *caps;
+  GstCaps *caps;
   GstStructure *structure;
 
   /* get pad caps */
@@ -42,7 +42,7 @@ gst_video_frame_rate (GstPad *pad)
     return 0.;
   }
 
-  structure = gst_caps2_get_nth_cap (caps, 0);
+  structure = gst_caps_get_structure (caps, 0);
   if (!gst_structure_get_double (structure, "framerate", &fps)){
     g_warning ("gstvideo: failed to get framerate property of pad %s:%s",
                GST_ELEMENT_NAME (gst_pad_get_parent (pad)),
@@ -62,7 +62,7 @@ gst_video_get_size (GstPad *pad,
                     gint   *width,
                     gint   *height)
 {
-  GstCaps2 *caps;
+  GstCaps *caps;
   GstStructure *structure;
   gboolean ret;
 
@@ -79,7 +79,7 @@ gst_video_get_size (GstPad *pad,
     return FALSE;
   }
 
-  structure = gst_caps2_get_nth_cap (caps, 0);
+  structure = gst_caps_get_structure (caps, 0);
   ret = gst_structure_get_int (structure, "width", width);
   ret &= gst_structure_get_int (structure, "height", height);
 

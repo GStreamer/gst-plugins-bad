@@ -187,7 +187,7 @@ mp1videoparse_parse_seq (Mp1VideoParse *mp1videoparse, GstBuffer *buf)
       fps_table[fps_idx] != mp1videoparse->fps    ||
       width              != mp1videoparse->width  ||
       height             != mp1videoparse->height) {
-    GstCaps2 *caps;
+    GstCaps *caps;
     gint p_w, p_h;
 
     mp1videoparse->asr    = asr_table[asr_idx];
@@ -198,7 +198,7 @@ mp1videoparse_parse_seq (Mp1VideoParse *mp1videoparse, GstBuffer *buf)
     p_w = (asr_table[asr_idx] < 1.0) ? (100 / asr_table[asr_idx]) : 1;
     p_h = (asr_table[asr_idx] > 1.0) ? (100 * asr_table[asr_idx]) : 1;
 
-    caps = gst_caps2_new_simple ("video/mpeg",
+    caps = gst_caps_new_simple ("video/mpeg",
 	"systemstream", G_TYPE_BOOLEAN, FALSE,
 	"mpegversion",  G_TYPE_INT, 1,
 	"width",        G_TYPE_INT, width,

@@ -107,7 +107,7 @@ static void		gst_video_crop_get_property	(GObject *object, guint prop_id,
 							 GValue *value, GParamSpec *pspec);
 
 static GstPadLinkReturn
-			gst_video_crop_sink_link 	(GstPad *pad, const GstCaps2 *caps);
+			gst_video_crop_sink_link 	(GstPad *pad, const GstCaps *caps);
 static void 		gst_video_crop_chain 		(GstPad *pad, GstData *_data);
 
 static GstElementStateReturn
@@ -262,14 +262,14 @@ gst_video_crop_get_property (GObject *object, guint prop_id, GValue *value, GPar
 }
 
 static GstPadLinkReturn
-gst_video_crop_sink_link (GstPad *pad, const GstCaps2 *caps)
+gst_video_crop_sink_link (GstPad *pad, const GstCaps *caps)
 {
   GstVideoCrop *video_crop;
   GstStructure *structure;
   gboolean ret;
 
   video_crop = GST_VIDEO_CROP (gst_pad_get_parent (pad));
-  structure = gst_caps2_get_nth_cap (caps, 0);
+  structure = gst_caps_get_structure (caps, 0);
 
   ret = gst_structure_get_int (structure, "width",  &video_crop->width);
   ret &= gst_structure_get_int (structure, "height", &video_crop->height);

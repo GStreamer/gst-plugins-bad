@@ -65,7 +65,7 @@ static gboolean			gst_massink_open_audio		(GstMassink *sink);
 //static void			gst_massink_close_audio		(GstMassink *sink);
 static GstElementStateReturn	gst_massink_change_state	(GstElement *element);
 static gboolean			gst_massink_sync_parms		(GstMassink *massink);
-static GstPadLinkReturn	gst_massink_sinkconnect		(GstPad *pad, const GstCaps2 *caps);
+static GstPadLinkReturn	gst_massink_sinkconnect		(GstPad *pad, const GstCaps *caps);
 
 static void			gst_massink_chain		(GstPad *pad, GstData *_data);
 
@@ -201,7 +201,7 @@ gst_massink_sync_parms (GstMassink *massink)
 }
 
 static GstPadLinkReturn
-gst_massink_sinkconnect (GstPad *pad, const GstCaps2 *caps)
+gst_massink_sinkconnect (GstPad *pad, const GstCaps *caps)
 {
   GstMassink *massink;
 

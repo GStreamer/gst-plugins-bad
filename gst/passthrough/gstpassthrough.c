@@ -79,7 +79,7 @@ static void		passthrough_init		(GstPassthrough *filter);
 static void		passthrough_set_property	(GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec);
 static void		passthrough_get_property	(GObject *object, guint prop_id, GValue *value, GParamSpec *pspec);
 
-static GstPadLinkReturn passthrough_connect_sink	(GstPad *pad, const GstCaps2 *caps);
+static GstPadLinkReturn passthrough_connect_sink	(GstPad *pad, const GstCaps *caps);
 
 static void		passthrough_chain		(GstPad *pad, GstData *_data);
 static void inline 	passthrough_fast_float_chain 	(gfloat* data, guint numsamples);
@@ -89,7 +89,7 @@ static void inline 	passthrough_fast_8bit_chain	(gint8* data, guint numsamples);
 static GstElementClass *parent_class = NULL;
 
 static GstPadLinkReturn
-passthrough_connect_sink (GstPad *pad, const GstCaps2 *caps)
+passthrough_connect_sink (GstPad *pad, const GstCaps *caps)
 {
   const gchar *mimetype;
   GstPassthrough *filter;
@@ -102,7 +102,7 @@ passthrough_connect_sink (GstPad *pad, const GstCaps2 *caps)
   g_return_val_if_fail (filter != NULL, GST_PAD_LINK_REFUSED);
   g_return_val_if_fail (GST_IS_PASSTHROUGH (filter), GST_PAD_LINK_REFUSED);
 
-  structure = gst_caps2_get_nth_cap (caps, 0);
+  structure = gst_caps_get_structure (caps, 0);
 
   mimetype = gst_structure_get_name (structure);
   gst_structure_get_int  (structure, "rate", &filter->rate);

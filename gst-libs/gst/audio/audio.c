@@ -35,7 +35,7 @@ gst_audio_frame_byte_size (GstPad* pad)
 
   int width = 0;
   int channels = 0;
-  GstCaps2 *caps;
+  GstCaps *caps;
   GstStructure *structure;
 
   /* get caps of pad */
@@ -48,7 +48,7 @@ gst_audio_frame_byte_size (GstPad* pad)
     return 0;
   }
 
-  structure = gst_caps2_get_nth_cap (caps, 0);
+  structure = gst_caps_get_structure (caps, 0);
 
   gst_structure_get_int (structure, "width",    &width);
   gst_structure_get_int (structure, "channels", &channels);
@@ -82,7 +82,7 @@ gst_audio_frame_rate (GstPad *pad)
  * returns 0 if failed, rate if success
  */
 {
-  GstCaps2 *caps = NULL;
+  GstCaps *caps = NULL;
   gint rate;
   GstStructure *structure;
 
@@ -96,7 +96,7 @@ gst_audio_frame_rate (GstPad *pad)
     return 0;
   }
   else {
-    structure = gst_caps2_get_nth_cap (caps, 0);
+    structure = gst_caps_get_structure (caps, 0);
     gst_structure_get_int  (structure, "rate", &rate);
     return rate;
   }
@@ -117,7 +117,7 @@ gst_audio_length (GstPad* pad, GstBuffer* buf)
 
   double length;
 
-  GstCaps2 *caps = NULL;
+  GstCaps *caps = NULL;
   GstStructure *structure;
 
   g_assert (GST_IS_BUFFER (buf));
@@ -132,7 +132,7 @@ gst_audio_length (GstPad* pad, GstBuffer* buf)
   }
   else
   {
-    structure = gst_caps2_get_nth_cap (caps, 0);
+    structure = gst_caps_get_structure (caps, 0);
     bytes = GST_BUFFER_SIZE (buf);
     gst_structure_get_int  (structure, "width",    &width);
     gst_structure_get_int  (structure, "channels", &channels);
@@ -156,7 +156,7 @@ gst_audio_highest_sample_value (GstPad* pad)
 {
   gboolean is_signed = FALSE;
   gint width = 0;
-  GstCaps2 *caps = NULL;
+  GstCaps *caps = NULL;
   GstStructure *structure;
   
   caps = GST_PAD_CAPS (pad);
@@ -166,7 +166,7 @@ gst_audio_highest_sample_value (GstPad* pad)
 	       GST_ELEMENT_NAME (gst_pad_get_parent (pad)), GST_PAD_NAME (pad));
   }
   
-  structure = gst_caps2_get_nth_cap (caps, 0);
+  structure = gst_caps_get_structure (caps, 0);
   gst_structure_get_int  (structure, "width", &width);
   gst_structure_get_boolean  (structure, "signed", &is_signed);
   

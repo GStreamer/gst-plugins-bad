@@ -77,7 +77,7 @@ static void             gst_xviddec_dispose      (GObject         *object);
 static void             gst_xviddec_chain        (GstPad          *pad,
                                                   GstData         *data);
 static GstPadLinkReturn gst_xviddec_link	 (GstPad          *pad,
-                                                  const GstCaps2  *vscapslist);
+                                                  const GstCaps  *vscapslist);
 static GstPadLinkReturn	gst_xviddec_negotiate	 (GstXvidDec *xviddec);
 
 static GstElementClass *parent_class = NULL;
@@ -263,7 +263,7 @@ static GstPadLinkReturn
 gst_xviddec_negotiate (GstXvidDec *xviddec)
 {
   GstPadLinkReturn ret;
-  GstCaps2 *caps;
+  GstCaps *caps;
   struct {
     guint32 fourcc;
     gint    depth, bpp;
@@ -307,7 +307,7 @@ gst_xviddec_negotiate (GstXvidDec *xviddec)
           r_mask = R_MASK_32_INT; g_mask = G_MASK_32_INT; b_mask = B_MASK_32_INT;
           break;
       }
-      caps = gst_caps2_new_simple (
+      caps = gst_caps_new_simple (
                           "video/x-raw-rgb",
                             "width",      G_TYPE_INT, xviddec->width,
                             "height",     G_TYPE_INT, xviddec->height,
@@ -320,7 +320,7 @@ gst_xviddec_negotiate (GstXvidDec *xviddec)
 			    "framerate",  G_TYPE_DOUBLE, xviddec->fps,
                             NULL);
     } else {
-      caps = gst_caps2_new_simple (
+      caps = gst_caps_new_simple (
                           "video/x-raw-yuv",
                             "width",      G_TYPE_INT, xviddec->width,
                             "height",     G_TYPE_INT, xviddec->height,
@@ -346,7 +346,7 @@ gst_xviddec_negotiate (GstXvidDec *xviddec)
 
 static GstPadLinkReturn
 gst_xviddec_link (GstPad  *pad,
-                  const GstCaps2 *vscaps)
+                  const GstCaps *vscaps)
 {
   GstXvidDec *xviddec;
   GstStructure *structure;
@@ -360,7 +360,7 @@ gst_xviddec_link (GstPad  *pad,
 
   /* if we get here, we know the input is xvid. we
    * only need to bother with the output colorspace */
-  structure = gst_caps2_get_nth_cap (vscaps, 0);
+  structure = gst_caps_get_structure (vscaps, 0);
   gst_structure_get_int(structure, "width", &xviddec->width);
   gst_structure_get_int(structure, "height", &xviddec->height);
   gst_structure_get_double(structure, "framerate", &xviddec->fps);

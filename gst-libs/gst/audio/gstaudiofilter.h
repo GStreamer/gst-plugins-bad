@@ -68,7 +68,7 @@ struct _GstAudiofilter {
 struct _GstAudiofilterClass {
   GstElementClass parent_class;
 
-  GstCaps2 *caps;
+  GstCaps *caps;
   GstAudiofilterSetupFunc setup;
   GstAudiofilterInplaceFilterFunc filter_inplace;
   GstAudiofilterFilterFunc filter;
@@ -76,7 +76,7 @@ struct _GstAudiofilterClass {
 
 GType gst_audiofilter_get_type(void);
 
-void gst_audiofilter_class_add_pad_templates (GstAudiofilterClass *audiofilterclass, const GstCaps2 *caps);
+void gst_audiofilter_class_add_pad_templates (GstAudiofilterClass *audiofilterclass, const GstCaps *caps);
 
 G_END_DECLS
 

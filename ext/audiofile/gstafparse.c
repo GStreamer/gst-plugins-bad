@@ -382,7 +382,7 @@ gst_afparse_open_file (GstAFParse *afparse)
   /* set caps on src */
   /*FIXME: add all the possible formats, especially float ! */ 
   gst_pad_try_set_caps (afparse->srcpad, 
-      gst_caps2_new_simple (
+      gst_caps_new_simple (
         "audio/x-raw-int",
         "endianness", G_TYPE_INT, G_BYTE_ORDER,
         "signed",     G_TYPE_BOOLEAN, afparse->is_signed,

@@ -58,7 +58,7 @@ static void		gst_colorspace_get_property		(GObject *object, guint prop_id,
 								 GValue *value, GParamSpec *pspec);
 
 static GstPadLinkReturn
-			gst_colorspace_link     		(GstPad *pad, const GstCaps2 *caps);
+			gst_colorspace_link     		(GstPad *pad, const GstCaps *caps);
 static void		gst_colorspace_chain			(GstPad *pad, GstData *_data);
 static GstElementStateReturn
 			gst_colorspace_change_state 		(GstElement *element);
@@ -74,7 +74,7 @@ static GstElementClass *parent_class = NULL;
 /*static guint gst_colorspace_signals[LAST_SIGNAL] = { 0 }; */
 
 static gboolean 
-colorspace_setup_converter (GstColorspace *space, GstCaps2 *from_caps, GstCaps2 *to_caps)
+colorspace_setup_converter (GstColorspace *space, GstCaps *from_caps, GstCaps *to_caps)
 {
   guint32 from_space, to_space;
   GstStructure *from_struct;
@@ -83,8 +83,8 @@ colorspace_setup_converter (GstColorspace *space, GstCaps2 *from_caps, GstCaps2 
   g_return_val_if_fail (to_caps != NULL, FALSE);
   g_return_val_if_fail (from_caps != NULL, FALSE);
 
-  from_struct = gst_caps2_get_nth_cap (from_caps, 0);
-  to_struct = gst_caps2_get_nth_cap (to_caps, 0);
+  from_struct = gst_caps_get_structure (from_caps, 0);
+  to_struct = gst_caps_get_structure (to_caps, 0);
 
   from_space = GST_MAKE_FOURCC ('R','G','B',' ');
   gst_structure_get_fourcc (from_struct, "format", &from_space);
@@ -226,12 +226,12 @@ colorspace_setup_converter (GstColorspace *space, GstCaps2 *from_caps, GstCaps2 
   return FALSE;
 }
 
-static GstCaps2*
+static GstCaps*
 gst_colorspace_getcaps (GstPad *pad)
 {
   GstColorspace *space;
-  GstCaps2 *peercaps;
-  GstCaps2 *ourcaps;
+  GstCaps *peercaps;
+  GstCaps *ourcaps;
   
   space = GST_COLORSPACE (gst_pad_get_parent (pad));
 
@@ -239,16 +239,16 @@ gst_colorspace_getcaps (GstPad *pad)
   peercaps = gst_pad_get_allowed_caps (space->srcpad);
 
   /* and our own template of course */
-  ourcaps = gst_caps2_copy (gst_pad_get_pad_template_caps (pad));
+  ourcaps = gst_caps_copy (gst_pad_get_pad_template_caps (pad));
 
   /* merge them together, we prefer the peercaps first */
-  gst_caps2_append (peercaps, ourcaps);
+  gst_caps_append (peercaps, ourcaps);
 
   return peercaps;
 }
 
 static GstPadLinkReturn
-gst_colorspace_link (GstPad *pad, const GstCaps2 *caps)
+gst_colorspace_link (GstPad *pad, const GstCaps *caps)
 {
   GstColorspace *space;
   GstPad *otherpad;
@@ -257,7 +257,7 @@ gst_colorspace_link (GstPad *pad, const GstCaps2 *caps)
   space = GST_COLORSPACE (gst_pad_get_parent (pad));
   otherpad = (pad == space->sinkpad) ? space->srcpad : space->sinkpad;
 
-  structure = gst_caps2_get_nth_cap (caps, 0);
+  structure = gst_caps_get_structure (caps, 0);
 
   gst_structure_get_int (structure, "width", &space->width);
   gst_structure_get_int (structure, "height", &space->height);
@@ -266,9 +266,9 @@ gst_colorspace_link (GstPad *pad, const GstCaps2 *caps)
   GST_INFO ( "size: %dx%d", space->width, space->height);
 
   if (pad == space->sinkpad) {
-    gst_caps2_replace (&space->sinkcaps, gst_caps2_copy(caps));
+    gst_caps_replace (&space->sinkcaps, gst_caps_copy(caps));
   } else {
-    gst_caps2_replace (&space->srccaps, gst_caps2_copy(caps));
+    gst_caps_replace (&space->srccaps, gst_caps_copy(caps));
   }
 
 #if 0
@@ -317,10 +317,10 @@ static void
 gst_colorspace_base_init (gpointer g_class)
 {
   GstElementClass *element_class = GST_ELEMENT_CLASS (g_class);
-  GstCaps2 *caps;
+  GstCaps *caps;
   
   /* create caps for templates */
-  caps = gst_caps2_from_string (
+  caps = gst_caps_from_string (
         GST_VIDEO_YUV_PAD_TEMPLATE_CAPS ("{ I420, YV12, YUY2 }") "; "
         GST_VIDEO_RGB_PAD_TEMPLATE_CAPS_24_32_REVERSE "; "
         GST_VIDEO_RGB_PAD_TEMPLATE_CAPS_24_32 "; "
@@ -464,7 +464,7 @@ gst_colorspace_change_state (GstElement *element)
       gst_colorspace_converter_destroy (space->converter);
       space->converter = NULL;
       space->type = GST_COLORSPACE_NONE;
-      gst_caps2_replace (&space->sinkcaps, NULL);
+      gst_caps_replace (&space->sinkcaps, NULL);
       break;
   }
 

@@ -64,14 +64,14 @@ struct GstMediaInfoPriv
 
   GstElement *typefind;
 
-  GstCaps2 *type;
+  GstCaps *type;
   GstPad *decoder_pad;                  /* pad for querying decoded caps */
   GstPad *source_pad;                   /* pad for querying encoded caps */
 
-  GstCaps2 *format;
-  GstCaps2 *metadata;
+  GstCaps *format;
+  GstCaps *metadata;
   gint metadata_iters;
-  GstCaps2 *streaminfo;
+  GstCaps *streaminfo;
 
   GstElement *decoder;                  /* will be != NULL during collection */
   gchar *source_element;                /* type of element used as source */

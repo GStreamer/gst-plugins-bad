@@ -50,7 +50,7 @@ static void			gst_gsmenc_class_init	(GstGSMEnc *klass);
 static void			gst_gsmenc_init		(GstGSMEnc *gsmenc);
 
 static void			gst_gsmenc_chain	(GstPad *pad,GstData *_data);
-static GstPadLinkReturn	gst_gsmenc_sinkconnect 	(GstPad *pad, const GstCaps2 *caps);
+static GstPadLinkReturn	gst_gsmenc_sinkconnect 	(GstPad *pad, const GstCaps *caps);
 
 static GstElementClass *parent_class = NULL;
 static guint gst_gsmenc_signals[LAST_SIGNAL] = { 0 };
@@ -156,17 +156,17 @@ gst_gsmenc_init (GstGSMEnc *gsmenc)
 }
 
 static GstPadLinkReturn
-gst_gsmenc_sinkconnect (GstPad *pad, const GstCaps2 *caps)
+gst_gsmenc_sinkconnect (GstPad *pad, const GstCaps *caps)
 {
   GstGSMEnc *gsmenc;
   GstStructure *structure;
 
   gsmenc = GST_GSMENC (gst_pad_get_parent (pad));
 
-  structure = gst_caps2_get_nth_cap (caps, 0);
+  structure = gst_caps_get_structure (caps, 0);
   gst_structure_get_int  (structure, "rate", &gsmenc->rate);
   if (gst_pad_try_set_caps (gsmenc->srcpad,
-        gst_caps2_new_simple("audio/x-gsm",
+        gst_caps_new_simple("audio/x-gsm",
           "rate",     G_TYPE_INT, gsmenc->rate,
           "channels", G_TYPE_INT, 1,
           NULL)) > 0)

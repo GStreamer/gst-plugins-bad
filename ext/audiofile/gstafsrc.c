@@ -341,7 +341,7 @@ gst_afsrc_open_file (GstAFSrc *src)
   /* set caps on src */
   /*FIXME: add all the possible formats, especially float ! */ 
   gst_pad_try_set_caps (src->srcpad, 
-      gst_caps2_new_simple ("audio/x-raw-int",
+      gst_caps_new_simple ("audio/x-raw-int",
         "endianness", G_TYPE_INT, G_BYTE_ORDER,
         "signed",     G_TYPE_BOOLEAN, src->is_signed,
         "width",      G_TYPE_INT, src->width,

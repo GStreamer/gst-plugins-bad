@@ -142,7 +142,7 @@ gst_smooth_class_init (GstSmoothClass *klass)
 }
 
 static GstPadLinkReturn
-gst_smooth_link (GstPad *pad, const GstCaps2 *caps)
+gst_smooth_link (GstPad *pad, const GstCaps *caps)
 {
   GstSmooth *filter;
   GstStructure *structure;
@@ -150,7 +150,7 @@ gst_smooth_link (GstPad *pad, const GstCaps2 *caps)
 
   filter = GST_SMOOTH (gst_pad_get_parent (pad));
 
-  structure = gst_caps2_get_nth_cap (caps, 0);
+  structure = gst_caps_get_structure (caps, 0);
   ret = gst_structure_get_int (structure, "width", &filter->width);
   ret &= gst_structure_get_int (structure, "height", &filter->height);
 

@@ -105,7 +105,7 @@ static GstColorSpaceYUVTables * gst_colorspace_init_yuv(long depth,
 						long red_mask, long green_mask, long blue_mask);
 
 GstColorSpaceConverter* 
-gst_colorspace_yuv2rgb_get_converter (const GstCaps2 *from, const GstCaps2 *to) 
+gst_colorspace_yuv2rgb_get_converter (const GstCaps *from, const GstCaps *to) 
 {
   guint32 from_space;
   GstColorSpaceConverter *new;
@@ -116,8 +116,8 @@ gst_colorspace_yuv2rgb_get_converter (const GstCaps2 *from, const GstCaps2 *to)
 
   new = g_malloc (sizeof (GstColorSpaceConverter));
 
-  struct_from = gst_caps2_get_nth_cap (from, 0);
-  struct_to = gst_caps2_get_nth_cap (to, 0);
+  struct_from = gst_caps_get_structure (from, 0);
+  struct_to = gst_caps_get_structure (to, 0);
 
   gst_structure_get_int (struct_from, "width", &new->width);
   gst_structure_get_int (struct_from, "height", &new->height);
