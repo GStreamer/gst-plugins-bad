@@ -2,6 +2,16 @@
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* gst/tcp/gsttcpserversrc.c: (gst_tcpserversrc_read_data),
+	(gst_tcpserversrc_gdp_read_caps),
+	(gst_tcpserversrc_gdp_read_header):
+	  Don't assume blocking socket; read can return less than the
+	  requested amount of bytes (#167509).
+
+2005-02-25  Gergely Nagy  <algernon@bonehunter.rulez.org>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* gst/ffmpegcolorspace/imgconvert_template.h:
 	  Fix wrong macro availability leading to corrupt AYUV->RGB
 	  conversions (#166207).
