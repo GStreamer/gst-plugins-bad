@@ -1,3 +1,39 @@
+2005-03-31  Nickolay V. Shmyrev  <nshmyrev@yandex.ru>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* configure.ac:
+	* sys/Makefile.am:
+	* sys/v4lradio/Makefile.am:
+	* sys/v4lradio/gstv4lradio.c: (plugin_init):
+	* sys/v4lradio/gstv4lradiobin.c: (gst_v4lradio_iface_supported),
+	(gst_v4lradio_interface_init), (gst_v4lradio_probe_get_properties),
+	(gst_v4lradio_class_probe_devices),
+	(gst_v4lradio_probe_probe_property),
+	(gst_v4lradio_probe_needs_probe),
+	(gst_v4lradio_class_list_devices), (gst_v4lradio_probe_get_values),
+	(gst_v4lradio_property_probe_interface_init),
+	(gst_v4lradio_bin_get_type), (gst_v4lradio_bin_base_init),
+	(gst_v4lradio_bin_class_init), (gst_v4lradio_bin_init),
+	(gst_v4lradio_bin_dispose), (gst_v4lradio_bin_set_property),
+	(gst_v4lradio_bin_get_property), (gst_v4lradio_bin_change_state):
+	* sys/v4lradio/gstv4lradiobin.h:
+	* sys/v4lradio/gstv4lradiotuner.c:
+	(gst_v4lradio_tuner_interface_init),
+	(gst_v4lradio_tuner_list_channels),
+	(gst_v4lradio_tuner_set_channel), (gst_v4lradio_tuner_get_channel),
+	(gst_v4lradio_tuner_set_frequency),
+	(gst_v4lradio_tuner_get_frequency),
+	(gst_v4lradio_tuner_signal_strength):
+	* sys/v4lradio/gstv4lradiotuner.h:
+	* sys/v4lradio/v4lradio_calls.c: (gst_v4lradio_fill_params),
+	(gst_v4lradio_open), (gst_v4lradio_close),
+	(gst_v4lradio_get_signal), (gst_v4lradio_get_frequency),
+	(gst_v4lradio_set_frequency), (gst_v4lradio_get_audio),
+	(gst_v4lradio_set_audio):
+	* sys/v4lradio/v4lradio_calls.h:
+	  Add v4l-based analog radio source (#168728).
+
 2005-03-31  Ali Akcaagac  <aliakc@web.de>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>

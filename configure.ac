@@ -2051,6 +2051,7 @@ sys/qcam/Makefile
 sys/sunaudio/Makefile
 sys/v4l/Makefile
 sys/v4l2/Makefile
+sys/v4lradio/Makefile
 sys/vcd/Makefile
 sys/ximage/Makefile
 sys/xvimage/Makefile
