@@ -1,3 +1,12 @@
+2003-06-12  Thomas Vander Stichele  <thomas at apestaart dot org>
+
+	* gst/videotestsrc/gstvideotestsrc.c:
+	(gst_videotestsrc_change_state), (gst_videotestsrc_init),
+	(gst_videotestsrc_reset): reset object properties on ->NULL
+	* sys/xvideo/xvideosink.c: (gst_xvideosink_class_init),
+	(gst_xvideosink_init), (gst_xvideosink_reset),
+	(gst_xvideosink_change_state): reset object properties on ->NULL
+
 2003-05-31  Thomas Vander Stichele <thomas at apestaart dot org>
 
 	* gst-libs/gst/play/play.c: (gst_play_get_length_callback),
