@@ -973,10 +973,9 @@ gst_play_set_visualisation_video_sink (GstPlay * play,
       g_signal_connect (G_OBJECT (play->visualisation_sink_element),
 			"have_xid",
 			G_CALLBACK (callback_video_have_vis_xid), play);
-      /*g_signal_connect (    G_OBJECT (play->visualisation_sink_element),
-         "have_size",
-         G_CALLBACK (callback_video_have_vis_size),
-         play); */
+      g_signal_connect (G_OBJECT (play->visualisation_sink_element),
+                        "have_size",
+                        G_CALLBACK (callback_video_have_vis_size), play);
       g_object_set (G_OBJECT (play->visualisation_sink_element),
 		    "need_new_window", TRUE, "toplevel", FALSE, NULL);
     }

@@ -75,7 +75,7 @@ typedef enum
   GST_PLAY_SINK_TYPE_ANY,
 } GstPlaySinkType;
 
-#define GST_PLAY_ERROR 		gst_play_error_quark ()
+#define GST_PLAY_ERROR           gst_play_error_quark ()
 
 #define GST_TYPE_PLAY            (gst_play_get_type())
 #define GST_PLAY(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), GST_TYPE_PLAY, GstPlay))
@@ -96,12 +96,12 @@ struct _GstPlay
 {
   GObject parent;
 
-    gboolean (*setup_pipeline) (GstPlay * play, GError ** error);
+  gboolean (*setup_pipeline) (GstPlay * play, GError ** error);
   void (*teardown_pipeline) (GstPlay * play);
-    gboolean (*set_data_src) (GstPlay * play, GstElement * datasrc);
-    gboolean (*set_autoplugger) (GstPlay * play, GstElement * autoplugger);
-    gboolean (*set_video_sink) (GstPlay * play, GstElement * videosink);
-    gboolean (*set_audio_sink) (GstPlay * play, GstElement * audiosink);
+  gboolean (*set_data_src) (GstPlay * play, GstElement * datasrc);
+  gboolean (*set_autoplugger) (GstPlay * play, GstElement * autoplugger);
+  gboolean (*set_video_sink) (GstPlay * play, GstElement * videosink);
+  gboolean (*set_audio_sink) (GstPlay * play, GstElement * audiosink);
 
   /* core elements */
   GstElement *pipeline;
@@ -151,6 +151,7 @@ struct _GstPlayClass
   void (*have_xid) (GstPlay * play, gint xid);
   void (*have_vis_xid) (GstPlay * play, gint xid);
   void (*have_video_size) (GstPlay * play, gint width, gint height);
+  void (*have_vis_size) (GstPlay * play, gint width, gint height);
 };
 
 struct _GstPlayIdleData

@@ -34,6 +34,7 @@ enum
   HAVE_XID,
   HAVE_VIS_XID,
   HAVE_VIDEO_SIZE,
+  HAVE_VIS_SIZE,
   PIPELINE_ERROR,
   /* put additional signals before this comment */
   LAST_SIGNAL,
@@ -352,6 +353,11 @@ gst_play_idle_signal (GstPlay * play)
 		     signal->signal_data.video_size.width,
 		     signal->signal_data.video_size.height);
       break;
+    case HAVE_VIS_SIZE:
+      g_signal_emit (G_OBJECT (play), gst_play_signals[HAVE_VIS_SIZE], 0,
+		     signal->signal_data.video_size.width,
+		     signal->signal_data.video_size.height);
+      break;
     case STATE_CHANGE:
       g_signal_emit (G_OBJECT (play), gst_play_signals[STATE_CHANGE], 0,
 		     signal->signal_data.state.old_state,
@@ -435,6 +441,22 @@ callback_video_have_size (GstElement * element,
 
   signal = g_new0 (GstPlaySignal, 1);
   signal->signal_id = HAVE_VIDEO_SIZE;
+  signal->signal_data.video_size.width = width;
+  signal->signal_data.video_size.height = height;
+
+  g_async_queue_push (play->signal_queue, signal);
+
+  play->idle_add_func ((GSourceFunc) gst_play_idle_signal, play);
+}
+
+static void
+callback_video_have_vis_size (GstElement * element,
+			      gint width, gint height, GstPlay * play)
+{
+  GstPlaySignal *signal;
+
+  signal = g_new0 (GstPlaySignal, 1);
+  signal->signal_id = HAVE_VIS_SIZE;
   signal->signal_data.video_size.width = width;
   signal->signal_data.video_size.height = height;
 
@@ -665,6 +687,15 @@ gst_play_class_init (GstPlayClass * klass)
 		  gst_marshal_VOID__INT_INT,
 		  G_TYPE_NONE, 2, G_TYPE_INT, G_TYPE_INT);
 
+  gst_play_signals[HAVE_VIS_SIZE] =
+    g_signal_new ("have_vis_size",
+		  G_TYPE_FROM_CLASS (klass),
+		  G_SIGNAL_RUN_FIRST,
+		  G_STRUCT_OFFSET (GstPlayClass, have_vis_size),
+		  NULL, NULL,
+		  gst_marshal_VOID__INT_INT,
+		  G_TYPE_NONE, 2, G_TYPE_INT, G_TYPE_INT);
+                  
   gst_control_init (NULL, NULL);
 }
 
