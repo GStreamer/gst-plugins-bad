@@ -16,13 +16,6 @@ else
 EXAMPLES_DIR=
 endif
 
-
-gst-element-check-@GST_MAJORMINOR@.m4: gst-element-check.m4
-	cp $(srcdir)/gst-element-check.m4 gst-element-check-@GST_MAJORMINOR@.m4
-
-aclocaldir = $(datadir)/aclocal
-aclocal_DATA = gst-element-check-@GST_MAJORMINOR@.m4
-
 SUBDIRS=\
 	gst-libs \
 	gst sys $(EXT_DIR) \
@@ -30,7 +23,7 @@ SUBDIRS=\
 
 DIST_SUBDIRS=gst-libs gst sys ext examples tools gconf testsuite pkgconfig
 
-EXTRA_DIST=gst-plugins.spec depcomp gst-element-check.m4 \
+EXTRA_DIST=gst-plugins.spec depcomp \
 	   AUTHORS COPYING README RELEASE REQUIREMENTS \
 	   ChangeLog autogen.sh common m4
 
