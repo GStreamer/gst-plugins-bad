@@ -40,5 +40,4 @@ pkgconfig_DATA = \
 
 EXTRA_DIST= \
            gstreamer-libs.pc.in gstreamer-libs-uninstalled.pc.in \
-           gstreamer-play.pc.in gstreamer-play-uninstalled.pc.in \
-	   gstreamer-gconf.pc.in gstreamer-gconf.pc-uninstalled.in
+           gstreamer-play.pc.in gstreamer-play-uninstalled.pc.in
