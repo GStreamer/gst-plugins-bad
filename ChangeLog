@@ -1,3 +1,10 @@
+2004-03-03  Thomas Vander Stichele  <thomas at apestaart dot org>
+
+	* ext/mpeg2dec/gstmpeg2dec.c:
+          compile against mpeg2dec 0.4.0 as well (Johan Dahlin)
+
+=== release 0.6.4 ===
+
 2003-06-28  Thomas Vander Stichele  <thomas at apestaart dot org>
 
 	* gst/modplug/gstmodplug.cc:
