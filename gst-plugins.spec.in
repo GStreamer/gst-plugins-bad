@@ -65,10 +65,7 @@ else
   make 2>&1 | tee make.log
 fi
 
-%install
-[ -n "$RPM_BUILD_ROOT" -a "$RPM_BUILD_ROOT" != / ] && rm -rf $RPM_BUILD_ROOT
-
-make prefix=$RPM_BUILD_ROOT%{prefix} install
+%makeinstall
 
 %clean
 [ -n "$RPM_BUILD_ROOT" -a "$RPM_BUILD_ROOT" != / ] && rm -rf $RPM_BUILD_ROOT
