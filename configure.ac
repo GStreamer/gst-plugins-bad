@@ -573,7 +573,7 @@ dnl])
 dnl *** FLAC ***
 translit(dnm, m, l) AM_CONDITIONAL(USE_FLAC, true)
 GST_CHECK_FEATURE(FLAC, [FLAC lossless audio], flacenc flacdec, [
-  GST_CHECK_LIBHEADER(FLAC, FLAC, FLAC__stream_decoder_new, -lm, FLAC/all.h, FLAC_LIBS="-lFLAC")
+  GST_CHECK_LIBHEADER(FLAC, FLAC, FLAC__seekable_stream_encoder_new, -lm, FLAC/all.h, FLAC_LIBS="-lFLAC")
   AC_SUBST(FLAC_LIBS)
 ])
 
