@@ -12,7 +12,7 @@ AM_MAINTAINER_MODE
 
 dnl when going to/from release please set the nano (fourth number) right !
 dnl releases only do Wall, cvs and prerelease does Werror too
-AS_VERSION(gst-plugins, GST_PLUGINS, 0, 4, 0, 2, GST_ERROR="-Wall", GST_ERROR="-Wall -Werror")
+AS_VERSION(gst-plugins, GST_PLUGINS, 0, 4, 0, 3, GST_ERROR="-Wall", GST_ERROR="-Wall -Werror")
 AM_INIT_AUTOMAKE($PACKAGE,$VERSION)
 AS_LIBTOOL(GST_PLUGINS, 0, 0, 0, yes)
 
@@ -62,11 +62,9 @@ GST_CHECK_FEATURE(EXPERIMENTAL, [enable building of experimental plug-ins],,
 [
   AC_MSG_WARN(building experimental plug-ins)
   USE_TARKIN="yes"
-  USE_RTP="yes"
 ],[
   AC_MSG_NOTICE(not building experimental plug-ins)
   USE_TARKIN="no"
-  USE_RTP="no"
 ])
 
 dnl broken plug-ins; stuff that doesn't seem to build at the moment
