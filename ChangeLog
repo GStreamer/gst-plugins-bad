@@ -1,5 +1,10 @@
 2004-06-23  Thomas Vander Stichele  <thomas at apestaart dot org>
 
+	* ext/alsa/gstalsasink.c: (gst_alsa_sink_check_event):
+	  apply a fix suggested by Company
+
+2004-06-23  Thomas Vander Stichele  <thomas at apestaart dot org>
+
 	* ext/alsa/gstalsa.c: (gst_alsa_init), (gst_alsa_dispose),
 	(gst_alsa_xrun_recovery):
 	* ext/alsa/gstalsa.h:
