@@ -78,7 +78,8 @@ make prefix=$RPM_BUILD_ROOT%{prefix} install
 @USE_A52DEC_TRUE@Summary: GStreamer VOB decoder plugin
 @USE_A52DEC_TRUE@Group: Libraries/Multimedia
 @USE_A52DEC_TRUE@Requires: gstreamer-plugins >= %{version}
-@USE_A52DEC_TRUE@Requires: a52dec >= 0.7.0
+@USE_A52DEC_TRUE@Requires: a52dec >= 0.7.3
+@USE_A52DEC_TRUE@Requires: a52dec-devel >= 0.7.3
 @USE_A52DEC_TRUE@
 @USE_A52DEC_TRUE@%description -n gstreamer-a52dec
 @USE_A52DEC_TRUE@Plugin for decoding of VOB files
