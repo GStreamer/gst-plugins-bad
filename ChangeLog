@@ -1,5 +1,10 @@
 2005-03-31  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* gst/videotestsrc/videotestsrc.c: (oil_splat_u8):
+	  Fix oilless compile.
+
+2005-03-31  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* gst/typefind/gsttypefindfunctions.c:
 	(mp3_type_frame_length_from_header), (mp3_type_find):
 	  Detect free format mp3s with faulty headers (#170387).
