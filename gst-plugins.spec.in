@@ -804,6 +804,8 @@ GStreamer support libraries header files.
 @USE_SDL_TRUE@#SDL-devel should require XFree86-devel because it links to it
 @USE_SDL_TRUE@#only it doesn't seem to do that currently
 @USE_SDL_TRUE@BuildRequires: 	XFree86-devel
+@USE_SDL_TRUE@#it used to be called gstreamer-sdl
+@USE_SDL_TRUE@Obsoletes: 	gstreamer-sdl
 @USE_SDL_TRUE@
 @USE_SDL_TRUE@%description -n gstreamer-SDL
 @USE_SDL_TRUE@Plug-in for sending video output to the Simple Direct Media architecture.
@@ -1182,6 +1184,7 @@ processed with the lavtools from mjpegtools.
 
 %changelog
 * Thu Jul 04 2002 Thomas Vander Stichele <thomas@apestaart.org>
+- fix issue with SDL package
 - make all packages STRICTLY require the right version to avoid
   ABI issues
 - make gst-plugins obsolete gst-plugin-libs
