@@ -215,6 +215,12 @@ case "x${target_cpu}" in
   xhppa*)     HAVE_CPU_HPPA=yes
               AC_DEFINE(HAVE_CPU_HPPA, 1, [Define if the target CPU is a HPPA]) ;;
 esac
+# make these available to automake
+AM_CONDITIONAL(HAVE_CPU_I386,       test "x$HAVE_CPU_I386" = "xyes")
+AM_CONDITIONAL(HAVE_CPU_PPC,        test "x$HAVE_CPU_PPC" = "xyes")
+AM_CONDITIONAL(HAVE_CPU_ALPHA,      test "x$HAVE_CPU_ALPHA" = "xyes")
+AM_CONDITIONAL(HAVE_CPU_ARM,        test "x$HAVE_CPU_ARM" = "xyes")
+AM_CONDITIONAL(HAVE_CPU_SPARC,      test "x$HAVE_CPU_SPARC" = "xyes")
 
 dnl Determine endianness
 AC_C_BIGENDIAN
@@ -235,11 +241,9 @@ HAVE_GTK=NO
 PKG_CHECK_MODULES(GTK2, gtk+-2.0 >= 2.2.0, HAVE_GTK_22=yes, HAVE_GTK_22=no)
 if test "x$HAVE_GTK_22" = "xyes"; then
   HAVE_GTK=yes
-  AC_PATH_PROG(QUERYLOADERS, gdk-pixbuf-query-loaders, no)
   GTK_VERSION=`$PKG_CONFIG --variable=gtk_binary_version gtk+-2.0`
   AC_SUBST(GTK_VERSION)
   GTK_PREFIX=`$PKG_CONFIG --variable=prefix gdk-pixbuf-2.0`
-  GTK_SYSCONFDIR=`$PKG_CONFIG --variable=prefix gdk-pixbuf-2.0`
   GDK_PIXBUF_LIBDIR=`$PKG_CONFIG --variable=libdir gdk-pixbuf-2.0`
   GDK_PIXBUF_PREFIXDIR=`$PKG_CONFIG --variable=prefix gdk-pixbuf-2.0`
   AC_SUBST(GTK_BASE_DIR)
@@ -254,27 +258,67 @@ GTK_LIBS=$GTK2_LIBS
 AC_SUBST(GTK_LIBS)
 AC_SUBST(GTK_CFLAGS)
 AC_SUBST(HAVE_GTK)
-AM_CONDITIONAL(HAVE_GDK_LOADERS, test "x$HAVE_GTK_22" = "xyes")
 
-GDK_PIXBUF_LOADER_DIR="$GDK_PIXBUF_LIBDIR/gtk-2.0/\$(GTK_VERSION)/loaders"
-AC_ARG_WITH(gdk-pixbuf-loader-dir, 
-   AC_HELP_STRING([--with-gdk-pixbuf-loader-dir],
-   	[directory to install the gdk_pixbuf loader]),
-   [if test "x${withval}" != x ; then
-   	GDK_PIXBUF_LOADER_DIR="${withval}"
-    fi
-])
-AC_SUBST(GDK_PIXBUF_LOADER_DIR)
+# gdk_pixbuf gstreamer loader is considered experimental, so disable
+# by default
+if test "x$HAVE_GTK_22" = "xyes"; then
+  HAVE_GDK_LOADERS=yes
+else
+  HAVE_GDK_LOADERS=no
+fi
 
-GDK_PIXBUF_CONFDIR="$GDK_PIXBUF_PREFIXDIR/etc/gtk-2.0/"
-AC_ARG_WITH(gdk-pixbuf-conffile, 
-   AC_HELP_STRING([--with-gdk-pixbuf-confdir],
-   	[path to the gdk_pixbuf config directroy]),
-   [if test "x${withval}" != x ; then
-   	GDK_PIXBUF_CONFDIR="${withval}"
-    fi
-])
-AC_SUBST(GDK_PIXBUF_CONFDIR)
+AC_ARG_ENABLE(gdk-pixbuf-loader,
+  AC_HELP_STRING([--enable-gdk-pixbuf-loader],
+              [whether to enable building of gdk_pixbuf loader]),
+              :, HAVE_GDK_LOADERS="no")
+
+# allow customization of pixbuf loader install location
+# when nothing specified, adhere to prefix settings
+# when called without any option with this argument, autodetect
+# when called with a path, set to the given path
+
+if test "x$HAVE_GDK_LOADERS" == "xyes"; then
+  AC_PATH_PROG(QUERYLOADERS, gdk-pixbuf-query-loaders, no)
+  AC_ARG_WITH(gdk-pixbuf-loader-dir, 
+     AC_HELP_STRING([--with-gdk-pixbuf-loader-dir],
+     	[directory to install the gdk_pixbuf loader (none for pkg-config default)]),
+     [
+      if test "x${withval}" != xyes ; then
+     	GDK_PIXBUF_LOADER_DIR="${withval}"
+      else
+        GDK_PIXBUF_LOADER_DIR="$GDK_PIXBUF_LIBDIR/gtk-2.0/\$GTK_VERSION/loaders"
+      fi
+     ],
+     # nothing specified
+     GDK_PIXBUF_LOADER_DIR=${libdir}/gtk-2.0/\$GTK_VERSION/loaders
+  )
+  AS_AC_EXPAND(GDK_PIXBUF_LOADER_DIR, $GDK_PIXBUF_LOADER_DIR)
+  AC_SUBST(GDK_PIXBUF_LOADER_DIR)
+  AC_MSG_NOTICE([Putting GTK+-2 pixbuf loaders in $GDK_PIXBUF_LOADER_DIR])
+  
+  # allow customization of pixbuf loader configuration file
+  # when nothing specified, adhere to prefix settings
+  # when called without any option with this argument, autodetect
+  # when called with a path, set to the given path
+  AC_ARG_WITH(gdk-pixbuf-conf-dir, 
+     AC_HELP_STRING([--with-gdk-pixbuf-conf-dir],
+     	[directory to install the gdk_pixbuf config (none for pkg-config default)]),
+     [
+      if test "x${withval}" != xyes ; then
+        GDK_PIXBUF_CONF_DIR="${withval}"
+      else
+        GDK_PIXBUF_CONF_DIR="$GDK_PIXBUF_PREFIXDIR/etc/gtk-2.0/"
+      fi
+     ],
+     # nothing specified
+     GDK_PIXBUF_LOADER_DIR=${libdir}/gtk-2.0/\$GTK_VERSION/loaders
+     GDK_PIXBUF_CONF_DIR=${sysconfdir}/gtk-2.0
+  )
+  AS_AC_EXPAND(GDK_PIXBUF_CONF_DIR, $GDK_PIXBUF_CONF_DIR)
+  AC_SUBST(GDK_PIXBUF_CONF_DIR)
+  AC_MSG_NOTICE([Putting GTK+-2 pixbuf loader config in $GDK_PIXBUF_CONF_DIR])
+fi
+AM_CONDITIONAL(HAVE_GDK_LOADERS, test "x$HAVE_GDK_LOADERS" = "xyes")
 
 dnl ===========================================================================
 dnl ============================= gst plug-ins ================================
@@ -334,6 +378,7 @@ GST_PLUGINS_ALL="\
 	spectrum \
 	speed \
 	stereo \
+	switch \
 	synaesthesia \
 	tags \
 	tcp \
@@ -415,39 +460,6 @@ GST_CHECK_FEATURE(QCAM, [QuickCam], qcamsrc, [
   fi
 ])
 
-dnl *** Video 4 Linux ***
-dnl for information about the header/define, see sys/v4l/gstv4lelement.h
-translit(dnm, m, l) AM_CONDITIONAL(USE_V4L, true)
-GST_CHECK_FEATURE(V4L, [Video 4 Linux], v4lsrc v4lmjpegsrc v4lmjpegsink, [
-  AC_CHECK_DECL(VID_TYPE_MPEG_ENCODER, HAVE_V4L="yes", HAVE_V4L="no", [
-#include <sys/types.h>
-#define _LINUX_TIME_H
-#include <linux/videodev.h>
-  ])
-])
-
-dnl *** Video 4 Linux 2***
-dnl for information about the header/define, see sys/v4l2/gstv4l2element.h
-translit(dnm, m, l) AM_CONDITIONAL(USE_V4L2, true)
-GST_CHECK_FEATURE(V4L2, [Video 4 Linux 2], v4l2src, [
-  AC_MSG_CHECKING([Checking for uptodate v4l2 installation])
-  AC_TRY_COMPILE([
-#include <sys/types.h>
-#include <linux/types.h>
-#define _LINUX_TIME_H
-#include <linux/videodev2.h>
-#if defined(V4L2_MAJOR_VERSION) || defined(V4L2_MINOR_VERSION)
-#error too early v4l2 version or no v4l2 at all
-#endif
-  ], [
-return 0;
-  ], [ HAVE_V4L2="yes" && AC_MSG_RESULT(yes)],
-     [ HAVE_V4L2="no"  && AC_MSG_RESULT(no) &&
-       AC_CHECK_HEADER(linux/videodev2.h,
-                       [ AC_MSG_WARN([video4linux2 headers were found, but they're old. Please update v4l2 to compile the v4l2 plugins])],
-                       [ AC_MSG_WARN([video4linux2 was not found])])])
-])
-
 dnl *** Video CD ***
 translit(dnm, m, l) AM_CONDITIONAL(USE_VCD, true)
 GST_CHECK_FEATURE(VCD, [Video CD], vcdsrc, [
@@ -489,23 +501,27 @@ dnl		;;
 ])
 
 dnl Check for X11
-AC_PATH_XTRA
-if test "-DX_DISPLAY_MISSING" = "$X_CFLAGS"; then
-  AC_MSG_NOTICE([cannot find X11, the build system needs fixage])
-  HAVE_X="no"
-else
-  dnl this is much more than we want
-  X_LIBS="$X_LIBS $X_PRE_LIBS $X_EXTRA_LIBS"
-  dnl AC_PATH_XTRA only defines the path needed to find the X libs, not the libs
-  dnl therefore we add them here
-  X_LIBS="$X_LIBS -lX11"
-  AC_SUBST(X_CFLAGS)
-  AC_SUBST(X_LIBS)
-  HAVE_X="yes";
-fi
-AC_SUBST(HAVE_X)
-AM_CONDITIONAL(USE_X, test "-DX_DISPLAY_MISSING" != "$X_CFLAGS")
-
+translit(dnm, m, l) AM_CONDITIONAL(USE_X, true)
+GST_CHECK_FEATURE(X, [X libraries and plugins],
+                  [ximagesink], [
+  AC_PATH_XTRA
+  if test "x$X_CFLAGS" == "x" -o "$X_CFLAGS" == "-DX_DISPLAY_MISSING"
+  then
+    AC_MSG_NOTICE([cannot find X11 development files])
+    HAVE_X="no"
+  else
+    dnl this is much more than we want
+    X_LIBS="$X_LIBS $X_PRE_LIBS $X_EXTRA_LIBS"
+    dnl AC_PATH_XTRA only defines the path needed to find the X libs, not the libs
+    dnl therefore we add them here
+    X_LIBS="$X_LIBS -lX11"
+    AC_SUBST(X_CFLAGS)
+    AC_SUBST(X_LIBS)
+    HAVE_X="yes"
+  fi
+  AC_SUBST(HAVE_X)
+])
+  
 dnl *** XVideo ***
 dnl Look for the PIC library first, Debian requires it.
 dnl Check debian-devel archives for gory details.
@@ -572,6 +588,50 @@ GST_CHECK_FEATURE(XSHM, [X Shared Memory extension], xshm, [
   AC_SUBST(HAVE_XSHM) 
   AC_SUBST(XSHM_LIBS) 
 ] )
+
+dnl v4l/v4l2 checks have been moved down because they require X
+
+dnl *** Video 4 Linux ***
+dnl for information about the header/define, see sys/v4l/gstv4lelement.h
+translit(dnm, m, l) AM_CONDITIONAL(USE_V4L, true)
+GST_CHECK_FEATURE(V4L, [Video 4 Linux], v4lsrc v4lmjpegsrc v4lmjpegsink, [
+  # first check X
+  HAVE_V4L="no"
+  if test "$HAVE_X" == "yes"
+  then
+    AC_CHECK_DECL(VID_TYPE_MPEG_ENCODER, HAVE_V4L="yes", HAVE_V4L="no", [
+#include <sys/types.h>
+#define _LINUX_TIME_H
+#include <linux/videodev.h>
+    ])
+  fi
+])
+
+dnl *** Video 4 Linux 2***
+dnl for information about the header/define, see sys/v4l2/gstv4l2element.h
+translit(dnm, m, l) AM_CONDITIONAL(USE_V4L2, true)
+GST_CHECK_FEATURE(V4L2, [Video 4 Linux 2], v4l2src, [
+  HAVE_V4L2="no"
+  if test "$HAVE_X" == "yes"
+  then
+    AC_MSG_CHECKING([Checking for uptodate v4l2 installation])
+    AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <linux/types.h>
+#define _LINUX_TIME_H
+#include <linux/videodev2.h>
+#if defined(V4L2_MAJOR_VERSION) || defined(V4L2_MINOR_VERSION)
+#error too early v4l2 version or no v4l2 at all
+#endif
+    ], [
+return 0;
+    ], [ HAVE_V4L2="yes" && AC_MSG_RESULT(yes)],
+       [ HAVE_V4L2="no"  && AC_MSG_RESULT(no) &&
+         AC_CHECK_HEADER(linux/videodev2.h,
+                         [ AC_MSG_WARN([video4linux2 headers were found, but they're old. Please update v4l2 to compile the v4l2 plugins])],
+                         [ AC_MSG_WARN([video4linux2 was not found])])])
+  fi
+])
 
 dnl Next, check for the optional libraries:
 dnl These are all libraries used in building plug-ins
@@ -784,7 +844,7 @@ GST_CHECK_FEATURE(FAAD, [AAC decoder plug-in], faad, [
   AC_MSG_CHECKING([Checking for FAAD >= 2])
   AC_TRY_COMPILE([
 #include <faad.h>
-#if !defined(FAAD2_VERSION)
+#if !defined(FAAD2_VERSION) || !defined(FAAD_FMT_DOUBLE)
 #error Not faad2
 #endif
   ], [ return 0; ],
@@ -1013,6 +1073,16 @@ GST_CHECK_FEATURE(MPEG2DEC, [mpeg2dec], mpeg2dec, [
   AC_SUBST(MPEG2DEC_LIBS)
 ])
 
+dnl *** mpeg2enc ***
+translit(dnm, m, l) AM_CONDITIONAL(USE_MPEG2ENC, true)
+GST_CHECK_FEATURE(MPEG2ENC, [mpeg2enc], mpeg2enc, [
+  PKG_CHECK_MODULES(MPEG2ENC, mjpegtools >= 1.6.1.92,
+      HAVE_MPEG2ENC="yes", HAVE_MPEG2ENC="no")
+  MPEG2ENC_LIBS="$MPEG2ENC_LIBS -lmpeg2encpp"
+  AC_SUBST(MPEG2ENC_CFLAGS)
+  AC_SUBST(MPEG2ENC_LIBS)
+])
+
 dnl *** mplex ***
 translit(dnm, m, l) AM_CONDITIONAL(USE_MPLEX, true)
 GST_CHECK_FEATURE(MPLEX, [mplex], mplex, [HAVE_MPLEX=$HAVE_CXX])
@@ -1036,7 +1106,10 @@ GST_CHECK_FEATURE(RAW1394, [raw1394 library], dv1394src, [
 dnl *** SDL ***
 translit(dnm, m, l) AM_CONDITIONAL(USE_SDL, true)
 GST_CHECK_FEATURE(SDL, [SDL plug-in], sdlvideosink, [
- AM_PATH_SDL(, HAVE_SDL=yes, HAVE_SDL=no)
+  dnl sdlvideosink depends on the xoverlay interface, which depends on X
+  if test x$HAVE_X = xyes; then
+    AM_PATH_SDL(, HAVE_SDL=yes, HAVE_SDL=no)
+  fi
 ])
 
 dnl *** shout ***
@@ -1251,11 +1324,6 @@ dnl #############################
 
 dnl These should be "USE_*" instead of "HAVE_*", but some packages expect
 dnl HAVE_ and it is likely to be easier to stick with the old name
-AM_CONDITIONAL(HAVE_CPU_I386,       test "x$HAVE_CPU_I386" = "xyes")
-AM_CONDITIONAL(HAVE_CPU_PPC,        test "x$HAVE_CPU_PPC" = "xyes")
-AM_CONDITIONAL(HAVE_CPU_ALPHA,      test "x$HAVE_CPU_ALPHA" = "xyes")
-AM_CONDITIONAL(HAVE_CPU_ARM,        test "x$HAVE_CPU_ARM" = "xyes")
-AM_CONDITIONAL(HAVE_CPU_SPARC,      test "x$HAVE_CPU_SPARC" = "xyes")
 AM_CONDITIONAL(HAVE_LIBMMX,         test "x$USE_LIBMMX" = "xyes")
 
 AM_CONDITIONAL(HAVE_ATOMIC_H,       test "x$USE_ATOMIC_H" = "xyes")
@@ -1293,7 +1361,6 @@ dnl ############################
 
 dnl set license and copyright notice
 AC_DEFINE(GST_LICENSE, "LGPL", [GStreamer license])
-AC_DEFINE(GST_COPYRIGHT, "(c) 1999-2003 The GStreamer Team", [copyright message in plugins])
 dnl package name in plugins
 AC_ARG_WITH(package-name,
 AC_HELP_STRING([--with-package-name],[specify package name to use in plugins]),
@@ -1302,7 +1369,7 @@ AC_HELP_STRING([--with-package-name],[specify package name to use in plugins]),
   no) AC_MSG_ERROR(bad value ${withval} for --with-package-name) ;;
   *) GST_PACKAGE="${withval}" ;;
 esac], 
-[GST_PACKAGE="Gstreamer"]) dnl Default value
+[GST_PACKAGE="GStreamer"]) dnl Default value
 AC_MSG_NOTICE(Using $GST_PACKAGE as package name)
 AC_DEFINE_UNQUOTED(GST_PACKAGE, "$GST_PACKAGE", [package name in plugins])
 dnl package origin URL
@@ -1381,6 +1448,7 @@ gst/smpte/Makefile
 gst/spectrum/Makefile
 gst/speed/Makefile
 gst/stereo/Makefile
+gst/switch/Makefile
 gst/synaesthesia/Makefile
 gst/tags/Makefile
 gst/tcp/Makefile
@@ -1444,6 +1512,7 @@ ext/mad/Makefile
 ext/mas/Makefile
 ext/mikmod/Makefile
 ext/mpeg2dec/Makefile
+ext/mpeg2enc/Makefile
 ext/mplex/Makefile
 ext/ogg/Makefile
 ext/pango/Makefile
@@ -1474,6 +1543,7 @@ gst-libs/gst/play/Makefile
 gst-libs/gst/propertyprobe/Makefile
 gst-libs/gst/resample/Makefile
 gst-libs/gst/riff/Makefile
+gst-libs/gst/tag/Makefile
 gst-libs/gst/tuner/Makefile
 gst-libs/gst/video/Makefile
 gst-libs/gst/xoverlay/Makefile
@@ -1485,8 +1555,8 @@ examples/dynparams/Makefile
 examples/capsfilter/Makefile
 examples/seeking/Makefile
 examples/indexing/Makefile
+examples/gstplay/Makefile
 examples/Makefile
-testsuite/autoplug/Makefile
 testsuite/spider/Makefile
 testsuite/alsa/Makefile
 testsuite/Makefile
