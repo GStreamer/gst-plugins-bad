@@ -341,8 +341,10 @@ gst_play_idle_signal (GstPlay *play)
 		gst_object_unref (signal->signal_data.info.object);
 		break;
 	case PIPELINE_ERROR:
+
 		if (gst_element_get_state(play->pipeline) == GST_STATE_PLAYING)
-			gst_element_set_state(play->pipeline, GST_STATE_READY);
+			if (gst_element_set_state (play->pipeline, GST_STATE_READY) != GST_STATE_SUCCESS)
+                        	g_warning ("PIPELINE_ERROR: set to READY failed");
 		g_signal_emit (G_OBJECT (play), gst_play_signals[PIPELINE_ERROR], 0, 
 		               signal->signal_data.error.element, signal->signal_data.error.error);
 		if (signal->signal_data.error.error)
@@ -729,7 +731,8 @@ gst_play_seek_to_time (	GstPlay *play,
 
 	/*g_print("doing seek to %lld\n", play->seek_time);*/
         prev_state = GST_STATE(play->pipeline);
-	gst_element_set_state(play->pipeline, GST_STATE_PAUSED);
+	if (gst_play_set_state (play, GST_STATE_PAUSED) != GST_STATE_SUCCESS)
+        	g_warning ("gst_play_seek: setting to READY failed\n");
 
 	s_event = gst_event_new_seek (GST_FORMAT_TIME |
 	                              GST_SEEK_METHOD_SET |
@@ -755,7 +758,8 @@ gst_play_seek_to_time (	GstPlay *play,
 		play->time_nanos = gst_clock_get_time(play->clock);
 		g_signal_emit (G_OBJECT (play), gst_play_signals [TIME_TICK], 0, play->time_nanos);
 	}
-	gst_element_set_state(play->pipeline, prev_state);
+	if (gst_element_set_state (play->pipeline, prev_state) != GST_STATE_SUCCESS)
+        	g_warning ("gst_play_seek_to_time: setting to READY failed\n");
 }
 
 /**
@@ -960,7 +964,8 @@ gst_play_set_location (	GstPlay *play,
 
 	current_state = gst_play_get_state (play);
 	if (current_state != GST_STATE_READY){
-		gst_play_set_state (play, GST_STATE_READY);
+		if (gst_play_set_state (play, GST_STATE_READY) != GST_STATE_SUCCESS)
+                        g_warning ("gst_play_set_location: setting to READY failed\n");
 	}
 
 	if (play->set_autoplugger){
@@ -1104,7 +1109,8 @@ gst_play_set_data_src (	GstPlay *play,
 	g_return_val_if_fail (GST_IS_ELEMENT (data_src), FALSE);
 
 	if (gst_play_get_state (play) != GST_STATE_READY){
-		gst_play_set_state (play, GST_STATE_READY);
+		if (gst_play_set_state (play, GST_STATE_READY) != GST_STATE_SUCCESS)
+                        g_warning ("gst_play_set_data_src: setting to READY failed\n");
 	}
 
 	if (play->set_data_src){
@@ -1134,7 +1140,8 @@ gst_play_set_video_sink (	GstPlay *play,
 	g_return_val_if_fail (GST_IS_ELEMENT (video_sink), FALSE);
 
 	if (gst_play_get_state (play) != GST_STATE_READY){
-		gst_play_set_state (play, GST_STATE_READY);
+		if (gst_play_set_state (play, GST_STATE_READY) != GST_STATE_SUCCESS)
+                        g_warning ("gst_play_set_video_sink: setting to READY failed\n");
 	}
 
 	if (play->set_video_sink){
@@ -1164,7 +1171,8 @@ gst_play_set_audio_sink (	GstPlay *play,
 	g_return_val_if_fail (GST_IS_ELEMENT (audio_sink), FALSE);
 
 	if (gst_play_get_state (play) != GST_STATE_READY){
-		gst_play_set_state (play, GST_STATE_READY);
+		if (gst_play_set_state (play, GST_STATE_READY) != GST_STATE_SUCCESS)
+                        g_warning ("gst_play_set_audio_sink: setting to READY failed\n");
 	}
 
 	if (play->set_audio_sink){
