@@ -1,3 +1,5 @@
+AUTOMAKE_OPTIONS = dist-bzip2
+
 if USE_GCONFTOOL
 GCONF_DIR=gconf
 else
@@ -35,10 +37,17 @@ DIST_SUBDIRS=ext gst-libs \
 	pkgconfig
 
 EXTRA_DIST=gst-plugins.spec depcomp \
-	   AUTHORS COPYING COPYING.LIB README RELEASE REQUIREMENTS \
+	   AUTHORS COPYING COPYING.LIB README REQUIREMENTS \
 	   ChangeLog autogen.sh common m4
 
 DISTCLEANFILES=_stdint.h
+
+release: dist
+	make @PACKAGE@-@VERSION@.tar.gz.md5
+	make @PACKAGE@-@VERSION@.tar.bz2.md5
+                                                                                
+%.md5: %
+	md5sum $< > $@
 
 dist-hook:
 	rm -rf `find $(distdir)/common -name CVS`
