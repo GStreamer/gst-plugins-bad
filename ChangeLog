@@ -1,3 +1,11 @@
+2005-03-05  Thomas Vander Stichele  <thomas at apestaart dot org>
+
+	Patch by: Ronald Bultje
+
+	* ext/alsa/gstalsamixer.c:
+	* ext/alsa/gstalsamixertrack.h:
+	  Fix for #166982 - crash in gnome-volume-control
+
 2005-03-02  James Henstridge  <james@jamesh.id.au>
 
 	Reviewed by: Tim-Philipp Müller  <tim at centricular dot net>
