@@ -1,3 +1,10 @@
+2005-03-31  Ali Akcaagac  <aliakc@web.de>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/mikmod/drv_gst.c:
+	  Compile fix for new mikmod versions (#171997).
+
 2005-03-31  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* ext/ogg/gstoggdemux.c: (gst_ogg_demux_push), (gst_ogg_sync),
