@@ -476,6 +476,18 @@ gst_ape_demux_parse_tags (GstApeDemux * ape, guint8 * data, gint size)
     } else if (!strcasecmp (tag, "track")) {
       type = GST_TAG_TRACK_NUMBER;
       i = TRUE;
+    } else if (!strcasecmp (tag, "replaygain_track_gain")) {
+      type = GST_TAG_TRACK_GAIN;
+      i = TRUE;
+    } else if (!strcasecmp (tag, "replaygain_track_peak")) {
+      type = GST_TAG_TRACK_PEAK;
+      i = TRUE;
+    } else if (!strcasecmp (tag, "replaygain_album_gain")) {
+      type = GST_TAG_ALBUM_GAIN;
+      i = TRUE;
+    } else if (!strcasecmp (tag, "replaygain_album_peak")) {
+      type = GST_TAG_ALBUM_PEAK;
+      i = TRUE;
     }
     if (type) {
       GValue v = { 0 };

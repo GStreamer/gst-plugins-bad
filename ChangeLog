@@ -1,3 +1,10 @@
+2005-03-10  Ash  <thatistosayiseenem@gawab.com>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/apetag/apedemux.c: (gst_ape_demux_parse_tags):
+	  Read replay-gain tags.
+
 2005-03-10  Gergely Nagy  <algernon@bonehunter.rulez.org>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
