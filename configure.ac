@@ -14,8 +14,6 @@ dnl when going to/from release please set the nano (fourth number) right !
 dnl releases only do Wall, cvs and prerelease does Werror too
 AS_VERSION(gst-plugins, GST_PLUGINS_VERSION, 0, 6, 2, 1, GST_ERROR="-Wall", GST_ERROR="-Wall -Werror")
 AM_INIT_AUTOMAKE($PACKAGE,$VERSION)
-dnl fix errors properly then remove this again
-GST_ERROR=
 
 dnl our libraries and install dirs use major.minor as a version
 GST_MAJORMINOR=$GST_PLUGINS_VERSION_MAJOR.$GST_PLUGINS_VERSION_MINOR
