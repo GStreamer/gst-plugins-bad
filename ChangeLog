@@ -1,5 +1,10 @@
 2004-06-23  Thomas Vander Stichele  <thomas at apestaart dot org>
 
+	* ext/alsa/gstalsasrc.c: (gst_alsa_src_loop):
+	  set offset and offset_end
+
+2004-06-23  Thomas Vander Stichele  <thomas at apestaart dot org>
+
 	* ext/alsa/gstalsasink.c: (gst_alsa_sink_check_event):
 	  apply a fix suggested by Company
 
