@@ -4,7 +4,7 @@ Docdir: %{prefix}/doc
 Prefix: %prefix
 
 Summary: 	GStreamer Streaming-media framework plugins
-Name: 		gst-plugins
+Name: 		gstreamer-plugins
 Version: 	@VERSION@
 Release: 	@GST_PLUGINS_RELEASE@
 
