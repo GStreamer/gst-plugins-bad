@@ -1,5 +1,11 @@
 2005-03-01  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* gst-libs/gst/resample/resample.c: (gst_resample_scale):
+	* gst/audioscale/gstaudioscale.c: (gst_audioscale_chain):
+	  Stop sucking.
+
+2005-03-01  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* gst/autodetect/gstautoaudiosink.c: (gst_auto_audio_sink_init),
 	(gst_auto_audio_sink_detect):
 	* gst/autodetect/gstautoaudiosink.h:

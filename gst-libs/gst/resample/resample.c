@@ -179,6 +179,8 @@ gst_resample_scale (gst_resample_t * r, void *i_buf, unsigned int i_size)
   r->i_end = r->i_start + r->i_inc * r->i_samples;
 
   r->o_samples = floor (r->i_end - r->halftaps * r->i_inc);
+  if (r->o_samples < 0)
+    r->o_samples = 0;
 
   o_size = r->o_samples * r->channels * 2;
   r->o_buf = r->get_buffer (r->priv, o_size);
@@ -268,8 +270,7 @@ gst_resample_nearest_s16 (gst_resample_t * r)
       SCALE_LOOP (o_ptr[0] = i_ptr[0], 1);
       break;
     case 2:
-      SCALE_LOOP (o_ptr[0] = i_ptr[0];
-          o_ptr[1] = i_ptr[1], 2);
+      SCALE_LOOP (o_ptr[0] = i_ptr[0]; o_ptr[1] = i_ptr[1], 2);
       break;
     default:
     {
@@ -630,8 +631,7 @@ gst_resample_nearest_float (gst_resample_t * r)
       SCALE_LOOP (o_ptr[0] = i_ptr[0], 1);
       break;
     case 2:
-      SCALE_LOOP (o_ptr[0] = i_ptr[0];
-          o_ptr[1] = i_ptr[1], 2);
+      SCALE_LOOP (o_ptr[0] = i_ptr[0]; o_ptr[1] = i_ptr[1], 2);
       break;
     default:
     {
