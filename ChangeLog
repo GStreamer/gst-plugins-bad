@@ -1,3 +1,73 @@
+2004-12-29  Wim Taymans  <wim@fluendo.com>
+
+	* examples/seeking/seek.c: (dynamic_link), (make_vorbis_pipeline),
+	(make_mp3_pipeline), (make_avi_pipeline), (make_mpeg_pipeline),
+	(make_mpegnt_pipeline), (update_scale), (stop_seek), (play_cb),
+	(pause_cb), (stop_cb), (main):
+	* ext/mad/gstmad.c: (gst_mad_init), (gst_mad_convert_sink),
+	(gst_mad_convert_src), (gst_mad_src_query), (gst_mad_src_event),
+	(gst_mad_update_info), (gst_mad_sink_event),
+	(gst_mad_check_caps_reset), (gst_mad_chain):
+	* ext/ogg/README:
+	* ext/ogg/gstoggdemux.c: (gst_ogg_pad_get_type),
+	(gst_ogg_pad_init), (gst_ogg_pad_formats),
+	(gst_ogg_pad_event_masks), (gst_ogg_pad_query_types),
+	(gst_ogg_pad_src_convert), (gst_ogg_pad_src_query),
+	(gst_ogg_pad_reset), (gst_ogg_pad_submit_packet),
+	(gst_ogg_pad_submit_page), (gst_ogg_chain_new),
+	(gst_ogg_chain_free), (gst_ogg_chain_new_stream),
+	(gst_ogg_chain_get_stream), (gst_ogg_chain_has_stream),
+	(gst_ogg_demux_base_init), (gst_ogg_demux_init),
+	(gst_ogg_demux_finalize), (gst_ogg_demux_handle_event),
+	(gst_ogg_demux_submit_buffer), (gst_ogg_demux_seek),
+	(gst_ogg_demux_get_data), (gst_ogg_demux_get_next_page),
+	(gst_ogg_demux_get_prev_page),
+	(gst_ogg_demux_bisect_forward_serialno),
+	(gst_ogg_demux_read_chain), (gst_ogg_demux_find_pad),
+	(gst_ogg_demux_find_chains), (gst_ogg_demux_chain),
+	(gst_ogg_demux_loop), (gst_ogg_demux_sink_activate),
+	(gst_ogg_demux_change_state), (gst_ogg_print):
+	* ext/ogg/gstoggmux.c: (gst_ogg_mux_class_init),
+	(gst_ogg_mux_init), (gst_ogg_mux_sinkconnect),
+	(gst_ogg_mux_next_buffer), (gst_ogg_mux_buffer_from_page),
+	(gst_ogg_mux_push_page), (gst_ogg_mux_send_headers),
+	(gst_ogg_mux_loop):
+	* ext/ogg/gstogmparse.c: (gst_ogm_parse_chain):
+	* ext/theora/theoradec.c: (gst_theora_dec_init),
+	(theora_dec_sink_event), (theora_dec_chain):
+	* ext/theora/theoraenc.c: (gst_theora_enc_init),
+	(theora_enc_sink_setcaps), (theora_buffer_from_packet),
+	(theora_push_buffer), (theora_enc_sink_event), (theora_enc_chain):
+	* ext/vorbis/Makefile.am:
+	* ext/vorbis/vorbis.c: (plugin_init):
+	* ext/vorbis/vorbisdec.c: (gst_vorbis_dec_init),
+	(vorbis_dec_sink_event), (vorbis_dec_chain):
+	* ext/vorbis/vorbisenc.c: (gst_vorbisenc_class_init),
+	(gst_vorbisenc_sink_setcaps), (gst_vorbisenc_init),
+	(gst_vorbisenc_push_buffer), (gst_vorbisenc_sink_event),
+	(gst_vorbisenc_chain):
+	* ext/vorbis/vorbisparse.c: (vorbis_parse_chain):
+	* gst/audioconvert/bufferframesconvert.c:
+	(buffer_frames_convert_init), (buffer_frames_convert_setcaps),
+	(buffer_frames_convert_chain):
+	* gst/audioconvert/gstaudioconvert.c: (gst_audio_convert_init),
+	(gst_audio_convert_chain),
+	(gst_audio_convert_caps_remove_format_info),
+	(gst_audio_convert_getcaps), (gst_audio_convert_parse_caps),
+	(gst_audio_convert_setcaps), (_fixate_caps_to_int),
+	(gst_audio_convert_fixate), (gst_audio_convert_get_buffer),
+	(gst_audio_convert_buffer_to_default_format),
+	(gst_audio_convert_buffer_from_default_format),
+	(gst_audio_convert_channels):
+	* gst/audioconvert/gstchannelmix.h:
+	* gst/ffmpegcolorspace/gstffmpegcolorspace.c:
+	(gst_ffmpegcsp_caps_remove_format_info), (gst_ffmpegcsp_getcaps),
+	(gst_ffmpegcsp_configure_context), (gst_ffmpegcsp_setcaps),
+	(gst_ffmpegcsp_chain):
+	* sys/oss/gstosssink.c: (gst_osssink_setcaps),
+	(gst_osssink_handle_event), (gst_osssink_chain):
+	Various plugin updates.
+
 2004-12-20  Wim Taymans  <wim@fluendo.com>
 
 	* configure.ac:
