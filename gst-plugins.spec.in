@@ -116,13 +116,14 @@ Summary: 	GStreamer Plugin Library Headers.
 Group: 		Development/Libraries
 Requires: 	gstreamer-plugins = %{version}
 Provides:	gstreamer-play-devel = %{version}
+Provides:	gstreamer-gconf-devel = %{version}
 
 %description -n gstreamer-plugins-devel
 GStreamer support libraries header files.
 
 %files -n gstreamer-plugins-devel
 %defattr(-, root, root)
-%{_includedir}/gstreamer-%{majorminor}/gst/gconf/gconf.h
+@USE_GCONF_TRUE@%{_includedir}/gstreamer-%{majorminor}/gst/gconf/gconf.h
 %{_includedir}/gstreamer-%{majorminor}/gst/play/play.h
 %{_includedir}/gstreamer-%{majorminor}/gst/audio/audio.h
 %{_includedir}/gstreamer-%{majorminor}/gst/floatcast/floatcast.h
@@ -133,6 +134,7 @@ GStreamer support libraries header files.
 %{_datadir}/aclocal/gst-element-check-%{majorminor}.m4
 %{_libdir}/pkgconfig/gstreamer-libs-%{majorminor}.pc
 %{_libdir}/pkgconfig/gstreamer-play-%{majorminor}.pc
+@USE_GCONF_TRUE@%{_libdir}/pkgconfig/gstreamer-gconf-%{majorminor}.pc
 @USE_GCONF_TRUE@%{_libdir}/libgstgconf-%{majorminor}.so
 %{_libdir}/libgstplay-%{majorminor}.so
 
@@ -1570,6 +1572,10 @@ This package contains a basic audio and video playback library.
 /sbin/ldconfig
 
 %changelog
+* Mon Jan 27 2003 Thomas Vander Stichele <thomas at apestaart dot org>
+- added gconf-devel virtual provide in gstreamer-plugins-devel, as well
+  as .pc files
+
 * Thu Jan 23 2003 Thomas Vander Stichele <thomas at apestaart dot org>
 - various fixes
 - make video output packages provide gstreamer-videosink

@@ -1117,6 +1117,8 @@ gst-libs/gst/Makefile
 gst-libs/gst/audio/Makefile
 gst-libs/gst/floatcast/Makefile
 gst-libs/gst/gconf/Makefile
+gst-libs/gst/gconf/gstreamer-gconf.pc
+gst-libs/gst/gconf/gstreamer-gconf-uninstalled.pc
 gst-libs/gst/idct/Makefile
 gst-libs/gst/media-info/Makefile
 gst-libs/gst/play/Makefile
