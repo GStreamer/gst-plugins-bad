@@ -12,7 +12,7 @@ AM_MAINTAINER_MODE
 
 dnl when going to/from release please set the nano (fourth number) right !
 dnl releases only do Wall, cvs and prerelease does Werror too
-AS_VERSION(gst-plugins, GST_PLUGINS_VERSION, 0, 6, 0, 0, GST_ERROR="-Wall", GST_ERROR="-Wall -Werror")
+AS_VERSION(gst-plugins, GST_PLUGINS_VERSION, 0, 6, 0, 90, GST_ERROR="-Wall", GST_ERROR="-Wall -Werror")
 AM_INIT_AUTOMAKE($PACKAGE,$VERSION)
 dnl fix errors properly then remove this again
 GST_ERROR=
@@ -528,10 +528,14 @@ GST_CHECK_FEATURE(DVDNAV, [dvdnav library], dvdnavsrc, [
     DVDNAV_MAJOR=`echo $DVDNAV_VERSION | cut -d. -f1 | sed s/[a-zA-Z\-].*//g`
     DVDNAV_MINOR=`echo $DVDNAV_VERSION | cut -d. -f2 | sed s/[a-zA-Z\-].*//g`
     DVDNAV_MICRO=`echo $DVDNAV_VERSION | cut -d. -f3 | sed s/[a-zA-Z\-].*//g`
-    if [ $DVDNAV_MAJOR -lt 0 ] || \
-       [ $DVDNAV_MINOR -lt 1 ] || \
-       [ $DVDNAV_MICRO -lt 4 ]; then
-      AC_MSG_WARN([libdvdnav >= 0.1.4 is required, you have $DVDNAV_VERSION])
+    if [[ "$DVDNAV_MAJOR" -eq "0" ]] && \
+       [[ "$DVDNAV_MINOR" -lt "1" ]]; then
+      AC_MSG_WARN([libdvdnav >= 0.1.7 is required, you have $DVDNAV_VERSION])
+      HAVE_DVDNAV="no"
+    elif [[ "$DVDNAV_MAJOR" -eq "0" ]] && \
+         [[ "$DVDNAV_MINOR" -eq "1" ]] && \
+         [[ "$DVDNAV_MICRO" -lt "7" ]]; then
+      AC_MSG_WARN([libdvdnav >= 0.1.7 is required, you have $DVDNAV_VERSION])
       HAVE_DVDNAV="no"
       fi
     fi
