@@ -33,7 +33,7 @@ plugin_init (GstPlugin * plugin)
   if (!gst_library_load ("gstbytestream"))
     return FALSE;
 
-  if (!gst_element_register (plugin, "tremor", GST_RANK_PRIMARY,
+  if (!gst_element_register (plugin, "tremor", GST_RANK_SECONDARY,
           ivorbisfile_get_type ()))
     return FALSE;
 

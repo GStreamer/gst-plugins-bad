@@ -1,5 +1,11 @@
 2005-02-24  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* ext/ivorbis/vorbis.c: (plugin_init):
+	  Set rank to secondary, we always prefer oggdemux (for obvious
+	  reasons).
+
+2005-02-24  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* gst/playback/gstplaybasebin.c: (check_queue), (buffer_underrun),
 	(buffer_running), (buffer_overrun), (gen_source_element):
 	  Remove probe when no longer blocking for buffering (requested).
