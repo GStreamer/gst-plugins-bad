@@ -32,9 +32,6 @@ gstreamer-gconf-@GST_MAJORMINOR@-uninstalled.pc: \
 	$(srcdir)/../gst-libs/gst/gconf/gstreamer-gconf-uninstalled.pc
 	cp $< $@
 
-gst-element-check-@GST_MAJORMINOR@.m4: gst-element-check.m4
-	cp $(srcdir)/gst-element-check.m4 gst-element-check-@GST_MAJORMINOR@.m4
-
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = \
 	$(GCONF_PC) \
