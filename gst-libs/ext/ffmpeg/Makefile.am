@@ -20,7 +20,6 @@ patches:
 	@rm -f rejects || true
 	@echo done.
 
-
 SUBDIRS = $(FFMPEG_DIR)
 
 DISTFILES = \
