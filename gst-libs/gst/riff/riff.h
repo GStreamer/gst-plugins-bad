@@ -54,6 +54,7 @@ typedef enum {
 #define GST_RIFF_TAG_avih MAKE_FOUR_CC('a','v','i','h')
 #define GST_RIFF_TAG_strd MAKE_FOUR_CC('s','t','r','d')
 #define GST_RIFF_TAG_strh MAKE_FOUR_CC('s','t','r','h')
+#define GST_RIFF_TAG_strn MAKE_FOUR_CC('s','t','r','n')
 #define GST_RIFF_TAG_strf MAKE_FOUR_CC('s','t','r','f')
 #define GST_RIFF_TAG_vedt MAKE_FOUR_CC('v','e','d','t')
 #define GST_RIFF_TAG_JUNK MAKE_FOUR_CC('J','U','N','K')
