@@ -53,6 +53,7 @@ FFLAGS="${FFLAGS:-%optflags}" ; export FFLAGS ; \
   --sharedstatedir=%{_sharedstatedir} \
   --mandir=%{_mandir} \
   --infodir=%{_infodir} \
+  --enable-debug \ 
   --enable-DEBUG 
 
 if [ "$SMP" != "" ]; then
