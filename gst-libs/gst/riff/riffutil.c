@@ -20,9 +20,6 @@
 
 #include <riff.h>
 
-/*#define debug(format,args...) g_print(format,##args) */
-#define debug(format,args...)
-
 
 gulong gst_riff_fourcc_to_id(gchar *fourcc) {
   g_return_val_if_fail(fourcc != NULL, 0);
