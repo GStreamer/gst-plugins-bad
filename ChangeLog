@@ -1,3 +1,14 @@
+2004-06-23  Thomas Vander Stichele  <thomas at apestaart dot org>
+
+	* ext/alsa/gstalsa.c: (gst_alsa_init), (gst_alsa_dispose),
+	(gst_alsa_xrun_recovery):
+	* ext/alsa/gstalsa.h:
+	* ext/alsa/gstalsasrc.c: (gst_alsa_src_class_init),
+	(gst_alsa_src_init), (gst_alsa_src_loop), (gst_alsa_src_flush),
+	(gst_alsa_src_change_state), (gst_alsa_src_get_time):
+	* ext/alsa/gstalsasrc.h:
+	  revert back to 06-15, fixing alsasink
+
 2004-06-22  Zaheer Abbas Merali  <zaheerabbas at merali.org>
 
 	* sys/osxaudio/Makefile.am:
