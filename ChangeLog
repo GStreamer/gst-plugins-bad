@@ -1,3 +1,11 @@
+2005-02-25  Luca Ognibene  <luogni@tin.it>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/jpeg/gstjpegdec.c: (gst_jpegdec_class_init),
+	(gst_jpegdec_finalize), (gst_jpegdec_change_state):
+	  Fix memleak (#168254).
+
 2005-02-24  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* configure.ac:
