@@ -1,5 +1,15 @@
 2005-01-11  Wim Taymans  <wim@fluendo.com>
 
+	* ext/ogg/gstogg.c: (plugin_init):
+	* ext/vorbis/vorbis.c: (plugin_init):
+	* gst/playback/gstdecodebin.c: (find_compatibles),
+	(get_our_ghost_pad), (close_link):
+	* gst/playback/gstplaybasebin.c: (gst_play_base_bin_class_init),
+	(setup_source), (gst_play_base_bin_change_state):
+	Fix bogus requirement of bytestream.
+
+2005-01-11  Wim Taymans  <wim@fluendo.com>
+
 	* configure.ac:
 	* examples/seeking/seek.c: (dynamic_link), (make_vorbis_pipeline),
 	(make_theora_pipeline), (make_vorbis_theora_pipeline), (do_seek):
