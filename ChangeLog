@@ -1,3 +1,9 @@
+2003-02-02  Thomas Vander Stichele <thomas at apestaart dot org>
+
+        * configure.ac:
+          - release 0.6.0
+          - revert libtool version to 0.0.0 due to major/minor library rename
+
 2003-01-25  Colin Walters  <walters@gnu.org>
 
 	* ext/gnomevfs/gstgnomevfssrc.c (gst_gnomevfssrc_open_file): Don't
