@@ -1746,6 +1746,13 @@ vorbis_synthesis_restart (v);
   CFLAGS="$ac_cflags_save"
 fi
 
+dnl *** wavpack ***
+dnl We ship our own version of the library
+translit(dnm, m, l) AM_CONDITIONAL(USE_WAVPACK, true)
+GST_CHECK_FEATURE(WAVPACK, [wavpack plug-in], wavpack,  [
+  HAVE_WAVPACK=yes
+])
+
 dnl *** xine ***
 translit(dnm, m, l) AM_CONDITIONAL(USE_XINE, true)
 GST_CHECK_FEATURE(XINE, [xine wrapper], xine, [
@@ -2123,6 +2130,7 @@ ext/swfdec/Makefile
 ext/tarkin/Makefile
 ext/theora/Makefile
 ext/vorbis/Makefile
+ext/wavpack/Makefile
 ext/xine/Makefile
 ext/xvid/Makefile
 gst-libs/Makefile

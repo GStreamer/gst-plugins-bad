@@ -406,6 +406,12 @@ else
 SPEEX_DIR=
 endif
 
+if USE_WAVPACK
+WAVPACK_DIR=wavpack
+else
+WAVPACK_DIR=
+endif
+
 if USE_XINE
 XINE_DIR=xine
 else
@@ -478,6 +484,7 @@ SUBDIRS=\
 	$(THEORA_DIR) \
 	$(IVORBIS_DIR) \
 	$(VORBIS_DIR) \
+	$(WAVPACK_DIR) \
 	$(XINE_DIR) \
 	$(XVID_DIR)
 
@@ -547,5 +554,6 @@ DIST_SUBDIRS=\
 	tarkin \
 	theora \
 	vorbis \
+	wavpack \
 	xine \
 	xvid
