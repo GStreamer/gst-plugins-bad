@@ -1,3 +1,40 @@
+2005-04-02	Julian Cable	<julian.cable@virgin.net>
+
+	Reviewed by: Zeeshan Ali <zeenix@gmail.com>
+
+	* gst/rtp/gstrtp-common.h:
+	* gst/rtp/gstrtpL16enc.c: (gst_rtpL16enc_class_init),
+	(gst_rtpL16enc_init), (gst_rtpL16enc_set_clock),
+	(get_payload_type), (gst_rtpL16enc_sinkconnect),
+	(gst_rtpL16enc_chain), (gst_rtpL16enc_set_property),
+	(gst_rtpL16enc_get_property):
+	* gst/rtp/gstrtpL16enc.h:
+	* gst/rtp/gstrtpL16parse.c: (gst_rtpL16parse_class_init),
+	(gst_rtpL16parse_init), (gst_rtpL16_caps_nego),
+	(gst_rtpL16parse_payloadtype_change), (gst_rtpL16parse_chain),
+	(gst_rtpL16parse_set_property), (gst_rtpL16parse_get_property):
+	* gst/rtp/gstrtpL16parse.h:
+	* gst/rtp/gstrtpgsmenc.h:
+	* gst/rtp/gstrtpgsmparse.h:
+	* gst/rtp/rtp-packet.h:
+	1) Fairly complete rewrite of the encoding and parsing code, encoder now.
+	   passes analysis by ethereal and can play to the parser and to mplayer. 
+	2) Added support for configurable dynamic payload processing using a new 
+	   element property "rtpmap" which is a string of rtpmap records in the same
+	   format as would be present in an SDP record.
+	3) Added support for big and little endian peers on the pads
+	4) Added support for mtu element property on rtpL16enc and will split 
+	   incoming buffers to avoid IP layer fragmentation.
+	* gst/udp/gstudpsink.c: (gst_udpsink_class_init),
+	(gst_udpsink_init), (gst_udpsink_set_property),
+	(gst_udpsink_get_property), (gst_udpsink_init_send):
+	* gst/udp/gstudpsink.h:
+	  Added a time to live Element Property.
+	* gst/udp/gstudpsrc.c: (gst_udpsrc_init),
+	(gst_udpsrc_init_receive):
+	* gst/udp/gstudpsrc.h:
+	  Fixed and added some comments.
+
 2005-04-02  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* gst/mpegstream/gstdvddemux.c: (gst_dvd_demux_get_audio_stream):
