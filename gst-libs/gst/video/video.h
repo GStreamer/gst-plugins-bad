@@ -43,7 +43,7 @@
 #define G_MASK_16 "0x07e0"
 #define B_MASK_16 "0x001f"
 
-#define R_MASK_15 "0x8c00"
+#define R_MASK_15 "0x7c00"
 #define G_MASK_15 "0x03e0"
 #define B_MASK_15 "0x001f"
 
@@ -51,61 +51,29 @@
 #define FPS_RANGE "(double) [ 0, max ]"
 
 /* properties for pad templates */
-#define GST_VIDEO_RGB_PAD_TEMPLATE_PROPS_24_32 \
-        gst_props_new ( \
-            "bpp",              GST_PROPS_LIST ( \
-                                  GST_PROPS_INT (24), \
-                                  GST_PROPS_INT (32) \
-                                ), \
-            "depth",            GST_PROPS_LIST ( \
-                                  GST_PROPS_INT (24), \
-                                  GST_PROPS_INT (32) \
-                                ), \
-            "endianness",       GST_PROPS_INT (G_BIG_ENDIAN), \
-            "red_mask",         GST_PROPS_LIST ( \
-                                  GST_PROPS_INT (R_MASK_32), \
-                                  GST_PROPS_INT (R_MASK_24) \
-                                ), \
-            "green_mask",       GST_PROPS_LIST ( \
-                                  GST_PROPS_INT (G_MASK_32), \
-                                  GST_PROPS_INT (G_MASK_24) \
-                                ), \
-            "blue_mask",        GST_PROPS_LIST ( \
-                                  GST_PROPS_INT (B_MASK_32), \
-                                  GST_PROPS_INT (B_MASK_24) \
-                                ), \
-            "width",            SIZE_RANGE, \
-            "height",           SIZE_RANGE, \
-            "framerate",        FPS_RANGE, \
-            NULL)
+#define GST_VIDEO_RGB_PAD_TEMPLATE_CAPS_24_32 \
+	    "video/x-raw-rgb, " \
+            "bpp = (int) { 24, 32 }, " \
+            "depth = (int) { 24, 32 }, " \
+            "endianness = (int) BIG_ENDIAN, " \
+            "red_mask = (int) { " R_MASK_32 ", " R_MASK_24 " }, " \
+            "green_mask = (int) { " G_MASK_32 ", " G_MASK_24 " }, " \
+            "blue_mask = (int) { " B_MASK_32 ", " B_MASK_24 " }, " \
+            "width = " SIZE_RANGE ", " \
+            "height = " SIZE_RANGE ", " \
+            "framerate = " FPS_RANGE
 
-#define GST_VIDEO_RGB_PAD_TEMPLATE_PROPS_24_32_REVERSE \
-        gst_props_new ( \
-            "bpp",              GST_PROPS_LIST ( \
-                                  GST_PROPS_INT (24), \
-                                  GST_PROPS_INT (32) \
-                                ), \
-            "depth",            GST_PROPS_LIST ( \
-                                  GST_PROPS_INT (24), \
-                                  GST_PROPS_INT (32) \
-                                ), \
-            "endianness",       GST_PROPS_INT (G_BIG_ENDIAN), \
-            "red_mask",         GST_PROPS_LIST ( \
-                                  GST_PROPS_INT (R_MASK_32_REVERSE), \
-                                  GST_PROPS_INT (R_MASK_24_REVERSE) \
-                                ), \
-            "green_mask",       GST_PROPS_LIST ( \
-                                  GST_PROPS_INT (G_MASK_32_REVERSE), \
-                                  GST_PROPS_INT (G_MASK_24_REVERSE) \
-                                ), \
-            "blue_mask",        GST_PROPS_LIST ( \
-                                  GST_PROPS_INT (B_MASK_32_REVERSE), \
-                                  GST_PROPS_INT (B_MASK_24_REVERSE) \
-                                ), \
-            "width",            SIZE_RANGE, \
-            "height",           SIZE_RANGE, \
-            "framerate",        FPS_RANGE, \
-            NULL)
+#define GST_VIDEO_RGB_PAD_TEMPLATE_CAPS_24_32_REVERSE \
+	    "video/x-raw-rgb, " \
+            "bpp = (int) { 24, 32 }, " \
+            "depth = (int) { 24, 32 }, " \
+            "endianness = (int) BIG_ENDIAN, " \
+            "red_mask = (int) { " R_MASK_32_REVERSE ", " R_MASK_24_REVERSE "}, " \
+            "green_mask = (int) { " G_MASK_32_REVERSE ", " G_MASK_24_REVERSE "}, " \
+            "blue_mask = (int) { " B_MASK_32_REVERSE ", " B_MASK_24_REVERSE "}, " \
+            "width = " SIZE_RANGE ", " \
+            "height = " SIZE_RANGE ", " \
+            "framerate = " FPS_RANGE
 
 #define GST_VIDEO_RGB_PAD_TEMPLATE_CAPS_32 \
 	    "video/x-raw-rgb, " \
@@ -131,7 +99,7 @@
             "height = " SIZE_RANGE ", " \
             "framerate = " FPS_RANGE
 
-#define GST_VIDEO_RGB_PAD_TEMPLATE_PROPS_32_REVERSE \
+#define GST_VIDEO_RGB_PAD_TEMPLATE_CAPS_32_REVERSE \
 	    "video/x-raw-rgb, " \
             "bpp = (int) 32, " \
             "depth = (int) 32, " \
@@ -155,30 +123,17 @@
             "height = " SIZE_RANGE ", " \
             "framerate = " FPS_RANGE
 
-#define GST_VIDEO_RGB_PAD_TEMPLATE_PROPS_15_16 \
-        gst_props_new ( \
-            "bpp",              GST_PROPS_INT (16), \
-            "depth",            GST_PROPS_LIST ( \
-                                  GST_PROPS_INT (15), \
-                                  GST_PROPS_INT (16) \
-                                ), \
-            "endianness",       GST_PROPS_INT (G_BYTE_ORDER), \
-            "red_mask",         GST_PROPS_LIST ( \
-                                  GST_PROPS_INT (R_MASK_15), \
-                                  GST_PROPS_INT (R_MASK_16) \
-                                ), \
-            "green_mask",       GST_PROPS_LIST ( \
-                                  GST_PROPS_INT (G_MASK_15), \
-                                  GST_PROPS_INT (G_MASK_16) \
-                                ), \
-            "blue_mask",        GST_PROPS_LIST ( \
-                                  GST_PROPS_INT (B_MASK_15), \
-                                  GST_PROPS_INT (B_MASK_16) \
-                                ), \
-            "width",            SIZE_RANGE, \
-            "height",           SIZE_RANGE, \
-            "framerate",        FPS_RANGE, \
-            NULL)
+#define GST_VIDEO_RGB_PAD_TEMPLATE_CAPS_15_16 \
+	    "video/x-raw-rgb, " \
+            "bpp = (int) 16, " \
+            "depth = (int) { 15, 16 }, " \
+            "endianness = (int) BYTE_ORDER, " \
+            "red_mask = (int) { " R_MASK_15 ", " R_MASK_16 " }, " \
+            "green_mask = (int) { " G_MASK_15 ", " G_MASK_16 " }, " \
+            "blue_mask = (int) { " B_MASK_15 ", " B_MASK_16 " }, " \
+            "width = " SIZE_RANGE ", " \
+            "height = " SIZE_RANGE ", " \
+            "framerate = " FPS_RANGE
 
 #define GST_VIDEO_RGB_PAD_TEMPLATE_CAPS_16 \
 	    "video/x-raw-rgb, "				\
@@ -192,7 +147,7 @@
             "height = " SIZE_RANGE ", "			\
             "framerate = " FPS_RANGE
 
-#define GST_VIDEO_RGB_PAD_TEMPLATE_PROPS_15 \
+#define GST_VIDEO_RGB_PAD_TEMPLATE_CAPS_15 \
 	    "video/x-raw-rgb, "				\
             "bpp = (int) 16, "				\
             "depth = (int) 15, "			\
