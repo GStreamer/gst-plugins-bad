@@ -37,7 +37,7 @@ enum
   HAVE_VIS_SIZE,
   PIPELINE_ERROR,
   /* put additional signals before this comment */
-  LAST_SIGNAL,
+  LAST_SIGNAL
 };
 
 /* this struct is used to decouple signals coming out of threaded pipelines */
@@ -153,7 +153,7 @@ gst_play_error_plugin (GstPlayError type, GError ** error)
   *error = g_error_new (GST_PLAY_ERROR,
 			type,
 			"The %s plug-in could not be found. "
-			"This plug-in is essential for gst-player. "
+			"This plug-in is essential for libgstplay. "
 			"Please install it and verify that it works "
 			"by running 'gst-inspect %s'", name, name);
   g_free (name);
