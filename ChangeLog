@@ -1,3 +1,18 @@
+2005-03-25  David Schleef  <ds@schleef.org>
+
+	* gst/librfb/gstrfbsrc.c: (gst_rfbsrc_get): Check return values
+	to avoid segfaults.
+	* gst/librfb/rfbbytestream.c: (rfb_bytestream_get),
+	(rfb_bytestream_check), (rfb_bytestream_copy_nocheck),
+	(rfb_bytestream_read), (rfb_bytestream_peek):
+	* gst/librfb/rfbbytestream.h:
+	* gst/librfb/rfbdecoder.c: (rfb_socket_get_buffer),
+	(rfb_socket_send_buffer), (rfb_decoder_iterate),
+	(rfb_decoder_state_wait_for_protocol_version),
+	(rfb_decoder_state_wait_for_security),
+	(rfb_decoder_state_wait_for_server_initialisation),
+	(rfb_decoder_state_normal), (rfb_decoder_state_framebuffer_update):
+
 2005-03-23  till busch  <buti@gmx.at>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>

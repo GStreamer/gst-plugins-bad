@@ -7,6 +7,8 @@
 #include <arpa/inet.h>
 #include <errno.h>
 
+#include <gst/gst.h>
+
 
 #if 0
 struct _RfbSocketPrivate
@@ -29,7 +31,7 @@ rfb_socket_get_buffer (int length, gpointer user_data)
   buffer->data = g_malloc (length);
   buffer->free_data = (void *) g_free;
 
-  g_print ("calling read(%d, %p, %d)\n", fd, buffer->data, length);
+  GST_DEBUG ("calling read(%d, %p, %d)", fd, buffer->data, length);
   ret = read (fd, buffer->data, length);
   if (ret <= 0) {
     g_critical ("read: %s", strerror (errno));
@@ -48,7 +50,7 @@ rfb_socket_send_buffer (guint8 * buffer, int length, gpointer user_data)
   int fd = GPOINTER_TO_INT (user_data);
   int ret;
 
-  g_print ("calling write(%d, %p, %d)\n", fd, buffer, length);
+  GST_DEBUG ("calling write(%d, %p, %d)", fd, buffer, length);
   ret = write (fd, buffer, length);
   if (ret < 0) {
     g_critical ("write: %s", strerror (errno));
@@ -125,7 +127,7 @@ rfb_decoder_iterate (RfbDecoder * decoder)
     decoder->state = rfb_decoder_state_wait_for_protocol_version;
   }
 
-  g_print ("iterating...\n");
+  GST_DEBUG ("iterating...");
 
   return decoder->state (decoder);
 }
@@ -152,7 +154,7 @@ rfb_decoder_state_wait_for_protocol_version (RfbDecoder * decoder)
   data = buffer->data;
 
   g_assert (memcmp (buffer->data, "RFB 003.00", 10) == 0);
-  g_print ("\"%.11s\"\n", buffer->data);
+  GST_DEBUG ("\"%.11s\"", buffer->data);
   rfb_buffer_free (buffer);
 
   rfb_decoder_send (decoder, "RFB 003.003\n", 12);
@@ -173,7 +175,7 @@ rfb_decoder_state_wait_for_security (RfbDecoder * decoder)
     return FALSE;
 
   decoder->security_type = RFB_GET_UINT32 (buffer->data);
-  g_print ("security = %d\n", decoder->security_type);
+  GST_DEBUG ("security = %d", decoder->security_type);
 
   rfb_buffer_free (buffer);
 
@@ -220,8 +222,8 @@ rfb_decoder_state_wait_for_server_initialisation (RfbDecoder * decoder)
   decoder->green_shift = RFB_GET_UINT8 (data + 15);
   decoder->blue_shift = RFB_GET_UINT8 (data + 16);
 
-  g_print ("width: %d\n", decoder->width);
-  g_print ("height: %d\n", decoder->height);
+  GST_DEBUG ("width: %d", decoder->width);
+  GST_DEBUG ("height: %d", decoder->height);
 
   name_length = RFB_GET_UINT32 (data + 20);
   rfb_buffer_free (buffer);
@@ -231,7 +233,7 @@ rfb_decoder_state_wait_for_server_initialisation (RfbDecoder * decoder)
     return FALSE;
 
   decoder->name = g_strndup ((char *) (buffer->data) + 24, name_length);
-  g_print ("name: %s\n", decoder->name);
+  GST_DEBUG ("name: %s", decoder->name);
   rfb_buffer_free (buffer);
 
   decoder->state = rfb_decoder_state_normal;
@@ -248,6 +250,8 @@ rfb_decoder_state_normal (RfbDecoder * decoder)
   int message_type;
 
   ret = rfb_bytestream_read (decoder->bytestream, &buffer, 1);
+  if (ret < 1)
+    return FALSE;
   message_type = RFB_GET_UINT8 (buffer->data);
 
   switch (message_type) {
@@ -280,6 +284,8 @@ rfb_decoder_state_framebuffer_update (RfbDecoder * decoder)
   int ret;
 
   ret = rfb_bytestream_read (decoder->bytestream, &buffer, 3);
+  if (ret < 3)
+    return FALSE;
 
   decoder->n_rects = RFB_GET_UINT16 (buffer->data + 1);
   decoder->state = rfb_decoder_state_framebuffer_update_rectangle;

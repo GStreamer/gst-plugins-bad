@@ -2,6 +2,9 @@
 #include <rfbbytestream.h>
 #include <string.h>
 
+#include <gst/gst.h>
+
+
 RfbBytestream *
 rfb_bytestream_new (void)
 {
@@ -16,12 +19,14 @@ rfb_bytestream_get (RfbBytestream * bs, int len)
   buffer = bs->get_buffer (len, bs->user_data);
 
   if (buffer) {
-    g_print ("got buffer (%d bytes)\n", buffer->length);
+    GST_DEBUG ("got buffer (%d bytes)", buffer->length);
     bs->buffer_list = g_list_append (bs->buffer_list, buffer);
 
     bs->length += buffer->length;
 
     return len;
+  } else {
+    bs->disconnected = TRUE;
   }
 
   return 0;
@@ -32,6 +37,8 @@ rfb_bytestream_check (RfbBytestream * bs, int len)
 {
   while (bs->length < len) {
     rfb_bytestream_get (bs, len - bs->length);
+    if (bs->disconnected)
+      return FALSE;
   }
   return TRUE;
 }
@@ -50,7 +57,7 @@ rfb_bytestream_copy_nocheck (RfbBytestream * bs, RfbBuffer * buffer, int len)
   for (item = bs->buffer_list; item; item = g_list_next (item)) {
     frombuf = (RfbBuffer *) item->data;
     n = MIN (len, frombuf->length - first_offset);
-    g_print ("copying %d bytes from %p\n", n, frombuf);
+    GST_DEBUG ("copying %d bytes from %p", n, frombuf);
     memcpy (buffer->data + offset, frombuf->data + first_offset, n);
     first_offset = 0;
     len -= n;
@@ -67,8 +74,14 @@ int
 rfb_bytestream_read (RfbBytestream * bs, RfbBuffer ** buffer, int len)
 {
   RfbBuffer *buf;
+  int ret;
 
-  rfb_bytestream_check (bs, len);
+  if (bs->disconnected)
+    return 0;
+
+  ret = rfb_bytestream_check (bs, len);
+  if (!ret)
+    return 0;
 
   buf = rfb_buffer_new_and_alloc (len);
   rfb_bytestream_copy_nocheck (bs, buf, len);
@@ -83,6 +96,9 @@ int
 rfb_bytestream_peek (RfbBytestream * bs, RfbBuffer ** buffer, int len)
 {
   RfbBuffer *buf;
+
+  if (bs->disconnected)
+    return 0;
 
   rfb_bytestream_check (bs, len);
 

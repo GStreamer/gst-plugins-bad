@@ -443,6 +443,7 @@ gst_rfbsrc_get (GstPad * pad)
   gulong newsize;
   GstBuffer *buf;
   RfbDecoder *decoder;
+  int ret;
 
   GST_DEBUG ("gst_rfbsrc_get");
 
@@ -454,7 +455,10 @@ gst_rfbsrc_get (GstPad * pad)
 
   if (!decoder->inited) {
     while (!decoder->inited) {
-      rfb_decoder_iterate (decoder);
+      ret = rfb_decoder_iterate (decoder);
+      if (!ret) {
+        /* error */
+      }
     }
 
     gst_pad_renegotiate (rfbsrc->srcpad);
@@ -476,7 +480,10 @@ gst_rfbsrc_get (GstPad * pad)
 
   rfbsrc->go = TRUE;
   while (rfbsrc->go) {
-    rfb_decoder_iterate (decoder);
+    ret = rfb_decoder_iterate (decoder);
+    if (!ret) {
+      return GST_DATA (gst_event_new (GST_EVENT_EOS));
+    }
     GST_DEBUG ("iterate...\n");
   }
 

@@ -18,6 +18,8 @@ struct _RfbBytestream
   GList *buffer_list;
   int length;
   int offset;
+
+  int disconnected;
 };
 
 
