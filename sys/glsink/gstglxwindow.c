@@ -147,14 +147,14 @@ gst_glxwindow_new (GstElement *sink)
   if (vi == NULL)
     {
       vi = glXChooseVisual(new->dpy, new->screen, attrListSgl);
-      g_warning("Only Singlebuffered Visual!\n");
+      GST_DEBUG(0,"Only Singlebuffered Visual!\n");
     }
   else
     {
-      g_warning("Got Doublebuffered Visual!\n");
+      GST_DEBUG(0,"Got Doublebuffered Visual!\n");
     }
   glXQueryVersion(new->dpy, &glxMajorVersion, &glxMinorVersion);
-  g_warning("glX-Version %d.%d\n", glxMajorVersion, glxMinorVersion);
+  GST_DEBUG(0,"glX-Version %d.%d\n", glxMajorVersion, glxMinorVersion);
   
   /* create a GLX context */
   new->ctx = glXCreateContext(new->dpy, vi, 0, GL_TRUE);
@@ -172,7 +172,8 @@ gst_glxwindow_new (GstElement *sink)
 
   new->rotX = 0; 
   new->rotY = 0; 
-  new->zoom = 2;
+  new->zoom = 1;
+  new->zoomdir = 0.01;
 
   {
         /* create a window in window mode*/
@@ -200,11 +201,11 @@ gst_glxwindow_new (GstElement *sink)
 	       &new->width, &new->height, &borderDummy, &new->depth);
   printf("Depth %d\n", new->depth);
   if (glXIsDirect(new->dpy, new->ctx)) 
-    g_warning("Congrats, you have Direct Rendering!\n");
+      GST_DEBUG (GST_CAT_PLUGIN_INFO, "Congrats, you have Direct Rendering!\n");
   else
-    g_warning("Sorry, no Direct Rendering possible!\n");
+    GST_DEBUG (GST_CAT_PLUGIN_INFO, "Sorry, no Direct Rendering possible!\n");
 
-  g_warning("Initializing OpenGL parameters");
+  GST_DEBUG(GST_CAT_PLUGIN_INFO, "Initializing OpenGL parameters\n");
   /* initialize OpenGL drawing */
   glEnable(GL_DEPTH_TEST);
   //glShadeModel(GL_SMOOTH);

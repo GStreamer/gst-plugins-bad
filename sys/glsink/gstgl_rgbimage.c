@@ -17,6 +17,7 @@
 #include <GL/glx.h>
 #include <GL/gl.h>
 #include <GL/glu.h>
+#include <math.h> 
 
 #include "gstglsink.h"
 
@@ -231,31 +232,50 @@ gst_gl_rgbimage_put_image (GstImageInfo *info, GstImageData *image)
   GstGLImageInfo *xinfo = gst_gl_rgbimage_info (info);
   GstGLImage *im = (GstGLImage *) image;
 
+  int img_width = im->conn->w; 
+  int img_height = im->conn->h; 
+
   g_assert (xinfo != NULL);
-  g_warning("PUTTING IMAGE");
 
   // both upload the video, and redraw the screen
   glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
-  glTranslatef(0.0, 0.0, -50.0);
+  glTranslatef(0.0, 0.0, -25.0);
 
   glEnable(GL_TEXTURE_2D);
 
-  glPushMatrix();
-  //glTranslatef(0,1,0);
-  glRotatef(xinfo->rotX-250,1,0,0);
-  glRotatef(xinfo->rotY,0,1,0);
-  int zoom = xinfo->zoom;
-  glScaled(zoom,zoom,zoom);
-  //Draws the surface rectangle
+  if (xinfo->info.demo)
+    {
 
+      glRotatef(180.0*sin(xinfo->rotX),1,0,0);
+      glRotatef(180.0*cos(xinfo->rotY),0,1,0);
+
+      xinfo->rotX += 0.01;
+      xinfo->rotY -= 0.015;
+      float zoom = xinfo->zoom;
+      glScalef(zoom,zoom,zoom); 
+      //glScalef(0.1,0.1,0.1); 
+
+      if (xinfo->zoom > 1.0)
+	xinfo->zoomdir = -0.01;
+
+      if (xinfo->zoom < 0.5)
+	xinfo->zoomdir = 0.01;
+
+      xinfo->zoom += xinfo->zoomdir;
+    }  
+
+  //Draws the surface rectangle
   glBindTexture(GL_TEXTURE_2D, im->conn->rgbatex_id);
   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, im->conn->w, im->conn->h, GL_RGBA, 
   		  GL_UNSIGNED_BYTE, im->data.data);  
   xmax = (float)im->conn->w/TEX_XSIZE;
   ymax = (float)im->conn->h/TEX_YSIZE;
+
+  float aspect = img_width/(float)img_height;
+  float hor = 4 * aspect;
 
   glColor4f(1,1,1,1);
   glBegin(GL_QUADS);
@@ -263,20 +283,51 @@ gst_gl_rgbimage_put_image (GstImageInfo *info, GstImageData *image)
   glNormal3f(0, -1, 0);
   
   glTexCoord2f(xmax, 0);
-  glVertex3f(4,4,0);
+  glVertex3f(hor,4,0);
 
   glTexCoord2f(0, 0);
-  glVertex3f(-4,4,0);
+  glVertex3f(-hor,4,0);
 
   glTexCoord2f(0, ymax);
-  glVertex3f(-4,-4,0);
+  glVertex3f(-hor,-4,0);
 
   glTexCoord2f(xmax, ymax);
-  glVertex3f(4,-4,0);
-
+  glVertex3f(hor,-4,0);
   glEnd();
 
-  glPopMatrix();
+  if (xinfo->info.dumpvideo)
+    {
+      static int framenr = 0; 
+      char capfilename[255];
+      static guint8 *cap_image_data = NULL, *cap_image_data2 = NULL;
+      int i;
+      
+      // hmmmm, is this reentrant ?!
+      if (cap_image_data == NULL)
+	cap_image_data = (guint8 *)malloc(img_width * img_height * 3);
+
+      if (cap_image_data2 == NULL)
+	cap_image_data2 = (guint8 *)malloc(img_width * img_height * 3);
+      
+      printf("Recording frame #%d\n", framenr);
+      glReadPixels(0,0,img_width,img_height,GL_RGB,GL_UNSIGNED_BYTE,cap_image_data);
+      // invert the pixels
+      for (i = 0; i < img_height; i++)
+	memcpy(cap_image_data2 + i * img_width * 3, cap_image_data + (img_height-1-i) * img_width * 3, img_width*3);
+      
+      sprintf(capfilename, "cap%04d.ppm", framenr);
+      FILE *outfile = fopen(capfilename, "wb");
+      if (outfile != NULL)
+	{
+	  fprintf(outfile, "P6\n"); 
+	  fprintf(outfile,"# created by raw_zb\n"); 
+	  fprintf(outfile,"%d %d\n",img_width,img_height); 
+	  fprintf(outfile,"255\n"); 
+	  fwrite(cap_image_data2, sizeof(char), img_width*img_height*3, outfile);
+	  fclose(outfile);
+	}
+      framenr++;
+    }
 
   glXSwapBuffers(xinfo->dpy, xinfo->win);
 }
@@ -295,7 +346,7 @@ gst_gl_rgbimage_free_image (GstImageData *image)
 static void
 gst_gl_rgbimage_open_conn (GstImageConnection *conn, GstImageInfo *info)
 {
-  g_warning("!!! Opening Connection !!!");
+  g_warning("Opening RGB Connection; classic OpenGL 1.2 renderer.");
 
   GstGLImageInfo *xinfo = gst_gl_rgbimage_info (info);  
   GstGLImageConnection *xconn = gst_gl_rgbimage_connection (conn);

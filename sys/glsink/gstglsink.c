@@ -213,8 +213,7 @@ gst_glsink_class_init (GstGLSinkClass *klass)
   
   /* plugins */
   klass->plugins = NULL;
-  //klass->plugins = g_list_append (klass->plugins, get_xvimage_plugin ());
-  //klass->plugins = g_list_append (klass->plugins, get_gl_rgbimage_plugin ());
+  klass->plugins = g_list_append (klass->plugins, get_gl_rgbimage_plugin ());
   klass->plugins = g_list_append (klass->plugins, get_gl_nvimage_plugin ());
 }
 

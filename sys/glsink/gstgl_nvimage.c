@@ -21,6 +21,7 @@
 //#include <GL/glext.h>
 #include <GL/glu.h>
 #include <string.h>
+#include <math.h> 
 
 // too lazy to write an API for this ;) 
 #include "regcomb_yuvrgb.c"
@@ -243,26 +244,26 @@ gst_gl_nvimage_put_image (GstImageInfo *info, GstImageData *image)
 
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
-  glTranslatef(0.0, 0.0, -50.0);
+  glTranslatef(0.0, 0.0, -25.0);
   glEnable(GL_TEXTURE_2D);
-
-  glPushMatrix();
-  //glTranslatef(0,1,0);
-  glRotatef(xinfo->rotX,1,0,0);
-  glRotatef(xinfo->rotY,0,1,0);
 
   if (xinfo->info.demo)
     {
-      //xinfo->rotX += 0.2;
-      //xinfo->rotY -= 0.2;
+
+      glRotatef(180.0*sin(xinfo->rotX),1,0,0);
+      glRotatef(180.0*cos(xinfo->rotY),0,1,0);
+
+      xinfo->rotX += 0.01;
+      xinfo->rotY -= 0.015;
       float zoom = xinfo->zoom;
       glScalef(zoom,zoom,zoom); 
-      
-      if (xinfo->zoom > 2.0)
-	xinfo->zoomdir = -0.05;
+      //glScalef(0.1,0.1,0.1); 
 
-      if (xinfo->zoom < 1.0)
-	xinfo->zoomdir = 0.05;
+      if (xinfo->zoom > 1.0)
+	xinfo->zoomdir = -0.01;
+
+      if (xinfo->zoom < 0.5)
+	xinfo->zoomdir = 0.01;
 
       xinfo->zoom += xinfo->zoomdir;
     }  
@@ -285,30 +286,31 @@ gst_gl_nvimage_put_image (GstImageInfo *info, GstImageData *image)
   //glColor4f(1,1,1,1); // do NOT set a color here ! Done by Initialize_Backend, or actually SetConst !
   glBegin(GL_QUADS);
 
+  float aspect = img_width/(float)img_height;
+  float hor = 4 * aspect;
+
   glNormal3f(0, -1, 0);
   glMultiTexCoord2fARB(GL_TEXTURE0_ARB,0,0); 
   glMultiTexCoord2fARB(GL_TEXTURE1_ARB,0,0); 
   glMultiTexCoord2fARB(GL_TEXTURE2_ARB,0,0); 
-  glVertex3f(-4,4,0);
+  glVertex3f(-hor,4,0);
 
   glMultiTexCoord2fARB(GL_TEXTURE0_ARB,0,ymax); 
   glMultiTexCoord2fARB(GL_TEXTURE1_ARB,0,ymax); 
   glMultiTexCoord2fARB(GL_TEXTURE2_ARB,0,ymax); 
-  glVertex3f(-4,-4,0);
+  glVertex3f(-hor,-4,0);
 
   glMultiTexCoord2fARB(GL_TEXTURE0_ARB,xmax,ymax); 
   glMultiTexCoord2fARB(GL_TEXTURE1_ARB,xmax,ymax); 
   glMultiTexCoord2fARB(GL_TEXTURE2_ARB,xmax,ymax); 
-  glVertex3f(4,-4,0);
+  glVertex3f(hor,-4,0);
 
   glMultiTexCoord2fARB(GL_TEXTURE0_ARB,xmax,0); 
   glMultiTexCoord2fARB(GL_TEXTURE1_ARB,xmax,0); 
   glMultiTexCoord2fARB(GL_TEXTURE2_ARB,xmax,0); 
-  glVertex3f(4,4,0);
+  glVertex3f(hor,4,0);
 
   glEnd();
-
-  glPopMatrix();
 
   if (xinfo->info.dumpvideo)
     {
@@ -371,7 +373,7 @@ gst_gl_nvimage_open_conn (GstImageConnection *conn, GstImageInfo *info)
   GstGLImageInfo *xinfo = gst_gl_nvimage_info (info);  
   GstGLImageConnection *xconn = gst_gl_nvimage_connection (conn);
 
-  g_warning("Opening NVidia GL context connection, using register combiners.\n");
+  g_print("Opening NVidia connection; OpenGL on Nvidia, using register combiners.\n");
   {
     Ywidth = TEX_XSIZE; Yheight = TEX_YSIZE;  UVwidth = TEX_XSIZE/2; UVheight = TEX_YSIZE/2;
     Initialize_Backend(Ywidth,Yheight,UVwidth,UVheight,GL_LINEAR);
