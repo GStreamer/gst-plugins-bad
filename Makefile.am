@@ -45,7 +45,8 @@ $(pcfiles_uninstalled): %-@GST_MAJORMINOR@-uninstalled.pc: %-uninstalled.pc
 
 gstreamer-gconf-@GST_MAJORMINOR@.pc: $(srcdir)/gst-libs/gst/gconf/gstreamer-gconf.pc
 	cp $< $@
-gstreamer-gconf-@GST_MAJORMINOR@-uninstalled.pc: $(srcdir)/gst-libs/gst/gconf/gstreamer-gconf-uninstalled.pc
+gstreamer-gconf-@GST_MAJORMINOR@-uninstalled.pc: \
+	$(srcdir)/gst-libs/gst/gconf/gstreamer-gconf-uninstalled.pc
 	cp $< $@
 
 gst-element-check-@GST_MAJORMINOR@.m4: gst-element-check.m4
