@@ -17,7 +17,9 @@ CLEANFILES = gstaudiofilterexample.c \
 	$(BUILT_SOURCES)
 
 libgstaudio_la_SOURCES = audio.c audioclock.c \
-	multichannel.c
+	multichannel.c \
+	gstbaseaudiosink.c \
+	gstringbuffer.c
 nodist_libgstaudio_la_SOURCES = $(built_sources)
 
 libgstaudioincludedir = $(includedir)/gstreamer-@GST_MAJORMINOR@/gst/audio
@@ -25,6 +27,8 @@ libgstaudioinclude_HEADERS = \
 	audio.h \
 	audioclock.h \
 	gstaudiofilter.h \
+	gstbaseaudiosink.h \
+	gstringbuffer.h \
 	multichannel.h \
 	multichannel-enumtypes.h
 

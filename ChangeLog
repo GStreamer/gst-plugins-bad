@@ -1,3 +1,64 @@
+2005-03-04  Wim Taymans  <wim@fluendo.com>
+
+	* examples/seeking/seek.c:
+	* ext/theora/theoraenc.c: (theora_enc_sink_event),
+	(theora_enc_chain):
+	* ext/vorbis/vorbisenc.c: (gst_vorbisenc_sink_event),
+	(gst_vorbisenc_chain):
+	* gst-libs/gst/audio/Makefile.am:
+	* gst-libs/gst/audio/gstbaseaudiosink.c:
+	(gst_baseaudiosink_base_init), (gst_baseaudiosink_class_init),
+	(gst_baseaudiosink_init), (gst_baseaudiosink_set_property),
+	(gst_baseaudiosink_get_property), (gst_baseaudiosink_setcaps),
+	(gst_baseaudiosink_get_times), (gst_baseaudiosink_event),
+	(gst_baseaudiosink_preroll), (gst_baseaudiosink_render),
+	(gst_baseaudiosink_create_ringbuffer),
+	(gst_baseaudiosink_callback), (gst_baseaudiosink_change_state):
+	* gst-libs/gst/audio/gstbaseaudiosink.h:
+	* gst-libs/gst/audio/gstringbuffer.c: (gst_ringbuffer_get_type),
+	(gst_ringbuffer_class_init), (gst_ringbuffer_init),
+	(gst_ringbuffer_dispose), (gst_ringbuffer_finalize),
+	(gst_ringbuffer_set_callback), (gst_ringbuffer_acquire),
+	(gst_ringbuffer_release), (gst_ringbuffer_play),
+	(gst_ringbuffer_stop), (gst_ringbuffer_callback),
+	(gst_ringbuffer_write):
+	* gst-libs/gst/audio/gstringbuffer.h:
+	* gst-libs/gst/video/Makefile.am:
+	* gst-libs/gst/video/gstvideosink.c: (gst_videosink_init),
+	(gst_videosink_class_init), (gst_videosink_get_type):
+	* gst-libs/gst/video/videosink.h:
+	* sys/oss/Makefile.am:
+	* sys/oss/gstossdmabuffer.c: (gst_ossdmabuffer_get_type),
+	(gst_ossdmabuffer_class_init), (gst_ossdmabuffer_init),
+	(gst_ossdmabuffer_dispose), (gst_ossdmabuffer_finalize),
+	(gst_ossdmabuffer_func), (gst_ossdmabuffer_acquire),
+	(gst_ossdmabuffer_release), (gst_ossdmabuffer_play),
+	(gst_ossdmabuffer_stop):
+	* sys/oss/gstossdmabuffer.h:
+	* sys/oss/gstosselement.c: (gst_osselement_class_init),
+	(gst_osselement_parse_caps), (gst_osselement_sync_parms),
+	(gst_osselement_open_audio):
+	* sys/oss/gstosselement.h:
+	* sys/oss/gstosssink.c: (gst_osssink_get_type),
+	(gst_osssink_gettemplate), (gst_osssink_class_init),
+	(gst_osssink_init), (gst_osssink_getcaps), (gst_osssink_get_delay),
+	(gst_osssink_get_time), (gst_osssink_create_ringbuffer),
+	(gst_osssink_render), (gst_osssink_convert),
+	(gst_osssink_sink_query), (gst_osssink_query),
+	(gst_osssink_set_property), (gst_osssink_get_property),
+	(gst_osssink_change_state):
+	* sys/oss/gstosssink.h:
+	* sys/xvimage/xvimagesink.c: (gst_xvimagesink_getcaps),
+	(gst_xvimagesink_setcaps), (gst_xvimagesink_change_state),
+	(gst_xvimagesink_get_times), (gst_xvimagesink_show_frame),
+	(gst_xvimagesink_chain), (gst_xvimagesink_buffer_alloc),
+	(gst_xvimagesink_init), (gst_xvimagesink_get_template),
+	(gst_xvimagesink_class_init):
+	* sys/xvimage/xvimagesink.h:
+	More work on subclassing the sinks from the basesink.
+	First attempt at generic audiosink base objects.
+	Make oss DMA audiosink.
+
 2005-02-20  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* gst/avi/gstavidemux.c: (gst_avi_demux_index_next),

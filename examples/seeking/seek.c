@@ -27,7 +27,7 @@ static gulong changed_id;
 
 /* number of milliseconds to play for after a seek */
 #define SCRUB_TIME 250
-#undef SCRUB
+#define SCRUB
 
 #define THREAD
 #define PAD_SEEK
