@@ -1,6 +1,43 @@
 2004-12-31  Wim Taymans  <wim@fluendo.com>
 
 	* examples/seeking/seek.c: (dynamic_link), (make_vorbis_pipeline),
+	(make_theora_pipeline), (stop_seek):
+	* ext/mad/gstid3tag.c: (gst_id3_tag_get_tag_to_render),
+	(gst_id3_tag_sink_event), (gst_id3_tag_src_link),
+	(gst_id3_tag_send_tag_event), (gst_id3_tag_chain):
+	* ext/mad/gstmad.c: (gst_mad_init), (gst_mad_update_info),
+	(gst_mad_sink_event), (gst_mad_check_caps_reset), (gst_mad_chain):
+	* ext/ogg/gstoggdemux.c: (gst_ogg_pad_get_type),
+	(gst_ogg_pad_init), (gst_ogg_pad_formats),
+	(gst_ogg_pad_query_types), (gst_ogg_pad_src_query),
+	(gst_ogg_pad_event), (gst_ogg_demux_factory_filter),
+	(compare_ranks), (gst_ogg_pad_internal_chain),
+	(gst_ogg_pad_typefind), (gst_ogg_pad_submit_packet),
+	(gst_ogg_pad_submit_page), (gst_ogg_chain_new),
+	(gst_ogg_chain_free), (gst_ogg_chain_new_stream),
+	(gst_ogg_chain_get_stream), (gst_ogg_chain_has_stream),
+	(gst_ogg_demux_base_init), (gst_ogg_demux_init),
+	(gst_ogg_demux_submit_buffer), (gst_ogg_demux_seek),
+	(gst_ogg_demux_get_data), (gst_ogg_demux_get_next_page),
+	(gst_ogg_demux_get_prev_page), (gst_ogg_demux_perform_seek),
+	(gst_ogg_demux_bisect_forward_serialno),
+	(gst_ogg_demux_read_chain), (gst_ogg_demux_read_end_chain),
+	(gst_ogg_demux_find_pad), (gst_ogg_demux_find_chains),
+	(gst_ogg_demux_chain), (gst_ogg_demux_loop),
+	(gst_ogg_demux_sink_activate), (gst_ogg_print):
+	* ext/ogg/gstoggmux.c: (gst_ogg_mux_next_buffer),
+	(gst_ogg_mux_loop):
+	* ext/theora/theoradec.c: (_inc_granulepos),
+	(theora_dec_src_query), (theora_dec_sink_event),
+	(theora_dec_chain):
+	* ext/vorbis/vorbisdec.c: (vorbis_dec_src_query),
+	(vorbis_dec_src_event), (vorbis_dec_sink_event),
+	(vorbis_dec_chain):
+	Simple first attempt at seeking in ogg vorbis.
+
+2004-12-31  Wim Taymans  <wim@fluendo.com>
+
+	* examples/seeking/seek.c: (dynamic_link), (make_vorbis_pipeline),
 	(make_theora_pipeline):
 	* ext/ogg/gstoggdemux.c: (gst_ogg_pad_get_type),
 	(gst_ogg_pad_init), (gst_ogg_pad_formats),

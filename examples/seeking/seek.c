@@ -868,8 +868,8 @@ stop_seek (GtkWidget * widget, GdkEventButton * event, gpointer user_data)
     while (walk) {
       GstPad *seekable = GST_PAD (walk->data);
 
-      g_print ("seek to %" G_GINT64_FORMAT " on pad %s:%s\n", real,
-          GST_DEBUG_PAD_NAME (seekable));
+      g_print ("seek to %" GST_TIME_FORMAT " on pad %s:%s\n",
+          GST_TIME_ARGS (real), GST_DEBUG_PAD_NAME (seekable));
       s_event =
           gst_event_new_seek (GST_FORMAT_TIME | GST_SEEK_METHOD_SET |
           GST_SEEK_FLAG_FLUSH, real);
