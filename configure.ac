@@ -369,6 +369,7 @@ GST_PLUGINS_ALL="\
 	audioscale \
 	audiorate \
 	auparse \
+	autodetect \
 	avi \
 	cdxaparse \
 	chart \
@@ -1950,6 +1951,7 @@ gst/asfdemux/Makefile
 gst/audioconvert/Makefile
 gst/audioscale/Makefile
 gst/audiorate/Makefile
+gst/autodetect/Makefile
 gst/auparse/Makefile
 gst/avi/Makefile
 gst/cdxaparse/Makefile
