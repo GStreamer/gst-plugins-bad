@@ -191,6 +191,8 @@ gst_sdlvideosink_class_init (GstSDLVideoSinkClass *klass)
   gstvs_class->set_geometry = gst_sdlvideosink_set_geometry;*/
 }
 
+#if 0
+/* FIXME */
 static GstBuffer *
 gst_sdlvideosink_buffer_new (GstBufferPool *pool,  
 			     gint64         location,
@@ -250,14 +252,13 @@ gst_sdlvideosink_get_bufferpool (GstPad *pad)
 
   return NULL;
 }
+#endif
 
 static void
 gst_sdlvideosink_init (GstSDLVideoSink *sdlvideosink)
 {
   GST_VIDEOSINK_PAD (sdlvideosink) = gst_pad_new_from_template (sink_template,
                                                                "sink");
-  gst_pad_set_bufferpool_function (GST_VIDEOSINK_PAD (sdlvideosink),
-                                   gst_sdlvideosink_get_bufferpool);
   gst_element_add_pad (GST_ELEMENT (sdlvideosink),
                        GST_VIDEOSINK_PAD (sdlvideosink));
 
@@ -280,6 +281,7 @@ gst_sdlvideosink_init (GstSDLVideoSink *sdlvideosink)
 
   sdlvideosink->lock = g_mutex_new ();
 
+#if 0
   sdlvideosink->bufferpool = gst_buffer_pool_new (
 	    NULL,		/* free */
 	    NULL,		/* copy */
@@ -287,6 +289,7 @@ gst_sdlvideosink_init (GstSDLVideoSink *sdlvideosink)
 	    NULL,		/* buffer copy, the default is fine */
 	    (GstBufferPoolBufferFreeFunction) gst_sdlvideosink_buffer_free,
 	    sdlvideosink);
+#endif
 
   GST_FLAG_SET(sdlvideosink, GST_ELEMENT_THREAD_SUGGESTED);
   GST_FLAG_SET(sdlvideosink, GST_ELEMENT_EVENT_AWARE);

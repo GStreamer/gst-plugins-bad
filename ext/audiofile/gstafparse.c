@@ -187,7 +187,6 @@ gst_afparse_loop(GstElement *element)
 {
   GstAFParse *afparse;
   GstBuffer *buf;
-  GstBufferPool *bufpool;
   gint numframes = 0, frames_to_bytes, frames_per_read, bytes_per_read;
   guint8 *data;
   gboolean bypass_afread = TRUE;
@@ -226,7 +225,6 @@ gst_afparse_loop(GstElement *element)
   frames_per_read = afparse->frames_per_read;
   bytes_per_read = frames_per_read * frames_to_bytes;
   
-  bufpool = gst_buffer_pool_get_default (bytes_per_read, 8);
   afSeekFrame(afparse->file, AF_DEFAULT_TRACK, 0);
 
   if (bypass_afread){
@@ -265,7 +263,7 @@ gst_afparse_loop(GstElement *element)
   }
   else {
     do {
-      buf = gst_buffer_new_from_pool (bufpool, 0, 0);
+      buf = gst_buffer_new_and_alloc (bytes_per_read);
       GST_BUFFER_TIMESTAMP(buf) = afparse->timestamp;
       data = GST_BUFFER_DATA(buf); 
       numframes = afReadFrames (afparse->file, AF_DEFAULT_TRACK, data, frames_per_read);
@@ -286,7 +284,6 @@ gst_afparse_loop(GstElement *element)
     while (TRUE);
   }
   gst_afparse_close_file (afparse);
-  gst_buffer_pool_unref(bufpool);
   
   gst_bytestream_destroy ((GstByteStream*) afparse->vfile->closure);
 

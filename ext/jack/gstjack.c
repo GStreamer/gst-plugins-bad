@@ -77,7 +77,7 @@ static GstPadTemplate*	gst_jack_sink_request_pad_factory();
 static GstPad*		gst_jack_request_new_pad (GstElement *element, GstPadTemplate *templ,
                                                   const gchar *name);
 static GstElementStateReturn	gst_jack_change_state (GstElement *element);
-static GstPadLinkReturn	gst_jack_link (GstPad *pad, GstCaps *caps);
+static GstPadLinkReturn	gst_jack_link (GstPad *pad, const GstCaps2 *caps);
 
 static void		gst_jack_loop (GstElement *element);
 
@@ -263,12 +263,10 @@ gst_jack_src_request_pad_factory (void)
     static GstPadTemplate *template = NULL;
     
     if (!template) {
-	GstCaps *caps;
-	caps = gst_caps_new ("src",
-                             "audio/x-raw-float",
-                             GST_AUDIO_FLOAT_STANDARD_PAD_TEMPLATE_PROPS);
+	GstCaps2 *caps;
+	caps = gst_caps2_from_string (GST_AUDIO_FLOAT_STANDARD_PAD_TEMPLATE_CAPS);
         template = gst_pad_template_new ("%s", GST_PAD_SRC,
-					 GST_PAD_REQUEST, caps, NULL);
+            GST_PAD_REQUEST, caps);
     }
     
     return template;
@@ -280,12 +278,10 @@ gst_jack_sink_request_pad_factory (void)
     static GstPadTemplate *template = NULL;
     
     if (!template) {
-	GstCaps *caps;
-	caps = gst_caps_new ("sink",
-			     "audio/x-raw-float",
-                             GST_AUDIO_FLOAT_STANDARD_PAD_TEMPLATE_PROPS);
+	GstCaps2 *caps;
+	caps = gst_caps2_from_string (GST_AUDIO_FLOAT_STANDARD_PAD_TEMPLATE_CAPS);
         template = gst_pad_template_new ("%s", GST_PAD_SINK,
-                                         GST_PAD_REQUEST, caps, NULL);
+            GST_PAD_REQUEST, caps);
     }
     
     return template;
@@ -353,7 +349,7 @@ gst_jack_change_state (GstElement *element)
     GstJack *this;
     GList *l = NULL, **pads;
     GstJackPad *pad;
-    GstCaps *caps;
+    GstCaps2 *caps;
     
     g_return_val_if_fail (element != NULL, FALSE);
     this = GST_JACK (element);
@@ -397,10 +393,10 @@ gst_jack_change_state (GstElement *element)
             while (l) {
                 pad = GST_JACK_PAD (l);
                 caps = gst_pad_get_caps (pad->pad);
-                gst_caps_set (caps, "rate", GST_PROPS_INT_TYPE,
-                              (gint)this->bin->rate, NULL);
-                gst_caps_set (caps, "buffer-frames", GST_PROPS_INT_TYPE,
-                              (gint)this->bin->nframes, NULL);
+                gst_caps2_set_simple (caps,
+                    "rate", G_TYPE_INT, (int)this->bin->rate,
+                    "buffer-frames", G_TYPE_INT, (gint)this->bin->nframes,
+                    NULL);
                 if (gst_pad_try_set_caps (pad->pad, caps) <= 0)
                     return GST_STATE_FAILURE;
                 l = g_list_next (l);
@@ -421,24 +417,22 @@ gst_jack_change_state (GstElement *element)
 }
 
 static GstPadLinkReturn
-gst_jack_link (GstPad *pad, GstCaps *caps)
+gst_jack_link (GstPad *pad, const GstCaps2 *caps)
 {
   GstJack *this;
   gint rate, buffer_frames;
+  GstStructure *structure;
   
   this = GST_JACK (GST_OBJECT_PARENT (pad));
   
-  if (GST_CAPS_IS_FIXED (caps)) {
-      gst_caps_get_int (caps, "rate", &rate);
-      gst_caps_get_int (caps, "buffer-frames", &buffer_frames);
-      if (this->bin && (rate != this->bin->rate ||
-                        buffer_frames != this->bin->nframes))
-          return GST_PAD_LINK_REFUSED;
-      
-      return GST_PAD_LINK_OK;
-  }
+  structure = gst_caps2_get_nth_cap (caps, 0);
+  gst_structure_get_int  (structure, "rate", &rate);
+  gst_structure_get_int  (structure, "buffer-frames", &buffer_frames);
+  if (this->bin && (rate != this->bin->rate ||
+                    buffer_frames != this->bin->nframes))
+      return GST_PAD_LINK_REFUSED;
   
-  return GST_PAD_LINK_DELAYED;
+  return GST_PAD_LINK_OK;
 }
 
 static void

@@ -60,7 +60,6 @@ struct _GstSDLVideoSink {
   SDL_Rect rect;
 
   GMutex *lock;
-  GstBufferPool *bufferpool;
 };
 
 struct _GstSDLVideoSinkClass {

@@ -541,7 +541,6 @@ gst_swfdec_change_state (GstElement *element)
       //swfdec->decoder->is_sequence_needed = 1;
       //swfdec->decoder->frame_rate_code = 0;
       swfdec->timestamp = 0;
-      swfdec->pool = NULL;
       swfdec->closed = FALSE;
 
       /* reset the initial video state */
@@ -552,19 +551,8 @@ gst_swfdec_change_state (GstElement *element)
       break;
     }
     case GST_STATE_PAUSED_TO_PLAYING:
-      /* try to get a bufferpool */
-#if 0
-      swfdec->pool = gst_pad_get_bufferpool (swfdec->videopad);
-      if (swfdec->pool)
-        GST_INFO ( "got pool %p", swfdec->pool);
-#endif
       break;
     case GST_STATE_PLAYING_TO_PAUSED:
-      /* need to clear things we get from other plugins, since we could be reconnected */
-      if (swfdec->pool) {
-	gst_buffer_pool_unref (swfdec->pool);
-	swfdec->pool = NULL;
-      }
       break;
     case GST_STATE_PAUSED_TO_READY:
       /* if we are not closed by an EOS event do so now, this cen send a few frames but
