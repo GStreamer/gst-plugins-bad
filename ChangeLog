@@ -1,3 +1,8 @@
+2005-04-03  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* sys/oss/gstossmixer.c: (gst_ossmixer_get_volume):
+	  Fix mute misbehaviour.
+
 2005-04-02  Tim-Philipp Müller  <tim at centricular dot net>
 
 	* ext/wavpack/words.c:
