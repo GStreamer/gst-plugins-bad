@@ -631,7 +631,7 @@ GStreamer support libraries header files.
 @USE_MIKMOD_TRUE@%post -n gstreamer-mikmod
 @USE_MIKMOD_TRUE@%{_bindir}/gst-register --gst-mask=0 > /dev/null 2> /dev/null
 @USE_MIKMOD_TRUE@
-@USE_MIKMOD_TRUE@%post-un -n gstreamer-mikmod
+@USE_MIKMOD_TRUE@%postun -n gstreamer-mikmod
 @USE_MIKMOD_TRUE@%{_bindir}/gst-register --gst-mask=0 > /dev/null 2> /dev/null
 
 ### MJPEGTOOLS ###
