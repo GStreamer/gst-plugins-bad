@@ -339,12 +339,11 @@ if test "x$HAVE_GDK_LOADERS" = "xyes"; then
 fi
 AM_CONDITIONAL(HAVE_GDK_LOADERS, test "x$HAVE_GDK_LOADERS" = "xyes")
 
-PKG_CHECK_MODULES(LIBOIL, liboil-0.2, HAVE_LIBOIL=yes, HAVE_LIBOIL=no)
-#PKG_CHECK_MODULES(LIBOIL, liboil-0.3 >= 0.3.0, HAVE_LIBOIL=yes, HAVE_LIBOIL=no)
+PKG_CHECK_MODULES(LIBOIL, liboil-0.3 >= 0.3.0, HAVE_LIBOIL=yes, HAVE_LIBOIL=no)
 AC_SUBST(LIBOIL_CFLAGS)
 AC_SUBST(LIBOIL_LIBS)
 if test "x${HAVE_LIBOIL}" = xyes ; then
-  #AC_DEFINE_UNQUOTED(HAVE_LIBOIL, 1, [Define if liboil is being used])
+  AC_DEFINE_UNQUOTED(HAVE_LIBOIL, 1, [Define if liboil is being used])
   true
 fi
 
@@ -1325,14 +1324,6 @@ translit(dnm, m, l) AM_CONDITIONAL(USE_LIBMNG, true)
 GST_CHECK_FEATURE(LIBMNG, [libmng library], mngdec, [
   GST_CHECK_LIBHEADER(LIBMNG, mng, mng_initialize,, libmng.h, LIBMNG_LIBS="-lmng")
   AC_SUBST(LIBMNG_LIBS)
-])
-
-dnl *** librfb ***
-translit(dnm, m, l) AM_CONDITIONAL(USE_LIBRFB, true)
-GST_CHECK_FEATURE(LIBRFB, [librfb Remote Framebuffer], rfbsrc, [
-  PKG_CHECK_MODULES(LIBRFB, librfb-0.1, HAVE_LIBRFB="yes", HAVE_LIBRFB="no")
-  AC_SUBST(LIBRFB_CFLAGS)
-  AC_SUBST(LIBRFB_LIBS)
 ])
 
 dnl *** libvisual ***

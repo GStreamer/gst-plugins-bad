@@ -1,3 +1,13 @@
+2005-03-30  David Schleef  <ds@schleef.org>
+
+	* configure.ac: update for liboil-0.3.  Remove librfb check.
+	* gst/games/gstvideoimage.c: (oil_splat_u8), (paint_hline_YUY2),
+	(paint_hline_IYU2), (paint_hline_str4), (paint_hline_str3),
+	(paint_hline_RGB565), (paint_hline_xRGB1555):
+	* gst/videotestsrc/videotestsrc.c: (paint_hline_YUY2),
+	(paint_hline_IYU2), (paint_hline_str4), (paint_hline_str3),
+	(paint_hline_RGB565), (paint_hline_xRGB1555):
+
 2005-03-30  Tim-Philipp Müller  <tim at centricular dot net>
 
 	* ext/musepack/gstmusepackdec.c: (gst_musepack_stream_init):

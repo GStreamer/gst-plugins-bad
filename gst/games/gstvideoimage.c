@@ -464,12 +464,12 @@ paint_setup_YVYU (GstVideoImage * p, char *dest)
 
 #ifndef HAVE_LIBOIL
 void
-oil_splat_u8 (guint8 * dest, int dstr, guint8 val, int n)
+oil_splat_u8 (guint8 * dest, int dstr, guint8 * val, int n)
 {
   int i;
 
   for (i = 0; i < n; i++) {
-    *dest = val;
+    *dest = *val;
     dest += dstr;
   }
 }
@@ -482,10 +482,13 @@ paint_hline_YUY2 (GstVideoImage * p, int x, int y, int w,
   int x1 = x / 2;
   int x2 = (x + w) / 2;
   int offset = y * p->ystride;
+  guint8 Y = c->Y;
+  guint8 U = c->U;
+  guint8 V = c->V;
 
-  oil_splat_u8 (p->yp + offset + x * 2, 2, c->Y, w);
-  oil_splat_u8 (p->up + offset + x1 * 4, 4, c->U, x2 - x1);
-  oil_splat_u8 (p->vp + offset + x1 * 4, 4, c->V, x2 - x1);
+  oil_splat_u8 (p->yp + offset + x * 2, 2, &Y, w);
+  oil_splat_u8 (p->up + offset + x1 * 4, 4, &U, x2 - x1);
+  oil_splat_u8 (p->vp + offset + x1 * 4, 4, &V, x2 - x1);
 }
 
 static void
@@ -515,11 +518,14 @@ paint_hline_IYU2 (GstVideoImage * p, int x, int y, int w,
     const GstVideoColor * c)
 {
   int offset;
+  guint8 Y = c->Y;
+  guint8 U = c->U;
+  guint8 V = c->V;
 
   offset = y * p->ystride;
-  oil_splat_u8 (p->yp + offset + x * 3, 3, c->Y, w);
-  oil_splat_u8 (p->up + offset + x * 3, 3, c->U, w);
-  oil_splat_u8 (p->vp + offset + x * 3, 3, c->V, w);
+  oil_splat_u8 (p->yp + offset + x * 3, 3, &Y, w);
+  oil_splat_u8 (p->up + offset + x * 3, 3, &U, w);
+  oil_splat_u8 (p->vp + offset + x * 3, 3, &V, w);
 }
 
 static void
@@ -769,10 +775,13 @@ paint_hline_str4 (GstVideoImage * p, int x, int y, int w,
     const GstVideoColor * c)
 {
   int offset = y * p->ystride;
+  guint8 R = c->R;
+  guint8 G = c->G;
+  guint8 B = c->B;
 
-  oil_splat_u8 (p->yp + offset + x * 4, 4, c->R, w);
-  oil_splat_u8 (p->up + offset + x * 4, 4, c->G, w);
-  oil_splat_u8 (p->vp + offset + x * 4, 4, c->B, w);
+  oil_splat_u8 (p->yp + offset + x * 4, 4, &R, w);
+  oil_splat_u8 (p->up + offset + x * 4, 4, &G, w);
+  oil_splat_u8 (p->vp + offset + x * 4, 4, &B, w);
 }
 
 static void
@@ -791,10 +800,13 @@ paint_hline_str3 (GstVideoImage * p, int x, int y, int w,
     const GstVideoColor * c)
 {
   int offset = y * p->ystride;
+  guint8 R = c->R;
+  guint8 G = c->G;
+  guint8 B = c->B;
 
-  oil_splat_u8 (p->yp + offset + x * 3, 3, c->R, w);
-  oil_splat_u8 (p->up + offset + x * 3, 3, c->G, w);
-  oil_splat_u8 (p->vp + offset + x * 3, 3, c->B, w);
+  oil_splat_u8 (p->yp + offset + x * 3, 3, &R, w);
+  oil_splat_u8 (p->up + offset + x * 3, 3, &G, w);
+  oil_splat_u8 (p->vp + offset + x * 3, 3, &B, w);
 }
 
 static void
@@ -821,17 +833,17 @@ paint_hline_RGB565 (GstVideoImage * p, int x, int y, int w,
     const GstVideoColor * c)
 {
   int offset = y * p->ystride;
-  unsigned int a, b;
+  guint8 a, b;
 
   a = (c->R & 0xf8) | (c->G >> 5);
   b = ((c->G << 3) & 0xe0) | (c->B >> 3);
 
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
-  oil_splat_u8 (p->yp + offset + x * 2 + 0, 2, b, w);
-  oil_splat_u8 (p->yp + offset + x * 2 + 1, 2, a, w);
+  oil_splat_u8 (p->yp + offset + x * 2 + 0, 2, &b, w);
+  oil_splat_u8 (p->yp + offset + x * 2 + 1, 2, &a, w);
 #else
-  oil_splat_u8 (p->yp + offset + x * 2 + 0, 2, a, w);
-  oil_splat_u8 (p->yp + offset + x * 2 + 1, 2, b, w);
+  oil_splat_u8 (p->yp + offset + x * 2 + 0, 2, &a, w);
+  oil_splat_u8 (p->yp + offset + x * 2 + 1, 2, &b, w);
 #endif
 }
 
@@ -859,17 +871,17 @@ paint_hline_xRGB1555 (GstVideoImage * p, int x, int y, int w,
     const GstVideoColor * c)
 {
   int offset = y * p->ystride;
-  unsigned int a, b;
+  guint8 a, b;
 
   a = ((c->R >> 1) & 0x7c) | (c->G >> 6);
   b = ((c->G << 2) & 0xe0) | (c->B >> 3);
 
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
-  oil_splat_u8 (p->yp + offset + x * 2 + 0, 2, b, w);
-  oil_splat_u8 (p->yp + offset + x * 2 + 1, 2, a, w);
+  oil_splat_u8 (p->yp + offset + x * 2 + 0, 2, &b, w);
+  oil_splat_u8 (p->yp + offset + x * 2 + 1, 2, &a, w);
 #else
-  oil_splat_u8 (p->yp + offset + x * 2 + 0, 2, a, w);
-  oil_splat_u8 (p->yp + offset + x * 2 + 1, 2, b, w);
+  oil_splat_u8 (p->yp + offset + x * 2 + 0, 2, &a, w);
+  oil_splat_u8 (p->yp + offset + x * 2 + 1, 2, &b, w);
 #endif
 }
 
