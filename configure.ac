@@ -405,11 +405,14 @@ dnl FIXME : add second check somehow if that is necessary
 dnl AC_CHECK_LIB(cdda_paranoia, paranoia_init, : , HAVE_CDPARANOIA=no, -lcdda_interface )
 dnl AC_CHECK_HEADER(cdda_paranoia.h, :, HAVE_CDPARANOIA=no)
 
-dnl *** dv ***
-translit(dnm, m, l) AM_CONDITIONAL(USE_DV, true)
-GST_CHECK_FEATURE(DV, [dv library], dv, [
-  AM_PATH_LIBDV(HAVE_DV=yes, HAVE_DV=no)
-  AC_SUBST(DV_LIBS)
+dnl *** libdv ***
+translit(dnm, m, l) AM_CONDITIONAL(USE_LIBDV, true)
+GST_CHECK_FEATURE(LIBDV, [libdv DV/video decoder], dvdec, [
+  dnl use this when gtk deps are removed from its pkg-config .pc
+  dnl PKG_CHECK_MODULES(LIBDV, libdv, HAVE_LIBDV="yes", HAVE_LIBDV="no")
+  AM_PATH_LIBDV(HAVE_LIBDV="yes", HAVE_LIBDV="no")
+  AC_SUBST(LIBDV_CFLAGS)
+  AC_SUBST(LIBDV_LIBS)
 ])
 
 dnl *** dvdread ***
@@ -541,14 +544,6 @@ GST_CHECK_FEATURE(LCS, Lcs, lcs, [
   AC_SUBST(LCS_LIBS)
 ])
 
-dnl *** libdv ***
-translit(dnm, m, l) AM_CONDITIONAL(USE_LIBDV, true)
-GST_CHECK_FEATURE(LIBDV, [libdv DV/video decoder], dvdec, [
-  PKG_CHECK_MODULES(LIBDV, libdv, HAVE_LIBDV="yes", HAVE_LIBDV="no")
-  AC_SUBST(LIBDV_CFLAGS)
-  AC_SUBST(LIBDV_LIBS)
-])
-
 dnl *** libfame ***
 translit(dnm, m, l) AM_CONDITIONAL(USE_LIBFAME, true)
 GST_CHECK_FEATURE(LIBFAME, [libfame MPEG1/4 encoder], libfame, [
@@ -613,8 +608,8 @@ dnl *** rtp ***
 dnl FIXME : adapt and make it work
 translit(dnm, m, l) AM_CONDITIONAL(USE_RTP, true)
 GST_CHECK_FEATURE(RTP, [RTP library], rtpenc rtpdec,[
-  AC_CHECK_LIB(rtp, rtp_packet_new_take_data, HAVE_RTP=yes, HAVE_RTP=no, $GST_CFLAGS $GST_LIBS)
-  RTP_LIBS="-lrtp"
+  AC_CHECK_LIB(ortp, ortp_init, HAVE_RTP=yes, HAVE_RTP=no, $GST_CFLAGS $GST_LIBS)
+  RTP_LIBS="-lortp"
   AC_SUBST(RTP_LIBS)
 ])
 

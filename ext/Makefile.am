@@ -46,10 +46,10 @@ else
 CDPARANOIA_DIR=
 endif
 
-if USE_DV
-DV_DIR=dv
+if USE_LIBDV
+LIBDV_DIR=dv
 else
-DV_DIR=
+LIBDV_DIR=
 endif
 
 if USE_DVDREAD
