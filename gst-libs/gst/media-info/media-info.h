@@ -55,7 +55,7 @@ typedef struct
   gboolean seekable;
   gchar *mime;
   gchar *path;
-  GstCaps *caps;		/* properties of the complete bitstream */
+  GstCaps2 *caps;		/* properties of the complete bitstream */
 
   guint64 length_time;
   glong length_tracks;
@@ -68,9 +68,9 @@ typedef struct
  * or one of a set of sequentially muxed streams */
 typedef struct
 {
-  GstCaps *metadata;		/* changeable metadata or tags */
-  GstCaps *streaminfo;		/* codec property stuff */
-  GstCaps *format;		/* properties of the logical stream */
+  GstCaps2 *metadata;		/* changeable metadata or tags */
+  GstCaps2 *streaminfo;		/* codec property stuff */
+  GstCaps2 *format;		/* properties of the logical stream */
 
   guint64 length_time;
 
@@ -80,7 +80,7 @@ typedef struct
 
 typedef struct
 {
-  GstCaps *caps;		/* properties of the muxed concurrent stream */
+  GstCaps2 *caps;		/* properties of the muxed concurrent stream */
 } GstMediaInfoConcurrent;
 
 #define GST_MEDIA_INFO_ERROR		gst_media_info_error_quark ()
@@ -116,13 +116,13 @@ gboolean	gst_media_info_read_many	(GstMediaInfo *media_info,
 						 GList *locations,
 						 guint16 GST_MEDIA_INFO_FLAGS,
 						 GError **error);
-GstCaps *	gst_media_info_get_next		(GstMediaInfo *media_info,
+GstCaps2 *	gst_media_info_get_next		(GstMediaInfo *media_info,
 						 GError **error);
 /*
  * FIXME: reset ?
 gboolean	gst_media_info_write	(GstMediaInfo *media_info,
                                          const char *location,
-					 GstCaps *media_info);
+					 GstCaps2 *media_info);
 					 */
 
 G_END_DECLS

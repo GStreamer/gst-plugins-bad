@@ -52,14 +52,13 @@ G_BEGIN_DECLS
 
 #define GST_AUDIO_INT_PAD_TEMPLATE_CAPS \
   "audio/x-raw-int, " \
-  "rate = (int) [ 1, " G_STRINGIFY(G_MAXINT) ", " \
-  "channels = (int) [ 1, " G_STRINGIFY(G_MAXINT) ", " \
-  "endianness = (int) { " G_STRINGIFY(G_LITTLE_ENDIAN) ", " \
-                          G_STRINGIFY(G_BIG_ENDIAN) "}, " \
+  "rate = (int) [ 1, MAX ], " \
+  "channels = (int) [ 1, MAX ], " \
+  "endianness = (int) { LITTLE_ENDIAN, BIG_ENDIAN }, " \
   "width = (int) { 8, 16, 32 }, " \
   "depth = (int) [ 1, 32 ], " \
   "signed = (boolean) { true, false }, " \
-  "buffer-frames = (int) [ 1, " G_STRINGIFY(G_MAXINT) "]"
+  "buffer-frames = (int) [ 1, MAX ]"
 
 
 /* "standard" int audio is native order, 16 bit stereo. */

@@ -39,9 +39,9 @@
 #define G_MASK_24_REVERSE 0x00ff00
 #define B_MASK_24_REVERSE 0xff0000
 
-#define R_MASK_16 0xf800
-#define G_MASK_16 0x07e0
-#define B_MASK_16 0x001f
+#define R_MASK_16 "0xf800"
+#define G_MASK_16 "0x07e0"
+#define B_MASK_16 "0x001f"
 
 #define R_MASK_15 0x8c00
 #define G_MASK_15 0x03e0
@@ -183,18 +183,17 @@
             "framerate",        FPS_RANGE, \
             NULL)
 
-#define GST_VIDEO_RGB_PAD_TEMPLATE_PROPS_16 \
-        gst_props_new ( \
-            "bpp",              GST_PROPS_INT (16), \
-            "depth",            GST_PROPS_INT (16), \
-            "endianness",       GST_PROPS_INT (G_BYTE_ORDER), \
-            "red_mask",         GST_PROPS_INT (R_MASK_16), \
-            "green_mask",       GST_PROPS_INT (G_MASK_16), \
-            "blue_mask",        GST_PROPS_INT (B_MASK_16), \
-            "width",            SIZE_RANGE, \
-            "height",           SIZE_RANGE, \
-            "framerate",        FPS_RANGE, \
-            NULL)
+#define GST_VIDEO_RGB_PAD_TEMPLATE_CAPS_16 \
+	    "video/x-raw-rgb, "				\
+            "bpp = (int) 16, "				\
+            "depth = (int) 16, "			\
+            "endianness = (int) BYTE_ORDER, "		\
+            "red_mask = (int) " R_MASK_16 ", "		\
+            "green_mask = (int) " G_MASK_16 ", "	\
+            "blue_mask = (int) " B_MASK_16 ", "		\
+            "width = " SIZE_RANGE ", "			\
+            "height = " SIZE_RANGE ", "			\
+            "framerate = " FPS_RANGE
 
 #define GST_VIDEO_RGB_PAD_TEMPLATE_PROPS_15 \
         gst_props_new ( \
@@ -217,7 +216,7 @@
 	"framerate = " FPS_RANGE
 
 /* functions */
-gfloat   gst_video_frame_rate (GstPad *pad);
+gdouble  gst_video_frame_rate (GstPad *pad);
 gboolean gst_video_get_size   (GstPad *pad,
                                gint   *width,
                                gint   *height);

@@ -78,7 +78,7 @@ gmi_track_new (void)
 
 /* callbacks */
 static void
-have_type_callback (GstElement *typefind, GstCaps *type, GstMediaInfoPriv *priv)
+have_type_callback (GstElement *typefind, GstCaps2 *type, GstMediaInfoPriv *priv)
 {
   priv->type = type;
 }
@@ -136,13 +136,13 @@ gmi_reset (GstMediaInfo *info)
   if (priv->format)
   {
     GMI_DEBUG ("unreffing priv->format, error before this ?\n");
-    gst_caps_unref (priv->format);
+    gst_caps2_free (priv->format);
     priv->format = NULL;
   }
   if (priv->metadata)
   {
     GMI_DEBUG ("unreffing priv->metadata, error before this ?\n");
-    gst_caps_unref (priv->metadata);
+    gst_caps2_free (priv->metadata);
     priv->metadata = NULL;
   }
   if (priv->stream)
@@ -193,12 +193,12 @@ gmi_seek_to_track (GstMediaInfo *info, long track)
   /* clear structs because of the seek */
   if (priv->metadata)
   {
-    gst_caps_unref (priv->metadata);
+    gst_caps2_free (priv->metadata);
     priv->metadata = NULL;
   }
   if (priv->streaminfo)
   {
-    gst_caps_unref (priv->streaminfo);
+    gst_caps2_free (priv->streaminfo);
     priv->streaminfo = NULL;
   }
   return TRUE;
@@ -293,7 +293,7 @@ gmi_clear_decoder (GstMediaInfo *info)
 /****
  *  typefind functions
  * find the type of a file and store it in the caps of the info
- * FIXME: we might better return GstCaps instead of storing them
+ * FIXME: we might better return GstCaps2 instead of storing them
  * internally */
 
 /* prepare for typefind, move from NULL to TYPEFIND */
@@ -304,7 +304,7 @@ gmip_find_type_pre (GstMediaInfoPriv *priv)
   if (priv->type)
   {
     /* we don't need to unref, this is done inside gsttypefind.c
-       gst_caps_unref (priv->type);
+       gst_caps2_free (priv->type);
      */
     priv->type = NULL;
   }
@@ -573,14 +573,13 @@ gmip_find_track_streaminfo_post (GstMediaInfoPriv *priv)
                               &format, &value_end);
       if (res)
       {
-	GstPropsEntry *length;
         /* substract to get the length */
 	GMI_DEBUG("DEBUG: start %lld, end %lld\n", value_start, value_end);
 	value_end -= value_start;
 	/* FIXME: check units; this is in seconds */
-	length = gst_props_entry_new ("length",
-			              GST_PROPS_INT ((int) (value_end / 1E6)));
-	gst_props_add_entry (gst_caps_get_props (priv->streaminfo), length);
+
+	gst_caps2_set_simple (priv->streaminfo,
+	    "length", G_TYPE_INT, (int) (value_end / 1E6), NULL);
       }
     }
   }
