@@ -133,6 +133,8 @@ GStreamer support libraries header files.
 %{_datadir}/aclocal/gst-element-check-%{majorminor}.m4
 %{_libdir}/pkgconfig/gstreamer-libs-%{majorminor}.pc
 %{_libdir}/pkgconfig/gstreamer-play-%{majorminor}.pc
+@USE_GCONF_TRUE@%{_libdir}/libgstgconf-%{majorminor}.so
+%{_libdir}/libgstplay-%{majorminor}.so
 
 # Here are all the packages depending on external libs #
 
@@ -1502,8 +1504,7 @@ Plug-in for demuxing Quicktime movies
 @USE_GCONF_TRUE@%files -n gstreamer-GConf
 @USE_GCONF_TRUE@%defattr(-, root, root)
 @USE_GCONF_TRUE@%{_sysconfdir}/gconf/schemas/gstreamer.schemas
-@USE_GCONF_TRUE@%{_libdir}/libgstgconf.so
-@USE_GCONF_TRUE@%{_libdir}/libgstgconf-%{version}.so.*
+@USE_GCONF_TRUE@%{_libdir}/libgstgconf-%{majorminor}.so.*
 
 @USE_GCONF_TRUE@%post -n gstreamer-GConf
 @USE_GCONF_TRUE@export GCONF_CONFIG_SOURCE=`gconftool-2 --get-default-source`
@@ -1520,7 +1521,7 @@ This package contains a basic audio and video playback library.
 
 %files -n gstreamer-play
 %defattr(-, root, root)
-%{_libdir}/libgstplay-%{majorminor}.so*
+%{_libdir}/libgstplay-%{majorminor}.so.*
 
 %post -n gstreamer-play
 /sbin/ldconfig
@@ -1531,6 +1532,7 @@ This package contains a basic audio and video playback library.
 %changelog
 * Tue Dec 10 2002 Thomas Vander Stichele <thomas at apestaart dot org>
 - only install schema once
+- move out devel lib stuff to -devel package
 
 * Sun Dec 08 2002 Thomas Vander Stichele <thomas at apestaart dot org>
 - fix location of libgstpng
