@@ -571,8 +571,13 @@ gst_faad_chain (GstPad * pad, GstData * data)
   buf = GST_BUFFER (data);
   next_ts = GST_BUFFER_TIMESTAMP (buf);
   if (faad->tempbuf) {
-    buf = gst_buffer_join (faad->tempbuf, buf);
+    GstBuffer *new = NULL;
+
+    new = gst_buffer_join (faad->tempbuf, buf);
+    gst_buffer_unref (faad->tempbuf);
     faad->tempbuf = NULL;
+    gst_buffer_unref (buf);
+    buf = new;
   }
 
   /* init if not already done during capsnego */

@@ -353,9 +353,14 @@ gst_cdxastrip_chain (GstPad * pad, GstData * data)
 
   buf = GST_BUFFER (data);
   if (cdxa->cache) {
-    buf = gst_buffer_join (cdxa->cache, buf);
+    GstBuffer *new = NULL;
+
+    new = gst_buffer_join (cdxa->cache, buf);
+    gst_buffer_unref (cdxa->cache);
+    cdxa->cache = NULL;
+    gst_buffer_unref (buf);
+    buf = new;
   }
-  cdxa->cache = NULL;
 
   while (buf && GST_BUFFER_SIZE (buf) >= GST_CDXA_SECTOR_SIZE) {
     /* sync */
