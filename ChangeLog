@@ -1,3 +1,9 @@
+2005-03-12  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/typefind/gsttypefindfunctions.c:
+	(mp3_type_frame_length_from_header), (mp3_type_find):
+	  Add support for "free format mp3" extension to mp3 typefinding.
+
 2005-03-11  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* sys/xvimage/xvimagesink.c: (gst_xvimagesink_get_xv_support),
