@@ -321,6 +321,9 @@ gst_faad_sinkconnect (GstPad * pad, const GstCaps * caps)
       gst_buffer_unref (faad->tempbuf);
       faad->tempbuf = NULL;
     }
+  } else if ((value = gst_structure_get_value (str, "framed")) &&
+      g_value_get_boolean (value) == TRUE) {
+    faad->packetised = TRUE;
   } else {
     faad->init = FALSE;
   }

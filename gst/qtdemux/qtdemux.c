@@ -2001,7 +2001,8 @@ qtdemux_parse_trak (GstQTDemux * qtdemux, GNode * trak)
    * some of those trailers, nowadays, have prologue images that are
    * themselves vide tracks as well. I haven't really found a way to
    * identify those yet, except for just looking at their duration. */
-  if ((guint64) QTDEMUX_GUINT32_GET (mdhd->data + 24) *
+  if (stream->timescale * qtdemux->duration != 0 &&
+      (guint64) QTDEMUX_GUINT32_GET (mdhd->data + 24) *
       qtdemux->timescale * 10 / (stream->timescale * qtdemux->duration) < 2) {
     GST_WARNING ("Track shorter than 20%% (%d/%d vs. %d/%d) of the stream "
         "found, assuming preview image or something; skipping track",
@@ -2807,7 +2808,7 @@ qtdemux_audio_caps (GstQTDemux * qtdemux, guint32 fourcc, const guint8 * data,
     case GST_MAKE_FOURCC ('m', 'p', '4', 'a'):
       /* MPEG-4 AAC */
       return gst_caps_new_simple ("audio/mpeg",
-          "mpegversion", G_TYPE_INT, 4, NULL);
+          "mpegversion", G_TYPE_INT, 4, "framed", G_TYPE_BOOLEAN, TRUE, NULL);
     case GST_MAKE_FOURCC ('Q', 'D', 'M', '2'):
       /* FIXME: QDesign music version 2 (no constant) */
       if (data) {

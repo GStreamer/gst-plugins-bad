@@ -1,3 +1,11 @@
+2005-03-14  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/faad/gstfaad.c: (gst_faad_sinkconnect):
+	* gst/matroska/matroska-demux.c: (gst_matroska_demux_audio_caps):
+	* gst/qtdemux/qtdemux.c: (qtdemux_parse_trak),
+	(qtdemux_audio_caps):
+	  Implement 'framed' property, independent of 'codec_data'.
+
 2005-03-12  Richard Hult  <richard@imendio.com>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
