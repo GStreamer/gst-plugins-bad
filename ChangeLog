@@ -1,3 +1,13 @@
+2005-03-14  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/faac/gstfaac.c: (gst_faac_init), (gst_faac_srcconnect),
+	(gst_faac_chain), (gst_faac_change_state):
+	* ext/faac/gstfaac.h:
+	  Change timestamp generation to lineair since that works at least
+	  somewhat (although, arguably, it is incorrect). Disable all but
+	  16-bit integer input since all the other are untested and lead
+	  to unpredicteable results inside libfaac.
+
 2005-03-14  Tim-Philipp Müller  <tim at centricular dot net>
 
 	* ext/nas/nassink.c: (gst_nassink_init), (gst_nassink_sync_parms),

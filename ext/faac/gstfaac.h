@@ -61,7 +61,7 @@ typedef struct _GstFaac {
 
   /* cache of the input */
   GstBuffer *cache;
-  guint64 cache_time, cache_duration;
+  guint64 out_time;
 } GstFaac;
 
 typedef struct _GstFaacClass {

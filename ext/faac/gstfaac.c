@@ -21,6 +21,8 @@
 #include "config.h"
 #endif
 
+#include <string.h>
+
 #include "gstfaac.h"
 
 static GstStaticPadTemplate src_template = GST_STATIC_PAD_TEMPLATE ("src",
@@ -34,9 +36,27 @@ static GstStaticPadTemplate src_template = GST_STATIC_PAD_TEMPLATE ("src",
 static GstStaticPadTemplate sink_template = GST_STATIC_PAD_TEMPLATE ("sink",
     GST_PAD_SINK,
     GST_PAD_ALWAYS,
-    GST_STATIC_CAPS ("audio/x-raw-int, " "endianness = (int) BYTE_ORDER, " "signed = (boolean) TRUE, " "width = (int) 16, " "depth = (int) 16, " "rate = (int) [ 8000, 96000 ], " "channels = (int) [ 1, 6]; " "audio/x-raw-int, " "endianness = (int) BYTE_ORDER, " "signed = (boolean) TRUE, " "width = (int) 32, " "depth = (int) 24, " "rate = (int) [ 8000, 96000], " "channels = (int) [ 1, 6]; " "audio/x-raw-float, " "endianness = (int) BYTE_ORDER, " "depth = (int) 32, "    /* sizeof (gfloat) */
-        "rate = (int) [ 8000, 96000], " "channels = (int) [ 1, 6]")
+    GST_STATIC_CAPS ("audio/x-raw-int, "
+        "endianness = (int) BYTE_ORDER, "
+        "signed = (boolean) TRUE, "
+        "width = (int) 16, "
+        "depth = (int) 16, "
+        "rate = (int) [ 8000, 96000 ], " "channels = (int) [ 1, 6]")
     );
+
+#define UNUSED \
+    "audio/x-raw-int, " \
+    "endianness = (int) BYTE_ORDER, " \
+    "signed = (boolean) TRUE, " \
+    "width = (int) 32, " \
+    "depth = (int) 24, " \
+    "rate = (int) [ 8000, 96000], " \
+    "channels = (int) [ 1, 6]; " \
+    "audio/x-raw-float, " \
+    "endianness = (int) BYTE_ORDER, " \
+    "depth = (int) 32, "    /* sizeof (gfloat) */ \
+    "rate = (int) [ 8000, 96000], " \
+    "channels = (int) [ 1, 6]" \
 
 enum
 {
@@ -221,8 +241,7 @@ gst_faac_init (GstFaac * faac)
   faac->samplerate = -1;
   faac->channels = -1;
   faac->cache = NULL;
-  faac->cache_time = GST_CLOCK_TIME_NONE;
-  faac->cache_duration = 0;
+  faac->out_time = 0;
 
   GST_FLAG_SET (faac, GST_ELEMENT_EVENT_AWARE);
 
@@ -340,6 +359,8 @@ gst_faac_srcconnect (GstPad * pad, const GstCaps * caps)
     gint mpegversion = 0;
     GstCaps *newcaps;
     GstPadLinkReturn ret;
+    guint8 *c_data;
+    gulong c_size;
 
     gst_structure_get_int (structure, "mpegversion", &mpegversion);
 
@@ -363,6 +384,13 @@ gst_faac_srcconnect (GstPad * pad, const GstCaps * caps)
         "mpegversion", G_TYPE_INT, mpegversion,
         "channels", G_TYPE_INT, faac->channels,
         "rate", G_TYPE_INT, faac->samplerate, NULL);
+    if (faacEncGetDecoderSpecificInfo (faac->handle, &c_data, &c_size) == 0) {
+      GstBuffer *data = gst_buffer_new_and_alloc (c_size);
+
+      memcpy (GST_BUFFER_DATA (data), c_data, c_size);
+      gst_caps_set_simple (newcaps, "codec_data", GST_TYPE_BUFFER, data, NULL);
+      gst_buffer_unref (data);
+    }
     ret = gst_pad_try_set_caps (faac->srcpad, newcaps);
 
     switch (ret) {
@@ -404,8 +432,10 @@ gst_faac_chain (GstPad * pad, GstData * data)
 
           if (ret_size > 0) {
             GST_BUFFER_SIZE (outbuf) = ret_size;
-            GST_BUFFER_TIMESTAMP (outbuf) = 0;
-            GST_BUFFER_DURATION (outbuf) = 0;
+            GST_BUFFER_TIMESTAMP (outbuf) = faac->out_time;
+            GST_BUFFER_DURATION (outbuf) = GST_SECOND * faac->samples /
+                (faac->channels * faac->samplerate);
+            faac->out_time += GST_BUFFER_DURATION (outbuf);
             gst_pad_push (faac->srcpad, GST_DATA (outbuf));
           } else {
             break;
@@ -511,30 +541,11 @@ gst_faac_chain (GstPad * pad, GstData * data)
 
     if (ret_size > 0) {
       GST_BUFFER_SIZE (outbuf) = ret_size;
-      if (faac->cache_time != GST_CLOCK_TIME_NONE) {
-        GST_BUFFER_TIMESTAMP (outbuf) = faac->cache_time;
-        faac->cache_time = GST_CLOCK_TIME_NONE;
-      } else
-        GST_BUFFER_TIMESTAMP (outbuf) = GST_BUFFER_TIMESTAMP (subbuf);
-      GST_BUFFER_DURATION (outbuf) = GST_BUFFER_DURATION (subbuf);
-      if (faac->cache_duration) {
-        GST_BUFFER_DURATION (outbuf) += faac->cache_duration;
-        faac->cache_duration = 0;
-      }
+      GST_BUFFER_TIMESTAMP (outbuf) = faac->out_time;
+      GST_BUFFER_DURATION (outbuf) = GST_SECOND * faac->samples /
+          (faac->channels * faac->samplerate);
+      faac->out_time += GST_BUFFER_DURATION (outbuf);
       gst_pad_push (faac->srcpad, GST_DATA (outbuf));
-    } else {
-      /* FIXME: what I'm doing here isn't fully correct, but there
-       * really isn't a better way yet.
-       * Problem is that libfaac caches buffers (for encoding
-       * purposes), so the timestamp of the outgoing buffer isn't
-       * the same as the timestamp of the data that I pushed in.
-       * However, I don't know the delay between those two so I
-       * cannot really say aything about it. This is a bad guess. */
-
-      gst_buffer_unref (outbuf);
-      if (faac->cache_time != GST_CLOCK_TIME_NONE)
-        faac->cache_time = GST_BUFFER_TIMESTAMP (subbuf);
-      faac->cache_duration += GST_BUFFER_DURATION (subbuf);
     }
 
     in_size -= frame_size;
@@ -619,8 +630,7 @@ gst_faac_change_state (GstElement * element)
         gst_buffer_unref (faac->cache);
         faac->cache = NULL;
       }
-      faac->cache_time = GST_CLOCK_TIME_NONE;
-      faac->cache_duration = 0;
+      faac->out_time = 0;
       faac->samplerate = -1;
       faac->channels = -1;
       break;
