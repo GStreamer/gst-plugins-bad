@@ -532,12 +532,12 @@ GST_CHECK_FEATURE(DVDNAV, [dvdnav library], dvdnavsrc, [
     DVDNAV_MICRO=`echo $DVDNAV_VERSION | cut -d. -f3 | sed s/[a-zA-Z\-].*//g`
     if [[ "$DVDNAV_MAJOR" -eq "0" ]] && \
        [[ "$DVDNAV_MINOR" -lt "1" ]]; then
-      AC_MSG_WARN([libdvdnav >= 0.1.7 is required, you have $DVDNAV_VERSION])
+      AC_MSG_WARN([libdvdnav >= 0.1.9 is required, you have $DVDNAV_VERSION])
       HAVE_DVDNAV="no"
     elif [[ "$DVDNAV_MAJOR" -eq "0" ]] && \
          [[ "$DVDNAV_MINOR" -eq "1" ]] && \
-         [[ "$DVDNAV_MICRO" -lt "7" ]]; then
-      AC_MSG_WARN([libdvdnav >= 0.1.7 is required, you have $DVDNAV_VERSION])
+         [[ "$DVDNAV_MICRO" -lt "9" ]]; then
+      AC_MSG_WARN([libdvdnav >= 0.1.9 is required, you have $DVDNAV_VERSION])
       HAVE_DVDNAV="no"
       fi
     fi
