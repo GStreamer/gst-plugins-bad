@@ -2,6 +2,7 @@
  * Copyright (C) 1999,2000,2001,2002 Erik Walthinsen <omega@cse.ogi.edu>
  *                    2000,2001,2002 Wim Taymans <wtay@chello.be>
  *                              2002 Steve Baker <steve@stevebaker.org>
+ *								2003 Julien Moutte <julien@moutte.net>
  *
  * play.h: GstPlay object code
  *
@@ -51,6 +52,7 @@ typedef enum {
 	GST_PLAY_PIPE_AUDIO_THREADED,
 	GST_PLAY_PIPE_AUDIO_HYPER_THREADED,
 	GST_PLAY_PIPE_VIDEO,
+	GST_PLAY_PIPE_VIDEO_VISUALISATION,
 } GstPlayPipeType;
 
 typedef enum {
@@ -62,6 +64,12 @@ typedef enum {
 	GST_PLAY_ERROR_COLORSPACE,
 	GST_PLAY_ERROR_LAST,
 } GstPlayError;
+
+typedef enum {
+	GST_PLAY_SINK_TYPE_AUDIO,
+	GST_PLAY_SINK_TYPE_VIDEO,
+	GST_PLAY_SINK_TYPE_ANY,
+} GstPlaySinkType;
 
 #define GST_PLAY_ERROR 		gst_play_error_quark ()
 
@@ -76,7 +84,9 @@ typedef struct _GstPlay          GstPlay;
 typedef struct _GstPlayClass     GstPlayClass;
 typedef struct _GstPlayIdleData  GstPlayIdleData;
 
-typedef guint (*GstPlayTimeoutAdd) (guint interval, GSourceFunc function, gpointer data);
+typedef guint (*GstPlayTimeoutAdd) (	guint interval,
+										GSourceFunc function,
+										gpointer data);
 typedef guint (*GstPlayIdleAdd)    (GSourceFunc function, gpointer data);
 
 struct _GstPlay
@@ -99,6 +109,7 @@ struct _GstPlay
 	GstElement *video_sink_element;
 	GstElement *audio_sink;
 	GstElement *audio_sink_element;
+	GstElement *visualisation_sink_element;
 
 	GstDParamManager *vol_dpman;
 	GstDParam *vol_dparam;
@@ -117,10 +128,6 @@ struct _GstPlay
  	gint64 time_nanos;
  	gint64 length_nanos;
 	
-	guint tick_timeout_id;
-	guint idle_timeout_id;
-	guint idle_signal_id;
-
 	GAsyncQueue *signal_queue;
 
 	GstPlayTimeoutAdd timeout_add_func;
@@ -132,13 +139,24 @@ struct _GstPlayClass
 	GObjectClass parent_class;
 	
 	/* signals */
-	void (*information)    (GstPlay* play, GstElement* element, GParamSpec *param);
-	void (*state_changed)  (GstPlay* play, GstElementState old_state, GstElementState new_state);
-	void (*stream_end)     (GstPlay* play);
-	void (*time_tick)    (GstPlay* play, gint64 time_nanos);
-	void (*stream_length)  (GstPlay* play, gint64 length_nanos);
-	void (*have_xid)  (GstPlay* play, gint xid);
-	void (*have_video_size)  (GstPlay* play, gint width, gint height);
+	void (*information)		(	GstPlay* play,
+								GstElement* element,
+								GParamSpec *param);
+	void (*state_changed)	(	GstPlay* play,
+								GstElementState old_state,
+								GstElementState new_state);
+	void (*stream_end)		(	GstPlay* play);
+	void (*time_tick)		(	GstPlay* play,
+								gint64 time_nanos);
+	void (*stream_length)	(	GstPlay* play,
+								gint64 length_nanos);
+	void (*have_xid)	  	(	GstPlay* play,
+								gint xid);
+	void (*have_vis_xid)	 (	GstPlay* play,
+								gint xid);
+	void (*have_video_size)	(	GstPlay* play,
+								gint width,
+								gint height);
 };
 
 struct _GstPlayIdleData
@@ -147,35 +165,83 @@ struct _GstPlayIdleData
 	gpointer data;
 };
 
-GType	  gst_play_get_type	   (void);
 
-GstPlay*  gst_play_new		   (GstPlayPipeType pipe_type, GError **error);
+void
+gst_play_seek_to_time (	GstPlay *play,
+						gint64 time_nanos);
 
-void      gst_play_seek_to_time (GstPlay *play, gint64 time_nanos);
+void
+gst_play_need_new_video_window (GstPlay *play);
 
-GstElement*       gst_play_get_sink_element (GstPlay *play, GstElement *element);
+void
+gst_play_set_idle_timeout_funcs (	GstPlay *play,
+									GstPlayTimeoutAdd timeout_add_func,
+									GstPlayIdleAdd idle_add_func);
+GstElement*
+gst_play_get_sink_element (	GstPlay *play,
+							GstElement *element,
+							GstPlaySinkType sink_type);
 
-gboolean	  gst_play_set_data_src (GstPlay *play, GstElement *data_src);
-gboolean	  gst_play_set_video_sink  (GstPlay *play, GstElement *element);
-gboolean	  gst_play_set_audio_sink  (GstPlay *play, GstElement *element);
-void		  gst_play_need_new_video_window  (GstPlay *play);
+/* Set/Get state */
 
-GstElementStateReturn gst_play_set_state       (GstPlay *play, GstElementState state);
-GstElementState gst_play_get_state (GstPlay *play);
+GstElementStateReturn
+gst_play_set_state (	GstPlay *play,
+						GstElementState state);
+GstElementState
+gst_play_get_state (GstPlay *play);
 
-gboolean  gst_play_set_location    (GstPlay *play, const gchar *location);
-gchar*    gst_play_get_location    (GstPlay *play);
+/* Set/Get location */
 
-void      gst_play_set_volume      (GstPlay *play, gfloat volume);
-gfloat     gst_play_get_volume      (GstPlay *play);
+gboolean
+gst_play_set_location (	GstPlay *play,
+						const gchar *location);
+gchar*
+gst_play_get_location (GstPlay *play);
 
-void      gst_play_set_mute        (GstPlay *play, gboolean mute);
-gboolean  gst_play_get_mute        (GstPlay *play);
+/* Set/Get volume */
 
-void      gst_play_set_idle_timeout_funcs (GstPlay *play, GstPlayTimeoutAdd timeout_add_func, GstPlayIdleAdd idle_add_func);
+void
+gst_play_set_volume (	GstPlay *play,
+						gfloat volume);
+gfloat
+gst_play_get_volume (GstPlay *play);
+
+/* Set/Get mute */
+
+void
+gst_play_set_mute (	GstPlay *play,
+					gboolean mute);
+gboolean
+gst_play_get_mute (GstPlay *play);
+
+/* Set sinks and data src */
+
+gboolean
+gst_play_set_data_src (	GstPlay *play,
+						GstElement *data_src);
+gboolean
+gst_play_set_video_sink (	GstPlay *play,
+							GstElement *video_sink);
+gboolean
+gst_play_set_visualisation_video_sink (	GstPlay *play,
+										GstElement *video_sink);
+gboolean
+gst_play_set_audio_sink (	GstPlay *play,
+							GstElement *audio_sink);
+
+gboolean
+gst_play_set_visualisation_element (	GstPlay *play,
+										GstElement *element);
+										
+gboolean
+gst_play_connect_visualisation (	GstPlay *play,
+									gboolean connect);
+									
+GType
+gst_play_get_type (void);
+
+GstPlay *
+gst_play_new (	GstPlayPipeType pipe_type,
+				GError **error);
 
 #endif /* __GSTPLAY_H__ */
-
-/* modelines */
-/* vim:set ts=8:sw=8:noet */
-
