@@ -1,3 +1,8 @@
+2005-02-23  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/vorbis/vorbisdec.c: (vorbis_dec_chain):
+	  Expose the primary means of bitrate as main bitrate.
+
 2005-02-22  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* sys/oss/gstosselement.c: (gst_osselement_class_probe_devices):
