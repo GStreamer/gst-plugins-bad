@@ -10,7 +10,7 @@ AM_DISABLE_STATIC
 dnl when going to/from release please set the nano (fourth number) right !
 dnl We disable static building for development, for time savings
 AM_DISABLE_STATIC
-AS_VERSION(gst-plugins, GST_PLUGINS, 0, 3, 4, 2)
+AS_VERSION(gst-plugins, GST_PLUGINS, 0, 3, 4, 4)
 AM_INIT_AUTOMAKE($PACKAGE,$VERSION)
 AS_LIBTOOL(GST_PLUGINS, 0, 0, 0, yes)
 
@@ -64,9 +64,11 @@ GST_CHECK_FEATURE(EXPERIMENTAL, [enable building of experimental plug-ins],,
 [
   AC_MSG_WARN(building experimental plug-ins)
   USE_TARKIN="yes"
+  USE_RTP="yes"
 ],[
   AC_MSG_NOTICE(not building experimental plug-ins)
   USE_TARKIN="no"
+  USE_RTP="no"
 ])
 
 dnl broken plug-ins; stuff that doesn't seem to build at the moment
@@ -379,14 +381,14 @@ translit(dnm, m, l) AM_CONDITIONAL(USE_CDPARANOIA, true)
 GST_CHECK_FEATURE(CDPARANOIA, [CDParanoia], cdparanoia, [
   GST_CHECK_LIBHEADER(CDPARANOIA, cdda_interface, 
                       cdda_open, -lm, 
-                      cdda_interface.h, 
-                      CDPARANOIA_LIBS="-lcdda_interface -lcdda_paranoia"
-                      HEADER_DIR="no")
-  GST_CHECK_LIBHEADER(CDPARANOIA, cdda_interface, 
-                      cdda_open, -lm, 
                       cdda/cdda_interface.h, 
                       CDPARANOIA_LIBS="-lcdda_interface -lcdda_paranoia"
                       HEADER_DIR="yes")
+  GST_CHECK_LIBHEADER(CDPARANOIA, cdda_interface, 
+                      cdda_open, -lm, 
+                      cdda_interface.h, 
+                      CDPARANOIA_LIBS="-lcdda_interface -lcdda_paranoia"
+                      HEADER_DIR="no")
   if test "x$HEADER_DIR" = "xyes";
   then
     AC_DEFINE_UNQUOTED(CDPARANOIA_HEADERS_IN_DIR, ,
