@@ -12,7 +12,7 @@ AM_MAINTAINER_MODE
 
 dnl when going to/from release please set the nano (fourth number) right !
 dnl releases only do Wall, cvs and prerelease does Werror too
-AS_VERSION(gst-plugins, GST_PLUGINS_VERSION, 0, 5, 0, 2, GST_ERROR="-Wall", GST_ERROR="-Wall -Werror")
+AS_VERSION(gst-plugins, GST_PLUGINS_VERSION, 0, 5, 0, 3, GST_ERROR="-Wall", GST_ERROR="-Wall -Werror")
 AM_INIT_AUTOMAKE($PACKAGE,$VERSION)
 
 dnl our libraries and install dirs use major.minor as a version
@@ -529,12 +529,13 @@ GST_CHECK_FEATURE(FFMPEG, [ffmpeg plug-ins], ffmpeg, [
     AC_MSG_NOTICE(slurping FFmpeg CVS source)
     AS_SLURP_FFMPEG(gst-libs/ext/ffmpeg, 2002-12-14 12:00 GMT,
                     HAVE_FFMPEG=yes, HAVE_FFMPEG=no)
-    AC_DEFINE_UNQUOTED(HAVE_FFMPEG_UNINSTALLED, 1, 
-                       [defined if we use uninstalled ffmpeg])
   else
     AC_MSG_NOTICE(FFmpeg CVS code should be included already)
     HAVE_FFMPEG=yes
   fi
+  # we only bother with uninstalled (included) ffmpeg for now
+  AC_DEFINE_UNQUOTED(HAVE_FFMPEG_UNINSTALLED, 1, 
+                     [defined if we use uninstalled ffmpeg])
 ])
 
 dnl *** Gnome VFS ***
