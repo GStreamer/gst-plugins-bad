@@ -17,6 +17,7 @@
 	* ext/spc/DSP.h:
 	* ext/spc/Macro.Inc:
 	* ext/spc/Makefile.am:
+	* ext/spc/SNESAPU.h:
 	* ext/spc/SPC700.Asm:
 	* ext/spc/SPC700.Inc:
 	* ext/spc/SPC700.h:
