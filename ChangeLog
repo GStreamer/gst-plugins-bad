@@ -1,3 +1,45 @@
+2005-02-05  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* examples/seeking/seek.c: (make_avi_msmpeg4v3_mp3_pipeline):
+	  Add AVI pipeline.
+	* gst-libs/gst/riff/riff-media.c: (gst_riff_create_video_caps),
+	(gst_riff_create_audio_caps), (gst_riff_create_iavs_caps),
+	(gst_riff_create_video_template_caps),
+	(gst_riff_create_audio_template_caps),
+	(gst_riff_create_iavs_template_caps):
+	* gst-libs/gst/riff/riff-media.h:
+	  Remove obsolete non-data functions, make data functions the
+	  default.
+	* gst-libs/gst/riff/riff-read.c: (gst_riff_read_chunk),
+	(gst_riff_parse_chunk), (gst_riff_parse_file_header),
+	(gst_riff_parse_strh), (gst_riff_parse_strf_vids),
+	(gst_riff_parse_strf_auds), (gst_riff_parse_strf_iavs),
+	(gst_riff_parse_info):
+	* gst-libs/gst/riff/riff-read.h:
+	* gst-libs/gst/riff/riff.c: (plugin_init):
+	  Change from bytestream-wrapping to pure RIFF parsing (can be used
+	  chain-based if someone would want that). Add gtk-doc comments.
+	* gst/avi/Makefile.am:
+	* gst/avi/gstavi.c: (plugin_init):
+	  Disable mux for now.
+	* gst/avi/gstavidemux.c: (gst_avi_demux_get_type),
+	(gst_avi_demux_class_init), (gst_avi_demux_init),
+	(gst_avi_demux_reset), (gst_avi_demux_src_convert),
+	(gst_avi_demux_handle_src_query), (gst_avi_demux_handle_src_event),
+	(gst_avi_demux_parse_file_header), (gst_avi_demux_stream_init),
+	(gst_avi_demux_parse_avih), (gst_avi_demux_parse_superindex),
+	(gst_avi_demux_parse_subindex), (gst_avi_demux_read_subindexes),
+	(gst_avi_demux_parse_stream), (gst_avi_demux_parse_odml),
+	(gst_avi_demux_parse_index), (gst_avi_demux_stream_index),
+	(gst_avi_demux_stream_scan), (gst_avi_demux_massage_index),
+	(gst_avi_demux_stream_header), (gst_avi_demux_handle_seek),
+	(gst_avi_demux_process_next_entry), (gst_avi_demux_stream_data),
+	(gst_avi_demux_loop), (gst_avi_demux_sink_activate):
+	* gst/avi/gstavidemux.h:
+	  Port to changed RIFF API, port to 0.9, add locking. Add gtk-doc
+	  comments to some relevant functions. Seeking is weird, works
+	  otherwise. Some parts are still disabled.
+
 2005-02-01  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* ext/gnomevfs/Makefile.am:

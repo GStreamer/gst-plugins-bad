@@ -41,7 +41,7 @@
  */
 
 GstCaps *
-gst_riff_create_video_caps_with_data (guint32 codec_fcc,
+gst_riff_create_video_caps (guint32 codec_fcc,
     gst_riff_strh * strh, gst_riff_strf_vids * strf,
     GstBuffer * strf_data, GstBuffer * strd_data, char **codec_name)
 {
@@ -355,15 +355,7 @@ gst_riff_create_video_caps_with_data (guint32 codec_fcc,
 }
 
 GstCaps *
-gst_riff_create_video_caps (guint32 codec_fcc,
-    gst_riff_strh * strh, gst_riff_strf_vids * strf, char **codec_name)
-{
-  return gst_riff_create_video_caps_with_data (codec_fcc,
-      strh, strf, NULL, NULL, codec_name);
-}
-
-GstCaps *
-gst_riff_create_audio_caps_with_data (guint16 codec_id,
+gst_riff_create_audio_caps (guint16 codec_id,
     gst_riff_strh * strh, gst_riff_strf_auds * strf,
     GstBuffer * strf_data, GstBuffer * strd_data, char **codec_name)
 {
@@ -528,16 +520,9 @@ gst_riff_create_audio_caps_with_data (guint16 codec_id,
 }
 
 GstCaps *
-gst_riff_create_audio_caps (guint16 codec_id,
-    gst_riff_strh * strh, gst_riff_strf_auds * strf, char **codec_name)
-{
-  return gst_riff_create_audio_caps_with_data (codec_id,
-      strh, strf, NULL, NULL, codec_name);
-}
-
-GstCaps *
 gst_riff_create_iavs_caps (guint32 codec_fcc,
-    gst_riff_strh * strh, gst_riff_strf_iavs * strf, char **codec_name)
+    gst_riff_strh * strh, gst_riff_strf_iavs * strf,
+    GstBuffer * init_data, GstBuffer * extra_data, char **codec_name)
 {
   GstCaps *caps = NULL;
 
@@ -600,7 +585,7 @@ gst_riff_create_video_template_caps (void)
 
   caps = gst_caps_new_empty ();
   for (i = 0; tags[i] != 0; i++) {
-    one = gst_riff_create_video_caps (tags[i], NULL, NULL, NULL);
+    one = gst_riff_create_video_caps (tags[i], NULL, NULL, NULL, NULL, NULL);
     if (one)
       gst_caps_append (caps, one);
   }
@@ -632,7 +617,7 @@ gst_riff_create_audio_template_caps (void)
 
   caps = gst_caps_new_empty ();
   for (i = 0; tags[i] != 0; i++) {
-    one = gst_riff_create_audio_caps (tags[i], NULL, NULL, NULL);
+    one = gst_riff_create_audio_caps (tags[i], NULL, NULL, NULL, NULL, NULL);
     if (one)
       gst_caps_append (caps, one);
   }
@@ -653,7 +638,7 @@ gst_riff_create_iavs_template_caps (void)
 
   caps = gst_caps_new_empty ();
   for (i = 0; tags[i] != 0; i++) {
-    one = gst_riff_create_iavs_caps (tags[i], NULL, NULL, NULL);
+    one = gst_riff_create_iavs_caps (tags[i], NULL, NULL, NULL, NULL, NULL);
     if (one)
       gst_caps_append (caps, one);
   }
