@@ -58,6 +58,12 @@ else
 CDAUDIO_DIR=
 endif
 
+if USE_CDIO
+CDIO_DIR=cdio
+else
+CDIO_DIR=
+endif
+
 if USE_CDPARANOIA
 CDPARANOIA_DIR=cdparanoia
 else
@@ -411,6 +417,7 @@ SUBDIRS=\
 	$(AUDIORESAMPLE_DIR) \
 	$(CAIRO_DIR) \
 	$(CDAUDIO_DIR) \
+	$(CDIO_DIR) \
 	$(CDPARANOIA_DIR) \
 	$(DIRAC_DIR) \
 	$(DIRECTFB_DIR) \
@@ -478,6 +485,7 @@ DIST_SUBDIRS=\
 	audioresample \
 	cairo \
 	cdaudio \
+	cdio \
 	cdparanoia \
 	dirac \
 	directfb \

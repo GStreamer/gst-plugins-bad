@@ -855,6 +855,14 @@ GST_CHECK_FEATURE(CDAUDIO, [cdaudio], cdaudio, [
   AC_SUBST(CDAUDIO_LIBS)
 ])
 
+dnl *** cdio ***
+translit(dnm, m, l) AM_CONDITIONAL(USE_CDIO, true)
+GST_CHECK_FEATURE(CDIO, [cdio library], cdio, [
+  PKG_CHECK_MODULES(CDIO, libcdio >= 0.71, HAVE_CDIO=yes, HAVE_CDIO=no)
+  AC_SUBST(CDIO_CFLAGS)
+  AC_SUBST(CDIO_LIBS)
+])
+
 
 dnl *** CDParanoia ***
 translit(dnm, m, l) AM_CONDITIONAL(USE_CDPARANOIA, true)
@@ -2053,6 +2061,7 @@ ext/audiofile/Makefile
 ext/audioresample/Makefile
 ext/cairo/Makefile
 ext/cdaudio/Makefile
+ext/cdio/Makefile
 ext/cdparanoia/Makefile
 ext/dirac/Makefile
 ext/directfb/Makefile

@@ -1,3 +1,21 @@
+2005-03-26  Tim-Philipp Müller  <tim at centricular dot net>
+
+	* configure.ac:
+	* ext/Makefile.am:
+	* ext/cdio/Makefile.am:
+	* ext/cdio/cddasrc.c: (_do_init), (cddasrc_mode_get_type),
+	(cddasrc_base_init), (cddasrc_class_init), (cddasrc_init),
+	(cddasrc_finalize), (cddasrc_set_property), (cddasrc_get_property),
+	(cddasrc_get_sectors_from_start), (cddasrc_do_seek), (cddasrc_get),
+	(cddasrc_cddb_sum), (cddasrc_calculate_discid), (cddasrc_open),
+	(cddasrc_close), (cddasrc_change_state), (cddasrc_get_event_mask),
+	(cddasrc_event), (cddasrc_get_formats),
+	(cddasrc_get_track_from_sector), (cddasrc_get_query_types),
+	(cddasrc_query), (plugin_init), (cddasrc_uri_get_type),
+	(cddasrc_uri_get_protocols), (cddasrc_uri_get_uri),
+	(cddasrc_uri_set_uri), (cddasrc_uri_handler_init):
+	  Add new libcdio-based cddasrc plugin (fixes #171530)
+
 2005-03-25  David Schleef  <ds@schleef.org>
 
 	* gst/librfb/gstrfbsrc.c: (gst_rfbsrc_get): Check return values
