@@ -1,3 +1,48 @@
+2004-12-31  Wim Taymans  <wim@fluendo.com>
+
+	* examples/seeking/seek.c: (dynamic_link), (make_vorbis_pipeline),
+	(make_theora_pipeline):
+	* ext/ogg/gstoggdemux.c: (gst_ogg_pad_get_type),
+	(gst_ogg_pad_init), (gst_ogg_pad_formats),
+	(gst_ogg_pad_query_types), (gst_ogg_pad_src_query),
+	(gst_ogg_pad_event), (gst_ogg_demux_factory_filter),
+	(compare_ranks), (gst_ogg_pad_internal_chain),
+	(gst_ogg_pad_typefind), (gst_ogg_pad_submit_packet),
+	(gst_ogg_pad_submit_page), (gst_ogg_chain_new),
+	(gst_ogg_chain_free), (gst_ogg_chain_new_stream),
+	(gst_ogg_chain_get_stream), (gst_ogg_chain_has_stream),
+	(gst_ogg_demux_base_init), (gst_ogg_demux_init),
+	(gst_ogg_demux_submit_buffer), (gst_ogg_demux_seek),
+	(gst_ogg_demux_get_data), (gst_ogg_demux_get_next_page),
+	(gst_ogg_demux_get_prev_page), (gst_ogg_demux_perform_seek),
+	(gst_ogg_demux_bisect_forward_serialno),
+	(gst_ogg_demux_read_chain), (gst_ogg_demux_read_end_chain),
+	(gst_ogg_demux_find_pad), (gst_ogg_demux_find_chains),
+	(gst_ogg_demux_chain), (gst_ogg_demux_loop),
+	(gst_ogg_demux_sink_activate), (gst_ogg_print):
+	* ext/ogg/gstogmparse.c: (gst_ogm_parse_chain):
+	* ext/theora/theoradec.c: (gst_theora_dec_init), (_inc_granulepos),
+	(theora_dec_src_convert), (theora_dec_sink_convert),
+	(theora_dec_src_query), (theora_dec_src_event),
+	(theora_dec_sink_event), (theora_dec_chain),
+	(theora_dec_change_state):
+	* ext/theora/theoraenc.c: (theora_buffer_from_packet),
+	(theora_enc_sink_event), (theora_enc_chain):
+	* gst/ffmpegcolorspace/gstffmpegcolorspace.c:
+	(gst_ffmpegcsp_getcaps), (gst_ffmpegcsp_configure_context),
+	(gst_ffmpegcsp_setcaps), (gst_ffmpegcsp_chain):
+	* gst/videotestsrc/gstvideotestsrc.c:
+	(gst_videotestsrc_src_negotiate), (gst_videotestsrc_src_link),
+	(gst_videotestsrc_parse_caps), (gst_videotestsrc_src_accept_caps),
+	(gst_videotestsrc_setcaps), (gst_videotestsrc_activate),
+	(gst_videotestsrc_init), (gst_videotestsrc_loop):
+	* sys/xvimage/xvimagesink.c: (gst_xvimagesink_sink_link),
+	(gst_xvimagesink_change_state), (gst_xvimagesink_event),
+	(gst_xvimagesink_chain), (gst_xvimagesink_buffer_alloc):
+	Ogg demuxer updates, uses decoder plugin internally to convert
+	granulepos to timestamps.
+	Various other plugin updates.
+
 2004-12-29  Wim Taymans  <wim@fluendo.com>
 
 	* examples/seeking/seek.c: (dynamic_link), (make_vorbis_pipeline),

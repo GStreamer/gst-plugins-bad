@@ -57,7 +57,7 @@ dynamic_link (GstPadTemplate * templ, GstPad * newpad, gpointer data)
       gst_bin_add (GST_BIN (pipeline), connect->bin);
     gst_pad_link (newpad, connect->target);
 
-    seekable_pads = g_list_prepend (seekable_pads, newpad);
+    //seekable_pads = g_list_prepend (seekable_pads, newpad);
     rate_pads = g_list_prepend (rate_pads, newpad);
   }
 }
@@ -311,6 +311,45 @@ make_vorbis_pipeline (const gchar * location)
   return pipeline;
 }
 
+static GstElement *
+make_theora_pipeline (const gchar * location)
+{
+  GstElement *pipeline, *video_bin;
+  GstElement *src, *demux, *decoder, *convert, *videosink;
+  GstPad *seekable;
+
+  pipeline = gst_pipeline_new ("app");
+
+  src = gst_element_factory_make_or_warn (SOURCE, "src");
+  demux = gst_element_factory_make_or_warn ("oggdemux", "demux");
+  decoder = gst_element_factory_make_or_warn ("theoradec", "decoder");
+  convert = gst_element_factory_make_or_warn ("ffmpegcolorspace", "convert");
+  videosink = gst_element_factory_make_or_warn ("xvimagesink", "sink");
+
+  g_object_set (G_OBJECT (src), "location", location, NULL);
+
+  video_bin = gst_bin_new ("v_decoder_bin");
+
+  gst_bin_add (GST_BIN (pipeline), src);
+  gst_bin_add (GST_BIN (pipeline), demux);
+  gst_bin_add (GST_BIN (video_bin), decoder);
+  gst_bin_add (GST_BIN (video_bin), convert);
+  gst_bin_add (GST_BIN (video_bin), videosink);
+  gst_bin_add (GST_BIN (pipeline), video_bin);
+
+  gst_element_link (src, demux);
+  gst_element_link (decoder, convert);
+  gst_element_link (convert, videosink);
+
+  setup_dynamic_link (demux, NULL, gst_element_get_pad (decoder, "sink"), NULL);
+
+  seekable = gst_element_get_pad (decoder, "src");
+  seekable_pads = g_list_prepend (seekable_pads, seekable);
+  rate_pads = g_list_prepend (rate_pads, seekable);
+  rate_pads = g_list_prepend (rate_pads, gst_element_get_pad (decoder, "sink"));
+
+  return pipeline;
+}
 static GstElement *
 make_mp3_pipeline (const gchar * location)
 {
@@ -915,6 +954,7 @@ static Pipeline pipelines[] = {
   {"mpeg1", make_mpeg_pipeline},
   {"mpegparse", make_parse_pipeline},
   {"vorbis", make_vorbis_pipeline},
+  {"theora", make_theora_pipeline},
   {"sid", make_sid_pipeline},
   {"flac", make_flac_pipeline},
   {"wav", make_wav_pipeline},
