@@ -9,7 +9,7 @@ AC_LANG_PUSH(C++)
 AC_CHECK_HEADER(sidplay/player.h, HAVE_SIDPLAY="yes", HAVE_SIDPLAY="no")
 
 if test $HAVE_SIDPLAY = "yes"; then
-  SIDPLAY_LIBS="-lsidplay"
+  SIDPLAY_LIBS="-lsidplay -lstdc++"
 
   AC_MSG_CHECKING([whether -lsidplay works])
   ac_libs_safe=$LIBS

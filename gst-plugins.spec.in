@@ -1,15 +1,11 @@
 Name: 		gstreamer-plugins
 Version: 	@VERSION@
 Release: 	@GST_PLUGINS_VERSION_RELEASE@
-Summary: 	GStreamer Streaming-media framework plug-ins.
+Summary: 	GStreamer streaming media framework plug-ins.
 
 %define 	majorminor	@GST_MAJORMINOR@
-#%define 	prefix  /usr
-#%define 	sysconfdir /etc
-#Docdir: 	%{prefix}/share/doc
-#Prefix: 	%prefix
 
-Group: 		Libraries/Multimedia
+Group: 		System/Libraries
 License: 	LGPL
 URL:		http://gstreamer.net/
 Vendor:         GStreamer Backpackers Team <package@gstreamer.net>
@@ -21,67 +17,30 @@ BuildRoot: 	%{_tmppath}/%{name}-%{version}-root
 Requires:       glib2 >= %_glib2
 BuildRequires:  glib2-devel >= %_glib2
 Requires: 	gstreamer >= 0.5.1
-BuildRequires: 	nasm => 0.90
 BuildRequires: 	gstreamer-devel >= 0.5.1
 BuildRequires:	gstreamer-tools >= 0.5.1
 Obsoletes:	gstreamer-plugin-libs
 
 %description
-GStreamer is a streaming-media framework, based on graphs of filters which
+GStreamer is a streaming media framework, based on graphs of filters which
 operate on media data. Applications using this library can do anything
 from real-time sound processing to playing videos, and just about anything
-else media-related.  Its plugin-based architecture means that new data
+else media-related.  Its plug-in-based architecture means that new data
 types or processing capabilities can be added simply by installing new
 plug-ins.
 
 %prep
-%setup -n gst-plugins-%{version}
-%build
-CFLAGS="${CFLAGS:-%optflags}" ; export CFLAGS ; \
-CXXFLAGS="${CXXFLAGS:-%optflags}" ; export CXXFLAGS ; \
-FFLAGS="${FFLAGS:-%optflags}" ; export FFLAGS ; \
-%{?__libtoolize:[ -f configure.in ] && %{__libtoolize} --copy --force} ; \
-./configure \
-  --prefix=%{_prefix} \
-  --exec-prefix=%{_exec_prefix} \
-  --bindir=%{_bindir} \
-  --sbindir=%{_sbindir} \
-  --sysconfdir=%{_sysconfdir} \
-  --datadir=%{_datadir} \
-  --includedir=%{_includedir} \
-  --libdir=%{_libdir} \
-  --libexecdir=%{_libexecdir} \
-  --localstatedir=%{_localstatedir} \
-  --sharedstatedir=%{_sharedstatedir} \
-  --mandir=%{_mandir} \
-  --infodir=%{_infodir} \
-  --enable-debug \
-  --enable-DEBUG 
+%setup -q -n gst-plugins-%{version}
 
-if [ "$SMP" != "" ]; then
-  (make "MAKE=make -k -j $SMP"; exit 0)
-  make 2>&1 | tee make.log
-else
-  make 2>&1 | tee make.log
-fi
+%build
+%configure --enable-debug -enable-DEBUG --disable-examples
+make %{?_smp_mflags}
+
 
 %install
 [ -n "$RPM_BUILD_ROOT" -a "$RPM_BUILD_ROOT" != / ] && rm -rf $RPM_BUILD_ROOT
 export GCONF_DISABLE_MAKEFILE_SCHEMA_INSTALL=1
-make prefix=%{?buildroot:%{buildroot}}%{_prefix} \
-     exec_prefix=%{?buildroot:%{buildroot}}%{_exec_prefix} \
-     bindir=%{?buildroot:%{buildroot}}%{_bindir} \
-     sbindir=%{?buildroot:%{buildroot}}%{_sbindir} \
-     sysconfdir=%{?buildroot:%{buildroot}}%{_sysconfdir} \
-     datadir=%{?buildroot:%{buildroot}}%{_datadir} \
-     includedir=%{?buildroot:%{buildroot}}%{_includedir} \
-     libdir=%{?buildroot:%{buildroot}}%{_libdir} \
-     libexecdir=%{?buildroot:%{buildroot}}%{_libexecdir} \
-     localstatedir=%{?buildroot:%{buildroot}}%{_localstatedir} \
-     sharedstatedir=%{?buildroot:%{buildroot}}%{_sharedstatedir} \
-     mandir=%{?buildroot:%{buildroot}}%{_mandir} \
-     infodir=%{?buildroot:%{buildroot}}%{_infodir} \
-  install
+%makeinstall
 unset GCONF_DISABLE_MAKEFILE_SCHEMA_INSTALL
 
 # Clean out files that should not be part of the rpm.
@@ -95,7 +54,7 @@ rm -f $RPM_BUILD_ROOT%{_libdir}/libgstmedia-info*.so.0.0.0
 
 
 %clean
-[ -n "$RPM_BUILD_ROOT" -a "$RPM_BUILD_ROOT" != / ] && rm -rf $RPM_BUILD_ROOT
+rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-, root, root)
@@ -111,15 +70,23 @@ rm -f $RPM_BUILD_ROOT%{_libdir}/libgstmedia-info*.so.0.0.0
 %{_libdir}/gstreamer-%{majorminor}/libgstriff.so
 %{_libdir}/gstreamer-%{majorminor}/libgstvideo.so
 
-%package -n gstreamer-plugins-devel
+%package -n devel
 Summary: 	GStreamer Plugin Library Headers.
 Group: 		Development/Libraries
 Requires: 	gstreamer-plugins = %{version}
 Provides:	gstreamer-play-devel = %{version}
 Provides:	gstreamer-gconf-devel = %{version}
 
-%description -n gstreamer-plugins-devel
-GStreamer support libraries header files.
+%description -n devel
+GStreamer is a streaming media framework, based on graphs of filters which
+operate on media data. Applications using this library can do anything
+from real-time sound processing to playing videos, and just about anything
+else media-related.  Its plug-in-based architecture means that new data
+types or processing capabilities can be added simply by installing new
+plug-ins.
+                                                                                
+This package contains libraries and includes files necessary to develop
+applications and plug-ins for GStreamer.
 
 %files -n gstreamer-plugins-devel
 %defattr(-, root, root)
@@ -148,7 +115,7 @@ GStreamer support libraries header files.
 @USE_A52DEC_TRUE@BuildRequires: a52dec-devel >= 0.7.3
 @USE_A52DEC_TRUE@
 @USE_A52DEC_TRUE@%description -n gstreamer-a52dec
-@USE_A52DEC_TRUE@Plug-in for decoding of VOB files.
+@USE_A52DEC_TRUE@Decodes ATSC A/52 encoded audio streams.
 @USE_A52DEC_TRUE@
 @USE_A52DEC_TRUE@%files -n gstreamer-a52dec
 @USE_A52DEC_TRUE@%defattr(-, root, root)
