@@ -24,3 +24,5 @@ compile
 install-sh
 depcomp
 autoregen.sh
+*.tar.gz
+*.tar.bz2
