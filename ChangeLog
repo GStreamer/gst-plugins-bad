@@ -1,5 +1,11 @@
 2005-03-31  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* gst/typefind/gsttypefindfunctions.c:
+	(mp3_type_frame_length_from_header), (mp3_type_find):
+	  Detect free format mp3s with faulty headers (#170387).
+
+2005-03-31  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* gst/playback/gstplaybasebin.c: (gst_play_base_bin_class_init),
 	(gst_play_base_bin_init), (group_commit), (check_queue),
 	(queue_overrun), (queue_treshold_reached), (queue_out_of_data),
