@@ -17,12 +17,17 @@ static gboolean elem_seek = FALSE;
 static gboolean verbose = FALSE;
 
 static guint update_id;
+static guint seek_timeout_id = 0;
 static gulong changed_id;
 
 //#define SOURCE "gnomevfssrc"
 #define SOURCE "gnomevfssrc"
 
 #define UPDATE_INTERVAL 500
+
+/* number of milliseconds to play for after a seek */
+#define SCRUB_TIME 250
+#undef SCRUB
 
 #define THREAD
 #define PAD_SEEK
@@ -982,8 +987,21 @@ update_scale (gpointer data)
   return TRUE;
 }
 
+static void do_seek (GtkWidget * widget);
+
+#ifdef SCRUB
 static gboolean
-do_seek (GtkWidget * widget, gpointer user_data)
+end_scrub (GtkWidget * widget)
+{
+  gst_element_set_state (pipeline, GST_STATE_PAUSED);
+  seek_timeout_id = 0;
+
+  return FALSE;
+}
+#endif
+
+static void
+do_seek (GtkWidget * widget)
 {
   gint64 real = gtk_range_get_value (GTK_RANGE (widget)) * duration / 100;
   gboolean res;
@@ -1024,8 +1042,28 @@ do_seek (GtkWidget * widget, gpointer user_data)
   }
 
   GST_PIPELINE (pipeline)->stream_time = real;
+}
 
-  return FALSE;
+static void
+seek_cb (GtkWidget * widget)
+{
+#ifdef SCRUB
+  /* If the timer hasn't expired yet, then the pipeline is running */
+  if (seek_timeout_id != 0) {
+    gst_element_set_state (pipeline, GST_STATE_PAUSED);
+  }
+#endif
+
+  do_seek (widget);
+
+#ifdef SCRUB
+  gst_element_set_state (pipeline, GST_STATE_PLAYING);
+
+  if (seek_timeout_id == 0) {
+    seek_timeout_id =
+        gtk_timeout_add (SCRUB_TIME, (GSourceFunc) end_scrub, widget);
+  }
+#endif
 }
 
 static gboolean
@@ -1036,7 +1074,7 @@ start_seek (GtkWidget * widget, GdkEventButton * event, gpointer user_data)
 
   if (changed_id == 0) {
     changed_id = gtk_signal_connect (GTK_OBJECT (hscale),
-        "value_changed", G_CALLBACK (do_seek), pipeline);
+        "value_changed", G_CALLBACK (seek_cb), pipeline);
   }
 
   return FALSE;
@@ -1047,8 +1085,13 @@ stop_seek (GtkWidget * widget, gpointer user_data)
 {
   g_signal_handler_disconnect (GTK_OBJECT (hscale), changed_id);
   changed_id = 0;
+  if (seek_timeout_id != 0) {
+    gtk_timeout_remove (seek_timeout_id);
+    seek_timeout_id = 0;
+    /* Still scrubbing, so the pipeline is already playing */
+  } else
+    gst_element_set_state (pipeline, GST_STATE_PLAYING);
 
-  gst_element_set_state (pipeline, GST_STATE_PLAYING);
   update_id =
       gtk_timeout_add (UPDATE_INTERVAL, (GtkFunction) update_scale, pipeline);
 
