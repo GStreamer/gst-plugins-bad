@@ -1135,6 +1135,7 @@ sys/vcd/Makefile
 sys/vga/Makefile
 sys/xvideo/Makefile
 sys/videosink/Makefile
+sys/glsink/Makefile
 ext/Makefile
 ext/a52dec/Makefile
 ext/aalib/Makefile
