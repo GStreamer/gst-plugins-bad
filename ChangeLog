@@ -2,6 +2,14 @@
 
 	Patch by: Ronald Bultje
 
+	* ext/cdparanoia/gstcdparanoia.c:
+	  fix for #168994 - tracks from cd's that have pre-gap audio are not
+	  ripped correctly
+
+2005-03-05  Thomas Vander Stichele  <thomas at apestaart dot org>
+
+	Patch by: Ronald Bultje
+
 	* ext/alsa/gstalsamixer.c:
 	* ext/alsa/gstalsamixertrack.h:
 	  Fix for #166982 - crash in gnome-volume-control
