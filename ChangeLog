@@ -1,3 +1,13 @@
+2005-02-20  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/avi/gstavidemux.c: (gst_avi_demux_index_next),
+	(gst_avi_demux_index_entry_for_time),
+	(gst_avi_demux_index_entry_for_byte),
+	(gst_avi_demux_index_entry_for_frame),
+	(gst_avi_demux_handle_src_event),
+	(gst_avi_demux_process_next_entry):
+	  Implement accurate seeking, fix keyframe seeking.
+
 2005-02-16  Wim Taymans  <wim@fluendo.com>
 
 	* ext/mad/gstmad.c: (gst_mad_init), (gst_mad_src_event),
