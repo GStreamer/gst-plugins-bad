@@ -1,5 +1,15 @@
 2005-03-01  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* gst/autodetect/gstautoaudiosink.c: (gst_auto_audio_sink_init),
+	(gst_auto_audio_sink_detect):
+	* gst/autodetect/gstautoaudiosink.h:
+	* gst/autodetect/gstautovideosink.c: (gst_auto_video_sink_init),
+	(gst_auto_video_sink_detect):
+	* gst/autodetect/gstautovideosink.h:
+	  Fix pad replugging (makes code similar to the gconf ones).
+
+2005-03-01  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* configure.ac:
 	* gst/autodetect/gstautoaudiosink.c:
 	(gst_auto_audio_sink_class_init), (gst_auto_audio_sink_init),
