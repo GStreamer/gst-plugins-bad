@@ -1,5 +1,11 @@
 2005-03-10  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* gst/playback/gstplaybin.c: (gen_video_element),
+	(gen_audio_element):
+	  Use auto* elements as defaults.
+
+2005-03-10  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* ext/esd/esdsink.c: (gst_esdsink_class_init),
 	(gst_esdsink_soundserver_running), (gst_esdsink_get_property),
 	(gst_esdsink_factory_init):
