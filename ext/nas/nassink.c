@@ -33,12 +33,6 @@
 #define NAS_SOUND_PORT_DURATION	(2)
 
 GST_DEBUG_CATEGORY (NAS);
-/* Signals and args */
-enum
-{
-  /* FILL ME */
-  LAST_SIGNAL
-};
 
 enum
 {
@@ -76,6 +70,7 @@ static GstCaps *gst_nassink_getcaps (GstPad * pad);
 static gboolean gst_nassink_sync_parms (GstNassink * nassink);
 static GstPadLinkReturn gst_nassink_sinkconnect (GstPad * pad,
     const GstCaps * caps);
+static GstCaps *gst_nassink_fixate (GstPad * pad, const GstCaps * caps);
 
 static void gst_nassink_chain (GstPad * pad, GstData * _data);
 
@@ -173,6 +168,7 @@ gst_nassink_init (GstNassink * nassink)
       GST_DEBUG_FUNCPTR (gst_nassink_chain));
   gst_pad_set_link_function (nassink->sinkpad, gst_nassink_sinkconnect);
   gst_pad_set_getcaps_function (nassink->sinkpad, gst_nassink_getcaps);
+  gst_pad_set_fixate_function (nassink->sinkpad, gst_nassink_fixate);
 
   nassink->mute = FALSE;
   nassink->depth = 16;
@@ -236,7 +232,9 @@ gst_nassink_sync_parms (GstNassink * nassink)
   if (nassink->audio == NULL)
     return TRUE;
 
-  GST_CAT_DEBUG (NAS, "depth=%i rate=%i", nassink->depth, nassink->rate);
+  GST_CAT_DEBUG (NAS, "depth=%i rate=%i channels=%i", nassink->depth,
+      nassink->rate, nassink->tracks);
+
   if (nassink->flow != AuNone) {
     GST_CAT_DEBUG (NAS, "flushing buffer");
     while (nassink->pos && nassink->buf)
@@ -260,6 +258,83 @@ gst_nassink_sync_parms (GstNassink * nassink)
   return ret >= 0;
 }
 
+/* nicked from gstalsa.c */
+static GstCaps *
+gst_nassink_fixate_field_nearest_int (const GstCaps * caps,
+    const gchar * field_name, gint target)
+{
+  guint i;
+  GstCaps *result;
+  GstCaps *smaller = gst_caps_new_empty ();
+  GstCaps *equal = gst_caps_new_empty ();
+  GstCaps *bigger = gst_caps_new_empty ();
+
+  /* works like this: we fixate every structure and put them into one of those 
+   * caps depending on what we fixated to. We then return the best caps that is 
+   * not empty in the following order: equal, bigger, smaller 
+   * We also make sure the caps were really reduced.
+   */
+  for (i = 0; i < gst_caps_get_size (caps); i++) {
+    gint fixated_to;
+    GstStructure *copy = gst_structure_copy (gst_caps_get_structure (caps, i));
+
+    gst_caps_structure_fixate_field_nearest_int (copy, field_name, target);
+    if (gst_structure_get_int (copy, field_name, &fixated_to)) {
+      if (fixated_to == target) {
+        gst_caps_append_structure (equal, copy);
+      } else if (fixated_to > target) {
+        gst_caps_append_structure (bigger, copy);
+      } else {
+        gst_caps_append_structure (smaller, copy);
+      }
+    } else {
+      /* FIXME: what do we do here? Add to all or throw an error? */
+      g_return_val_if_reached (NULL);
+    }
+  }
+  if (!gst_caps_is_empty (equal)) {
+    gst_caps_free (bigger);
+    gst_caps_free (smaller);
+    result = equal;
+  } else {
+    gst_caps_free (equal);
+    if (!gst_caps_is_empty (bigger)) {
+      gst_caps_free (smaller);
+      result = bigger;
+    } else {
+      gst_caps_free (bigger);
+      if (gst_caps_is_empty (smaller)) {
+        gst_caps_free (smaller);
+        return NULL;
+      }
+      result = smaller;
+    }
+  }
+  if (gst_caps_is_subset (caps, result)) {
+    /* we didn't reduce caps */
+    gst_caps_free (result);
+    return NULL;
+  }
+  return result;
+}
+
+static GstCaps *
+gst_nassink_fixate (GstPad * pad, const GstCaps * caps)
+{
+  GstCaps *ret;
+
+  if ((ret = gst_nassink_fixate_field_nearest_int (caps, "rate", 44100)))
+    return ret;
+  if ((ret = gst_nassink_fixate_field_nearest_int (caps, "channels", 2)))
+    return ret;
+  if ((ret = gst_nassink_fixate_field_nearest_int (caps, "width", 16)))
+    return ret;
+  if ((ret = gst_nassink_fixate_field_nearest_int (caps, "depth", 16)))
+    return ret;
+
+  return NULL;
+}
+
 static GstPadLinkReturn
 gst_nassink_sinkconnect (GstPad * pad, const GstCaps * caps)
 {
@@ -270,9 +345,10 @@ gst_nassink_sinkconnect (GstPad * pad, const GstCaps * caps)
 
   structure = gst_caps_get_structure (caps, 0);
 
-  gst_structure_get_int (structure, "depth", &nassink->depth);
-  gst_structure_get_int (structure, "channels", &nassink->tracks);
-  gst_structure_get_int (structure, "rate", &nassink->rate);
+  if (!gst_structure_get_int (structure, "depth", &nassink->depth)
+      || !gst_structure_get_int (structure, "channels", &nassink->tracks)
+      || !gst_structure_get_int (structure, "rate", &nassink->rate))
+    return GST_PAD_LINK_REFUSED;
 
   if (!gst_nassink_sync_parms (nassink))
     return GST_PAD_LINK_REFUSED;
@@ -682,6 +758,14 @@ NAS_createFlow (GstNassink * sink, unsigned char format, unsigned short rate,
       }
     }
   }
+
+  /* needed to change number of channels */
+  sink->device = NAS_getDevice (sink->audio, sink->tracks);
+  if (sink->device == AuNone) {
+    GST_CAT_DEBUG (NAS, "no device with %i tracks found", sink->tracks);
+    return -1;
+  }
+
 
   buf_samples = rate * NAS_SOUND_PORT_DURATION;
 

@@ -1,3 +1,11 @@
+2005-03-14  Tim-Philipp Müller  <tim at centricular dot net>
+
+	* ext/nas/nassink.c: (gst_nassink_init), (gst_nassink_sync_parms),
+	(gst_nassink_fixate_field_nearest_int), (gst_nassink_fixate),
+	(gst_nassink_sinkconnect), (NAS_createFlow):
+	  Add fixate function; make sure sink->device is updated according
+	  to the number of channels/tracks set (fixes #170249)
+
 2005-03-14  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* ext/faad/gstfaad.c: (gst_faad_sinkconnect):
