@@ -145,6 +145,7 @@ GStreamer support libraries header files.
 @USE_A52DEC_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_A52DEC_TRUE@Requires:      a52dec >= 0.7.3
 @USE_A52DEC_TRUE@BuildRequires: a52dec-devel >= 0.7.3
+@USE_A52DEC_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_A52DEC_TRUE@
 @USE_A52DEC_TRUE@%description -n gstreamer-a52dec
 @USE_A52DEC_TRUE@Plug-in for decoding of VOB files.
@@ -169,6 +170,7 @@ GStreamer support libraries header files.
 @USE_AALIB_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_AALIB_TRUE@Requires:      aalib >= 1.3
 @USE_AALIB_TRUE@BuildRequires: aalib-devel >= 1.3
+@USE_AALIB_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_AALIB_TRUE@
 @USE_AALIB_TRUE@%description -n gstreamer-aalib
 @USE_AALIB_TRUE@Plug-in for viewing video in Ascii-art using aalib library.
@@ -190,6 +192,7 @@ GStreamer support libraries header files.
 @USE_ALSA_TRUE@Summary:  GStreamer plug-ins for the ALSA sound system.
 @USE_ALSA_TRUE@Group:    Libraries/Multimedia
 @USE_ALSA_TRUE@Requires: gstreamer-plugins = %{version}
+@USE_ALSA_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_ALSA_TRUE@
 @USE_ALSA_TRUE@%description -n gstreamer-alsa
 @USE_ALSA_TRUE@Input and output plug-in for the ALSA soundcard driver system. 
@@ -216,6 +219,7 @@ GStreamer support libraries header files.
 @USE_ARTS_TRUE@Requires:      kdelibs-sound >= 2
 @USE_ARTS_TRUE@BuildRequires: kdelibs-sound-devel >= 2
 @USE_ARTS_TRUE@BuildRequires: gcc-c++
+@USE_ARTS_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_ARTS_TRUE@
 @USE_ARTS_TRUE@%description -n gstreamer-arts
 @USE_ARTS_TRUE@This plug-in wraps arts plug-ins.
@@ -237,6 +241,7 @@ GStreamer support libraries header files.
 @USE_ARTSC_TRUE@Summary:  GStreamer artsd output plug-in.
 @USE_ARTSC_TRUE@Group:    Libraries/Multimedia
 @USE_ARTSC_TRUE@Requires: gstreamer-plugins = %{version}
+@USE_ARTSC_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_ARTSC_TRUE@
 @USE_ARTSC_TRUE@%description -n gstreamer-artsd
 @USE_ARTSC_TRUE@Plug-in for outputting to artsd sound server.
@@ -259,6 +264,7 @@ GStreamer support libraries header files.
 @USE_SWFDEC_TRUE@Group:    Libraries/Multimedia
 @USE_SWFDEC_TRUE@Requires: gstreamer-plugins = %{version}
 @USE_SWFDEC_TRUE@Requires: swfdec => 0.1.2
+@USE_SWFDEC_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_SWFDEC_TRUE@
 @USE_SWFDEC_TRUE@%description -n gstreamer-swfdec
 @USE_SWFDEC_TRUE@Plug-in for rendering Flash animations using swfdec library
@@ -283,6 +289,7 @@ GStreamer support libraries header files.
 @USE_AUDIOFILE_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_AUDIOFILE_TRUE@Requires:      audiofile >= 0.2.1
 @USE_AUDIOFILE_TRUE@BuildRequires: audiofile-devel >= 0.2.1
+@USE_AUDIOFILE_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_AUDIOFILE_TRUE@
 @USE_AUDIOFILE_TRUE@%description -n gstreamer-audiofile
 @USE_AUDIOFILE_TRUE@Plug-in for supporting reading and writing of all files supported by audiofile.
@@ -305,6 +312,7 @@ Summary:       GStreamer plug-in for AVI movie playback.
 Group:         Libraries/Multimedia
 Requires:      gstreamer-plugins = %{version}
 Requires:      gstreamer-colorspace = %{version}
+PreReq:		%{_bindir}/gst-register
 
 %description -n gstreamer-avi
 Plug-ins for playback of AVI format media files.
@@ -329,6 +337,7 @@ Plug-ins for playback of AVI format media files.
 @USE_AVIFILE_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_AVIFILE_TRUE@Requires:      avifile
 @USE_AVIFILE_TRUE@BuildRequires: avifile-devel
+@USE_AVIFILE_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_AVIFILE_TRUE@
 @USE_AVIFILE_TRUE@%description -n gstreamer-windec
 @USE_AVIFILE_TRUE@Plug-ins for playback for loading window DLL files. 
@@ -353,6 +362,7 @@ Plug-ins for playback of AVI format media files.
 @USE_CDPARANOIA_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_CDPARANOIA_TRUE@Requires:      cdparanoia-libs >= alpha9.7
 @USE_CDPARANOIA_TRUE@BuildRequires: cdparanoia-devel >= alpha9.7
+@USE_CDPARANOIA_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_CDPARANOIA_TRUE@
 @USE_CDPARANOIA_TRUE@%description -n gstreamer-cdparanoia
 @USE_CDPARANOIA_TRUE@Plug-in for ripping audio tracks using cdparanoia under GStreamer.
@@ -377,6 +387,7 @@ Plug-ins for playback of AVI format media files.
 @USE_DVDREAD_TRUE@Requires:      libdvdread >= 0.9.0
 @USE_DVDREAD_TRUE@BuildRequires: libdvdread-devel >= 0.9.0
 @USE_DVDREAD_TRUE@Obsoletes:     gstreamer-libdvd
+@USE_DVDREAD_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_DVDREAD_TRUE@
 @USE_DVDREAD_TRUE@%description -n gstreamer-libdvdread
 @USE_DVDREAD_TRUE@Plug-in for reading DVDs using libdvdread under GStreamer.
@@ -401,6 +412,7 @@ Plug-ins for playback of AVI format media files.
 @USE_DVDNAV_TRUE@Requires:      libdvdnav >= 0.1.3
 @USE_DVDNAV_TRUE@BuildRequires: libdvdnav-devel >= 0.1.3
 @USE_DVDNAV_TRUE@Obsoletes:     gstreamer-libdvd
+@USE_DVDNAV_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_DVDNAV_TRUE@
 @USE_DVDNAV_TRUE@%description -n gstreamer-libdvdnav
 @USE_DVDNAV_TRUE@Plug-in for reading DVDs using libdvdnav  under GStreamer.
@@ -424,6 +436,7 @@ Plug-ins for playback of AVI format media files.
 @USE_DXR3_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_DXR3_TRUE@Requires:      em8300 => 0.12.0
 @USE_DXR3_TRUE@BuildRequires: em8300-devel => 0.12.0
+@USE_DXR3_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_DXR3_TRUE@
 @USE_DXR3_TRUE@%description -n gstreamer-dxr3
 @USE_DXR3_TRUE@Plug-in supporting DVD playback using cards
@@ -450,6 +463,7 @@ Plug-ins for playback of AVI format media files.
 @USE_ESD_TRUE@Requires:      esound >= 0.2.8
 @USE_ESD_TRUE@BuildRequires: esound-devel >= 0.2.8
 @USE_ESD_TRUE@Obsoletes:     gstreamer-esd
+@USE_ESD_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_ESD_TRUE@
 @USE_ESD_TRUE@%description -n gstreamer-esound
 @USE_ESD_TRUE@Output and monitoring plug-ins for GStreamer using ESound.
@@ -474,6 +488,7 @@ Plug-ins for playback of AVI format media files.
 @USE_FLAC_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_FLAC_TRUE@Requires:      flac >= 1.0.3
 @USE_FLAC_TRUE@BuildRequires: flac-devel >= 1.0.3
+@USE_FLAC_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_FLAC_TRUE@
 @USE_FLAC_TRUE@%description -n gstreamer-flac
 @USE_FLAC_TRUE@Plug-in for the free FLAC lossless audio format.
@@ -497,6 +512,7 @@ Plug-ins for playback of AVI format media files.
 @USE_GNOME_VFS_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_GNOME_VFS_TRUE@Requires:      gnome-vfs2 > 1.9.4.00
 @USE_GNOME_VFS_TRUE@BuildRequires: gnome-vfs2-devel > 1.9.4.00
+@USE_GNOME_VFS_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_GNOME_VFS_TRUE@
 @USE_GNOME_VFS_TRUE@%description -n gstreamer-gnomevfs
 @USE_GNOME_VFS_TRUE@Plug-ins for reading and writing through GNOME VFS.
@@ -521,6 +537,7 @@ Plug-ins for playback of AVI format media files.
 @USE_GSM_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_GSM_TRUE@Requires:      gsm >= 1.0.10
 @USE_GSM_TRUE@BuildRequires: gsm-devel >= 1.0.10
+@USE_GSM_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_GSM_TRUE@
 @USE_GSM_TRUE@%description -n gstreamer-gsm
 @USE_GSM_TRUE@Output plug-in for GStreamer to convert to GSM lossy audio format.
@@ -544,6 +561,8 @@ Plug-ins for playback of AVI format media files.
 @USE_HERMES_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_HERMES_TRUE@Requires:      Hermes => 1.3.0
 @USE_HERMES_TRUE@BuildRequires: Hermes-devel => 1.3.0
+@USE_HERMES_TRUE@PreReq:		%{_bindir}/gst-register
+@USE_HERMES_TRUE@
 @USE_HERMES_TRUE@%description -n gstreamer-colorspace
 @USE_HERMES_TRUE@Colorspace plug-in based on Hermes library.
 @USE_HERMES_TRUE@
@@ -566,6 +585,7 @@ Plug-ins for playback of AVI format media files.
 @USE_HTTP_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_HTTP_TRUE@Requires:      libghttp => 1.0.9
 @USE_HTTP_TRUE@BuildRequires: libghttp-devel => 1.0.9
+@USE_HTTP_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_HTTP_TRUE@
 @USE_HTTP_TRUE@%description -n gstreamer-httpsrc
 @USE_HTTP_TRUE@Plug-in supporting the http protocol based 
@@ -589,6 +609,7 @@ Plug-ins for playback of AVI format media files.
 @USE_JACK_TRUE@Group:    Libraries/Multimedia
 @USE_JACK_TRUE@Requires: gstreamer-plugins = %{version}
 @USE_JACK_TRUE@Requires: jack-audio-connection-kit => 0.28.0
+@USE_JACK_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_JACK_TRUE@
 @USE_JACK_TRUE@%description -n gstreamer-jack
 @USE_JACK_TRUE@Plug-in for the JACK professional sound server.
@@ -612,6 +633,7 @@ Plug-ins for playback of AVI format media files.
 @USE_JPEG_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_JPEG_TRUE@Requires:      libjpeg
 @USE_JPEG_TRUE@BuildRequires: libjpeg-devel
+@USE_JPEG_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_JPEG_TRUE@
 @USE_JPEG_TRUE@%description -n gstreamer-jpeg
 @USE_JPEG_TRUE@Output plug-in for GStreamer using libjpeg.
@@ -635,6 +657,7 @@ Plug-ins for playback of AVI format media files.
 @USE_LADSPA_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_LADSPA_TRUE@Requires:      ladspa
 @USE_LADSPA_TRUE@BuildRequires: ladspa-devel
+@USE_LADSPA_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_LADSPA_TRUE@
 @USE_LADSPA_TRUE@%description -n gstreamer-ladspa
 @USE_LADSPA_TRUE@Plug-in which wraps LADSPA plug-ins for use by GStreamer applications.
@@ -660,6 +683,7 @@ Plug-ins for playback of AVI format media files.
 @USE_LAME_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_LAME_TRUE@Requires:      lame >= 3.89
 @USE_LAME_TRUE@BuildRequires: lame-devel >= 3.89
+@USE_LAME_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_LAME_TRUE@
 @USE_LAME_TRUE@%description -n gstreamer-lame
 @USE_LAME_TRUE@Plug-in for encoding mp3 with lame under GStreamer.
@@ -683,6 +707,7 @@ Plug-ins for playback of AVI format media files.
 @USE_LIBDV_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_LIBDV_TRUE@Requires:      libdv >= 0.9.5
 @USE_LIBDV_TRUE@BuildRequires: libdv-devel >= 0.9.5
+@USE_LIBDV_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_LIBDV_TRUE@
 @USE_LIBDV_TRUE@%description -n gstreamer-dv
 @USE_LIBDV_TRUE@Plug-in for digital video support using libdv.
@@ -707,6 +732,7 @@ Plug-ins for playback of AVI format media files.
 @USE_LIBFAME_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_LIBFAME_TRUE@Requires:      libfame >= 0.9.0 
 @USE_LIBFAME_TRUE@BuildRequires: libfame-devel >= 0.9.0 
+@USE_LIBFAME_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_LIBFAME_TRUE@
 @USE_LIBFAME_TRUE@%description -n gstreamer-libfame
 @USE_LIBFAME_TRUE@Plug-in for encoding MPEG1/MPEG4 video using libfame.
@@ -730,6 +756,7 @@ Plug-ins for playback of AVI format media files.
 @USE_LIBPNG_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_LIBPNG_TRUE@Requires:      libpng >= 1.2.0
 @USE_LIBPNG_TRUE@BuildRequires: libpng-devel >= 1.2.0
+@USE_LIBPNG_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_LIBPNG_TRUE@
 @USE_LIBPNG_TRUE@%description -n gstreamer-libpng
 @USE_LIBPNG_TRUE@Plug-in for encoding png images.
@@ -754,6 +781,7 @@ Plug-ins for playback of AVI format media files.
 @USE_MAD_TRUE@Requires:      gstreamer-audio-formats
 @USE_MAD_TRUE@Requires:      mad >= 0.13.0
 @USE_MAD_TRUE@BuildRequires: mad-devel >= 0.13.0
+@USE_MAD_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_MAD_TRUE@
 @USE_MAD_TRUE@%description -n gstreamer-mad
 @USE_MAD_TRUE@Plug-in for playback of mp3 songs using the very good MAD library.
@@ -777,6 +805,7 @@ Plug-ins for playback of AVI format media files.
 @USE_MIKMOD_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_MIKMOD_TRUE@Requires:      mikmod
 @USE_MIKMOD_TRUE@BuildRequires: mikmod
+@USE_MIKMOD_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_MIKMOD_TRUE@
 @USE_MIKMOD_TRUE@%description -n gstreamer-mikmod
 @USE_MIKMOD_TRUE@Plug-in for playback of module files supported by mikmod under GStreamer.
@@ -800,6 +829,7 @@ Plug-ins for playback of AVI format media files.
 @USE_MJPEGTOOLS_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_MJPEGTOOLS_TRUE@Requires:      mjpegtools
 @USE_MJPEGTOOLS_TRUE@BuildRequires: mjpegtools-devel
+@USE_MJPEGTOOLS_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_MJPEGTOOLS_TRUE@
 @USE_MJPEGTOOLS_TRUE@%description -n gstreamer-jpegmmx
 @USE_MJPEGTOOLS_TRUE@mjpegtools-based encoding and decoding plug-in.
@@ -827,6 +857,7 @@ Plug-ins for playback of AVI format media files.
 @USE_MPEG2DEC_TRUE@Obsoletes:     gstreamer-mpeg1
 @USE_MPEG2DEC_TRUE@Obsoletes:     gstreamer-mpeg2
 @USE_MPEG2DEC_TRUE@Obsoletes:     gstreamer-mpeg2dec
+@USE_MPEG2DEC_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_MPEG2DEC_TRUE@
 @USE_MPEG2DEC_TRUE@%description -n gstreamer-mpeg
 @USE_MPEG2DEC_TRUE@Plug-ins for playing and encoding MPEG video.
@@ -860,6 +891,7 @@ Plug-ins for playback of AVI format media files.
 @USE_OPENQUICKTIME_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_OPENQUICKTIME_TRUE@Requires:      openquicktime => 1.0
 @USE_OPENQUICKTIME_TRUE@BuildRequires: openquicktime-devel => 1.0
+@USE_OPENQUICKTIME_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_OPENQUICKTIME_TRUE@
 @USE_OPENQUICKTIME_TRUE@%description -n gstreamer-openquicktime
 @USE_OPENQUICKTIME_TRUE@Plug-in which uses the OpenQuicktime library
@@ -886,6 +918,7 @@ Plug-ins for playback of AVI format media files.
 @USE_OSS_TRUE@Group:         Libraries/Multimedia
 @USE_OSS_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_OSS_TRUE@BuildRequires: glibc-devel
+@USE_OSS_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_OSS_TRUE@
 @USE_OSS_TRUE@%description -n gstreamer-oss 
 @USE_OSS_TRUE@Plug-ins for output and input to the OpenSoundSytem audio
@@ -912,6 +945,7 @@ Plug-ins for playback of AVI format media files.
 @USE_RAW1394_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_RAW1394_TRUE@Requires:      libraw1394
 @USE_RAW1394_TRUE@BuildRequires: libraw1394-devel
+@USE_RAW1394_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_RAW1394_TRUE@
 @USE_RAW1394_TRUE@%description -n gstreamer-raw1394
 @USE_RAW1394_TRUE@Plug-in for digital video support using raw1394.
@@ -934,6 +968,7 @@ Plug-ins for playback of AVI format media files.
 @USE_RTP_TRUE@Group:    Libraries/Multimedia
 @USE_RTP_TRUE@Requires: gstreamer-plugins = %{version}
 @USE_RTP_TRUE@Requires: librtp >= 0.1
+@USE_RTP_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_RTP_TRUE@
 @USE_RTP_TRUE@%description -n gstreamer-rtp
 @USE_RTP_TRUE@Library for transfering data with the RTP protocol.
@@ -957,6 +992,7 @@ Plug-ins for playback of AVI format media files.
 @USE_SIDPLAY_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_SIDPLAY_TRUE@Requires:      libsidplay => 1.36.0
 @USE_SIDPLAY_TRUE@BuildRequires: libsidplay-devel => 1.36.0
+@USE_SIDPLAY_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_SIDPLAY_TRUE@
 @USE_SIDPLAY_TRUE@%description -n gstreamer-sid
 @USE_SIDPLAY_TRUE@Plug-in for playback of C64 SID format music files.
@@ -980,6 +1016,8 @@ Plug-ins for playback of AVI format media files.
 @USE_SDL_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_SDL_TRUE@Requires:      SDL >= 1.2.0
 @USE_SDL_TRUE@BuildRequires: SDL-devel >= 1.2.0
+@USE_SDL_TRUE@PreReq:		%{_bindir}/gst-register
+@USE_SDL_TRUE@
 @USE_SDL_TRUE@#SDL-devel should require XFree86-devel because it links to it
 @USE_SDL_TRUE@#only it doesn't seem to do that currently
 @USE_SDL_TRUE@BuildRequires: 	XFree86-devel
@@ -1009,6 +1047,7 @@ Plug-ins for playback of AVI format media files.
 @USE_SHOUT_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_SHOUT_TRUE@Requires:      libshout >= 1.0.5
 @USE_SHOUT_TRUE@BuildRequires: libshout-devel >= 1.0.5
+@USE_SHOUT_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_SHOUT_TRUE@
 @USE_SHOUT_TRUE@%description -n gstreamer-icecast
 @USE_SHOUT_TRUE@Plug-in for broadcasting audio to the Icecast server.
@@ -1034,6 +1073,7 @@ Plug-ins for playback of AVI format media files.
 @USE_VORBIS_TRUE@Requires:      libvorbis >= 1.0
 @USE_VORBIS_TRUE@BuildRequires: libogg-devel >= 1.0
 @USE_VORBIS_TRUE@BuildRequires: libvorbis-devel >= 1.0
+@USE_VORBIS_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_VORBIS_TRUE@
 @USE_VORBIS_TRUE@%description -n gstreamer-vorbis
 @USE_VORBIS_TRUE@Plug-ins for creating and playing Ogg Vorbis audio files.
@@ -1056,6 +1096,7 @@ Plug-ins for playback of AVI format media files.
 @USE_V4L_TRUE@Group:         Libraries/Multimedia
 @USE_V4L_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_V4L_TRUE@BuildRequires: glibc-devel
+@USE_V4L_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_V4L_TRUE@
 @USE_V4L_TRUE@%description -n gstreamer-v4l
 @USE_V4L_TRUE@Plug-in for accessing Video for Linux devices.
@@ -1081,6 +1122,7 @@ Plug-ins for playback of AVI format media files.
 @USE_V4L2_TRUE@Group:         Libraries/Multimedia
 @USE_V4L2_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_V4L2_TRUE@BuildRequires: glibc-devel
+@USE_V4L2_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_V4L2_TRUE@
 @USE_V4L2_TRUE@%description -n gstreamer-v4l2
 @USE_V4L2_TRUE@Plug-in for accessing Video for Linux devices.
@@ -1105,6 +1147,8 @@ Plug-ins for playback of AVI format media files.
 @USE_XVIDEO_TRUE@Group: Libraries/Multimedia
 @USE_XVIDEO_TRUE@Requires: gstreamer-plugins = %{version}
 @USE_XVIDEO_TRUE@Requires: Hermes => 1.3.0
+@USE_XVIDEO_TRUE@PreReq:		%{_bindir}/gst-register
+@USE_XVIDEO_TRUE@
 @USE_XVIDEO_TRUE@%description -n gstreamer-xvideosink
 @USE_XVIDEO_TRUE@Xfree86 video sink
 @USE_XVIDEO_TRUE@
@@ -1126,6 +1170,7 @@ Plug-ins for playback of AVI format media files.
 @USE_XVIDEO_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_XVIDEO_TRUE@Requires:      XFree86
 @USE_XVIDEO_TRUE@BuildRequires: XFree86-devel
+@USE_XVIDEO_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_XVIDEO_TRUE@
 @USE_XVIDEO_TRUE@%description -n gstreamer-videosink
 @USE_XVIDEO_TRUE@Plug-in for X playback.
@@ -1150,6 +1195,7 @@ Summary: 	GStreamer audio effects plug-in.
 Group: 		Libraries/Multimedia
 Requires: 	gstreamer-plugins = %{version}
 Obsoletes:	gstreamer-misc
+PreReq:		%{_bindir}/gst-register
 
 %description -n gstreamer-audio-effects
 Plug-in with various audio effects including resampling, 
@@ -1194,6 +1240,7 @@ Summary: 	GStreamer audio format plug-ins.
 Group: 		Libraries/Multimedia
 Requires: 	gstreamer-plugins = %{version}
 BuildRequires: 	gcc-c++
+PreReq:		%{_bindir}/gst-register
 
 %description -n gstreamer-audio-formats
 Plug-in for playback of wav, au and mod audio files as well as mp3 type.
@@ -1219,6 +1266,7 @@ Plug-in for playback of wav, au and mod audio files as well as mp3 type.
 Summary: 	GStreamer plug-in for text-to-speech support using a festival server.
 Group: 		Libraries/Multimedia
 Requires: 	gstreamer-plugins = %{version}
+PreReq:		%{_bindir}/gst-register
 
 %description -n gstreamer-festival
 Plug-in for text-to-speech using the festival server.
@@ -1241,6 +1289,8 @@ Summary: 	GStreamer plug-in for FLI/FLX animation format.
 Group: 		Libraries/Multimedia
 Requires: 	gstreamer-plugins = %{version}
 Requires: 	gstreamer-colorspace = %{version}
+PreReq:		%{_bindir}/gst-register
+
 %description -n gstreamer-flx
 Plug-in for playing FLI/FLX animations under GStreamer.
 
@@ -1261,6 +1311,7 @@ Plug-in for playing FLI/FLX animations under GStreamer.
 Summary: 	GStreamer QuickCam plug-in.
 Group: 		Libraries/Multimedia
 Requires: 	gstreamer-plugins = %{version}
+PreReq:		%{_bindir}/gst-register
 
 %description -n gstreamer-qcam
 Plug-in for accessing a Quickcam video source.
@@ -1282,6 +1333,7 @@ Plug-in for accessing a Quickcam video source.
 Summary: 	GStreamer plug-ins for UDP tranport.
 Group: 		Libraries/Multimedia
 Requires: 	gstreamer-plugins = %{version}
+PreReq:		%{_bindir}/gst-register
 
 %description -n gstreamer-udp
 Plug-ins for UDP transport under GStreamer.
@@ -1303,6 +1355,7 @@ Plug-ins for UDP transport under GStreamer.
 Summary: 	GStreamer Video CD plug-in.
 Group: 		Libraries/Multimedia
 Requires: 	gstreamer-plugins = %{version}
+PreReq:		%{_bindir}/gst-register
 
 %description -n gstreamer-vcd
 Video CD parsing and playback plug-in for GStreamer.
@@ -1327,6 +1380,7 @@ Group: 		Libraries/Multimedia
 Requires: 	gstreamer-plugins = %{version}
 Obsoletes:	gstreamer-deinterlace
 Obsoletes:	gstreamer-misc
+PreReq:		%{_bindir}/gst-register
 
 %description -n gstreamer-video-effects
 Plug-in with various video effects including deinterlacing and effecTV
@@ -1355,6 +1409,7 @@ plug-ins.
 Summary: 	GStreamer visualisations plug-ins.
 Group: 		Libraries/Multimedia
 Requires: 	gstreamer-plugins = %{version}
+PreReq:		%{_bindir}/gst-register
 
 %description -n gstreamer-visualisation
 Various plug-ins for visual effects to use with audio.
@@ -1385,6 +1440,7 @@ Summary: 	GStreamer plug-in for YUV to MJPEG conversion.
 Group: 		Libraries/Multimedia
 Requires: 	gstreamer-plugins = %{version}
 Obsoletes: 	gstreamer-lavencode
+PreReq:		%{_bindir}/gst-register
 
 %description -n gstreamer-yuv4mjpeg
 It takes YUV video frames and adds a header in front of it so it can be 
@@ -1407,6 +1463,7 @@ processed with the lavtools from mjpegtools.
 Summary:        GStreamer plug-in playing audio cds	
 Group:          Libraries/Multimedia
 Requires:       gstreamer-plugins = %{version}
+PreReq:		%{_bindir}/gst-register
 
 %description -n gstreamer-cdplayer
 Lets you get sound from audio cd's using GStreamer
@@ -1428,6 +1485,7 @@ Lets you get sound from audio cd's using GStreamer
 Summary:        GStreamer plug-in for generating a video test streamer
 Group:          Libraries/Multimedia
 Requires:       gstreamer-plugins = %{version}
+PreReq:		%{_bindir}/gst-register
 
 %description -n gstreamer-videotest
 This plugin provides a videotest plugin. This plugin can be used to generate a videostream for testing other plugins.
@@ -1449,6 +1507,7 @@ This plugin provides a videotest plugin. This plugin can be used to generate a v
 @USE_HERMES_TRUE@@USE_LIBPNG_TRUE@Summary:        GStreamer plug-in for grabbing images from videostreams
 @USE_HERMES_TRUE@@USE_LIBPNG_TRUE@Group:          Libraries/Multimedia
 @USE_HERMES_TRUE@@USE_LIBPNG_TRUE@Requires:       gstreamer-plugins = %{version}
+@USE_HERMES_TRUE@@USE_LIBPNG_TRUE@PreReq:		%{_bindir}/gst-register
 @USE_HERMES_TRUE@@USE_LIBPNG_TRUE@
 @USE_HERMES_TRUE@@USE_LIBPNG_TRUE@%description -n gstreamer-snapshot
 @USE_HERMES_TRUE@@USE_LIBPNG_TRUE@This plugin grabs images from videostreams and saves them as PNG format images.
@@ -1473,6 +1532,7 @@ This plugin provides a videotest plugin. This plugin can be used to generate a v
 Summary:       GStreamer Quicktime demuxer video Plug-in.
 Group:         Libraries/Multimedia
 Requires:      gstreamer-plugins = %{version}
+PreReq:		%{_bindir}/gst-register
 
 %description -n gstreamer-quicktime
 Plug-in for demuxing Quicktime movies
@@ -1496,16 +1556,16 @@ Plug-in for demuxing Quicktime movies
 @USE_GCONF_TRUE@Requires: 	gstreamer-plugins = %{version}
 @USE_GCONF_TRUE@Requires: 	GConf2
 @USE_GCONF_TRUE@BuildRequires: 	GConf2-devel
-
+@USE_GCONF_TRUE@
 @USE_GCONF_TRUE@%description -n gstreamer-GConf
 @USE_GCONF_TRUE@Installation of GStreamer GConf schemas.
 @USE_GCONF_TRUE@These set usable defaults used by all GStreamer-enabled Gnome applications.
-
+@USE_GCONF_TRUE@
 @USE_GCONF_TRUE@%files -n gstreamer-GConf
 @USE_GCONF_TRUE@%defattr(-, root, root)
 @USE_GCONF_TRUE@%{_sysconfdir}/gconf/schemas/gstreamer.schemas
 @USE_GCONF_TRUE@%{_libdir}/libgstgconf-%{majorminor}.so.*
-
+@USE_GCONF_TRUE@
 @USE_GCONF_TRUE@%post -n gstreamer-GConf
 @USE_GCONF_TRUE@export GCONF_CONFIG_SOURCE=`gconftool-2 --get-default-source`
 @USE_GCONF_TRUE@gconftool-2 --makefile-install-rule %{_sysconfdir}/gconf/schemas/gstreamer.schemas > /dev/null
