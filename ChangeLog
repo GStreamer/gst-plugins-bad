@@ -1,5 +1,20 @@
 2005-04-02  Tim-Philipp Müller  <tim at centricular dot net>
 
+	* ext/wavpack/bits.c: 
+	* ext/wavpack/extra1.c:
+	* ext/wavpack/extra2.c: 
+	* ext/wavpack/float.c:
+	* ext/wavpack/gstwavpackdec.c:
+	* ext/wavpack/gstwavpackreader.c: 
+	* ext/wavpack/metadata.c: 
+	* ext/wavpack/unpack.c:
+	* ext/wavpack/wavpack.h:
+	* ext/wavpack/words.c:
+	* ext/wavpack/wputils.c: 
+	  Get rid of ^M characters in source files.
+	  
+2005-04-02  Tim-Philipp Müller  <tim at centricular dot net>
+
 	* ext/cdaudio/gstcdaudio.c: (gst_cdaudio_get_query_types):
 	  Don't advertise query types that are not supported
 	  (GST_QUERY_START and GST_QUERY_SEGMENT_END)
