@@ -191,6 +191,9 @@ plugin_init (GModule *module, GstPlugin *plugin)
   };
   gint i;
 
+  if (!gst_library_load ("gstbytestream"))
+    return FALSE;
+
   factory = gst_element_factory_new ("qtdemux", GST_TYPE_QTDEMUX,
                                      &gst_qtdemux_details);
   g_return_val_if_fail(factory != NULL, FALSE);

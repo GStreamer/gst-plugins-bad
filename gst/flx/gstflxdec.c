@@ -649,6 +649,9 @@ plugin_init (GModule *module, GstPlugin *plugin)
 {
   GstElementFactory *factory;
 
+  if (!gst_library_load ("gstbytestream"))
+    return FALSE;
+
   factory = gst_element_factory_new("flxdec", GST_TYPE_FLXDEC, &flxdec_details);
   g_return_val_if_fail(factory != NULL, FALSE);
   gst_element_factory_set_rank (factory, GST_ELEMENT_RANK_PRIMARY);

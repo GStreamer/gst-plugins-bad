@@ -104,6 +104,9 @@ plugin_init (GModule *module, GstPlugin *plugin)
   GstTypeFactory *type;
   GstCaps *raw_caps, *vorbis_caps, *raw_caps2;
 
+  if (!gst_library_load ("gstbytestream"))
+    return FALSE;
+
   gst_plugin_set_longname (plugin, "The OGG Vorbis Codec");
 
   raw_caps = raw_caps_factory ();

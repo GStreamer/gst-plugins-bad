@@ -307,6 +307,9 @@ plugin_init (GModule *module, GstPlugin *plugin)
 {
   GstElementFactory *factory;
 
+  if (!gst_library_load ("gstbytestream"))
+    return FALSE;
+
   /* create an elementfactory for the cdxa_parse element */
   factory = gst_element_factory_new ("cdxaparse", GST_TYPE_CDXA_PARSE,
                                     &gst_cdxa_parse_details);
