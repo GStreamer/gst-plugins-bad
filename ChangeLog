@@ -1,5 +1,10 @@
 2005-03-20  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* gst/playback/gstplaybasebin.c: (gst_play_base_bin_change_state):
+	  Close down thread if opening failed. Fixes crash in #170083.
+
+2005-03-20  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* ext/cdparanoia/gstcdparanoia.c: (cdparanoia_get),
 	(cdparanoia_event):
 	* ext/cdparanoia/gstcdparanoia.h:
