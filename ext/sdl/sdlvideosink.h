@@ -55,8 +55,6 @@ struct _GstSDLVideoSink {
 
   gboolean init;
 
-  GstCaps *capslist;
-
   SDL_Surface *screen;
   SDL_Overlay *overlay;
   SDL_Rect rect;
