@@ -1,0 +1,132 @@
+
+GStreamer: Release notes for GStreamer Plugins 0.7.5 "Under The Sea"
+        
+
+The GStreamer team is happy to announce a new release in the
+0.7.x development series of the GStreamer Plugins.
+The goal of this release series is to stabilize towards a 0.8
+release series which will be part of the GNOME 2.6 releases
+and hopefully eventually KDE 4.x. 
+
+
+The 0.7 series is a development series and is aimed at developers.
+It is NOT API or ABI compatible with the stable 0.6.x series or
+with other releases in the series.  This means you can not use this
+release to upgrade your current GStreamer installation and expect your
+GStreamer applications to keep working without a recompile.
+It is, however, parallel installable with the 0.6.x series.
+
+  
+Features of this release
+    
+      * Compatible with gstreamer 0.7.5
+      * ffmpeg plugin moved to gst-ffmpeg module
+      * DV fixes
+      * mikmod fixes
+      * OSX build fixes
+      * jpeg fixes
+      * gdk_pixbuf fixes
+      * automake 1.8 underquotedness fixes
+      * rfb server/port addition
+      * colorspace fixes
+      * liboil usage in videofilter and videotestsrc
+      * better LADSPA classification
+      * ALSA xrun recovery fixes
+      * switch fixes
+      * xvimagesink fixes
+      * moved out MAS sink
+      * experimental xine lib plugin
+      * intfloat and oneton removed in favour of audioconvert and interleave
+      * only export gst_* from plugins
+      * lame tag writing fixed
+      * added reporting of codecs used
+      * version gconf schemas and install locations
+      * qtdemux fixes
+      * gamma correction fixes
+
+Known issues
+    
+      * MPEG video playback needs to be updated, it doesn't work reliably
+      * The play library has visualisation disabled for now
+
+Bugs fixed in this release
+    
+      * 129740 : MP4/M4A files not recognized properly
+      * 130507 : Silence/sine don't have a sync property
+      * 131050 : avi-demux plays audio, but funky colors as video
+      * 131534 : jhbuild build failure with Debian sid
+      * 131948 : xoverlay and gstplay sample fails to build - missing include
+      * 133219 : missing include in ./gst/effectv/gstedge.c
+      * 133316 : gst/vbidec/vbiscreen missing cast
+      * 133410 : gstid3tag doesnt handle track-count
+      * 133508 : [oggdemux] Can't play files with multiple streams
+      * 133528 : sincesrc seems not to register its dparams correctly
+      * 133562 : Build breaks on dvdec
+      * 133663 : ext/ladspa categorises all plugins as Filter/Effect
+      * 133886 : libtool error while compiling alsamixer plug-in
+      * 134255 : vbidec won't compile
+      * 134318 : GConf schemas should be in versioned files, and install in v
+      * 134322 : gst/intfloat/gstint2float.c forgets to include "inttypes.h"
+      * 134612 : ext/gdk_pixbuf/Makefile: error in target install-loaderLTLIB
+      * 134750 : Problem building gst-plugins on Solaris
+      * 134894 : vorbisdec signals tags with bitrate < 1 (ie not set)
+      * 135038 : port gst-shorten to the new caps system
+      * 135042 : fix tag writing in lame
+      * 135116 : gstflacenc.c fails to build in NetBSD
+
+Download
+
+You find source releases of gst-plugins in the download directory:
+http://gstreamer.freedesktop.org/src/gst-plugins/
+
+GStreamer Homepage
+
+More details can be found on the project's website:
+http://gstreamer.freedesktop.org/
+
+Support and Bugs
+
+We use GNOME's bugzilla for bug reports and feature requests:
+http://bugzilla.gnome.org/enter_bug.cgi?product=GStreamer
+
+Developers
+
+CVS is hosted on cvs.freedesktop.org.
+All code is in CVS and can be checked out from there.
+Interested developers of the core library, plug-ins, and applications should
+subscribe to the gstreamer-devel list. If there is sufficient interest we
+will create more lists as necessary.
+
+        
+Applications
+
+As mentioned there are some changes in API/ABI between the 0.6.x and 0.7.x
+releases.
+Many applications will probably be source compatible between 0.6.x. and 0.7.x
+however.
+Rhythmbox and
+Sound Juicer
+for instance work very well when compiled on 0.7.x.
+GStreamer Player does not work across releases however,
+so we will make a separate release of gst-player with the needed
+fixes for it to work with 0.7.x. This release contains the core fixes we
+were waiting for to port the player over so expect a gst-player release in
+the near future.
+
+  
+Contributors to this release
+    
+      * Jan Schmidt
+      * David I. Lehn
+      * David Schleef
+      * Benjamin Otte
+      * Thomas Vander Stichele
+      * Stefan Kost
+      * Julien Moutte
+      * Ramon Garcia
+      * Christophe Fergeau
+      * Julio M. Merino Vidal
+      * Johan Dahlin
+      * Arwed v. Merkatz
+      * Andy Wingo
+ 
