@@ -124,12 +124,12 @@ GStreamer support libraries header files.
 %defattr(-, root, root)
 %{_includedir}/gstreamer-%{majorminor}/gst/gconf/gconf.h
 %{_includedir}/gstreamer-%{majorminor}/gst/play/play.h
-### %{_includedir}/gstreamer-%{majorminor}/gst/audio/audio.h
-### %{_includedir}/gstreamer-%{majorminor}/gst/floatcast/floatcast.h
-### %{_includedir}/gstreamer-%{majorminor}/gst/idct/idct.h
-### %{_includedir}/gstreamer-%{majorminor}/gst/resample/resample.h
-### %{_includedir}/gstreamer-%{majorminor}/gst/riff/riff.h
-### %{_includedir}/gstreamer-%{majorminor}/gst/video/video.h
+%{_includedir}/gstreamer-%{majorminor}/gst/audio/audio.h
+%{_includedir}/gstreamer-%{majorminor}/gst/floatcast/floatcast.h
+%{_includedir}/gstreamer-%{majorminor}/gst/idct/idct.h
+%{_includedir}/gstreamer-%{majorminor}/gst/resample/resample.h
+%{_includedir}/gstreamer-%{majorminor}/gst/riff/riff.h
+%{_includedir}/gstreamer-%{majorminor}/gst/video/video.h
 %{_datadir}/aclocal/gst-element-check-%{majorminor}.m4
 %{_libdir}/pkgconfig/gstreamer-libs-%{majorminor}.pc
 %{_libdir}/pkgconfig/gstreamer-play-%{majorminor}.pc
@@ -1520,7 +1520,6 @@ This package contains a basic audio and video playback library.
 
 %files -n gstreamer-play
 %defattr(-, root, root)
-%{_sysconfdir}/gconf/schemas/gstreamer.schemas
 %{_libdir}/libgstplay-%{majorminor}.so*
 
 %post -n gstreamer-play
@@ -1530,6 +1529,9 @@ This package contains a basic audio and video playback library.
 /sbin/ldconfig
 
 %changelog
+* Tue Dec 10 2002 Thomas Vander Stichele <thomas at apestaart dot org>
+- only install schema once
+
 * Sun Dec 08 2002 Thomas Vander Stichele <thomas at apestaart dot org>
 - fix location of libgstpng
 - changes for parallel installability
