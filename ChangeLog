@@ -1,5 +1,15 @@
 2005-03-21  Tim-Philipp Müller  <tim at centricular dot net>
 
+	* ext/mad/gstid3demuxbin.c: (probe_cb), (gst_id3demux_bin_init),
+	(found_type), (gst_id3demux_bin_change_state):
+	  Catch tag events that are sent out by id3demux before typefinding
+	  has happened, and re-send them later on once typefinding has
+	  finished and id3demuxbin's ghost source pad has been created. If
+	  we don't do this, the event will never make it downstream.
+	  (fixes #170319)
+
+2005-03-21  Tim-Philipp Müller  <tim at centricular dot net>
+
 	* ext/lame/gstlame.c: (add_one_tag):
 	* gst-libs/gst/riff/riff-read.c: (gst_riff_read_info):
 	* gst/asfdemux/gstasfdemux.c:
