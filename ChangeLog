@@ -1,3 +1,9 @@
+2004-06-22  Zaheer Abbas Merali  <zaheerabbas at merali.org>
+
+	* sys/osxaudio/Makefile.am:
+	Workaround so that the osxaudio .so file gets linked with the 
+	CoreAudio framework
+
 2004-06-18  Thomas Vander Stichele  <thomas at apestaart dot org>
 
 	* gst/multipart/Makefile.am:
