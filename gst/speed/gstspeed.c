@@ -489,7 +489,10 @@ speed_chain (GstPad * pad, GstData * data)
 
   in_buf = GST_BUFFER (data);
 
+  /* buffersize has to be aligned by samplesize */
   out_size = ceil ((gfloat) GST_BUFFER_SIZE (in_buf) / filter->speed);
+  out_size = (filter->sample_size * (out_size + filter->sample_size - 1)) /
+      filter->sample_size;
   out_buf = gst_pad_alloc_buffer (filter->srcpad, -1, out_size);
 
   in_samples = GST_BUFFER_SIZE (in_buf) / filter->sample_size;

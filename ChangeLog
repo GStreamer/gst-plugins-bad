@@ -1,3 +1,8 @@
+2005-04-02  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/speed/gstspeed.c: (speed_chain):
+	  Fix buffer overflow (#172281).
+
 2005-04-01  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* gst/playback/gstplaybin.c: (gst_play_bin_class_init),
