@@ -1,5 +1,10 @@
 2005-03-30  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* gst/playback/gstplaybasebin.c: (setup_subtitle):
+	  Don't crash if subparse isn't available (#170060).
+
+2005-03-30  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* ext/jpeg/gstjpegdec.c: (gst_jpegdec_my_error_exit),
 	(gst_jpegdec_init), (gst_jpegdec_chain):
 	* ext/jpeg/gstjpegdec.h:
