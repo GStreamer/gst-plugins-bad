@@ -50,6 +50,7 @@
 	(gst_udpsrc_init_receive):
 	* gst/udp/gstudpsrc.h:
 	  Fixed and added some comments.
+	Fixes bug#169391
 
 2005-04-02  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
