@@ -1,3 +1,10 @@
+2005-02-23  Edward Hervey  <bilboed@bilboed.com>
+
+	* gst/videotestsrc/gstvideotestsrc.c: (gst_videotestsrc_handle_src_event):
+	seek events weren't working completely
+	* gst/silence/gstsilence.c: (gst_silence_handle_src_event): Added seek
+	
+
 2005-02-23  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* ext/vorbis/vorbisdec.c: (vorbis_dec_chain):
