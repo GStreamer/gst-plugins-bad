@@ -171,7 +171,6 @@ GStreamer support libraries header files.
 @USE_AALIB_TRUE@Requires:	gstreamer-plugins = %{version}
 @USE_AALIB_TRUE@Requires:	aalib >= 1.3
 @USE_AALIB_TRUE@BuildRequires:	aalib-devel >= 1.3
-@USE_AALIB_TRUE@Provides: 	gstreamer-videosink
 @USE_AALIB_TRUE@
 @USE_AALIB_TRUE@%description -n gstreamer-aalib
 @USE_AALIB_TRUE@Plug-in for viewing video in Ascii-art using aalib library.
@@ -1000,7 +999,6 @@ Plug-ins for playback of AVI format media files.
 @USE_SDL_TRUE@BuildRequires: 	XFree86-devel
 @USE_SDL_TRUE@#it used to be called gstreamer-sdl
 @USE_SDL_TRUE@Obsoletes: 	gstreamer-sdl
-@USE_SDL_TRUE@Provides: 	gstreamer-videosink
 @USE_SDL_TRUE@
 @USE_SDL_TRUE@%description -n gstreamer-SDL
 @USE_SDL_TRUE@Plug-in for sending video output to the Simple Direct Media architecture.
@@ -1122,7 +1120,6 @@ Plug-ins for playback of AVI format media files.
 @USE_XVIDEO_TRUE@Requires: 	gstreamer-plugins = %{version}
 @USE_XVIDEO_TRUE@Requires: 	XFree86-libs
 @USE_XVIDEO_TRUE@BuildRequires: XFree86-devel
-@USE_XVIDEO_TRUE@Provides:	gstreamer-videosink
 @USE_XVIDEO_TRUE@%description -n gstreamer-xvideosink
 @USE_XVIDEO_TRUE@XFree86 video sink
 @USE_XVIDEO_TRUE@
@@ -1144,7 +1141,6 @@ Plug-ins for playback of AVI format media files.
 @USE_XVIDEO_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_XVIDEO_TRUE@Requires:      XFree86-libs
 @USE_XVIDEO_TRUE@BuildRequires: XFree86-devel
-@USE_XVIDEO_TRUE@Provides: 	gstreamer-videosink
 @USE_XVIDEO_TRUE@
 @USE_XVIDEO_TRUE@%description -n gstreamer-videosink
 @USE_XVIDEO_TRUE@Plug-in for X playback.
@@ -1572,6 +1568,9 @@ This package contains a basic audio and video playback library.
 /sbin/ldconfig
 
 %changelog
+* Wed Jan 29 2003 Thomas Vander Stichele <thomas at apestaart dot org>
+- undo gstreamer-videosink provides since they obviously clash
+
 * Mon Jan 27 2003 Thomas Vander Stichele <thomas at apestaart dot org>
 - added gconf-devel virtual provide in gstreamer-plugins-devel, as well
   as .pc files
