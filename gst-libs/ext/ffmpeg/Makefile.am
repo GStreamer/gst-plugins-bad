@@ -22,6 +22,7 @@ DISTFILES = \
 	ffmpeg/configure \
 	ffmpeg/Makefile \
 	ffmpeg/cygwin_inttypes.h \
+	ffmpeg/ffserver.h \
 	ffmpeg/ffmpeg.c \
 	ffmpeg/ffserver.c \
 	ffmpeg/berrno.h \
