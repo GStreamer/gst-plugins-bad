@@ -33,7 +33,6 @@ DISTFILES = \
 	ffmpeg/INSTALL \
 	ffmpeg/README \
 	ffmpeg/VERSION \
-	ffmpeg/config.mak \
 	ffmpeg/configure \
 	ffmpeg/Makefile \
 	ffmpeg/cygwin_inttypes.h \
