@@ -1,3 +1,10 @@
+2005-03-20  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/cdparanoia/gstcdparanoia.c: (cdparanoia_get),
+	(cdparanoia_event):
+	* ext/cdparanoia/gstcdparanoia.h:
+	  Implement flush after seek.
+
 2005-03-19  David Schleef  <ds@schleef.org>
 
 	* configure.ac: bump swfdec requirement
