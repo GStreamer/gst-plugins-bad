@@ -1,5 +1,12 @@
 2005-04-01  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* gst/playback/gstplaybin.c: (gst_play_bin_class_init),
+	(gst_play_bin_init), (gst_play_bin_dispose),
+	(gst_play_bin_set_property), (gen_text_element), (remove_sinks):
+	  Implement subtitle font selection.
+
+2005-04-01  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* gst/playback/gstplaybasebin.c: (gst_play_base_bin_class_init),
 	(gst_play_base_bin_init), (check_queue), (queue_threshold_reached),
 	(queue_out_of_data), (gen_preroll_element):
