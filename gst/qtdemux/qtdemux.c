@@ -1541,7 +1541,7 @@ static GstCaps2 *qtdemux_video_caps(GstQTDemux *qtdemux, guint32 fourcc)
     case GST_MAKE_FOURCC('r','a','w',' '):
       /* uncompressed RGB */
       return gst_caps2_from_string ("video/x-raw-rgb, "
-	  "endianness = (int) " G_STRINGIFY(G_BIG_ENDIAN));
+	  "endianness = (int) BIG_ENDIAN");
           /*"bpp", GST_PROPS_INT(x),
           "depth", GST_PROPS_INT(x),
           "red_mask", GST_PROPS_INT(x),
@@ -1599,36 +1599,36 @@ static GstCaps2 *qtdemux_audio_caps(GstQTDemux *qtdemux, guint32 fourcc)
       return gst_caps2_from_string ("audio/x-raw-int, "
 	  "width = (int) 16, "
 	  "depth = (int) 16, "
-	  "endianness = (int) " G_STRINGIFY(G_BIG_ENDIAN) ", "
+	  "endianness = (int) G_BIG_ENDIAN, "
 	  "signed = (boolean) true");
     case GST_MAKE_FOURCC('s','o','w','t'):
       /* FIXME */
       return gst_caps2_from_string ("audio/x-raw-int, "
 	  "width = (int) 16, "
 	  "depth = (int) 16, "
-	  "endianness = (int) " G_STRINGIFY(G_LITTLE_ENDIAN) ", "
+	  "endianness = (int) G_LITTLE_ENDIAN, "
 	  "signed = (boolean) true");
     case GST_MAKE_FOURCC('f','l','6','4'):
       return gst_caps2_from_string ("audio/x-raw-float, "
 	  "width = (int) 64, "
-	  "endianness = (int) " G_STRINGIFY(G_BIG_ENDIAN));
+	  "endianness = (int) G_BIG_ENDIAN");
     case GST_MAKE_FOURCC('f','l','3','2'):
       return gst_caps2_from_string ("audio/x-raw-float, "
 	  "width = (int) 32, "
-	  "endianness = (int) " G_STRINGIFY(G_BIG_ENDIAN));
+	  "endianness = (int) G_BIG_ENDIAN");
     case GST_MAKE_FOURCC('i','n','2','4'):
       /* FIXME */
       return gst_caps2_from_string ("audio/x-raw-int, "
 	  "width = (int) 24, "
 	  "depth = (int) 32, "
-	  "endianness = (int) " G_STRINGIFY(G_BIG_ENDIAN) ", "
+	  "endianness = (int) G_BIG_ENDIAN, "
 	  "signed = (boolean) true");
     case GST_MAKE_FOURCC('i','n','3','2'):
       /* FIXME */
       return gst_caps2_from_string ("audio/x-raw-int, "
 	  "width = (int) 32, "
 	  "depth = (int) 32, "
-	  "endianness = (int) " G_STRINGIFY(G_BIG_ENDIAN) ", "
+	  "endianness = (int) G_BIG_ENDIAN, "
 	  "signed = (boolean) true");
     case GST_MAKE_FOURCC('u','l','a','w'):
       /* FIXME */

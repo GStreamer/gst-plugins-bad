@@ -64,30 +64,29 @@ G_BEGIN_DECLS
 /* "standard" int audio is native order, 16 bit stereo. */
 #define GST_AUDIO_INT_STANDARD_PAD_TEMPLATE_CAPS \
   "audio/x-raw-int, " \
-  "rate = (int) [ 1, " G_STRINGIFY(G_MAXINT) ", " \
+  "rate = (int) [ 1, MAX ], " \
   "channels = (int) 2, " \
-  "endianness = (int) " G_STRINGIFY(G_BYTE_ORDER) ", " \
+  "endianness = (int) BYTE_ORDER, " \
   "width = (int) 16, " \
   "depth = (int) 16, " \
   "signed = (boolean) true, " \
-  "buffer-frames = (int) [ 1, " G_STRINGIFY(G_MAXINT) "]"
+  "buffer-frames = (int) [ 1, MAX]"
 
 #define GST_AUDIO_FLOAT_PAD_TEMPLATE_CAPS \
   "audio/x-raw-float, " \
-  "rate = (int) [ 1, " G_STRINGIFY(G_MAXINT) ", " \
-  "channels = (int) [ 1, " G_STRINGIFY(G_MAXINT) ", " \
-  "endianness = (int) { " G_STRINGIFY(G_LITTLE_ENDIAN) ", " \
-                          G_STRINGIFY(G_BIG_ENDIAN) "}, " \
+  "rate = (int) [ 1, MAX ], " \
+  "channels = (int) [ 1, MAX ], " \
+  "endianness = (int) { LITTLE_ENDIAN , BIG_ENDIAN }, " \
   "width = (int) { 32, 64 }, " \
-  "buffer-frames = (int) [ 1, " G_STRINGIFY(G_MAXINT) "]"
+  "buffer-frames = (int) [ 1, MAX]"
 
 /* "standard" float audio is native order, 32 bit mono. */
 #define GST_AUDIO_FLOAT_STANDARD_PAD_TEMPLATE_CAPS \
   "audio/x-raw-float, " \
-  "rate = (int) [ 1, " G_STRINGIFY(G_MAXINT) ", " \
+  "rate = (int) [ 1, MAX ], " \
   "channels = (int) 1, " \
-  "endianness = (int) " G_STRINGIFY(G_BYTE_ORDER) ", " \
-  "buffer-frames = (int) [ 1, " G_STRINGIFY(G_MAXINT) "]"
+  "endianness = (int) BYTE_ORDER, " \
+  "buffer-frames = (int) [ 1, MAX]"
 
 /*
  * this library defines and implements some helper functions for audio

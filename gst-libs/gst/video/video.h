@@ -31,9 +31,9 @@
 #define G_MASK_32_REVERSE 0x0000ff00
 #define B_MASK_32_REVERSE 0x00ff0000
 
-#define R_MASK_24 0xff0000
-#define G_MASK_24 0x00ff00
-#define B_MASK_24 0x0000ff
+#define R_MASK_24 "0xff0000"
+#define G_MASK_24 "0x00ff00"
+#define B_MASK_24 "0x0000ff"
 
 #define R_MASK_24_REVERSE 0x0000ff
 #define G_MASK_24_REVERSE 0x00ff00
@@ -111,7 +111,7 @@
 	    "video/x-raw-rgb, " \
             "bpp = (int) 32, " \
             "depth = (int) 32, " \
-            "endianness = (int) " G_STRINGIFY(G_BIG_ENDIAN) ", " \
+            "endianness = (int) BIG_ENDIAN, " \
             "red_mask = (int) " R_MASK_32 ", " \
             "green_mask = (int) " G_MASK_32 ", " \
             "blue_mask = (int) " B_MASK_32 ", " \
