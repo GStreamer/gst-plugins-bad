@@ -68,7 +68,7 @@ GST_PAD_TEMPLATE_FACTORY (snapshot_sink_factory,
 )
 
 
-/* Shot signals and args */
+/* Snapshot signals and args */
 enum {
   /* FILL ME */
   SNAPSHOT_SIGNAL,
@@ -82,8 +82,8 @@ enum {
 };
 
 static GType 	gst_snapshot_get_type 	(void);
-static void	gst_snapshot_class_init	(GstShotClass *klass);
-static void	gst_snapshot_init	(GstShot *snapshot);
+static void	gst_snapshot_class_init	(GstSnapshotClass *klass);
+static void	gst_snapshot_init	(GstSnapshot *snapshot);
 
 static void	gst_snapshot_chain	(GstPad *pad, GstBuffer *buf);
 
@@ -113,20 +113,20 @@ gst_snapshot_get_type (void)
 
   if (!snapshot_type) {
     static const GTypeInfo snapshot_info = {
-      sizeof(GstShotClass),      NULL,      NULL,      (GClassInitFunc)gst_snapshot_class_init,
+      sizeof(GstSnapshotClass),      NULL,      NULL,      (GClassInitFunc)gst_snapshot_class_init,
       NULL,
       NULL,
-      sizeof(GstShot),
+      sizeof(GstSnapshot),
       0,
       (GInstanceInitFunc)gst_snapshot_init,
     };
-    snapshot_type = g_type_register_static(GST_TYPE_ELEMENT, "GstShot", &snapshot_info, 0);
+    snapshot_type = g_type_register_static(GST_TYPE_ELEMENT, "GstSnapshot", &snapshot_info, 0);
   }
   return snapshot_type;
 }
 
 static void
-gst_snapshot_class_init (GstShotClass *klass)
+gst_snapshot_class_init (GstSnapshotClass *klass)
 {
   GObjectClass *gobject_class;
   GstElementClass *gstelement_class;
@@ -145,7 +145,7 @@ gst_snapshot_class_init (GstShotClass *klass)
 	
   gst_snapshot_signals[SNAPSHOT_SIGNAL] =
 	      g_signal_new("snapshot", G_TYPE_FROM_CLASS(klass),
-	 	            G_SIGNAL_RUN_LAST, G_STRUCT_OFFSET(GstShotClass, snapshot),
+	 	            G_SIGNAL_RUN_LAST, G_STRUCT_OFFSET(GstSnapshotClass, snapshot),
 		            NULL, NULL, g_cclosure_marshal_VOID__VOID,  G_TYPE_NONE, 0);
 
   klass->snapshot = snapshot_handler;
@@ -157,7 +157,7 @@ gst_snapshot_class_init (GstShotClass *klass)
 static void
 snapshot_handler(GstElement *element)
 {
-  GstShot *snapshot;
+  GstSnapshot *snapshot;
 
   snapshot = GST_SNAPSHOT( element );
   snapshot->snapshot_asked=TRUE;
@@ -167,7 +167,7 @@ snapshot_handler(GstElement *element)
 static gboolean
 gst_snapshot_sinkconnect (GstPad *pad, GstCaps *caps)
 {
-  GstShot *filter;
+  GstSnapshot *filter;
   GstCaps *from_caps, *to_caps;
 
   filter = GST_SNAPSHOT (gst_pad_get_parent (pad));
@@ -227,7 +227,7 @@ gst_snapshot_sinkconnect (GstPad *pad, GstCaps *caps)
 }
 
 static void
-gst_snapshot_init (GstShot *snapshot)
+gst_snapshot_init (GstSnapshot *snapshot)
 {
   snapshot->sinkpad = gst_pad_new_from_template (GST_PAD_TEMPLATE_GET (snapshot_sink_factory), "sink");
   gst_pad_set_connect_function (snapshot->sinkpad, gst_snapshot_sinkconnect);
@@ -246,7 +246,7 @@ gst_snapshot_init (GstShot *snapshot)
 static void
 gst_snapshot_chain (GstPad *pad, GstBuffer *buf)
 {
-  GstShot *snapshot;
+  GstSnapshot *snapshot;
   guchar *data, *data_to_convert, *buffer_i420, *data_converted;
   gulong size,image_size;
   GstBuffer *outbuf;
@@ -331,7 +331,7 @@ gst_snapshot_chain (GstPad *pad, GstBuffer *buf)
 static void
 gst_snapshot_set_property (GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec)
 {
-  GstShot *snapshot;
+  GstSnapshot *snapshot;
 
   g_return_if_fail(GST_IS_SNAPSHOT(object));
   snapshot = GST_SNAPSHOT(object);
@@ -351,7 +351,7 @@ gst_snapshot_set_property (GObject *object, guint prop_id, const GValue *value, 
 static void
 gst_snapshot_get_property (GObject *object, guint prop_id, GValue *value, GParamSpec *pspec)
 {
-  GstShot *snapshot;
+  GstSnapshot *snapshot;
 
   g_return_if_fail(GST_IS_SNAPSHOT(object));
   snapshot = GST_SNAPSHOT(object);
