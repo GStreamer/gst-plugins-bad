@@ -17,7 +17,7 @@ AS_LIBTOOL(GST_PLUGINS, 0, 0, 0, yes)
 dnl we'll move this to a configure option later on which will be turned on
 dnl by autogen
 dnl GST_ERROR="-Wall -Werror"
-GST_ERROR="-Wall"
+GST_ERROR="-Werror"
 
 dnl FIXME take something else ?
 AC_CONFIG_SRCDIR([gst/law/alaw.c])
