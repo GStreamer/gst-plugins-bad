@@ -828,40 +828,40 @@ Plug-ins for playback of AVI format media files.
 @USE_MJPEGTOOLS_TRUE@### %{_bindir}/gst-compprep > /dev/null 2> /dev/null
 
 ### MPEG2DEC ###
-@USE_MPEG2DEC_TRUE@%package -n gstreamer-mpeg
-@USE_MPEG2DEC_TRUE@Summary:GStreamer plug-ins for MPEG video playback and encoding.
-@USE_MPEG2DEC_TRUE@Group:         Libraries/Multimedia
-@USE_MPEG2DEC_TRUE@Requires:      gstreamer-plugins = %{version}
+%package -n gstreamer-mpeg
+Summary:GStreamer plug-ins for MPEG video playback and encoding.
+Group:         Libraries/Multimedia
+Requires:      gstreamer-plugins = %{version}
 @USE_MPEG2DEC_TRUE@Requires:      mpeg2dec => 0.3.1
 @USE_MPEG2DEC_TRUE@BuildRequires: mpeg2dec-devel => 0.3.1
-@USE_MPEG2DEC_TRUE@Obsoletes:     gstreamer-mpeg1
-@USE_MPEG2DEC_TRUE@Obsoletes:     gstreamer-mpeg2
+Obsoletes:     gstreamer-mpeg1
+Obsoletes:     gstreamer-mpeg2
 @USE_MPEG2DEC_TRUE@Obsoletes:     gstreamer-mpeg2dec
-@USE_MPEG2DEC_TRUE@
-@USE_MPEG2DEC_TRUE@%description -n gstreamer-mpeg
-@USE_MPEG2DEC_TRUE@Plug-ins for playing and encoding MPEG video.
-@USE_MPEG2DEC_TRUE@
-@USE_MPEG2DEC_TRUE@%files -n gstreamer-mpeg
-@USE_MPEG2DEC_TRUE@%defattr(-, root, root)
-@USE_MPEG2DEC_TRUE@%{_libdir}/gstreamer-%{majorminor}/libgstmpeg1types.so
-@USE_MPEG2DEC_TRUE@%{_libdir}/gstreamer-%{majorminor}/libgstmpeg1encoder.so
-@USE_MPEG2DEC_TRUE@%{_libdir}/gstreamer-%{majorminor}/libgstmpeg1systemencode.so
-@USE_MPEG2DEC_TRUE@%{_libdir}/gstreamer-%{majorminor}/libgstmpegaudio.so
-@USE_MPEG2DEC_TRUE@%{_libdir}/gstreamer-%{majorminor}/libgstmpegaudioparse.so
-@USE_MPEG2DEC_TRUE@%{_libdir}/gstreamer-%{majorminor}/libgstmp1videoparse.so
-@USE_MPEG2DEC_TRUE@%{_libdir}/gstreamer-%{majorminor}/libgstmpegstream.so
-@USE_MPEG2DEC_TRUE@%{_libdir}/gstreamer-%{majorminor}/libgstmpeg2enc.so
+
+%description -n gstreamer-mpeg
+Plug-ins for playing and encoding MPEG video.
+
+%files -n gstreamer-mpeg
+%defattr(-, root, root)
+%{_libdir}/gstreamer-%{majorminor}/libgstmpeg1types.so
+%{_libdir}/gstreamer-%{majorminor}/libgstmpeg1encoder.so
+%{_libdir}/gstreamer-%{majorminor}/libgstmpeg1systemencode.so
+%{_libdir}/gstreamer-%{majorminor}/libgstmpegaudio.so
+%{_libdir}/gstreamer-%{majorminor}/libgstmpegaudioparse.so
+%{_libdir}/gstreamer-%{majorminor}/libgstmp1videoparse.so
+%{_libdir}/gstreamer-%{majorminor}/libgstmpegstream.so
+%{_libdir}/gstreamer-%{majorminor}/libgstmpeg2enc.so
+%{_libdir}/gstreamer-%{majorminor}/libgstmpeg2subt.so
+%{_libdir}/gstreamer-%{majorminor}/libgstmpeg2types.so
 @USE_MPEG2DEC_TRUE@%{_libdir}/gstreamer-%{majorminor}/libgstmpeg2dec.so
-@USE_MPEG2DEC_TRUE@%{_libdir}/gstreamer-%{majorminor}/libgstmpeg2subt.so
-@USE_MPEG2DEC_TRUE@%{_libdir}/gstreamer-%{majorminor}/libgstmpeg2types.so
-@USE_MPEG2DEC_TRUE@
-@USE_MPEG2DEC_TRUE@%post -n  gstreamer-mpeg
-@USE_MPEG2DEC_TRUE@%{_bindir}/gst-register --gst-mask=0 > /dev/null 2> /dev/null
-@USE_MPEG2DEC_TRUE@### %{_bindir}/gst-compprep > /dev/null 2> /dev/null
-@USE_MPEG2DEC_TRUE@
-@USE_MPEG2DEC_TRUE@%postun -n  gstreamer-mpeg
-@USE_MPEG2DEC_TRUE@%{_bindir}/gst-register --gst-mask=0 > /dev/null 2> /dev/null
-@USE_MPEG2DEC_TRUE@### %{_bindir}/gst-compprep > /dev/null 2> /dev/null
+
+%post -n  gstreamer-mpeg
+%{_bindir}/gst-register --gst-mask=0 > /dev/null 2> /dev/null
+### %{_bindir}/gst-compprep > /dev/null 2> /dev/null
+
+%postun -n  gstreamer-mpeg
+%{_bindir}/gst-register --gst-mask=0 > /dev/null 2> /dev/null
+### %{_bindir}/gst-compprep > /dev/null 2> /dev/null
 
 ### OPENQUICKTIME ###
 @USE_OPENQUICKTIME_TRUE@%package -n gstreamer-openquicktime
@@ -1568,6 +1568,9 @@ This package contains a basic audio and video playback library.
 /sbin/ldconfig
 
 %changelog
+* Tue Jun 03 2003 Thomas Vander Stichele <thomas at apestaart dot org>
+- fixed mpeg plugin in the case where no mpeg2dec was installed
+
 * Mon Apr 14 2003 Thomas Vander Stichele <thomas at apestaart dot org>
 - comment out v4l2 since nothing provides this yet
 - bump libdvdnav requirement to 0.1.7
