@@ -422,7 +422,7 @@ gst_jack_loop (GstElement *element)
     GstJack *this;
     GList *pads;
     gint len, peeked_len;
-    gchar *peeked;
+    guint8 *peeked;
     gint avail;
     GstEvent *event;
     GstJackPad *pad;
@@ -443,7 +443,7 @@ gst_jack_loop (GstElement *element)
                     pad->bs = gst_bytestream_new (pad->pad);
                 
             read:
-                peeked_len = gst_bytestream_peek_bytes (pad->bs, (guint8**)&peeked, len);
+                peeked_len = gst_bytestream_peek_bytes (pad->bs, &peeked, len);
                 if (peeked_len < len) {
                     gst_bytestream_get_status(pad->bs, &avail, &event);
                     if (event) {

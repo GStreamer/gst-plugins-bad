@@ -16,7 +16,7 @@ PATCHES = patch/function.patch
 
 patches:
 	@echo -n Patching ffmpeg if necessary ...
-	@patch -p0 -N -r rejects < patch/function.patch > /dev/null || true
+	@patch -p0 -N -r rejects < $(srcdir)/patch/function.patch > /dev/null || true
 	@rm -f rejects || true
 	@echo done.
 
