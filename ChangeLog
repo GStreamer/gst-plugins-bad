@@ -1,3 +1,11 @@
+2005-02-24  Gergely Nagy <algernon@bonehunter.rulez.org>
+
+	reviewed by: Maciej Katafiasz
+
+	* ext/smoothwave/gstsmoothwave.c: (gst_smoothwave_chain):
+	Fix C99'ism. Fixes #168269
+	
+	
 2005-02-24  Jan Schmidt  <thaytan@mad.scientist.com>
 	* ext/gdk_pixbuf/pixbufscale.c: (pixbufscale_scale):
 	  Remove bogus gdk_pixbuf_scale_simple call, so now we

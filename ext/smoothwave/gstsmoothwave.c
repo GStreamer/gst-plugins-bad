@@ -349,9 +349,10 @@ gst_smoothwave_chain (GstPad * pad, GstData * _data)
         prev_y[1] += diff_y;
       }
     } else {
-      qheight = smoothwave->height / 2;
       guchar *cur_pos;
       gint prev_y;
+
+      qheight = smoothwave->height / 2;
 
       prev_y = (gint32) (*samples) * qheight / 32768;
       samples++;
