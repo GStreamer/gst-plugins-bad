@@ -1,5 +1,12 @@
 2005-04-02  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* gst/mpegstream/gstdvddemux.c: (gst_dvd_demux_get_audio_stream):
+	* gst/mpegstream/gstmpegdemux.c: (gst_mpeg_demux_get_video_stream),
+	(gst_mpeg_demux_get_audio_stream):
+	  More tags.
+
+2005-04-02  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* ext/ogg/gstogmparse.c: (gst_ogm_parse_chain):
 	  Export codec-name for OGM tracks as well.
 
