@@ -639,7 +639,7 @@ GST_CHECK_FEATURE(MJPEGTOOLS, [mjpegtools], jpegmmxenc jpegmmxdec, [
     AC_CHECK_HEADERS(stdint.h, HAVE_STDINT_H="yes", HAVE_STDINT_H="no")
     if [ test x$HAVE_STDINT_H = x"no" ]; then
       AC_CHECK_HEADERS(inttypes.h sys/types.h, HAVE_INTTYPES_H="yes", [
-        AC_WARNING(No valid header files found, mjpegtools plugins disabled)
+        AC_MSG_WARN(No valid header files found, mjpegtools plugins disabled)
         HAVE_INTTYPES_H="no" HAVE_MJPEGTOOLS="no"
       ])
     fi
