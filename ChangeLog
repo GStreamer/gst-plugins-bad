@@ -1,5 +1,11 @@
 2005-03-10  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* gst/asfdemux/gstasfdemux.c: (gst_asf_demux_handle_data),
+	(gst_asf_demux_process_chunk):
+	  Read streams (with num-packets=0), too.
+
+2005-03-10  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* gst/playback/gstplaybin.c: (gen_video_element),
 	(gen_audio_element):
 	  Use auto* elements as defaults. Fixed #169289.
