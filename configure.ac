@@ -765,9 +765,9 @@ if test "x$USE_ATOMIC_H" = xyes; then
   AC_DEFINE(HAVE_ATOMIC_H, 1, [Define if atomic.h header file is available])
 fi
 
-dnl if test "x$USE_DEBUG" = xyes; then
-dnl   CFLAGS="$CFLAGS -g"
-dnl fi
+if test "x$USE_DEBUG" = xyes; then
+  GST_CFLAGS="$GST_CFLAGS -g"
+fi
 
 if test "x$USE_PROFILING" = xyes; then
 dnl  CFLAGS="$CFLAGS -pg -fprofile-arcs"
