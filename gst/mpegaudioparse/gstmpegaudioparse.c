@@ -86,7 +86,7 @@ static void	gst_mp3parse_class_init		(GstMPEGAudioParseClass *klass);
 static void	gst_mp3parse_init		(GstMPEGAudioParse *mp3parse);
 
 static void	gst_mp3parse_loop		(GstElement *element);
-static void	gst_mp3parse_chain		(GstPad *pad,GstBuffer *buf);
+static void	gst_mp3parse_chain		(GstPad *pad, GstData *buf);
 static long	bpf_from_header			(GstMPEGAudioParse *parse, unsigned long header);
 static int	head_check			(unsigned long head);
 
@@ -182,7 +182,8 @@ static void
 gst_mp3parse_loop (GstElement *element)
 {
   GstMPEGAudioParse *parse = GST_MP3PARSE(element);
-  GstBuffer *inbuf, *outbuf;
+  GstData *inbuf;
+  GstBuffer *outbuf;
   guint32 size, offset;
   guchar *data;
   guint32 start;
@@ -209,9 +210,9 @@ fprintf(stderr, "header is 0x%08x\n",header);
 
       // see if there are enough bytes in this buffer for the whole frame
       if ((start + bpf) <= size) {
-        outbuf = gst_buffer_create_sub (inbuf,start,bpf);
+        outbuf = gst_buffer_create_sub (GST_BUFFER (inbuf), start, bpf);
 fprintf(stderr, "sending buffer of %d bytes\n",bpf);
-        gst_pad_push (parse->srcpad, outbuf);
+        gst_pad_push (parse->srcpad, GST_DATA (outbuf));
         offset = start + bpf;
 
       // if not, we have to deal with it somehow
@@ -225,7 +226,7 @@ fprintf(stderr,"don't have enough data for this frame\n");
 }
 
 static void
-gst_mp3parse_chain (GstPad *pad, GstBuffer *buf)
+gst_mp3parse_chain (GstPad *pad, GstData *buf)
 {
   GstMPEGAudioParse *mp3parse;
   guchar *data;
@@ -258,12 +259,12 @@ gst_mp3parse_chain (GstPad *pad, GstBuffer *buf)
   // if we have something left from the previous frame
   if (mp3parse->partialbuf) {
 
-    mp3parse->partialbuf = gst_buffer_append(mp3parse->partialbuf, buf);
+    mp3parse->partialbuf = gst_buffer_append(mp3parse->partialbuf, GST_BUFFER (buf));
     // and the one we received..
-    gst_buffer_unref(buf);
+    gst_data_unref (buf);
   }
   else {
-    mp3parse->partialbuf = buf;
+    mp3parse->partialbuf = GST_BUFFER (buf);
   }
 
   size = GST_BUFFER_SIZE(mp3parse->partialbuf);
@@ -333,11 +334,11 @@ gst_mp3parse_chain (GstPad *pad, GstBuffer *buf)
 	    mp3parse->in_flush = FALSE;
 	  }
 	  GST_BUFFER_TIMESTAMP(outbuf) = last_ts;
-          gst_pad_push(mp3parse->srcpad,outbuf);
+          gst_pad_push (mp3parse->srcpad, GST_DATA (outbuf));
 	}
 	else {
           GST_DEBUG (0,"mp3parse: skipping buffer of %d bytes\n",GST_BUFFER_SIZE(outbuf));
-          gst_buffer_unref(outbuf);
+          gst_data_unref (GST_DATA (outbuf));
 	  mp3parse->skip--;
 	}
       }
@@ -353,7 +354,7 @@ gst_mp3parse_chain (GstPad *pad, GstBuffer *buf)
     GST_DEBUG (0,"mp3parse: partial buffer needed %ld for trailing bytes\n",remainder);
 
     outbuf = gst_buffer_create_sub(mp3parse->partialbuf,offset,remainder);
-    gst_buffer_unref(mp3parse->partialbuf);
+    gst_data_unref (GST_DATA (mp3parse->partialbuf));
     mp3parse->partialbuf = outbuf;
   }
   else {
