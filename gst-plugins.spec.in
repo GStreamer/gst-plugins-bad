@@ -867,7 +867,7 @@ GStreamer support libraries header files.
 @USE_V4L_TRUE@Summary:       GStreamer Video for Linux plug-in.
 @USE_V4L_TRUE@Group:         Libraries/Multimedia
 @USE_V4L_TRUE@Requires:      gstreamer-plugins >= %{version}
-@USE_V4L_TRUE@BuildRequires: glibc-kernheaders
+@USE_V4L_TRUE@BuildRequires: glibc-devel
 @USE_V4L_TRUE@
 @USE_V4L_TRUE@%description -n gstreamer-v4l
 @USE_V4L_TRUE@Plug-in for accessing Video for Linux devices.
@@ -1180,6 +1180,10 @@ processed with the lavtools from mjpegtools.
 @USE_GCONF_TRUE@gconftool-2 --makefile-install-rule %{_sysconfdir}/gconf/schemas/gstreamer.schemas > /dev/null
 
 %changelog
+* Wed Jul 03 2002 Thomas Vander Stichele <thomas@apestaart.org>
+- require glibc-devel instead of glibc-kernheaders since the latter is only
+  since 7.3 and glibc-devel pulls in the right package anyway
+
 * Sun Jun 23 2002 Thomas Vander Stichele <thomas@apestaart.org>
 - changed header location of plug-in libs
 
