@@ -133,6 +133,7 @@ GStreamer support libraries header files.
 %{_includedir}/gstreamer-%{majorminor}/gst/video/video.h
 %{_libdir}/pkgconfig/gstreamer-libs-%{majorminor}.pc
 %{_libdir}/pkgconfig/gstreamer-play-%{majorminor}.pc
+%{_datadir}/aclocal/gst-element-check-%{majorminor}.m4
 @USE_GCONF_TRUE@%{_libdir}/pkgconfig/gstreamer-gconf-%{majorminor}.pc
 @USE_GCONF_TRUE@%{_libdir}/libgstgconf-%{majorminor}.so
 %{_libdir}/libgstplay-%{majorminor}.so
@@ -402,8 +403,8 @@ Plug-ins for playback of AVI format media files.
 @USE_DVDNAV_TRUE@Summary:       GStreamer plug-in for DVD playback.
 @USE_DVDNAV_TRUE@Group:         Libraries/Multimedia
 @USE_DVDNAV_TRUE@Requires:      gstreamer-plugins = %{version}
-@USE_DVDNAV_TRUE@Requires:      libdvdnav >= 0.1.3
-@USE_DVDNAV_TRUE@BuildRequires: libdvdnav-devel >= 0.1.3
+@USE_DVDNAV_TRUE@Requires:      libdvdnav >= 0.1.7
+@USE_DVDNAV_TRUE@BuildRequires: libdvdnav-devel >= 0.1.7
 @USE_DVDNAV_TRUE@Obsoletes:     gstreamer-libdvd
 @USE_DVDNAV_TRUE@
 @USE_DVDNAV_TRUE@%description -n gstreamer-libdvdnav
@@ -1089,27 +1090,28 @@ Plug-ins for playback of AVI format media files.
 @USE_V4L_TRUE@### %{_bindir}/gst-compprep > /dev/null 2> /dev/null
 
 ### VIDEO 4 LINUX 2 ###
-@USE_V4L2_TRUE@%package -n gstreamer-v4l2
-@USE_V4L2_TRUE@Summary:       GStreamer Video for Linux 2 plug-in.
-@USE_V4L2_TRUE@Group:         Libraries/Multimedia
-@USE_V4L2_TRUE@Requires:      gstreamer-plugins = %{version}
-@USE_V4L2_TRUE@BuildRequires: glibc-devel
-@USE_V4L2_TRUE@
-@USE_V4L2_TRUE@%description -n gstreamer-v4l2
-@USE_V4L2_TRUE@Plug-in for accessing Video for Linux devices.
-@USE_V4L2_TRUE@
-@USE_V4L2_TRUE@%files -n gstreamer-v4l2
-@USE_V4L2_TRUE@%defattr(-, root, root)
-@USE_V4L2_TRUE@%{_libdir}/gstreamer-%{majorminor}/libgstv4l2element.so
-@USE_V4L2_TRUE@%{_libdir}/gstreamer-%{majorminor}/libgstv4l2src.so
-@USE_V4L2_TRUE@
-@USE_V4L2_TRUE@%post -n gstreamer-v4l2
-@USE_V4L2_TRUE@%{_bindir}/gst-register --gst-mask=0 > /dev/null 2> /dev/null
-@USE_V4L2_TRUE@### %{_bindir}/gst-compprep > /dev/null 2> /dev/null
-@USE_V4L2_TRUE@
-@USE_V4L2_TRUE@%postun -n gstreamer-v4l2
-@USE_V4L2_TRUE@%{_bindir}/gst-register --gst-mask=0 > /dev/null 2> /dev/null
-@USE_V4L2_TRUE@### %{_bindir}/gst-compprep > /dev/null 2> /dev/null
+### no RPM provides this yet, so don't build these rpms
+#@USE_V4L2_TRUE@%package -n gstreamer-v4l2
+#@USE_V4L2_TRUE@Summary:       GStreamer Video for Linux 2 plug-in.
+#@USE_V4L2_TRUE@Group:         Libraries/Multimedia
+#@USE_V4L2_TRUE@Requires:      gstreamer-plugins = %{version}
+#@USE_V4L2_TRUE@BuildRequires: glibc-devel
+#@USE_V4L2_TRUE@
+#@USE_V4L2_TRUE@%description -n gstreamer-v4l2
+#@USE_V4L2_TRUE@Plug-in for accessing Video for Linux devices.
+#@USE_V4L2_TRUE@
+#@USE_V4L2_TRUE@%files -n gstreamer-v4l2
+#@USE_V4L2_TRUE@%defattr(-, root, root)
+#@USE_V4L2_TRUE@%{_libdir}/gstreamer-%{majorminor}/libgstv4l2element.so
+#@USE_V4L2_TRUE@%{_libdir}/gstreamer-%{majorminor}/libgstv4l2src.so
+#@USE_V4L2_TRUE@
+#@USE_V4L2_TRUE@%post -n gstreamer-v4l2
+#@USE_V4L2_TRUE@%{_bindir}/gst-register --gst-mask=0 > /dev/null 2> /dev/null
+#@USE_V4L2_TRUE@### %{_bindir}/gst-compprep > /dev/null 2> /dev/null
+#@USE_V4L2_TRUE@
+#@USE_V4L2_TRUE@%postun -n gstreamer-v4l2
+#@USE_V4L2_TRUE@%{_bindir}/gst-register --gst-mask=0 > /dev/null 2> /dev/null
+#@USE_V4L2_TRUE@### %{_bindir}/gst-compprep > /dev/null 2> /dev/null
 
 
 ### XVIDEO ###
@@ -1567,6 +1569,10 @@ This package contains a basic audio and video playback library.
 /sbin/ldconfig
 
 %changelog
+* Mon Apr 14 2003 Thomas Vander Stichele <thomas at apestaart dot org>
+- comment out v4l2 since nothing provides this yet
+- bump libdvdnav requirement to 0.1.7
+
 * Wed Jan 29 2003 Thomas Vander Stichele <thomas at apestaart dot org>
 - undo gstreamer-videosink provides since they obviously clash
 
