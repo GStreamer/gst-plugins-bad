@@ -1,3 +1,9 @@
+2005-03-23  Edward Hervey  <bilboed@bilboed.com>
+
+	* gst/silence/gstsilence.c: (gst_silence_handle_src_event): 
+	forgot a break in the inner switch
+	Fixes bug #171341
+
 2005-03-23  Benjamin Otte  <in7y118@public.uni-hamburg.de>
 
 	* ext/mad/gstid3tag.c: (gst_id3_tag_chain):
