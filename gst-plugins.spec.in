@@ -126,7 +126,7 @@ GStreamer support libraries header files.
 %{_includedir}/gst-plugins-%{version}/gst/video/video.h
 %{_includedir}/gst-plugins-%{version}/gst/play/play.h
 %{_libdir}/libgstplay.so
-%{_libdir}/libgstplay.a
+#%{_libdir}/libgstplay.a
 %{_datadir}/aclocal/gst-element-check.m4
 %{_libdir}/pkgconfig/gstreamer-libs.pc
 %{_libdir}/pkgconfig/gstreamer-play.pc
