@@ -1,3 +1,14 @@
+2005-03-31  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/playback/gstplaybasebin.c: (gst_play_base_bin_class_init),
+	(gst_play_base_bin_init), (group_commit), (check_queue),
+	(queue_overrun), (queue_treshold_reached), (queue_out_of_data),
+	(gen_preroll_element), (unknown_type), (gen_source_element),
+	(setup_source), (gst_play_base_bin_change_state):
+	* gst/playback/gstplaybasebin.h:
+	  Move from byte-based buffering to time-based buffering (for network
+	  streams). Buffer treshold/size settable via queue_size/treshold.
+
 2005-03-30  David Schleef  <ds@schleef.org>
 
 	* configure.ac: update for liboil-0.3.  Remove librfb check.
