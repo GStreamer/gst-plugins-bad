@@ -1,6 +1,6 @@
 This is GStreamer Plugins 0.7.5
 
-Changes since 0.7.5: 
+Changes since 0.7.4: 
     
       * Compatible with gstreamer 0.7.5
       * ffmpeg plugin moved to gst-ffmpeg module
@@ -27,7 +27,7 @@ Changes since 0.7.5:
       * qtdemux fixes
       * gamma correction fixes
 
-Bugs fixed since 0.7.5:
+Bugs fixed since 0.7.4:
     
       * 129740 : MP4/M4A files not recognized properly
       * 130507 : Silence/sine don't have a sync property
