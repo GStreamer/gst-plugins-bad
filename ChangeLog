@@ -1,3 +1,11 @@
+2005-03-23  till busch  <buti@gmx.at>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/adder/gstadder.c: (gst_adder_class_init),
+	(gst_adder_release_pad), (gst_adder_get_property):
+	  Implement release_pad function, fixes #170390.
+
 2005-03-23  Edward Hervey  <bilboed@bilboed.com>
 
 	* gst/silence/gstsilence.c: (gst_silence_handle_src_event): 
