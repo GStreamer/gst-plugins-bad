@@ -32,7 +32,7 @@ static GstCaps*
 mp3_type_find(GstBuffer *buf, gpointer private) 
 {
   guint8 *data;
-  gint size;
+  gint size, offset;
   guint32 head;
   GstCaps *caps;
 
@@ -48,13 +48,11 @@ mp3_type_find(GstBuffer *buf, gpointer private)
     data += 128;
 
     GST_DEBUG (0, "mp3typefind: detected ID3 Tag V1");
-  }
-  else {
+  } else {
     if (size >= 10 &&
         (data[0] == 'I' && data[1] == 'D' && data[2] == '3') &&
         data[3] < 0xff && data[4] < 0xff &&
-        data[6] < 0x80 && data[7] < 0x80 && data[8] < 0x80 && data[9] < 0x80)
-    {
+        data[6] < 0x80 && data[7] < 0x80 && data[8] < 0x80 && data[9] < 0x80) {
       guint32 skip = 0;
 
       skip = (skip << 7) | (data[6] & 0x7f);
@@ -75,28 +73,46 @@ mp3_type_find(GstBuffer *buf, gpointer private)
 
       /* we currently accept a valid ID3 tag as an mp3 as some ID3 tags have invalid
        * offsets so the next check might fail */
-      goto done;
+      goto success;
     }
   }
 
-  /* make sure there is enough of a buffer to check without running over */
+  /* if we don't have enough bytes left to check for a header, die */
   if (size < 4)
     return NULL;
 
-  /* now with the right postion, do typefinding */
-  head = GUINT32_FROM_BE(*((gulong *)data));
-  if ((head & 0xffe00000) != 0xffe00000)
-    return NULL;
-  if (!((head >> 17) & 3))
-    return NULL;
-  if (((head >> 12) & 0xf) == 0xf)
-    return NULL;
-  if (!((head >> 12) & 0xf))
-    return NULL;
-  if (((head >> 10) & 0x3) == 0x3)
-    return NULL;
+  /* Now search through the entire rest of the buffer for a valid header.
+   * This is a very rough initial cut, it should be checking the length of
+   * the frame and verifying that there is indeed a second frame.  The mp3
+   * header could very well be a false trigger otherwise.
+   */
+  for (offset=0; offset < (size-4); offset++) {
+    head = GUINT32_FROM_BE(*((gulong *)data));
 
-done:
+/*  old negative checks
+    if ((head & 0xffe00000) != 0xffe00000)
+      return NULL;
+    if (!((head >> 17) & 3))
+      return NULL;
+    if (((head >> 12) & 0xf) == 0xf)
+      return NULL;
+    if (!((head >> 12) & 0xf))
+      return NULL;
+    if (((head >> 10) & 0x3) == 0x3)
+      return NULL;
+*/
+
+    if ( ((head & 0xffe00000) == 0xffe00000) &&
+         (((head >> 17) & 0x3) != 0x0) &&
+         (((head >> 12) & 0xf) != 0xf) &&
+         (((head >> 12) & 0xf) != 0x0) &&
+         (((head >> 10) & 0x3) != 0x3) )
+      goto success;
+  }
+
+  return NULL;
+
+success:
   caps = gst_caps_new ("mp3_type_find", "audio/x-mp3", NULL);
 
   return caps;
