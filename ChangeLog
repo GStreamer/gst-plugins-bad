@@ -1,3 +1,12 @@
+2005-03-02  James Henstridge  <james@jamesh.id.au>
+
+	Reviewed by: Tim-Philipp Müller  <tim at centricular dot net>
+
+	* gst/librfb/rfbdecoder.c: (rfb_socket_get_buffer),
+	(rfb_socket_send_buffer), (rfb_decoder_use_file_descriptor):
+	  Use GINT_TO_POINTER and GPOINTER_TO_INT macros instead of
+	  direct casts; fixes build on AMD64. (fixes #168885)
+
 2005-03-01  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* gst-libs/gst/resample/resample.c: (gst_resample_scale):

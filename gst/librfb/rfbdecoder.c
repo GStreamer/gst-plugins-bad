@@ -21,7 +21,7 @@ static RfbBuffer *
 rfb_socket_get_buffer (int length, gpointer user_data)
 {
   RfbBuffer *buffer;
-  int fd = (int) user_data;
+  int fd = GPOINTER_TO_INT (user_data);
   int ret;
 
   buffer = rfb_buffer_new ();
@@ -45,7 +45,7 @@ rfb_socket_get_buffer (int length, gpointer user_data)
 static int
 rfb_socket_send_buffer (guint8 * buffer, int length, gpointer user_data)
 {
-  int fd = (int) user_data;
+  int fd = GPOINTER_TO_INT (user_data);
   int ret;
 
   g_print ("calling write(%d, %p, %d)\n", fd, buffer, length);
@@ -79,10 +79,10 @@ rfb_decoder_use_file_descriptor (RfbDecoder * decoder, int fd)
   g_return_if_fail (fd >= 0);
 
   decoder->bytestream->get_buffer = rfb_socket_get_buffer;
-  decoder->bytestream->user_data = (void *) fd;
+  decoder->bytestream->user_data = GINT_TO_POINTER (fd);
 
   decoder->send_data = rfb_socket_send_buffer;
-  decoder->buffer_handler_data = (void *) fd;
+  decoder->buffer_handler_data = GINT_TO_POINTER (fd);
 }
 
 void
