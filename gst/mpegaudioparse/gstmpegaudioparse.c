@@ -32,40 +32,27 @@ static GstElementDetails mp3parse_details = {
   "Erik Walthinsen <omega@cse.ogi.edu>"
 };
 
-static GstPadTemplate*
-mp3_src_factory (void)
-{
-  return
-   gst_pad_template_new (
-  	"src",
-  	GST_PAD_SRC,
-  	GST_PAD_ALWAYS,
-  	gst_caps_new (
-  	  "mp3parse_src",
-    	  "audio/mpeg",
-	  gst_props_new (
-	    "mpegversion", GST_PROPS_INT (1),
-    	    "layer",   GST_PROPS_INT_RANGE (1, 3),
-            "rate",    GST_PROPS_INT_RANGE (8000, 48000),
-            "channels", GST_PROPS_INT_RANGE (1, 2),
-	    NULL)),
-	NULL);
-}
+#if 0
+static GstStaticPadTemplate mp3_src_template =
+GST_STATIC_PAD_TEMPLATE (
+    "src",
+    GST_PAD_SRC,
+    GST_PAD_ALWAYS,
+    GST_STATIC_CAPS ("audio/mpeg, "
+      "mpegversion = (int) 1, "
+      "layer = (int) [ 1, 3 ], "
+      "rate = (int) [ 8000, 48000], "
+      "channels = (int) [ 1, 2 ]")
+);
 
-static GstPadTemplate*
-mp3_sink_factory (void) 
-{
-  return
-   gst_pad_template_new (
-  	"sink",
-  	GST_PAD_SINK,
-  	GST_PAD_ALWAYS,
-  	gst_caps_new (
-  	  "mp3parse_sink",
-    	  "audio/mpeg",
-	  NULL),
-	NULL);
-};
+static GstStaticPadTemplate mp3_sink_template =
+GST_STATIC_PAD_TEMPLATE (
+    "sink",
+    GST_PAD_SINK,
+    GST_PAD_ALWAYS,
+    GST_STATIC_CAPS ("audio/mpeg")
+);
+#endif
 
 /* GstMPEGAudioParse signals and args */
 enum {
@@ -235,24 +222,22 @@ mp3_type_frame_length_from_header (guint32 header, guint *put_layer,
 #define GST_MP3_TYPEFIND_MIN_HEADERS 3
 #define GST_MP3_TYPEFIND_MIN_DATA (1440 * (GST_MP3_TYPEFIND_MIN_HEADERS + 1) - 1 + 3)
 
-static GstCaps *
+static GstCaps2 *
 mp3_caps_create (guint layer, guint channels,
 		 guint bitrate, guint samplerate)
 {
-  GstCaps *new;
+  GstCaps2 *new;
 
   g_assert (layer);
   g_assert (samplerate);
   g_assert (bitrate);
   g_assert (channels);
 
-  new = GST_CAPS_NEW ("mp3_type_find",
-		      "audio/mpeg",
-			"mpegversion", GST_PROPS_INT (1),
-			"layer",       GST_PROPS_INT (layer),
-			/*"bitrate",     GST_PROPS_INT (bitrate),*/
-			"rate",        GST_PROPS_INT (samplerate),
-			"channels",    GST_PROPS_INT (channels));
+  new = gst_caps2_new_simple ("audio/mpeg",
+      "mpegversion", G_TYPE_INT, 1,
+      "layer",       G_TYPE_INT, layer,
+      "rate",        G_TYPE_INT, samplerate,
+      "channels",    G_TYPE_INT, channels, NULL);
 
   return new;
 }
@@ -475,7 +460,7 @@ bpf_from_header (GstMPEGAudioParse *parse, unsigned long header)
       rate     != parse->rate     ||
       layer    != parse->layer    ||
       bitrate  != parse->bit_rate) {
-    GstCaps *caps = mp3_caps_create (layer, channels, bitrate, rate);
+    GstCaps2 *caps = mp3_caps_create (layer, channels, bitrate, rate);
 
     if (gst_pad_try_set_caps(parse->srcpad, caps) <= 0) {
       gst_element_error (GST_ELEMENT (parse),
@@ -585,9 +570,6 @@ gst_mp3parse_change_state (GstElement *element)
 static gboolean
 plugin_init (GstPlugin *plugin)
 {
-  sink_temp = mp3_sink_factory ();
-  src_temp = mp3_src_factory ();
-
   return gst_element_register (plugin, "mp3parse",
 			       GST_RANK_NONE, GST_TYPE_MP3PARSE);
 }

@@ -41,7 +41,6 @@
 #define GST_POD_BUFPOOL_NUM  6
 
 
-/* element factory information */
 static GstElementDetails play_on_demand_details = {
   "Play On Demand",
   "Filter/Editor/Audio",
@@ -50,40 +49,27 @@ static GstElementDetails play_on_demand_details = {
 };
 
 
-static GstPadTemplate*
-play_on_demand_sink_factory (void)
-{
-  static GstPadTemplate *template = NULL;
+static GstStaticPadTemplate play_on_demand_sink_template =
+GST_STATIC_PAD_TEMPLATE (
+    "sink",
+    GST_PAD_SINK,
+    GST_PAD_ALWAYS,
+    GST_STATIC_CAPS (
+      GST_AUDIO_INT_PAD_TEMPLATE_CAPS "; "
+      GST_AUDIO_FLOAT_STANDARD_PAD_TEMPLATE_CAPS
+    )
+);
 
-  if (!template) {
-    template = gst_pad_template_new
-      ("sink", GST_PAD_SINK, GST_PAD_ALWAYS,
-       gst_caps_append(gst_caps_new ("sink_int",  "audio/x-raw-int",
-                                     GST_AUDIO_INT_PAD_TEMPLATE_PROPS),
-                       gst_caps_new ("sink_float", "audio/x-raw-float",
-                                     GST_AUDIO_FLOAT_STANDARD_PAD_TEMPLATE_PROPS)),
-       NULL);
-  }
-  return template;
-}
-
-
-static GstPadTemplate*
-play_on_demand_src_factory (void)
-{
-  static GstPadTemplate *template = NULL;
-
-  if (!template)
-    template = gst_pad_template_new
-      ("src", GST_PAD_SRC, GST_PAD_ALWAYS,
-       gst_caps_append (gst_caps_new ("src_float", "audio/x-raw-float",
-                                      GST_AUDIO_FLOAT_STANDARD_PAD_TEMPLATE_PROPS),
-                        gst_caps_new ("src_int", "audio/x-raw-int",
-                                      GST_AUDIO_INT_PAD_TEMPLATE_PROPS)),
-       NULL);
-
-  return template;
-}
+static GstStaticPadTemplate play_on_demand_src_template =
+GST_STATIC_PAD_TEMPLATE (
+    "src",
+    GST_PAD_SRC,
+    GST_PAD_ALWAYS,
+    GST_STATIC_CAPS (
+      GST_AUDIO_INT_PAD_TEMPLATE_CAPS "; "
+      GST_AUDIO_FLOAT_STANDARD_PAD_TEMPLATE_CAPS
+    )
+);
 
 
 /* GObject functionality */
@@ -96,7 +82,7 @@ static void play_on_demand_dispose      (GObject *object);
 
 /* GStreamer functionality */
 static GstBufferPool*   play_on_demand_get_bufferpool (GstPad *pad);
-static GstPadLinkReturn play_on_demand_pad_link       (GstPad *pad, GstCaps *caps);
+static GstPadLinkReturn play_on_demand_pad_link       (GstPad *pad, const GstCaps2 *caps);
 static void             play_on_demand_loop           (GstElement *elem);
 static void             play_on_demand_set_clock      (GstElement *elem, GstClock *clock);
 
@@ -164,8 +150,10 @@ play_on_demand_base_init (GstPlayOnDemandClass *klass)
 {
   GstElementClass *element_class = GST_ELEMENT_CLASS (klass);
 
-  gst_element_class_add_pad_template(element_class, play_on_demand_src_factory());
-  gst_element_class_add_pad_template(element_class, play_on_demand_sink_factory());
+  gst_element_class_add_pad_template(element_class,
+      gst_static_pad_template_get(&play_on_demand_src_template));
+  gst_element_class_add_pad_template(element_class,
+      gst_static_pad_template_get(&play_on_demand_sink_template));
   gst_element_class_set_details(element_class, &play_on_demand_details);
 }
 
@@ -243,8 +231,10 @@ play_on_demand_class_init (GstPlayOnDemandClass *klass)
 static void
 play_on_demand_init (GstPlayOnDemand *filter)
 {
-  filter->srcpad = gst_pad_new_from_template(play_on_demand_src_factory(), "src");
-  filter->sinkpad = gst_pad_new_from_template(play_on_demand_sink_factory(), "sink");
+  filter->srcpad = gst_pad_new_from_template(
+      gst_static_pad_template_get(&play_on_demand_src_template), "src");
+  filter->sinkpad = gst_pad_new_from_template(
+      gst_static_pad_template_get(&play_on_demand_sink_template), "sink");
 
   gst_pad_set_bufferpool_function(filter->sinkpad, play_on_demand_get_bufferpool);
   gst_pad_set_link_function(filter->sinkpad, play_on_demand_pad_link);
@@ -385,32 +375,33 @@ play_on_demand_get_bufferpool (GstPad *pad)
 }
 
 static GstPadLinkReturn
-play_on_demand_pad_link (GstPad *pad, GstCaps *caps)
+play_on_demand_pad_link (GstPad *pad, const GstCaps2 *caps)
 {
   const gchar *mimetype;
   GstPlayOnDemand *filter;
+  GstStructure *structure;
 
   g_return_val_if_fail(caps != NULL, GST_PAD_LINK_DELAYED);
   g_return_val_if_fail(pad  != NULL, GST_PAD_LINK_DELAYED);
 
   filter = GST_PLAYONDEMAND(GST_PAD_PARENT(pad));
 
-  mimetype = gst_caps_get_mime(caps);
-  gst_caps_get_int(caps, "rate", &filter->rate);
-  gst_caps_get_int(caps, "channels", &filter->channels);
+  structure = gst_caps2_get_nth_cap (caps, 0);
+
+  mimetype = gst_structure_get_name (structure);
+  gst_structure_get_int (structure, "rate", &filter->rate);
+  gst_structure_get_int (structure, "channels", &filter->channels);
 
   if (strcmp(mimetype, "audio/x-raw-int") == 0) {
     filter->format = GST_PLAYONDEMAND_FORMAT_INT;
-    gst_caps_get_int (caps, "width", &filter->width);
+    gst_structure_get_int  (structure, "width", &filter->width);
   } else if (strcmp(mimetype, "audio/x-raw-float") == 0) {
     filter->format = GST_PLAYONDEMAND_FORMAT_FLOAT;
   }
 
   play_on_demand_resize_buffer(filter);
 
-  if (GST_CAPS_IS_FIXED (caps))
-    return gst_pad_try_set_caps (filter->srcpad, caps);
-  return GST_PAD_LINK_DELAYED;
+  return gst_pad_try_set_caps (filter->srcpad, caps);
 }
 
 inline static void

@@ -43,7 +43,7 @@ typedef struct _GstMixMatrixClass GstMixMatrixClass;
 struct _GstMixMatrix {
   GstElement element;
 
-  GstCaps *caps;
+  GstCaps2 *caps;
   gint samplerate;
 
   gint grpsize;
@@ -88,27 +88,23 @@ enum {
   ARG_MATRIXPTR,
 };
 
-GST_PAD_TEMPLATE_FACTORY (mixmatrix_sink_factory,
+#if 0
+static GstStaticPadTemplate mixmatrix_sink_factory =
+GST_STATIC_PAD_TEMPLATE (
   "sink%d",
   GST_PAD_SINK,
   GST_PAD_REQUEST,
-  gst_caps_new (
-    "float_src",
-    "audio/x-raw-float",
-    GST_AUDIO_FLOAT_STANDARD_PAD_TEMPLATE_PROPS
-  )
+  GST_STATIC_CAPS ( GST_AUDIO_FLOAT_STANDARD_PAD_TEMPLATE_CAPS )
 );
 
-GST_PAD_TEMPLATE_FACTORY (mixmatrix_src_factory,
+static GstStaticPadTemplate mixmatrix_src_factory =
+GST_STATIC_PAD_TEMPLATE (
   "src%d",
   GST_PAD_SRC,
   GST_PAD_REQUEST,
-  gst_caps_new (
-    "float_sink",
-    "audio/x-raw-float",
-    GST_AUDIO_FLOAT_STANDARD_PAD_TEMPLATE_PROPS
-  )
+  GST_STATIC_CAPS ( GST_AUDIO_FLOAT_STANDARD_PAD_TEMPLATE_CAPS )
 );
+#endif
 
 static void	gst_mixmatrix_class_init (GstMixMatrixClass *klass);
 static void	gst_mixmatrix_base_init (GstMixMatrixClass *klass);
@@ -118,7 +114,7 @@ static void	gst_mixmatrix_set_property (GObject *object, guint prop_id, const GV
 static void	gst_mixmatrix_get_property (GObject *object, guint prop_id, GValue *value, GParamSpec *pspec);
 static GstPad *	gst_mixmatrix_request_new_pad (GstElement *element, GstPadTemplate *temp, const gchar *name);
 
-static GstPadLinkReturn gst_mixmatrix_connect (GstPad *pad, GstCaps *caps);
+static GstPadLinkReturn gst_mixmatrix_connect (GstPad *pad, const GstCaps2 *caps);
 
 static void	gst_mixmatrix_loop (GstElement *element);
 
@@ -324,24 +320,22 @@ gst_mixmatrix_set_all_caps (GstMixMatrix *mix)
 */
 
 static GstPadLinkReturn
-gst_mixmatrix_connect (GstPad *pad, GstCaps *caps)
+gst_mixmatrix_connect (GstPad *pad, const GstCaps2 *caps)
 {
   GstMixMatrix *mix = GST_MIXMATRIX(GST_PAD_PARENT(pad));
   gint i;
 
-  if (!GST_CAPS_IS_FIXED(caps) || GST_PAD_IS_SRC (pad)) {
-    return GST_PAD_LINK_DELAYED;
-  }
-
   for (i=0;i<mix->srcpadalloc;i++) {
     if (mix->srcpads[i]) {
-      if (GST_PAD_CAPS(mix->srcpads[i]) == NULL)
-        if (gst_pad_try_set_caps(mix->srcpads[i], gst_caps_ref (caps)) <= 0) 
+      if (GST_PAD_CAPS(mix->srcpads[i]) == NULL) {
+        if (gst_pad_try_set_caps(mix->srcpads[i], caps) <= 0) {
 	  return GST_PAD_LINK_REFUSED;
+	}
+      }
     }
   }
 
-  mix->caps = caps;
+  mix->caps = gst_caps2_copy(caps);
 
   return GST_PAD_LINK_OK;
 }
@@ -508,9 +502,6 @@ plugin_init (GstPlugin *plugin)
 {
   if (!gst_library_load ("gstbytestream"))
     return FALSE;
-
-  sinktempl = mixmatrix_sink_factory ();
-  srctempl = mixmatrix_src_factory ();
 
   return gst_element_register (plugin, "mixmatrix",
 			       GST_RANK_NONE, GST_TYPE_MIXMATRIX);
