@@ -1,3 +1,11 @@
+2005-02-25  Luca Ognibene  <luogni@tin.it>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/tcp/gstfdset.c: (gst_fdset_free):
+	* gst/tcp/gstmultifdsink.c: (gst_multifdsink_close):
+	  Plug memleaks (#168260).
+
 2005-02-25  Gergely Nagy  <algernon@bonehunter.rulez.org>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
