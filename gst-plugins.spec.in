@@ -1312,6 +1312,7 @@ plug-ins.
 %{_libdir}/gst/libgstrtjpeg.so
 %{_libdir}/gst/libgstvideocrop.so
 %{_libdir}/gst/libgstvideoscale.so
+%{_libdir}/gst/libgstsmpte.so
 
 %post -n gstreamer-video-effects
 %{_bindir}/gst-register --gst-mask=0 > /dev/null 2> /dev/null
@@ -1505,9 +1506,8 @@ This package contains a basic audio and video playback library.
 #
 %changelog
 * Wed Oct 30 2002 Thomas Vander Stichele <thomas at apestaart dot org>
+- added smpte plugin
 - split out dvdnavread package
-
-* Wed Oct 30 2002 Thomas Vander Stichele <thomas at apestaart dot org>
 - fixed snapshot deps and added hermes conditionals
 
 * Tue Oct 29 2002 Thomas Vander Stichele <thomas at apestaart dot org>
