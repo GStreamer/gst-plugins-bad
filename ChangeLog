@@ -1,3 +1,13 @@
+2005-04-02  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst-libs/gst/riff/riff-media.c:
+	(gst_riff_create_video_caps_with_data),
+	(gst_riff_create_audio_caps_with_data):
+	  Some syntax fixes in tags output.
+	* gst/qtdemux/qtdemux.c: (gst_qtdemux_add_stream),
+	(qtdemux_parse_trak), (qtdemux_video_caps), (qtdemux_audio_caps):
+	  Add tags for quicktime, too.
+
 2005-04-02	Julian Cable	<julian.cable@virgin.net>
 
 	Reviewed by: Zeeshan Ali <zeenix@gmail.com>

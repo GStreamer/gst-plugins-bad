@@ -110,7 +110,7 @@ gst_riff_create_video_caps_with_data (guint32 codec_fcc,
           "systemstream", G_TYPE_BOOLEAN, FALSE,
           "mpegversion", G_TYPE_INT, 1, NULL);
       if (codec_name)
-        *codec_name = g_strdup ("MPEG video");
+        *codec_name = g_strdup ("MPEG-1 video");
       break;
     case GST_MAKE_FOURCC ('M', 'P', 'G', '2'):
     case GST_MAKE_FOURCC ('m', 'p', 'g', '2'):
@@ -118,7 +118,7 @@ gst_riff_create_video_caps_with_data (guint32 codec_fcc,
           "systemstream", G_TYPE_BOOLEAN, FALSE,
           "mpegversion", G_TYPE_INT, 2, NULL);
       if (codec_name)
-        *codec_name = g_strdup ("MPEG 2 video");
+        *codec_name = g_strdup ("MPEG-2 video");
       break;
 
     case GST_MAKE_FOURCC ('H', '2', '6', '3'):
@@ -269,21 +269,21 @@ gst_riff_create_video_caps_with_data (guint32 codec_fcc,
       caps = gst_caps_new_simple ("video/x-wmv",
           "wmvversion", G_TYPE_INT, 1, NULL);
       if (codec_name)
-        *codec_name = g_strdup ("Microsoft Windows Media 7 (WMV1)");
+        *codec_name = g_strdup ("Microsoft Windows Media 7");
       break;
 
     case GST_MAKE_FOURCC ('W', 'M', 'V', '2'):
       caps = gst_caps_new_simple ("video/x-wmv",
           "wmvversion", G_TYPE_INT, 2, NULL);
       if (codec_name)
-        *codec_name = g_strdup ("Microsoft Windows Media 8 (WMV2)");
+        *codec_name = g_strdup ("Microsoft Windows Media 8");
       break;
 
     case GST_MAKE_FOURCC ('W', 'M', 'V', '3'):
       caps = gst_caps_new_simple ("video/x-wmv",
           "wmvversion", G_TYPE_INT, 3, NULL);
       if (codec_name)
-        *codec_name = g_strdup ("Microsoft Windows Media 9 (WMV3)");
+        *codec_name = g_strdup ("Microsoft Windows Media 9");
       break;
 
     case GST_MAKE_FOURCC ('c', 'v', 'i', 'd'):
@@ -408,14 +408,14 @@ gst_riff_create_audio_caps_with_data (guint16 codec_id,
       caps = gst_caps_new_simple ("audio/mpeg",
           "mpegversion", G_TYPE_INT, 1, "layer", G_TYPE_INT, 3, NULL);
       if (codec_name)
-        *codec_name = g_strdup ("MPEG 1 layer 3");
+        *codec_name = g_strdup ("MPEG-1 layer 3");
       break;
 
     case GST_RIFF_WAVE_FORMAT_MPEGL12: /* mp1 or mp2 */
       caps = gst_caps_new_simple ("audio/mpeg",
           "mpegversion", G_TYPE_INT, 1, "layer", G_TYPE_INT, 2, NULL);
       if (codec_name)
-        *codec_name = g_strdup ("MPEG 1 layer 2");
+        *codec_name = g_strdup ("MPEG-1 layer 2");
       break;
 
     case GST_RIFF_WAVE_FORMAT_PCM:     /* PCM */
@@ -434,8 +434,9 @@ gst_riff_create_audio_caps_with_data (guint16 codec_id,
             "signed = (boolean) { true, false }, "
             "width = (int) { 8, 16 }, " "depth = (int) { 8, 16 }");
       }
-      if (codec_name)
-        *codec_name = g_strdup ("Uncompressed PCM audio");
+      if (codec_name && strf)
+        *codec_name = g_strdup_printf ("Uncompressed %d-bit PCM audio",
+            strf->size);
       break;
 
     case GST_RIFF_WAVE_FORMAT_ADPCM:
@@ -470,7 +471,7 @@ gst_riff_create_audio_caps_with_data (guint16 codec_id,
       }
       caps = gst_caps_new_simple ("audio/x-mulaw", NULL);
       if (codec_name)
-        *codec_name = g_strdup ("Mulaw");
+        *codec_name = g_strdup ("Mu-law audio");
       break;
 
     case GST_RIFF_WAVE_FORMAT_ALAW:
@@ -489,7 +490,7 @@ gst_riff_create_audio_caps_with_data (guint16 codec_id,
       }
       caps = gst_caps_new_simple ("audio/x-alaw", NULL);
       if (codec_name)
-        *codec_name = g_strdup ("Alaw");
+        *codec_name = g_strdup ("A-law audio");
       break;
 
     case GST_RIFF_WAVE_FORMAT_VORBIS1: /* ogg/vorbis mode 1 */
@@ -507,7 +508,7 @@ gst_riff_create_audio_caps_with_data (guint16 codec_id,
       channels_max = 6;
       caps = gst_caps_new_simple ("audio/x-ac3", NULL);
       if (codec_name)
-        *codec_name = g_strdup ("AC3");
+        *codec_name = g_strdup ("AC-3 audio");
       break;
     case GST_RIFF_WAVE_FORMAT_WMAV1:
     case GST_RIFF_WAVE_FORMAT_WMAV2:
@@ -523,7 +524,7 @@ gst_riff_create_audio_caps_with_data (guint16 codec_id,
           "wmaversion", G_TYPE_INT, version, NULL);
 
       if (codec_name)
-        *codec_name = g_strdup_printf ("WMA Version %d", version);
+        *codec_name = g_strdup_printf ("WMA Version %d", version + 6);
 
       if (strf != NULL) {
         gst_caps_set_simple (caps,

@@ -175,9 +175,9 @@ static void qtdemux_tag_add_gnre (GstQTDemux * qtdemux, const char *tag,
 static void gst_qtdemux_handle_esds (GstQTDemux * qtdemux,
     QtDemuxStream * stream, GNode * esds);
 static GstCaps *qtdemux_video_caps (GstQTDemux * qtdemux, guint32 fourcc,
-    const guint8 * stsd_data);
+    const guint8 * stsd_data, const gchar ** codec_name);
 static GstCaps *qtdemux_audio_caps (GstQTDemux * qtdemux, guint32 fourcc,
-    const guint8 * data, int len);
+    const guint8 * data, int len, const gchar ** codec_name);
 
 static GType
 gst_qtdemux_get_type (void)
@@ -849,7 +849,8 @@ gst_qtdemux_loop_header (GstElement * element)
 }
 
 void
-gst_qtdemux_add_stream (GstQTDemux * qtdemux, QtDemuxStream * stream)
+gst_qtdemux_add_stream (GstQTDemux * qtdemux,
+    QtDemuxStream * stream, GstTagList * list)
 {
   gchar *caps;
 
@@ -906,6 +907,10 @@ gst_qtdemux_add_stream (GstQTDemux * qtdemux, QtDemuxStream * stream)
   GST_DEBUG ("adding pad %s %p to qtdemux %p",
       gst_pad_get_name (stream->pad), stream->pad, qtdemux);
   gst_element_add_pad (GST_ELEMENT (qtdemux), stream->pad);
+  if (list) {
+    gst_element_found_tags_for_pad (GST_ELEMENT (qtdemux),
+        stream->pad, 0, list);
+  }
 }
 
 
@@ -2017,6 +2022,8 @@ qtdemux_parse_trak (GstQTDemux * qtdemux, GNode * trak)
   guint64 timestamp;
   int sample_size;
   int sample_index;
+  GstTagList *list = NULL;
+  const gchar *codec = NULL;
 
   stream = g_new0 (QtDemuxStream, 1);
 
@@ -2086,7 +2093,12 @@ qtdemux_parse_trak (GstQTDemux * qtdemux, GNode * trak)
         QTDEMUX_GUINT16_GET (stsd->data + offset + 48));
 
     stream->fourcc = fourcc = QTDEMUX_FOURCC_GET (stsd->data + offset + 4);
-    stream->caps = qtdemux_video_caps (qtdemux, fourcc, stsd->data);
+    stream->caps = qtdemux_video_caps (qtdemux, fourcc, stsd->data, &codec);
+    if (codec) {
+      list = gst_tag_list_new ();
+      gst_tag_list_add (list, GST_TAG_MERGE_REPLACE,
+          GST_TAG_VIDEO_CODEC, codec);
+    }
 
     esds = NULL;
     mp4v = qtdemux_tree_get_child_by_type (stsd, FOURCC_mp4v);
@@ -2176,7 +2188,12 @@ qtdemux_parse_trak (GstQTDemux * qtdemux, GNode * trak)
       GST_ERROR ("unknown version %08x", version);
     }
 
-    stream->caps = qtdemux_audio_caps (qtdemux, fourcc, NULL, 0);
+    stream->caps = qtdemux_audio_caps (qtdemux, fourcc, NULL, 0, &codec);
+    if (codec) {
+      list = gst_tag_list_new ();
+      gst_tag_list_add (list, GST_TAG_MERGE_REPLACE,
+          GST_TAG_AUDIO_CODEC, codec);
+    }
 
     mp4a = qtdemux_tree_get_child_by_type (stsd, FOURCC_mp4a);
     wave = NULL;
@@ -2391,7 +2408,7 @@ done2:
       break;
   }
 #endif
-  gst_qtdemux_add_stream (qtdemux, stream);
+  gst_qtdemux_add_stream (qtdemux, stream, list);
 }
 
 static void
@@ -2642,21 +2659,29 @@ gst_qtdemux_handle_esds (GstQTDemux * qtdemux, QtDemuxStream * stream,
   }
 }
 
+#define _codec(name) \
+  do { \
+    if (codec_name) { \
+      *codec_name = name; \
+    } \
+  } while (0)
+
 static GstCaps *
 qtdemux_video_caps (GstQTDemux * qtdemux, guint32 fourcc,
-    const guint8 * stsd_data)
+    const guint8 * stsd_data, const gchar ** codec_name)
 {
   switch (fourcc) {
     case GST_MAKE_FOURCC ('j', 'p', 'e', 'g'):
-      /* JPEG */
+      _codec ("JPEG still images");
       return gst_caps_from_string ("image/jpeg");
     case GST_MAKE_FOURCC ('m', 'j', 'p', 'a'):
-      /* Motion-JPEG (format A) */
+      _codec ("Motion-JPEG");
       return gst_caps_from_string ("image/jpeg");
     case GST_MAKE_FOURCC ('m', 'j', 'p', 'b'):
-      /* Motion-JPEG (format B) */
+      _codec ("Motion-JPEG format B");
       return gst_caps_from_string ("image/jpeg-b");
     case GST_MAKE_FOURCC ('S', 'V', 'Q', '3'):
+      _codec ("Sorensen video v.3");
       if (stsd_data != NULL) {
         gst_getbits_t gb;
         gint halfpel_flag;
@@ -2709,9 +2734,10 @@ qtdemux_video_caps (GstQTDemux * qtdemux, guint32 fourcc,
       return gst_caps_from_string ("video/x-svq, " "svqversion = (int) 3");
     case GST_MAKE_FOURCC ('s', 'v', 'q', 'i'):
     case GST_MAKE_FOURCC ('S', 'V', 'Q', '1'):
+      _codec ("Sorensen video v.1");
       return gst_caps_from_string ("video/x-svq, " "svqversion = (int) 1");
     case GST_MAKE_FOURCC ('r', 'a', 'w', ' '):
-      /* uncompressed RGB */
+      _codec ("Raw RGB video");
       return gst_caps_from_string ("video/x-raw-rgb, "
           "endianness = (int) BIG_ENDIAN");
       /*"bpp", GST_PROPS_INT(x),
@@ -2720,35 +2746,37 @@ qtdemux_video_caps (GstQTDemux * qtdemux, guint32 fourcc,
          "green_mask", GST_PROPS_INT(x),
          "blue_mask", GST_PROPS_INT(x), FIXME! */
     case GST_MAKE_FOURCC ('Y', 'u', 'v', '2'):
-      /* uncompressed YUV2 */
+      _codec ("Raw packed YUV 4:2:2");
       return gst_caps_from_string ("video/x-raw-yuv, "
           "format = (fourcc) YUY2");
     case GST_MAKE_FOURCC ('m', 'p', 'e', 'g'):
-      /* MPEG */
+      _codec ("MPEG-1 video");
       return gst_caps_from_string ("video/mpeg, "
           "systemstream = (boolean) false, " "mpegversion = (int) 1");
     case GST_MAKE_FOURCC ('g', 'i', 'f', ' '):
+      _codec ("GIF still images");
       return gst_caps_from_string ("image/gif");
     case GST_MAKE_FOURCC ('h', '2', '6', '3'):
     case GST_MAKE_FOURCC ('s', '2', '6', '3'):
-      /* H.263 */
+      _codec ("H.263");
       /* ffmpeg uses the height/width props, don't know why */
       return gst_caps_from_string ("video/x-h263");
     case GST_MAKE_FOURCC ('m', 'p', '4', 'v'):
-      /* MPEG-4 */
+      _codec ("MPEG-4 video");
       return gst_caps_from_string ("video/mpeg, "
           "mpegversion = (int) 4, " "systemstream = (boolean) false");
     case GST_MAKE_FOURCC ('3', 'I', 'V', '1'):
     case GST_MAKE_FOURCC ('3', 'I', 'V', '2'):
+      _codec ("3ivX video");
       return gst_caps_from_string ("video/x-3ivx");
     case GST_MAKE_FOURCC ('c', 'v', 'i', 'd'):
-      /* Cinepak */
+      _codec ("Cinepak");
       return gst_caps_from_string ("video/x-cinepak");
     case GST_MAKE_FOURCC ('r', 'p', 'z', 'a'):
-      /* Apple Video */
+      _codec ("Apple video");
       return gst_caps_from_string ("video/x-apple-video");
     case GST_MAKE_FOURCC ('a', 'v', 'c', '1'):
-      /* H.264/AVC */
+      _codec ("H.264 / AVC");
       return gst_caps_from_string ("video/x-h264");
     case GST_MAKE_FOURCC ('r', 'l', 'e', ' '):
       /* Run-length encoding */
@@ -2772,7 +2800,7 @@ qtdemux_video_caps (GstQTDemux * qtdemux, guint32 fourcc,
 
 static GstCaps *
 qtdemux_audio_caps (GstQTDemux * qtdemux, guint32 fourcc, const guint8 * data,
-    int len)
+    int len, const gchar ** codec_name)
 {
   switch (fourcc) {
 #if 0
@@ -2780,50 +2808,61 @@ qtdemux_audio_caps (GstQTDemux * qtdemux, guint32 fourcc, const guint8 * data,
       return NULL;              /*gst_caps_from_string ("audio/raw"); */
 #endif
     case GST_MAKE_FOURCC ('r', 'a', 'w', ' '):
+      _codec ("Raw 8-bit PCM audio");
       /* FIXME */
       return gst_caps_from_string ("audio/x-raw-int, "
           "width = (int) 8, " "depth = (int) 8, " "signed = (boolean) true");
     case GST_MAKE_FOURCC ('t', 'w', 'o', 's'):
+      _codec ("Raw 16-bit PCM audio");
       /* FIXME */
       return gst_caps_from_string ("audio/x-raw-int, "
           "width = (int) 16, "
           "depth = (int) 16, "
           "endianness = (int) BIG_ENDIAN, " "signed = (boolean) true");
     case GST_MAKE_FOURCC ('s', 'o', 'w', 't'):
+      _codec ("Raw 16-bit PCM audio");
       /* FIXME */
       return gst_caps_from_string ("audio/x-raw-int, "
           "width = (int) 16, "
           "depth = (int) 16, "
           "endianness = (int) G_LITTLE_ENDIAN, " "signed = (boolean) true");
     case GST_MAKE_FOURCC ('f', 'l', '6', '4'):
+      _codec ("Raw 64-bit floating-point audio");
       return gst_caps_from_string ("audio/x-raw-float, "
           "width = (int) 64, " "endianness = (int) G_BIG_ENDIAN");
     case GST_MAKE_FOURCC ('f', 'l', '3', '2'):
+      _codec ("Raw 32-bit floating-point audio");
       return gst_caps_from_string ("audio/x-raw-float, "
           "width = (int) 32, " "endianness = (int) G_BIG_ENDIAN");
     case GST_MAKE_FOURCC ('i', 'n', '2', '4'):
+      _codec ("Raw 24-bit PCM audio");
       /* FIXME */
       return gst_caps_from_string ("audio/x-raw-int, "
           "width = (int) 24, "
           "depth = (int) 32, "
           "endianness = (int) G_BIG_ENDIAN, " "signed = (boolean) true");
     case GST_MAKE_FOURCC ('i', 'n', '3', '2'):
+      _codec ("Raw 32-bit PCM audio");
       /* FIXME */
       return gst_caps_from_string ("audio/x-raw-int, "
           "width = (int) 32, "
           "depth = (int) 32, "
           "endianness = (int) G_BIG_ENDIAN, " "signed = (boolean) true");
     case GST_MAKE_FOURCC ('u', 'l', 'a', 'w'):
+      _codec ("Mu-law audio");
       /* FIXME */
       return gst_caps_from_string ("audio/x-mulaw");
     case GST_MAKE_FOURCC ('a', 'l', 'a', 'w'):
+      _codec ("A-law audio");
       /* FIXME */
       return gst_caps_from_string ("audio/x-alaw");
     case 0x6d730002:
+      _codec ("Microsoft ADPCM");
       /* Microsoft ADPCM-ACM code 2 */
       return gst_caps_from_string ("audio/x-adpcm, "
           "layout = (string) microsoft");
     case 0x6d730011:
+      _codec ("DVI/Intel IMA ADPCM");
       /* FIXME DVI/Intel IMA ADPCM/ACM code 17 */
       return gst_caps_from_string ("audio/x-adpcm, "
           "layout = (string) quicktime");
@@ -2831,26 +2870,28 @@ qtdemux_audio_caps (GstQTDemux * qtdemux, guint32 fourcc, const guint8 * data,
       /* MPEG layer 3, CBR only (pre QT4.1) */
     case 0x5500736d:
     case GST_MAKE_FOURCC ('.', 'm', 'p', '3'):
+      _codec ("MPEG-1 layer 3");
       /* MPEG layer 3, CBR & VBR (QT4.1 and later) */
       return gst_caps_from_string ("audio/mpeg, "
           "layer = (int) 3, " "mpegversion = (int) 1");
     case GST_MAKE_FOURCC ('M', 'A', 'C', '3'):
-      /* MACE 3:1 */
+      _codec ("MACE-3");
       return gst_caps_from_string ("audio/x-mace, " "maceversion = (int) 3");
     case GST_MAKE_FOURCC ('M', 'A', 'C', '6'):
-      /* MACE 6:1 */
+      _codec ("MACE-6");
       return gst_caps_from_string ("audio/x-mace, " "maceversion = (int) 6");
     case GST_MAKE_FOURCC ('O', 'g', 'g', 'V'):
-      /* Ogg Vorbis */
+      /* ogg/vorbis */
       return gst_caps_from_string ("application/ogg");
     case GST_MAKE_FOURCC ('d', 'v', 'c', 'a'):
-      /* DV audio */
+      _codec ("DV audio");
       return gst_caps_from_string ("audio/x-dv");
     case GST_MAKE_FOURCC ('m', 'p', '4', 'a'):
-      /* MPEG-4 AAC */
+      _codec ("MPEG-4 AAC audio");
       return gst_caps_new_simple ("audio/mpeg",
           "mpegversion", G_TYPE_INT, 4, "framed", G_TYPE_BOOLEAN, TRUE, NULL);
     case GST_MAKE_FOURCC ('Q', 'D', 'M', '2'):
+      _codec ("QDesign Music v.2");
       /* FIXME: QDesign music version 2 (no constant) */
       if (data) {
         return gst_caps_new_simple ("audio/x-qdm2",
@@ -2861,15 +2902,18 @@ qtdemux_audio_caps (GstQTDemux * qtdemux, guint32 fourcc, const guint8 * data,
         return gst_caps_new_simple ("audio/x-qdm2", NULL);
       }
     case GST_MAKE_FOURCC ('a', 'g', 's', 'm'):
-      /* GSM */
+      _codec ("GSM audio");
       return gst_caps_new_simple ("audio/x-gsm", NULL);
     case GST_MAKE_FOURCC ('s', 'a', 'm', 'r'):
-      /* AMR-NB */
+      _codec ("AMR audio");
       return gst_caps_new_simple ("audio/x-amr-nb", NULL);
     case GST_MAKE_FOURCC ('i', 'm', 'a', '4'):
-      /* IMA 4:1 */
+      _codec ("Quicktime IMA ADPCM");
       return gst_caps_new_simple ("audio/x-adpcm",
           "layout", G_TYPE_STRING, "quicktime", NULL);
+    case GST_MAKE_FOURCC ('a', 'l', 'a', 'c'):
+      _codec ("Apple lossless audio");
+      return gst_caps_new_simple ("audio/x-alac", NULL);
     case GST_MAKE_FOURCC ('q', 't', 'v', 'r'):
       /* ? */
     case GST_MAKE_FOURCC ('Q', 'D', 'M', 'C'):
