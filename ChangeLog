@@ -1,3 +1,25 @@
+2003-02-03  Colin Walters  <walters@verbum.org>
+
+	* ext/gnomevfs/gstgnomevfssrc.c
+	(gst_gnomevfssrc_received_headers_callback): Remove previous silly
+	code which tried to use Content-Type header.
+	(gst_gnomevfssrc_open_file): Get GnomeVFSFileInfo structure from
+	handle instead of URI.  Set caps based on the mime type we
+	received there.
+
+2003-02-02  Colin Walters  <walters@gnu.org>
+
+	* ext/gnomevfs/gstgnomevfssrc.c (struct _GstGnomeVFSSrc):
+	s/iradio_callbacks_pushed/http_callbacks_pushed/g.  Users updated.
+	(struct _GstGnomeVFSSrc): New member in_first_get.
+	(gst_gnomevfssrc_get): Use it.  We only want to read an 8k chunk
+	the first time.
+	(gst_gnomevfssrc_received_headers_callback): Try to detect
+	Content-Type header.  This doesn't work yet because gnome-vfs eats
+	that header.  We will fix that.
+	(gst_gnomevfssrc_get_icy_metadata): Use g_ascii_strncasecmp
+	instead of g_strncasecmp.
+
 2003-02-02  Thomas Vander Stichele <thomas at apestaart dot org>
 
         * configure.ac:
