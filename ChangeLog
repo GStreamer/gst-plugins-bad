@@ -1,5 +1,10 @@
 2005-04-02  Tim-Philipp Müller  <tim at centricular dot net>
 
+	* ext/wavpack/words.c:
+	  Fix macro that got messed up by previous sed action.
+
+2005-04-02  Tim-Philipp Müller  <tim at centricular dot net>
+
 	* ext/wavpack/bits.c: 
 	* ext/wavpack/extra1.c:
 	* ext/wavpack/extra2.c: 
