@@ -902,7 +902,6 @@ start_seek (GtkWidget * widget, GdkEventButton * event, gpointer user_data)
   if (changed_id == 0) {
     changed_id = gtk_signal_connect (GTK_OBJECT (hscale),
         "value_changed", G_CALLBACK (do_seek), pipeline);
-    g_print ("connect %lu\n", changed_id);
   }
 
   return FALSE;
@@ -911,7 +910,6 @@ start_seek (GtkWidget * widget, GdkEventButton * event, gpointer user_data)
 static gboolean
 stop_seek (GtkWidget * widget, gpointer user_data)
 {
-  g_print ("disconnect %lu\n", changed_id);
   g_signal_handler_disconnect (GTK_OBJECT (hscale), changed_id);
   changed_id = 0;
 
