@@ -9,5 +9,6 @@ libgstplayinclude_HEADERS = play.h
 
 libgstplay_la_CFLAGS = $(GST_CFLAGS) $(GST_PLUGINS_CFLAGS)
 libgstplay_la_LIBADD = $(GST_LIBS) $(GST_PLUGINS_LIBS)
+libgstplay_la_LDFLAGS = @GST_PLUGINS_LT_LDFLAGS@ -version-info @GST_PLUGINS_LIBVERSION@
 
 noinst_HEADERS = playpipelines.c
