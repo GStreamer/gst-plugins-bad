@@ -1,3 +1,11 @@
+2005-03-10  Gergely Nagy  <algernon@bonehunter.rulez.org>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/libpng/gstpngdec.c: (gst_pngdec_chain):
+	* ext/libpng/gstpngenc.c: (gst_pngenc_chain):
+	  Fix stride issues (#169333).
+
 2005-03-10  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* gst/asfdemux/gstasfdemux.c: (gst_asf_demux_handle_data),
