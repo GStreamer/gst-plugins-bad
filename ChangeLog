@@ -1,3 +1,11 @@
+2005-02-25  Gergely Nagy  <algernon@bonehunter.rulez.org>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/ffmpegcolorspace/imgconvert_template.h:
+	  Fix wrong macro availability leading to corrupt AYUV->RGB
+	  conversions (#166207).
+
 2005-02-25  Luca Ognibene  <luogni@tin.it>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
