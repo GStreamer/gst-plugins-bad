@@ -540,8 +540,17 @@ GST_CHECK_FEATURE(FFMPEG, [ffmpeg plug-ins], ffmpeg, [
     AS_SLURP_FFMPEG(gst-libs/ext/ffmpeg, 2002-12-14 12:00 GMT,
                     HAVE_FFMPEG=yes, HAVE_FFMPEG=no)
   else
-    AC_MSG_NOTICE(FFmpeg CVS code should be included already)
-    HAVE_FFMPEG=yes
+    # if not in CVS mode, check if we have the files and force checkout
+    # if we don't
+    FFMPEG_FILE=$srcdir/gst-libs/ext/ffmpeg/ffmpeg/configure
+    if test -f $FFMPEG_FILE; then
+      AC_MSG_NOTICE(FFmpeg CVS code should be included already)
+      HAVE_FFMPEG=yes
+    else
+      AC_MSG_NOTICE(slurping missing FFmpeg CVS source)
+      AS_SLURP_FFMPEG(gst-libs/ext/ffmpeg, 2002-12-14 12:00 GMT,
+                      HAVE_FFMPEG=yes, HAVE_FFMPEG=no)
+    fi
   fi
   # we only bother with uninstalled (included) ffmpeg for now
   AC_DEFINE_UNQUOTED(HAVE_FFMPEG_UNINSTALLED, 1,
