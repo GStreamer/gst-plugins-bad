@@ -586,7 +586,7 @@ GStreamer support libraries header files.
 @USE_FAAC_TRUE@%files -n gstreamer-plugins-faac
 @USE_FAAC_TRUE@%defattr(-, root, root)
 @USE_FAAC_TRUE@%{_libdir}/gstreamer-%{majorminor}/libgstfaac.so
-@USE_FAAC_TRUE@%post -n  gstreamer-faac
+@USE_FAAC_TRUE@%post -n  gstreamer-plugins-faac
 @USE_FAAC_TRUE@%{register}
 @USE_FAAC_TRUE@
 @USE_FAAC_TRUE@%postun -n  gstreamer-plugins-faac
