@@ -1,3 +1,8 @@
+2005-03-30  Tim-Philipp Müller  <tim at centricular dot net>
+
+	* ext/musepack/gstmusepackdec.c: (gst_musepack_stream_init):
+	  Don't leak caps.
+
 2005-03-30  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* gst/playback/gstplaybasebin.c: (setup_subtitle):

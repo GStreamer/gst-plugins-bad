@@ -400,6 +400,7 @@ gst_musepack_stream_init (GstMusepackDec * musepackdec)
       "rate", G_TYPE_INT, i.sample_freq, NULL);
   if (!gst_pad_set_explicit_caps (musepackdec->srcpad, caps)) {
     GST_ELEMENT_ERROR (musepackdec, CORE, NEGOTIATION, (NULL), (NULL));
+    gst_caps_free (caps);
     return FALSE;
   }
 
@@ -409,6 +410,7 @@ gst_musepack_stream_init (GstMusepackDec * musepackdec)
   musepackdec->len = mpc_streaminfo_get_length_samples (&i);
   musepackdec->init = TRUE;
 
+  gst_caps_free (caps);
   return TRUE;
 }
 
