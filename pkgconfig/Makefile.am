@@ -16,8 +16,7 @@ pcfiles_uninstalled = \
 
 all-local: $(pcfiles) $(pcfiles_uninstalled) \
 	$(GCONF_PC) \
-	$(GCONF_PC_UNINSTALLED) \
-	gst-element-check-@GST_MAJORMINOR@.m4
+	$(GCONF_PC_UNINSTALLED)
 
 ### how to generate pc files
 $(pcfiles): %-@GST_MAJORMINOR@.pc: %.pc
