@@ -500,7 +500,8 @@ gst_jack_loop (GstElement * element)
       gst_buffer_unref (buffer);
     } else {
       buffer = gst_buffer_new ();
-      gst_buffer_set_data (buffer, pad->data, len);
+      buffer->data = pad->data;
+      buffer->size = len;
       GST_BUFFER_FLAG_SET (buffer, GST_BUFFER_DONTFREE);
 
       gst_pad_push (pad->pad, GST_DATA (buffer));

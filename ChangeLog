@@ -1,3 +1,8 @@
+2005-03-20  Benjamin Otte  <in7y118@public.uni-hamburg.de>
+
+	* ext/jack/gstjack.c: (gst_jack_loop):
+	  don't use deprecated gst_buffer_set_data
+
 2005-03-20  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* gst/playback/gstplaybasebin.c: (gst_play_base_bin_change_state):
