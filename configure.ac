@@ -407,9 +407,8 @@ dnl AC_CHECK_HEADER(cdda_paranoia.h, :, HAVE_CDPARANOIA=no)
 
 dnl *** dv ***
 translit(dnm, m, l) AM_CONDITIONAL(USE_DV, true)
-GST_CHECK_FEATURE(DV, [libdv DV/video decoder], dvdec, [
-  PKG_CHECK_MODULES(DV, libdv, HAVE_DV="yes", HAVE_DV="no")
-  AC_SUBST(DV_CFLAGS)
+GST_CHECK_FEATURE(DV, [dv library], dv, [
+  AM_PATH_LIBDV(HAVE_DV=yes, HAVE_DV=no)
   AC_SUBST(DV_LIBS)
 ])
 
