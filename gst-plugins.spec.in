@@ -1212,10 +1212,10 @@ processed with the lavtools from mjpegtools.
 @USE_GCONF_TRUE@export GCONF_CONFIG_SOURCE=`gconftool-2 --get-default-source`
 @USE_GCONF_TRUE@gconftool-2 --makefile-install-rule %{_sysconfdir}/gconf/schemas/gstreamer.schemas > /dev/null
 @USE_GCONF_TRUE@
-@USE_GCONF_TRUE@%post -n gstreamer-yuv4mjpeg
+@USE_GCONF_TRUE@%post -n gstreamer-GConf
 @USE_GCONF_TRUE@%{_bindir}/gst-register --gst-mask=0 > /dev/null 2> /dev/null
 @USE_GCONF_TRUE@
-@USE_GCONF_TRUE@%postun -n gstreamer-yuv4mjpeg
+@USE_GCONF_TRUE@%postun -n gstreamer-GConf
 @USE_GCONF_TRUE@%{_bindir}/gst-register --gst-mask=0 > /dev/null 2> /dev/null
 
 %changelog
