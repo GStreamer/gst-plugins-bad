@@ -1,5 +1,5 @@
 
-GStreamer: Release notes for GStreamer Plugins 0.8.7 "Hyperspace"
+GStreamer: Release notes for GStreamer Plugins 0.8.8 "Fluded"
         
 
 The GStreamer team is happy to announce a new release
@@ -28,82 +28,113 @@ Features of this release
     
       * Parallel installability with 0.6.x series
       * Internationalization
-      * Translations: af az cs en_GB hu nb nl or sq sr sv uk
-      * multichannel audio support
-      * new element: apetag
-      * new element: ttadec, ttaparse
-      * new element: directfbvideosink
-      * vcd fixes
-      * playbin fixes
-      * dvdread fixes
-      * a52dec fixes
-      * sunaudiosrc fixes
-      * osssrc fixes
-      * avidemux fixes
-      * licensing updates
+      * Translations: af az ca cs en_GB fr hu it nb nl or sq sr sv uk vi
+      * subtitle support
+      * new element: puzzle
+      * new plugin: amrnb
+      * new element: dvdlpcmdec
+      * new plugin: autodetect
 
 Bugs fixed in this release
     
-      * 147919 : [playbin] broken wav seeking
-      * 148559 : [monoscope] grinds to a halt
-      * 149102 : gstreamer license problems
-      * 149613 : [PATCH}Add proxy server support to the musicbrainz plugin
-      * 151624 : Multichannel support
-      * 152339 : [PATCH]  [build] gst-plugins cross compiling
-      * 154773 : [playbin] crashes trying to play short wave files (1 or 2...
-      * 154775 : [qtdemux] Quicktime movie causing some weird debug spew
-      * 154814 : Selection of totem crashing videos
-      * 154815 : [PATCH] ffmpegcolorspace leaks caps
-      * 155348 : Various MP3 files cannot be detected or played
-      * 155879 : [libriff] Bug in lib-riff
-      * 156798 :  " An error occured "  " Could not write to resource " this sa...
-      * 157233 : [PATCH] playbin leak fixes
-      * 158258 : Patch for polypsink to make it work with both threaded an...
-      * 158382 : [PATCH] [build] debian speex detection patch
-      * 158650 : [PATCH] [videocrop] video crop is completely buggered
-      * 158704 : Fix/finish (S)VCD support
-      * 159215 : [PATCH] Memory leaks in audioscale
-      * 159296 : Playing benow.mp3 file cause totem to hang on EOS with de...
-      * 159297 : dark.441-16-s.flac hangs on eos in totem with debug spew
-      * 159301 : gstreamer.avi file plays, but have broken seeking in totem
-      * 159338 : alaw/mulaw decoders caps warning
-      * 159433 : [osssink] doesn't check for supported channels
-      * 159512 : Progress bar with m4a (aac) broken
-      * 159651 : [decodebin] totem crash
-      * 159759 : DVD LCPM asserts
-      * 159847 : [build] hardcoded path for musepack headers in configure
-      * 159864 : avidemux sends GST_EVENT_DISCONTINUOUS
-      * 159986 : [PATCH] Videorate doesn't handle seek and doesn't reset w...
-      * 160276 : [PATCH] mpegdemux and dvddemux don't reset themselves in ...
-      * 160439 : Can't compile gst-plugins without GCONF
-      * 160514 : [avidemux] seek after EOF for truncated avi files (to non...
-      * 160532 : [avidemux] avi[cvid+PCM] : no image, sound is noise
-      * 160808 : 'ERROR: pipeline doesn't want to play' when using xvimage...
-      * 160869 : [playbin] ogg file (theora/vorbis) causes segfault near end
-      * 161039 : [PATCH] [deinterlace] rowstrides need fixing
-      * 161538 : [playbin] AVI files with mp3 audio are out-of-sync in pla...
-      * 161624 : [alsasink] crash at end of playing this file
-      * 161980 : Volume control applet does not set value correctly.
-      * 162819 : [audioscale] cleanup
-      * 162913 : [mms] missing NULL terminator to g_object_set() in uri ha...
-      * 162924 : [playbin] totem assertion failures when playing cd / pote...
-
-API changed in this release
-     
-
-- API additions:
-    
-* A new cdparanoia property, device, has been added.
-* A new dvdnavsrc property, device, has been added.
-* A new dvdreadsrc property, device, has been added.
-* A new vcdsrc property, device, has been added.
-
-- API depreciations:
-    
-* A cdparanoia property, location, has been marked for deprecation.
-* A dvdnavsrc property, location, has been marked for deprecation.
-* A dvdreadsrc property, location, has been marked for deprecation.
-* A vcdsrc property, location, has been marked for deprecation.
+      * 100931 : [PATCH] subtitles
+      * 132341 : [avidemux] 'DIB ' = > image upside-down
+      * 135778 : [int2float] broken with audioconvert
+      * 138666 : [playbin] cannot handle files with large initial delay in...
+      * 139749 : [gstplay] libgstplay is *WAY* too slow
+      * 140141 : [qtdemux] cannot playback gsm audio
+      * 140845 : [strings] gst-plugins testsuite's embed.c still uses xvid...
+      * 142272 : [PATCH] [qtdemux] doesn't work with sources that cannot seek
+      * 143555 : [qtdemux] Movie fails to playback
+      * 149162 : Importing m4a files in Rhythmbox leaks memory
+      * 149274 : [PATCH] gst-plug mad gets id3v2 text tags in wrong encoding
+      * 150284 : [matroskamux] fail to mux an MP3
+      * 150576 : [v4l2src] pad v4l2src0:src returned caps that are not a r...
+      * 151661 : [PATCH] [mad] Possible bug in mad plugin
+      * 152688 : [PATCH[mad/typefind] doesn't support completely broken mp...
+      * 153434 : [PATCH] faac filter cannot create .aac files
+      * 154000 : Relocation error on Linux PowerPC causing crash
+      * 154064 : [mad] cant mix two mp3
+      * 155163 : [qtdemux] don't know audio FOURCC samr (from mobiles/3GPP...
+      * 155346 : [build] faad plugin doesn't compile against 2.0-rc3
+      * 155575 : [alsasink] broken with hw:X or when used with either alsa...
+      * 156001 : [mpeg] problem playing an mpeg file
+      * 156379 : [ffmpegcolorspace] lack of YV12 capability
+      * 159092 : thx.vob file seeker moves 'faster' than the actual movie
+      * 159295 : [mikmod/modplug] amiga.mod file segfault totem
+      * 159327 : [mpeg/dvd] playing thx.vob seeking is broken
+      * 159970 : [typefinding] mpeg/audio typefind abort with musepack file
+      * 160126 : multi.ogg is slow
+      * 160505 : [adder] problem using adder plugin
+      * 160730 : [PATCH] [mpegdemux] should remove pads on " new-media " event
+      * 160957 : [adder] EOSs when the first stream EOSs
+      * 161179 : [audioscale] quits with gmem assertion
+      * 161191 : MP3 crashes rhythmbox
+      * 161262 : [mpegdemux] cannot play a pes mpeg file
+      * 161325 : [dvdnavsrc] gst-dvd example pipeline not linking (a52dec ...
+      * 161667 : [PATCH][snapshot] seg fault in signal handler
+      * 161675 : [ffmpegcolorspace] conversion of RGB depth=15 is wrong
+      * 161726 : [ffmpegcolorspace] does not handle x-raw-rgb 24/32 BE _RGB
+      * 161929 : [PATCH] [mpegdemux] sends no discont events on new pads
+      * 162330 : [rtpgsmenc] gsmenc ! rtpgsmenc gives assertion `GST_PAD_D...
+      * 162504 : [xvimagesink] goes black when going from playing - > ready...
+      * 162626 : [videoscale] cannot handle lists of fractions
+      * 162656 : [qtdemux] extracting more metadata from AAC/M4A
+      * 162974 : [flacenc] Flac encoding is broken
+      * 163159 : [videobox] plugin segfault (gst-plugin 0.8.7)
+      * 163161 : [pngenc] only supports video/x-raw-rgb,bits=24,depth=24
+      * 163177 : [pngdec] Can't cope with png's without an alpha channel
+      * 163309 : [PATCH] typefinding for formats used by libsndfile
+      * 163323 : [pngenc] compression-level customisation support
+      * 163348 : [pngenc] Leaks and other nasty stuff
+      * 163449 : Stereo-to-Surround doesn't like seek
+      * 163485 : [PATCH] tta plugin doesn't build with gcc 2.95.4.
+      * 163634 : [playbin] doesn't like # in filenames
+      * 163676 : [PATCH] [mpeg2dec] need to crop
+      * 163867 : [mad] Totem could not play 384kbit lame 'free format' mp3...
+      * 163891 : Gst-launch-ext will not play an MPEG video
+      * 164069 : [clocking] Hang when playing audio file (.wav) with visua...
+      * 164197 : [pngdec] & [pngenc] The decoded image is in RGB(LE) byte ...
+      * 164209 : [ffmpegcolorspace] PIX_FMT_BGRA32 - > caps conversion is w...
+      * 164265 : [PATCH][ffmpegcolorspace] Converting from an RGB image wi...
+      * 164708 : [PATCH] EffectTV/Quark freed data in wrong place
+      * 164826 : [patch] Avidemux doesn't handle seek on audiopads
+      * 165013 : AVI with HuffYUV segfault
+      * 165193 : Patch for ov51x v4ljpegsrc
+      * 165290 : cannot play asf file with just wma version 2 audio
+      * 165335 : [PATCH] GstAudioScale outgoing buffers don't have duratio...
+      * 165340 : gst-launch-ext-0.8 fails to display video of an .avi file.
+      * 165446 : musepack gst-plugin doesn't work with new libmusepack
+      * 165509 : Mod playback still broken with mikmod
+      * 165525 : Problem with mplex plugin
+      * 165545 : Totem won't play low bitrate mp3
+      * 165736 : [alphacolor] BGRA handling is missing
+      * 166207 : [PATCH] [ffmpegcolorspace] AYUV- > RGB is broken
+      * 166208 : [cdparanoia] returns wrong number of tracks
+      * 166600 : law encoder/decoder are leaking caps
+      * 166892 : gnome-volume-control crashed
+      * 166917 : deadlock in queue
+      * 166931 : MP3 webradio do not work in Totem
+      * 167117 : [dvdnavsrc] could use a better error message when DVD not...
+      * 167482 : [PATCH] [avidemux] Compile fix for gcc 2.95
+      * 167483 : [PATCH] [tcpclientsrc] FreeBSD compile fix
+      * 167509 : [PATCH] [tcpserversrc] Assumes a blocking socket
+      * 167633 : [wavparse] div by 0 = > crash
+      * 167639 : Support MusicBrainz metadata tags
+      * 167704 : [PATCH] [tcpserversink] Don't depend on uninitialised values
+      * 167878 : [buffer-frames-convert] buffer_frames_convert_link leaks ...
+      * 167959 : Dirac plugins doesn't build.
+      * 168002 : [build] Musepack header files not found
+      * 168133 : [PATCH] [jpegenc] Memory leaks
+      * 168134 : [PATCH] [gdkpixbufscale] Memory leak
+      * 168254 : [PATCH] [jpegdec] Memory leaks
+      * 168260 : [PATCH] [tcpserversink] free some memory
+      * 168269 : [PATCH] [smoothwave] C99-ism
+      * 168271 : [PATCH] [gdkpixbufscale] Memory/CPU leak
+      * 168801 : autoaudio/videosink probe only in READY
+      * 168885 : AMD64 build failure in gst/librfb/rfbdecoder.c
+      * 168994 : cdparanoia plugin problem with CDs whose first track does...
+      * 169146 : gst-plugins 0.8.9 building on gcc 2.95.3
 
 Download
 
@@ -138,26 +169,30 @@ as provided by gstreamer-gconf-0.8.pc, to access the default settings.
   
 Contributors to this release
     
-      * Archana Shah
+      * Amaury Jacquot
+      * Andy Wingo
       * Arwed v. Merkatz
-      * Balamurali Viswanathan
       * Benjamin Otte
-      * Christian Schaller
-      * Christophe Fergeau
+      * Clytie Siddall
+      * David Moore
       * David Schleef
       * Edward Hervey
-      * Iain Holmes
-      * James Bowes
+      * Francis Labonte
+      * Gergely Nagy
+      * James Henstridge
+      * Jan Schmidt
+      * Jeffrey Ollie
       * Julien Moutte
+      * Koop Mast
+      * Luca Ognibene
       * Maciej Katafiasz
-      * Martin Soto
+      * Martin Eikermann
+      * Martin Holters
+      * Paul Jack
       * Ronald Bultje
       * Sebastien Cote
-      * Stefan Kost
       * Stephane Loeuillet
+      * Steve Baker
       * Thomas Vander Stichele
       * Tim-Philipp Müller
-      * Toni Willberg
-      * Wim Taymans
-      * Zaheer Abbas Merali
  

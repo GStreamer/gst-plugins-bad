@@ -1,3 +1,26 @@
+=== release 0.8.8 ===
+
+2005-03-07  Thomas Vander Stichele  <thomas at apestaart dot org>
+
+	* NEWS:
+	* RELEASE:
+	* configure.ac:
+	* po/af.po:
+	* po/az.po:
+	* po/cs.po:
+	* po/en_GB.po:
+	* po/hu.po:
+	* po/it.po:
+	* po/nb.po:
+	* po/nl.po:
+	* po/or.po:
+	* po/sq.po:
+	* po/sr.po:
+	* po/sv.po:
+	* po/uk.po:
+	* po/vi.po:
+	  Releasing 0.8.8, "Fluded"
+
 2005-03-05  Thomas Vander Stichele  <thomas at apestaart dot org>
 
 	* ext/raw1394/gstdv1394src.c:
@@ -239,7 +262,7 @@
 
 2005-02-21  Jan Schmidt <thaytan@mad.scientist.com>
 	* gst/dvdlpcmdec/gstdvdlpcmdec.c: (gst_dvdlpcmdec_chain):
-          Make sure we only write to writable buffers
+	Make sure we only write to writable buffers
 
 2005-02-20  Tim-Philipp Müller  <tim at centricular dot net>
 
@@ -376,7 +399,7 @@
 	(gst_ximagesink_chain), (gst_ximagesink_set_xwindow_id),
 	(gst_ximagesink_expose), (gst_ximagesink_set_property),
 	(gst_ximagesink_finalize), (gst_ximagesink_init): Protect interface
-        methods from chain and negotiation and vice versa (Fixes #166142).
+	methods from chain and negotiation and vice versa (Fixes #166142).
 	* sys/ximage/ximagesink.h: Add stream_lock.
 	* sys/xvimage/xvimagesink.c: (gst_xvimagesink_sink_link),
 	(gst_xvimagesink_chain), (gst_xvimagesink_buffer_free),
@@ -455,7 +478,7 @@
 	(gst_dtsdec_handle_event), (gst_dtsdec_handle_frame),
 	(gst_dtsdec_chain), (gst_dtsdec_change_state):
 	* ext/dts/gstdtsdec.h:
-          Don't clobber the stack constructing the channels array.
+	  Don't clobber the stack constructing the channels array.
 	  Make the element chain-based. DTS tracks can now be played.
 	  
 2005-02-09  Tim-Philipp Müller  <tim at centricular dot net>
@@ -752,7 +775,7 @@
 	(gst_mpeg_parse_handle_src_event), (gst_mpeg_parse_change_state):
 	* gst/mpegstream/gstmpegparse.h:
 	* gst/mpegstream/gstrfc2250enc.h:
-          Various changes to the way time is computed that make seeking and
+	  Various changes to the way time is computed that make seeking and
 	  total time estimation much better here.
 	  Use G_BEGIN/END_DECLS instead of __cplusplus
 
@@ -1336,9 +1359,9 @@
 	* ext/libfame/gstlibfame.c:
 	* gst/subparse/gstsubparse.c: (parse_mdvdsub):
 	* gst/y4m/gsty4mencode.c: (gst_y4mencode_sinkconnect):
-          replace framerate aproximations by their real value
-          (24000/1001, 30000/1001, 60000/1001)
-          Finish fixing bug #164049
+	  replace framerate aproximations by their real value
+	  (24000/1001, 30000/1001, 60000/1001)
+	  Finish fixing bug #164049
 
 2005-01-13  Thomas Vander Stichele  <thomas at apestaart dot org>
 
