@@ -1,9 +1,8 @@
 if HAVE_GTK
-SEEKING=seeking
+GTK_SUBDIRS=dynparams seeking
 else
-SEEKING=
+GTK_SUBDIRS=
 endif
 
-SUBDIRS=dynparams $(SEEKING)
-
+SUBDIRS=$(GTK_SUBDIRS)
 DIST_SUBDIRS=capsfilter dynparams seeking
