@@ -1,5 +1,18 @@
 2005-02-01  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* ext/gnomevfs/Makefile.am:
+	* ext/gnomevfs/gstgnomevfs.c: (plugin_init):
+	* ext/gnomevfs/gstgnomevfssrc.c: (gst_gnomevfssrc_base_init),
+	(gst_gnomevfssrc_class_init), (gst_gnomevfssrc_init),
+	(gst_gnomevfssrc_get_property), (gst_gnomevfssrc_get),
+	(gst_gnomevfssrc_open_file), (gst_gnomevfssrc_close_file),
+	(gst_gnomevfssrc_getrange), (gst_gnomevfssrc_loop),
+	(gst_gnomevfssrc_activate), (gst_gnomevfssrc_change_state),
+	(gst_gnomevfssrc_srcpad_query), (gst_gnomevfssrc_srcpad_event):
+	  Disable gnomevfssink for now, make gnomevfssrc work.
+
+2005-02-01  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* gst/playback/NOTE:
 	  Add note on autoplugging in 0.9 (basically duplicate of Dave´s
 	  0.9-suggested-changes, but in a separate document so people
