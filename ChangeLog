@@ -1,3 +1,14 @@
+2005-03-21  Tim-Philipp Müller  <tim at centricular dot net>
+
+	* ext/lame/gstlame.c: (add_one_tag):
+	* gst-libs/gst/riff/riff-read.c: (gst_riff_read_info):
+	* gst/asfdemux/gstasfdemux.c:
+	(gst_asf_demux_process_ext_content_desc):
+	* gst/matroska/matroska-demux.c:
+	(gst_matroska_demux_parse_metadata):
+	  GST_TAG_DATE takes a date in julian calendar days, not a year
+	  (partially fixes #170306)
+
 2005-03-20  Benjamin Otte  <in7y118@public.uni-hamburg.de>
 
 	* ext/jack/gstjack.c: (gst_jack_loop):
