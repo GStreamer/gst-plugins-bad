@@ -1,5 +1,10 @@
 2005-04-02  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* ext/ogg/gstogmparse.c: (gst_ogm_parse_chain):
+	  Export codec-name for OGM tracks as well.
+
+2005-04-02  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* gst/speed/gstspeed.c: (speed_chain):
 	  Fix buffer overflow (#172281).
 
