@@ -213,7 +213,7 @@ GST_CHECK_FEATURE(GCONF, [GConf libraries], , [
 
 dnl check for gstreamer
 dnl uninstalled is selected preferentially -- see pkg-config(1)
-GST_REQ=0.8.8.1
+GST_REQ=0.8.9.1
 PKG_CHECK_MODULES(GST, gstreamer-$GST_MAJORMINOR >= $GST_REQ,
   HAVE_GST="yes", HAVE_GST="no")
 
