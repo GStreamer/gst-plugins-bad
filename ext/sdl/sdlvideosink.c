@@ -145,7 +145,7 @@ gst_sdlvideosink_base_init (gpointer g_class)
 	   "format", GST_TYPE_FOURCC, format[i],
 	   "width",  GST_TYPE_INT_RANGE, 1, G_MAXINT,
 	   "height", GST_TYPE_INT_RANGE, 1, G_MAXINT,
-	   "framerate", GST_TYPE_DOUBLE_RANGE, 0, G_MAXDOUBLE,
+	   "framerate", GST_TYPE_DOUBLE_RANGE, 0.0, G_MAXDOUBLE,
 	   NULL));
   }
 
