@@ -1,3 +1,12 @@
+2005-04-01  Wouter Paesen  <wouter@kangaroot.net>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/speed/gstspeed.c: (speed_src_event), (speed_get_event_masks),
+	(speed_getcaps), (speed_init), (speed_chain):
+	  Caps negotiation, event upstream/downstream forwarding fixes
+	  taking speed into account for number changes (#172242).
+
 2005-03-31  Nickolay V. Shmyrev  <nshmyrev@yandex.ru>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>

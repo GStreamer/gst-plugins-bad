@@ -89,6 +89,9 @@ static void speed_chain (GstPad * pad, GstData * data);
 
 static GstElementStateReturn speed_change_state (GstElement * element);
 
+static const GstEventMask *speed_get_event_masks (GstPad * pad);
+static gboolean speed_src_event (GstPad * pad, GstEvent * event);
+
 static GstElementClass *parent_class;   /* NULL */
 
 static GstPadLinkReturn
@@ -182,6 +185,49 @@ speed_get_query_types (GstPad * pad)
 }
 
 static gboolean
+speed_src_event (GstPad * pad, GstEvent * event)
+{
+  GstSpeed *filter;
+  GstEvent *newevent;
+
+  filter = GST_SPEED (gst_pad_get_parent (pad));
+
+  switch (GST_EVENT_TYPE (event)) {
+    case GST_EVENT_SEEK_SEGMENT:
+      newevent = gst_event_new_segment_seek (GST_EVENT_SEEK_TYPE (event),
+          (gint64) (GST_EVENT_SEEK_OFFSET (event) * filter->speed),
+          (gint64) (GST_EVENT_SEEK_ENDOFFSET (event) * filter->speed));
+
+      gst_event_unref (event);
+      event = newevent;
+      break;
+    case GST_EVENT_SEEK:
+      newevent = gst_event_new_seek (GST_EVENT_SEEK_TYPE (event),
+          (gint64) (GST_EVENT_SEEK_OFFSET (event) * filter->speed));
+
+      gst_event_unref (event);
+      event = newevent;
+      break;
+    default:
+      break;
+  }
+
+  return gst_pad_send_event (GST_PAD_PEER (filter->sinkpad), event);
+}
+
+static const GstEventMask *
+speed_get_event_masks (GstPad * pad)
+{
+  static const GstEventMask speed_src_event_masks[] = {
+    {GST_EVENT_SEEK, GST_SEEK_METHOD_SET | GST_SEEK_FLAG_FLUSH},
+    {GST_EVENT_SEEK_SEGMENT, GST_SEEK_METHOD_SET | GST_SEEK_FLAG_FLUSH},
+    {0,}
+  };
+
+  return speed_src_event_masks;
+}
+
+static gboolean
 speed_src_query (GstPad * pad, GstQueryType type,
     GstFormat * format, gint64 * val)
 {
@@ -272,6 +318,17 @@ speed_class_init (GstSpeedClass * klass)
           0.1, 40.0, 1.0, G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
 }
 
+static GstCaps *
+speed_getcaps (GstPad * pad)
+{
+  GstSpeed *filter = GST_SPEED (gst_pad_get_parent (pad));
+  GstPad *otherpad;
+
+  otherpad = (pad == filter->sinkpad) ? filter->srcpad : filter->sinkpad;
+
+  return gst_pad_get_allowed_caps (otherpad);
+}
+
 static void
 speed_init (GstSpeed * filter)
 {
@@ -280,21 +337,25 @@ speed_init (GstSpeed * filter)
       (&gst_speed_sink_template), "sink");
   gst_pad_set_link_function (filter->sinkpad, speed_link);
   gst_pad_set_chain_function (filter->sinkpad, speed_chain);
-  gst_pad_set_getcaps_function (filter->sinkpad, gst_pad_proxy_getcaps);
+  gst_pad_set_getcaps_function (filter->sinkpad, speed_getcaps);
   gst_element_add_pad (GST_ELEMENT (filter), filter->sinkpad);
 
   filter->srcpad =
       gst_pad_new_from_template (gst_static_pad_template_get
       (&gst_speed_src_template), "src");
   gst_pad_set_link_function (filter->srcpad, speed_link);
-  gst_pad_set_getcaps_function (filter->srcpad, gst_pad_proxy_getcaps);
+  gst_pad_set_getcaps_function (filter->srcpad, speed_getcaps);
   gst_pad_set_query_type_function (filter->srcpad, speed_get_query_types);
   gst_pad_set_query_function (filter->srcpad, speed_src_query);
   gst_element_add_pad (GST_ELEMENT (filter), filter->srcpad);
+  gst_pad_set_event_mask_function (filter->srcpad, speed_get_event_masks);
+  gst_pad_set_event_function (filter->srcpad, speed_src_event);
 
   filter->offset = 0;
   filter->timestamp = 0;
   filter->sample_size = 0;
+
+  GST_FLAG_SET (filter, GST_ELEMENT_EVENT_AWARE);
 }
 
 static inline guint
@@ -378,27 +439,51 @@ speed_chain (GstPad * pad, GstData * data)
   g_return_if_fail (GST_IS_SPEED (filter));
 
   if (GST_IS_EVENT (data)) {
-    switch (GST_EVENT_TYPE (GST_EVENT (data))) {
+    GstEvent *event = GST_EVENT (data);
+
+    switch (GST_EVENT_TYPE (event)) {
       case GST_EVENT_DISCONTINUOUS:
       {
         gint64 timestamp, offset;
 
-        if (gst_event_discont_get_value (GST_EVENT (data), GST_FORMAT_TIME,
-                &timestamp)) {
-          filter->timestamp = timestamp;
-          filter->offset = timestamp * filter->rate / GST_SECOND;
-        }
-        if (gst_event_discont_get_value (GST_EVENT (data), GST_FORMAT_BYTES,
+        if (gst_event_discont_get_value (event, GST_FORMAT_TIME, &timestamp)) {
+          GstEvent *newevent;
+
+          g_assert (filter->speed > 0);
+
+          filter->timestamp = timestamp / filter->speed;
+          filter->offset = filter->timestamp * filter->rate / GST_SECOND;
+
+          newevent =
+              gst_event_new_discontinuous (GST_EVENT_DISCONT_NEW_MEDIA (event),
+              GST_FORMAT_TIME, filter->timestamp, GST_FORMAT_UNDEFINED);
+
+          gst_event_unref (event);
+          event = newevent;
+
+        } else if (gst_event_discont_get_value (event, GST_FORMAT_BYTES,
                 &offset)) {
-          filter->offset = offset;
-          filter->timestamp = offset * GST_SECOND / filter->rate;
+          GstEvent *newevent;
+
+          g_assert (filter->speed > 0);
+          g_assert (filter->rate > 0);
+
+          filter->offset = offset / filter->speed;
+          filter->timestamp = filter->offset * GST_SECOND / filter->rate;
+
+          newevent =
+              gst_event_new_discontinuous (GST_EVENT_DISCONT_NEW_MEDIA (event),
+              GST_FORMAT_BYTES, filter->offset, GST_FORMAT_UNDEFINED);
+
+          gst_event_unref (event);
+          event = newevent;
         }
         break;
       }
       default:
         break;
     }
-    gst_pad_event_default (pad, GST_EVENT (data));
+    gst_pad_event_default (pad, event);
     return;
   }
 
