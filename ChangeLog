@@ -1,3 +1,24 @@
+2005-02-27  Maciej Katafiasz  <mathrick@freedesktop.org>
+
+	reviewed by: <delete if not using a buddy>
+
+	* ext/shout2/gstshout2.c: (gst_shout2send_get_type):
+	* gst/qtdemux/qtdemux.c: (qtdemux_parse), (qtdemux_parse_trak):
+	* po/af.po:
+	* po/az.po:
+	* po/cs.po:
+	* po/en_GB.po:
+	* po/hu.po:
+	* po/it.po:
+	* po/nb.po:
+	* po/nl.po:
+	* po/or.po:
+	* po/sq.po:
+	* po/sr.po:
+	* po/sv.po:
+	* po/uk.po:
+	* po/vi.po:
+
 2005-02-18  Ross Burton  <ross@burtonini.com>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
