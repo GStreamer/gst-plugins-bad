@@ -1,5 +1,11 @@
 2005-03-14  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* ext/faac/gstfaac.c: (gst_faac_init), (gst_faac_sinkconnect),
+	(gst_faac_srcconnect), (gst_faac_chain):
+	  Long live capsnego... Move over to explicit caps for now...
+
+2005-03-14  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* ext/faac/gstfaac.c: (gst_faac_init), (gst_faac_srcconnect),
 	(gst_faac_chain), (gst_faac_change_state):
 	* ext/faac/gstfaac.h:

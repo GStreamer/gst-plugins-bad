@@ -81,8 +81,7 @@ static void gst_faac_get_property (GObject * object,
 
 static GstPadLinkReturn
 gst_faac_sinkconnect (GstPad * pad, const GstCaps * caps);
-static GstPadLinkReturn
-gst_faac_srcconnect (GstPad * pad, const GstCaps * caps);
+static GstPadLinkReturn gst_faac_srcconnect (GstPad * pad);
 static void gst_faac_chain (GstPad * pad, GstData * data);
 static GstElementStateReturn gst_faac_change_state (GstElement * element);
 
@@ -248,15 +247,15 @@ gst_faac_init (GstFaac * faac)
   faac->sinkpad =
       gst_pad_new_from_template (gst_static_pad_template_get (&sink_template),
       "sink");
-  gst_element_add_pad (GST_ELEMENT (faac), faac->sinkpad);
   gst_pad_set_chain_function (faac->sinkpad, gst_faac_chain);
   gst_pad_set_link_function (faac->sinkpad, gst_faac_sinkconnect);
+  gst_element_add_pad (GST_ELEMENT (faac), faac->sinkpad);
 
   faac->srcpad =
       gst_pad_new_from_template (gst_static_pad_template_get (&src_template),
       "src");
+  gst_pad_use_explicit_caps (faac->srcpad);
   gst_element_add_pad (GST_ELEMENT (faac), faac->srcpad);
-  gst_pad_set_link_function (faac->srcpad, gst_faac_srcconnect);
 
   /* default properties */
   faac->bitrate = 1024 * 128;
@@ -326,37 +325,29 @@ gst_faac_sinkconnect (GstPad * pad, const GstCaps * caps)
 
   /* if the other side was already set-up, redo that */
   if (GST_PAD_CAPS (faac->srcpad))
-    return gst_faac_srcconnect (faac->srcpad,
-        gst_pad_get_allowed_caps (faac->srcpad));
+    return gst_faac_srcconnect (faac->srcpad);
 
   /* else, that'll be done later */
   return GST_PAD_LINK_OK;
 }
 
 static GstPadLinkReturn
-gst_faac_srcconnect (GstPad * pad, const GstCaps * caps)
+gst_faac_srcconnect (GstPad * pad)
 {
   GstFaac *faac = GST_FAAC (gst_pad_get_parent (pad));
+  GstCaps *caps;
   gint n;
 
   if (!faac->handle || (faac->samplerate == -1 || faac->channels == -1)) {
     return GST_PAD_LINK_DELAYED;
   }
 
-  /* we do samplerate/channels ourselves */
-  for (n = 0; n < gst_caps_get_size (caps); n++) {
-    GstStructure *structure = gst_caps_get_structure (caps, n);
-
-    gst_structure_remove_field (structure, "rate");
-    gst_structure_remove_field (structure, "channels");
-  }
-
   /* go through list */
-  caps = gst_caps_normalize (caps);
+  caps = gst_pad_get_allowed_caps (pad);
   for (n = 0; n < gst_caps_get_size (caps); n++) {
     GstStructure *structure = gst_caps_get_structure (caps, n);
     faacEncConfiguration *conf;
-    gint mpegversion = 0;
+    gint mpegversion = 4;
     GstCaps *newcaps;
     GstPadLinkReturn ret;
     guint8 *c_data;
@@ -384,25 +375,25 @@ gst_faac_srcconnect (GstPad * pad, const GstCaps * caps)
         "mpegversion", G_TYPE_INT, mpegversion,
         "channels", G_TYPE_INT, faac->channels,
         "rate", G_TYPE_INT, faac->samplerate, NULL);
-    if (faacEncGetDecoderSpecificInfo (faac->handle, &c_data, &c_size) == 0) {
+    if ((ret =
+            faacEncGetDecoderSpecificInfo (faac->handle, &c_data,
+                &c_size)) == 0) {
       GstBuffer *data = gst_buffer_new_and_alloc (c_size);
 
       memcpy (GST_BUFFER_DATA (data), c_data, c_size);
       gst_caps_set_simple (newcaps, "codec_data", GST_TYPE_BUFFER, data, NULL);
       gst_buffer_unref (data);
     }
-    ret = gst_pad_try_set_caps (faac->srcpad, newcaps);
-
-    switch (ret) {
-      case GST_PAD_LINK_OK:
-      case GST_PAD_LINK_DONE:
-        return GST_PAD_LINK_DONE;
-      case GST_PAD_LINK_DELAYED:
-        return GST_PAD_LINK_DELAYED;
-      default:
-        break;
+    if (gst_pad_set_explicit_caps (faac->srcpad, newcaps)) {
+      gst_caps_free (caps);
+      gst_caps_free (newcaps);
+      return GST_PAD_LINK_OK;
     }
+
+    gst_caps_free (newcaps);
   }
+
+  gst_caps_free (caps);
 
   return GST_PAD_LINK_REFUSED;
 }
@@ -461,8 +452,7 @@ gst_faac_chain (GstPad * pad, GstData * data)
   }
 
   if (!GST_PAD_CAPS (faac->srcpad)) {
-    if (gst_faac_srcconnect (faac->srcpad,
-            gst_pad_get_allowed_caps (faac->srcpad)) <= 0) {
+    if (gst_faac_srcconnect (faac->srcpad) <= 0) {
       GST_ELEMENT_ERROR (faac, CORE, NEGOTIATION, (NULL),
           ("failed to negotiate MPEG/AAC format with next element"));
       gst_buffer_unref (inbuf);
