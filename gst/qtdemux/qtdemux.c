@@ -120,6 +120,7 @@ static GstElementDetails gst_qtdemux_details = {
 
 enum
 {
+  SIGNAL_REDIRECT,
   LAST_SIGNAL
 };
 
@@ -147,6 +148,7 @@ GST_STATIC_PAD_TEMPLATE ("video_%02d",
     GST_PAD_SOMETIMES,
     GST_STATIC_CAPS_ANY);
 
+static guint qt_signals[LAST_SIGNAL] = { 0 };
 static GstElementClass *parent_class = NULL;
 
 static void gst_qtdemux_class_init (GstQTDemuxClass * klass);
@@ -223,6 +225,12 @@ gst_qtdemux_class_init (GstQTDemuxClass * klass)
   gstelement_class = (GstElementClass *) klass;
 
   parent_class = g_type_class_ref (GST_TYPE_ELEMENT);
+
+  qt_signals[SIGNAL_REDIRECT] = g_signal_new ("got-redirect",
+      G_TYPE_FROM_CLASS (gobject_class), G_SIGNAL_RUN_LAST,
+      G_STRUCT_OFFSET (GstQTDemuxClass, got_redirect),
+      NULL, NULL, g_cclosure_marshal_VOID__STRING,
+      G_TYPE_NONE, 1, G_TYPE_STRING);
 
   gstelement_class->change_state = gst_qtdemux_change_state;
 }
@@ -490,6 +498,9 @@ gst_qtdemux_handle_sink_event (GstQTDemux * qtdemux)
   GST_DEBUG ("qtdemux: event %p %d", event, type);
 
   switch (type) {
+    case GST_EVENT_INTERRUPT:
+      gst_event_unref (event);
+      return FALSE;
     case GST_EVENT_EOS:
       gst_bytestream_flush (qtdemux->bs, remaining);
       gst_pad_event_default (qtdemux->sinkpad, event);
@@ -572,7 +583,7 @@ gst_qtdemux_loop_header (GstElement * element)
   //cur_offset = gst_bytestream_tell(qtdemux->bs);
 
   cur_offset = qtdemux->offset;
-  GST_DEBUG ("loop at position %d", cur_offset);
+  GST_DEBUG ("loop at position %d, state %d", cur_offset, qtdemux->state);
 
   switch (qtdemux->state) {
     case QTDEMUX_STATE_HEADER:
@@ -624,7 +635,7 @@ gst_qtdemux_loop_header (GstElement * element)
 
           do {
             /* read in the complete data from the moov atom */
-            ret = gst_bytestream_read (qtdemux->bs, &moov, length);
+            ret = gst_bytestream_peek (qtdemux->bs, &moov, length);
             if (ret < length) {
               GST_DEBUG ("read failed (%d < %d)", ret, length);
               if (!gst_qtdemux_handle_sink_event (qtdemux)) {
@@ -634,6 +645,7 @@ gst_qtdemux_loop_header (GstElement * element)
               break;
             }
           } while (1);
+          gst_bytestream_flush_fast (qtdemux->bs, length);
           qtdemux->offset += length;
 
           qtdemux_parse_moov (qtdemux, GST_BUFFER_DATA (moov), length);
@@ -654,6 +666,7 @@ gst_qtdemux_loop_header (GstElement * element)
           break;
         }
       }
+#if 0
       ret = gst_bytestream_seek (qtdemux->bs, cur_offset + length,
           GST_SEEK_METHOD_SET);
       GST_DEBUG ("seek returned %d", ret);
@@ -667,6 +680,7 @@ gst_qtdemux_loop_header (GstElement * element)
           }
         }
       }
+#endif
       qtdemux->offset = cur_offset + length;
       break;
     }
@@ -677,8 +691,10 @@ gst_qtdemux_loop_header (GstElement * element)
       do {
         ret = gst_bytestream_peek_bytes (qtdemux->bs, &data, 1);
         if (ret < 1) {
-          if (!gst_qtdemux_handle_sink_event (qtdemux)) {
+          if (gst_qtdemux_handle_sink_event (qtdemux)) {
             return;
+          } else {
+            break;
           }
         } else {
           break;
@@ -750,8 +766,11 @@ gst_qtdemux_loop_header (GstElement * element)
               return;
             }
           }
-        } else if (ret == FALSE && offset < cur_offset)
-          GST_ERROR ("cannot flush backwards");
+        } else if (ret == FALSE && offset < cur_offset) {
+          GST_ERROR ("cannot flush backwards, %d < %d", offset, cur_offset);
+          stream->sample_index++;
+          return;
+        }
         qtdemux->offset = offset;
         return;
       }
@@ -759,7 +778,7 @@ gst_qtdemux_loop_header (GstElement * element)
       GST_DEBUG ("reading %d bytes", size);
       buf = NULL;
       do {
-        ret = gst_bytestream_read (qtdemux->bs, &buf, size);
+        ret = gst_bytestream_peek (qtdemux->bs, &buf, size);
         if (ret < size) {
           GST_DEBUG ("read failed (%d < %d)", ret, size);
           if (!gst_qtdemux_handle_sink_event (qtdemux)) {
@@ -769,6 +788,7 @@ gst_qtdemux_loop_header (GstElement * element)
           break;
         }
       } while (TRUE);
+      gst_bytestream_flush_fast (qtdemux->bs, size);
       qtdemux->offset += size;
 
       if (buf) {
@@ -957,7 +977,9 @@ gst_qtdemux_add_stream (GstQTDemux * qtdemux, QtDemuxStream * stream)
 #define FOURCC_free	GST_MAKE_FOURCC('f','r','e','e')
 #define FOURCC_data	GST_MAKE_FOURCC('d','a','t','a')
 #define FOURCC_SVQ3	GST_MAKE_FOURCC('S','V','Q','3')
-
+#define FOURCC_rmra	GST_MAKE_FOURCC('r','m','r','a')
+#define FOURCC_rmda	GST_MAKE_FOURCC('r','m','d','a')
+#define FOURCC_rdrf	GST_MAKE_FOURCC('r','d','r','f')
 
 static void qtdemux_dump_mvhd (GstQTDemux * qtdemux, void *buffer, int depth);
 static void qtdemux_dump_tkhd (GstQTDemux * qtdemux, void *buffer, int depth);
@@ -1058,6 +1080,9 @@ QtNodeType qt_node_types[] = {
   {FOURCC_data, "data", 0, qtdemux_dump_unknown},
   {FOURCC_free, "free", 0,},
   {FOURCC_SVQ3, "SVQ3", 0,},
+  {FOURCC_rmra, "rmra", QT_CONTAINER,},
+  {FOURCC_rmda, "rmda", QT_CONTAINER,},
+  {FOURCC_rdrf, "rdrf", 0,},
   {0, "unknown", 0},
 };
 static int n_qt_node_types = sizeof (qt_node_types) / sizeof (qt_node_types[0]);
@@ -1904,6 +1929,22 @@ qtdemux_parse_tree (GstQTDemux * qtdemux)
 
   mvhd = qtdemux_tree_get_child_by_type (qtdemux->moov_node, FOURCC_mvhd);
   if (mvhd == NULL) {
+    GNode *rmra, *rmda, *rdrf;
+
+    rmra = qtdemux_tree_get_child_by_type (qtdemux->moov_node, FOURCC_rmra);
+    if (rmra) {
+      rmda = qtdemux_tree_get_child_by_type (rmra, FOURCC_rmda);
+      if (rmra) {
+        rdrf = qtdemux_tree_get_child_by_type (rmda, FOURCC_rdrf);
+        if (rdrf) {
+          GST_LOG ("New location: %s", (char *) rdrf->data + 20);
+          g_signal_emit (qtdemux, qt_signals[SIGNAL_REDIRECT], 0,
+              (char *) rdrf->data + 20);
+          return;
+        }
+      }
+    }
+
     GST_LOG ("No mvhd node found.");
     return;
   }
