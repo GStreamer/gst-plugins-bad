@@ -1033,7 +1033,10 @@ dnl **** Free AAC Decoder (FAAD) ****
 translit(dnm, m, l) AM_CONDITIONAL(USE_FAAD, true)
 GST_CHECK_FEATURE(FAAD, [AAC decoder plug-in], faad, [
   HAVE_FAAD="yes"
-  GST_CHECK_LIBHEADER(FAAD, faad, faacDecOpen, -lm, faad.h, FAAD_LIBS="-lfaad -lm", HAVE_FAAD="no")
+  FAAD_LIBS="-lfaad -lm"
+  GST_CHECK_LIBHEADER(FAAD, faad, faacDecOpen, -lm, faad.h, , [
+    GST_CHECK_LIBHEADER(FAAD, faad, NeAACDecOpen, -lm, faad.h, , HAVE_FAAD="no")
+  ])
   if test $HAVE_FAAD = "yes"; then
     AC_MSG_CHECKING([Checking for FAAD >= 2])
     AC_TRY_RUN([

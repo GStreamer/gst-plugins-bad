@@ -1240,9 +1240,10 @@ qtdemux_parse (GstQTDemux * qtdemux, GNode * node, void *buffer, int length)
       guint32 version;
 
       version = QTDEMUX_GUINT32_GET (buffer + 16);
-      if (version == 0x00010000) {
-        buf = buffer + 0x34;
+      if (version == 0x00010000 || 1) {
+        buf = buffer + 0x24;
         end = buffer + length;
+
         while (buf < end) {
           GNode *child;
 
@@ -2139,9 +2140,13 @@ qtdemux_parse_trak (GstQTDemux * qtdemux, GNode * trak)
     wave = NULL;
     if (mp4a)
       wave = qtdemux_tree_get_child_by_type (mp4a, FOURCC_wave);
+
     esds = NULL;
     if (wave)
       esds = qtdemux_tree_get_child_by_type (wave, FOURCC_esds);
+    else if (mp4a)
+      esds = qtdemux_tree_get_child_by_type (mp4a, FOURCC_esds);
+
     if (esds) {
       gst_qtdemux_handle_esds (qtdemux, stream, esds);
 #if 0

@@ -1,3 +1,25 @@
+2005-03-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* configure.ac:
+	  Fix FAAD detection problems against FAAD-CVS.
+	* ext/faad/gstfaad.c: (gst_faad_class_init),
+	(gst_faad_chanpos_to_gst), (gst_faad_srcconnect), (gst_faad_sync),
+	(gst_faad_chain):
+	  Fix FAAD channel positions for mono/stereo against FAAD CVS.
+	  Implement raw stream sync support for AAC+ radio support. Embed
+	  info structure in our function to prevent unneeded excessive
+	  allocations.
+	* ext/ogg/gstoggdemux.c: (gst_ogg_pad_populate),
+	(gst_ogg_demux_push):
+	  Only set first/last positions when we search for them. Fixes
+	  invalid length reporting for some video files.
+	* gst/playback/gstdecodebin.c: (remove_element_chain):
+	  Always remove only our own kids.
+	* gst/qtdemux/qtdemux.c: (qtdemux_parse), (qtdemux_parse_trak):
+	  Fix ESDS atom finding bug.
+	* gst/typefind/gsttypefindfunctions.c: (aac_type_find):
+	  Implement frame-finding (similar to MP3) to support AAC+ radio.
+
 2005-03-09  Jan Schmidt  <thaytan@mad.scientist.com>
 
 	* gst/videoscale/gstvideoscale.c:

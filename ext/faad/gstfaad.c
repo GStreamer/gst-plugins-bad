@@ -27,6 +27,9 @@
 
 #include "gstfaad.h"
 
+GST_DEBUG_CATEGORY_STATIC (faad_debug);
+#define GST_CAT_DEFAULT faad_debug
+
 static GstStaticPadTemplate sink_template = GST_STATIC_PAD_TEMPLATE ("sink",
     GST_PAD_SINK,
     GST_PAD_ALWAYS,
@@ -142,6 +145,8 @@ gst_faad_class_init (GstFaadClass * klass)
   parent_class = g_type_class_ref (GST_TYPE_ELEMENT);
 
   gstelement_class->change_state = gst_faad_change_state;
+
+  GST_DEBUG_CATEGORY_INIT (faad_debug, "faad", 0, "faad MPEG-AAC decoding");
 }
 
 static void
@@ -263,6 +268,16 @@ gst_faad_chanpos_to_gst (guchar * fpos, guint num)
       case LFE_CHANNEL:
         pos[n] = GST_AUDIO_CHANNEL_POSITION_LFE;
         break;
+      case UNKNOWN_CHANNEL:
+        if (num == 1) {
+          pos[0] = GST_AUDIO_CHANNEL_POSITION_FRONT_MONO;
+          return pos;
+        } else if (num == 2) {
+          pos[0] = GST_AUDIO_CHANNEL_POSITION_FRONT_LEFT;
+          pos[1] = GST_AUDIO_CHANNEL_POSITION_FRONT_RIGHT;
+          return pos;
+        }
+        /* fall-through */
       default:
         GST_WARNING ("Unsupported FAAD channel position 0x%x encountered",
             fpos[n]);
@@ -464,7 +479,7 @@ gst_faad_srcconnect (GstPad * pad, const GstCaps * caps)
   }
 
   /* Another internal checkup. */
-  if (faad->need_channel_setup) {
+  if (faad->need_channel_setup && 0) {
     GstAudioChannelPosition *pos;
     guchar *fpos;
     guint i;
@@ -542,6 +557,68 @@ gst_faad_srcconnect (GstPad * pad, const GstCaps * caps)
   return GST_PAD_LINK_REFUSED;
 }
 
+/*
+ * Find syncpoint in ADTS/ADIF stream. Doesn't work for raw,
+ * packetized streams. Be careful when calling.
+ * Returns FALSE on no-sync, fills offset/length if one/two
+ * syncpoints are found, only returns TRUE when it finds two
+ * subsequent syncpoints (similar to mp3 typefinding in
+ * gst/typefind/) for ADTS because 12 bits isn't very reliable.
+ */
+
+static gboolean
+gst_faad_sync (GstBuffer * buf, guint * off)
+{
+  guint8 *data = GST_BUFFER_DATA (buf);
+  guint size = GST_BUFFER_SIZE (buf), n;
+  gint snc;
+
+  GST_DEBUG ("Finding syncpoint");
+
+  /* FIXME: for no-sync, we go over the same data for every new buffer.
+   * We should save the information somewhere. */
+  for (n = 0; n < size - 3; n++) {
+    snc = GST_READ_UINT16_BE (&data[n]);
+    if ((snc & 0xfff6) == 0xfff0) {
+      /* we have an ADTS syncpoint. Parse length and find
+       * next syncpoint. */
+      guint len;
+
+      GST_DEBUG ("Found one ADTS syncpoint at offset 0x%x, tracing next...", n);
+
+      if (size - n < 5) {
+        GST_DEBUG ("Not enough data to parse ADTS header");
+        return FALSE;
+      }
+
+      *off = n;
+      len = ((data[n + 3] & 0x03) << 11) |
+          (data[n + 4] << 3) | ((data[n + 5] & 0xe0) >> 5);
+      if (n + len + 2 >= size) {
+        GST_DEBUG ("Next frame is not within reach");
+        return FALSE;
+      }
+
+      snc = GST_READ_UINT16_BE (&data[n + len]);
+      if ((snc & 0xfff6) == 0xfff0) {
+        GST_DEBUG ("Found ADTS syncpoint at offset 0x%x (framelen %u)", n, len);
+        return TRUE;
+      }
+
+      GST_DEBUG ("No next frame found... (should be at 0x%x)", n + len);
+    } else if (!memcmp (&data[n], "ADIF", 4)) {
+      /* we have an ADIF syncpoint. 4 bytes is enough. */
+      *off = n;
+      GST_DEBUG ("Found ADIF syncpoint at offset 0x%x", n);
+      return TRUE;
+    }
+  }
+
+  GST_DEBUG ("Found no syncpoint");
+
+  return FALSE;
+}
+
 static void
 gst_faad_chain (GstPad * pad, GstData * data)
 {
@@ -550,10 +627,11 @@ gst_faad_chain (GstPad * pad, GstData * data)
   guchar *input_data;
   GstFaad *faad = GST_FAAD (gst_pad_get_parent (pad));
   GstBuffer *buf, *outbuf;
-  faacDecFrameInfo *info;
+  faacDecFrameInfo info;
   guint64 next_ts;
   void *out;
   gboolean run_loop = TRUE;
+  guint sync_off;
 
   if (GST_IS_EVENT (data)) {
     GstEvent *event = GST_EVENT (data);
@@ -573,14 +651,22 @@ gst_faad_chain (GstPad * pad, GstData * data)
     }
   }
 
-  info = g_new0 (faacDecFrameInfo, 1);
-
   /* buffer + remaining data */
   buf = GST_BUFFER (data);
   next_ts = GST_BUFFER_TIMESTAMP (buf);
   if (faad->tempbuf) {
     buf = gst_buffer_join (faad->tempbuf, buf);
     faad->tempbuf = NULL;
+  }
+  input_data = GST_BUFFER_DATA (buf);
+  input_size = GST_BUFFER_SIZE (buf);
+  if (!faad->packetised) {
+    if (!gst_faad_sync (buf, &sync_off))
+      goto next;
+    else {
+      input_data += sync_off;
+      input_size -= sync_off;
+    }
   }
 
   /* init if not already done during capsnego */
@@ -589,29 +675,28 @@ gst_faad_chain (GstPad * pad, GstData * data)
     guchar channels;
     glong init_res;
 
-    init_res = faacDecInit (faad->handle,
-        GST_BUFFER_DATA (buf), GST_BUFFER_SIZE (buf), &samplerate, &channels);
+    init_res = faacDecInit (faad->handle, input_data, input_size,
+        &samplerate, &channels);
     if (init_res < 0) {
       GST_ELEMENT_ERROR (faad, STREAM, DECODE, (NULL),
           ("Failed to init decoder from stream"));
       return;
     }
-    skip_bytes = init_res;
+    skip_bytes = 0;             //init_res;
     faad->init = TRUE;
 
     /* store for renegotiation later on */
     /* FIXME: that's moot, info will get zeroed in DecDecode() */
-    info->samplerate = samplerate;
-    info->channels = channels;
+    info.samplerate = samplerate;
+    info.channels = channels;
   } else {
-    info->samplerate = 0;
-    info->channels = 0;
+    info.samplerate = 0;
+    info.channels = 0;
   }
 
   /* decode cycle */
-  input_data = GST_BUFFER_DATA (buf);
-  input_size = GST_BUFFER_SIZE (buf);
-  info->bytesconsumed = input_size - skip_bytes;
+  info.bytesconsumed = input_size - skip_bytes;
+  info.error = 0;
 
   if (!faad->packetised) {
     /* We must check that ourselves for raw stream */
@@ -624,37 +709,36 @@ gst_faad_chain (GstPad * pad, GstData * data)
       /* Only one packet per buffer, no matter how much is really consumed */
       run_loop = FALSE;
     } else {
-      if (input_size < FAAD_MIN_STREAMSIZE || info->bytesconsumed <= 0) {
+      if (input_size < FAAD_MIN_STREAMSIZE || info.bytesconsumed <= 0) {
         break;
       }
     }
 
-    out = faacDecDecode (faad->handle, info, input_data + skip_bytes,
+    out = faacDecDecode (faad->handle, &info, input_data + skip_bytes,
         input_size - skip_bytes);
-    if (info->error) {
-      GST_ELEMENT_ERROR (faad, STREAM, DECODE, (NULL),
-          ("Failed to decode buffer: %s",
-              faacDecGetErrorMessage (info->error)));
+    if (info.error) {
+      GST_ERROR_OBJECT (faad, "Failed to decode buffer: %s",
+          faacDecGetErrorMessage (info.error));
       break;
     }
 
-    if (info->bytesconsumed > input_size)
-      info->bytesconsumed = input_size;
-    input_size -= info->bytesconsumed;
-    input_data += info->bytesconsumed;
+    if (info.bytesconsumed > input_size)
+      info.bytesconsumed = input_size;
+    input_size -= info.bytesconsumed;
+    input_data += info.bytesconsumed;
 
-    if (out && info->samples > 0) {
+    if (out && info.samples > 0) {
       gboolean fmt_change = FALSE;
 
       /* see if we need to renegotiate */
-      if (info->samplerate != faad->samplerate ||
-          info->channels != faad->channels || !faad->channel_positions) {
+      if (info.samplerate != faad->samplerate ||
+          info.channels != faad->channels || !faad->channel_positions) {
         fmt_change = TRUE;
       } else {
         gint i;
 
-        for (i = 0; i < info->channels; i++) {
-          if (info->channel_position[i] != faad->channel_positions[i])
+        for (i = 0; i < info.channels; i++) {
+          if (info.channel_position[i] != faad->channel_positions[i])
             fmt_change = TRUE;
         }
       }
@@ -663,13 +747,12 @@ gst_faad_chain (GstPad * pad, GstData * data)
         GstPadLinkReturn ret;
 
         /* store new negotiation information */
-        faad->samplerate = info->samplerate;
-        faad->channels = info->channels;
+        faad->samplerate = info.samplerate;
+        faad->channels = info.channels;
         if (faad->channel_positions)
           g_free (faad->channel_positions);
         faad->channel_positions = g_new (guint8, faad->channels);
-        memcpy (faad->channel_positions, info->channel_position,
-            faad->channels);
+        memcpy (faad->channel_positions, info.channel_position, faad->channels);
 
         /* and negotiate */
         ret = gst_pad_renegotiate (faad->srcpad);
@@ -680,13 +763,13 @@ gst_faad_chain (GstPad * pad, GstData * data)
       }
 
       /* play decoded data */
-      if (info->samples > 0) {
-        outbuf = gst_buffer_new_and_alloc (info->samples * faad->bps);
+      if (info.samples > 0) {
+        outbuf = gst_buffer_new_and_alloc (info.samples * faad->bps);
         /* ugh */
         memcpy (GST_BUFFER_DATA (outbuf), out, GST_BUFFER_SIZE (outbuf));
         GST_BUFFER_TIMESTAMP (outbuf) = next_ts;
         GST_BUFFER_DURATION (outbuf) =
-            (guint64) GST_SECOND *info->samples / faad->samplerate;
+            (guint64) GST_SECOND *info.samples / faad->samplerate;
         if (GST_CLOCK_TIME_IS_VALID (next_ts)) {
           next_ts += GST_BUFFER_DURATION (outbuf);
         }
@@ -695,6 +778,7 @@ gst_faad_chain (GstPad * pad, GstData * data)
     }
   }
 
+next:
   /* Keep the leftovers in raw stream */
   if (input_size > 0 && !faad->packetised) {
     if (input_size < GST_BUFFER_SIZE (buf)) {
@@ -707,8 +791,6 @@ gst_faad_chain (GstPad * pad, GstData * data)
   }
 
   gst_buffer_unref (buf);
-
-  g_free (info);
 }
 
 static GstElementStateReturn
