@@ -23,9 +23,9 @@
 
 #include <gst/gst.h>
 
-#define R_MASK_32 0xff000000
-#define G_MASK_32 0x00ff0000
-#define B_MASK_32 0x0000ff00
+#define R_MASK_32 "0xff000000"
+#define G_MASK_32 "0x00ff0000"
+#define B_MASK_32 "0x0000ff00"
 
 #define R_MASK_32_REVERSE 0x000000ff
 #define G_MASK_32_REVERSE 0x0000ff00
@@ -47,8 +47,8 @@
 #define G_MASK_15 0x03e0
 #define B_MASK_15 0x001f
 
-#define SIZE_RANGE GST_PROPS_INT_RANGE (16, 4096)
-#define FPS_RANGE GST_PROPS_FLOAT_RANGE (0, G_MAXFLOAT)
+#define SIZE_RANGE "(int) [ 16, 4096 ]"
+#define FPS_RANGE "(double) [ 0, max ]"
 
 /* properties for pad templates */
 #define GST_VIDEO_RGB_PAD_TEMPLATE_PROPS_24_32 \
@@ -107,18 +107,17 @@
             "framerate",        FPS_RANGE, \
             NULL)
 
-#define GST_VIDEO_RGB_PAD_TEMPLATE_PROPS_32 \
-        gst_props_new ( \
-            "bpp",              GST_PROPS_INT (32), \
-            "depth",            GST_PROPS_INT (32), \
-            "endianness",       GST_PROPS_INT (G_BIG_ENDIAN), \
-            "red_mask",         GST_PROPS_INT (R_MASK_32), \
-            "green_mask",       GST_PROPS_INT (G_MASK_32), \
-            "blue_mask",        GST_PROPS_INT (B_MASK_32), \
-            "width",            SIZE_RANGE, \
-            "height",           SIZE_RANGE, \
-            "framerate",        FPS_RANGE, \
-            NULL)
+#define GST_VIDEO_RGB_PAD_TEMPLATE_CAPS_32 \
+	    "video/x-raw-rgb, " \
+            "bpp = (int) 32, " \
+            "depth = (int) 32, " \
+            "endianness = (int) " G_STRINGIFY(G_BIG_ENDIAN) ", " \
+            "red_mask = (int) " R_MASK_32 ", " \
+            "green_mask = (int) " G_MASK_32 ", " \
+            "blue_mask = (int) " B_MASK_32 ", " \
+            "width = " SIZE_RANGE ", " \
+            "height = " SIZE_RANGE ", " \
+            "framerate = " FPS_RANGE
 
 #define GST_VIDEO_RGB_PAD_TEMPLATE_PROPS_24 \
         gst_props_new ( \
@@ -210,13 +209,12 @@
             "framerate",        FPS_RANGE, \
             NULL)
 
-#define GST_VIDEO_YUV_PAD_TEMPLATE_PROPS(fourcc) \
-        gst_props_new (\
-            "format",           fourcc, \
-            "width",            SIZE_RANGE, \
-            "height",           SIZE_RANGE, \
-            "framerate",        FPS_RANGE, \
-            NULL)
+#define GST_VIDEO_YUV_PAD_TEMPLATE_CAPS(fourcc) \
+	"video/x-raw-yuv, " \
+	"format = (fourcc) " fourcc ", " \
+	"width = " SIZE_RANGE ", " \
+	"height = " SIZE_RANGE ", " \
+	"framerate = " FPS_RANGE
 
 /* functions */
 gfloat   gst_video_frame_rate (GstPad *pad);

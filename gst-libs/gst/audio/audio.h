@@ -70,7 +70,7 @@ G_BEGIN_DECLS
   "endianness = (int) " G_STRINGIFY(G_BYTE_ORDER) ", " \
   "width = (int) 16, " \
   "depth = (int) 16, " \
-  "signed = (boolean) { true, false }, " \
+  "signed = (boolean) true, " \
   "buffer-frames = (int) [ 1, " G_STRINGIFY(G_MAXINT) "]"
 
 #define GST_AUDIO_FLOAT_PAD_TEMPLATE_CAPS \
