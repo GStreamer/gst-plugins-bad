@@ -88,7 +88,7 @@ plug-ins.
 This package contains libraries and includes files necessary to develop
 applications and plug-ins for GStreamer.
 
-%files -n gstreamer-plugins-devel
+%files -n devel
 %defattr(-, root, root)
 @USE_GCONF_TRUE@%{_includedir}/gstreamer-%{majorminor}/gst/gconf/gconf.h
 %{_includedir}/gstreamer-%{majorminor}/gst/play/play.h
@@ -729,8 +729,8 @@ Plug-ins for playback of AVI format media files.
 @USE_MAD_TRUE@Group:         Libraries/Multimedia
 @USE_MAD_TRUE@Requires:      gstreamer-plugins = %{version}
 @USE_MAD_TRUE@Requires:      gstreamer-audio-formats
-@USE_MAD_TRUE@Requires:      mad >= 0.13.0
-@USE_MAD_TRUE@BuildRequires: mad-devel >= 0.13.0
+@USE_MAD_TRUE@Requires:      libmad >= 0.13.0
+@USE_MAD_TRUE@BuildRequires: libmad-devel >= 0.13.0
 @USE_MAD_TRUE@
 @USE_MAD_TRUE@%description -n gstreamer-mad
 @USE_MAD_TRUE@Plug-in for playback of mp3 songs using the very good MAD library.
