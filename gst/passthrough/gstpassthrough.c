@@ -88,16 +88,6 @@ static void inline 	passthrough_fast_8bit_chain	(gint8* data, guint numsamples);
 
 static GstElementClass *parent_class = NULL;
 
-static GstBufferPool*
-passthrough_get_bufferpool (GstPad *pad)
-{
-  GstPassthrough *filter;
-
-  filter = GST_PASSTHROUGH (gst_pad_get_parent (pad));
-
-  return gst_pad_get_bufferpool (filter->srcpad);
-}
-
 static GstPadLinkReturn
 passthrough_connect_sink (GstPad *pad, const GstCaps2 *caps)
 {
@@ -207,7 +197,6 @@ passthrough_init (GstPassthrough *filter)
   gst_element_add_pad (GST_ELEMENT (filter), filter->sinkpad);
 
   gst_pad_set_link_function    (filter->sinkpad, passthrough_connect_sink);
-  gst_pad_set_bufferpool_function (filter->sinkpad, passthrough_get_bufferpool);  
   gst_pad_set_chain_function      (filter->sinkpad, passthrough_chain);
 
   filter->silent = FALSE;
@@ -229,11 +218,6 @@ passthrough_chain (GstPad *pad, GstData *_data)
   g_return_if_fail (filter != NULL);
   g_return_if_fail (GST_IS_PASSTHROUGH (filter));
 
-  filter->bufpool = gst_pad_get_bufferpool (filter->srcpad);
-  if (filter->bufpool == NULL) {
-    filter->bufpool = gst_buffer_pool_get_default (PASSTHRU_BUF_SIZE, PASSTHRU_NUM_BUFS);
-  }
-  
   switch (filter->format) {
   case GST_PASSTHROUGH_FORMAT_INT:
     int_data = (gint16 *) GST_BUFFER_DATA (buf);

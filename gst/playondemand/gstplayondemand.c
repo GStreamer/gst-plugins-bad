@@ -81,7 +81,6 @@ static void play_on_demand_get_property (GObject *object, guint prop_id, GValue 
 static void play_on_demand_dispose      (GObject *object);
 
 /* GStreamer functionality */
-static GstBufferPool*   play_on_demand_get_bufferpool (GstPad *pad);
 static GstPadLinkReturn play_on_demand_pad_link       (GstPad *pad, const GstCaps2 *caps);
 static void             play_on_demand_loop           (GstElement *elem);
 static void             play_on_demand_set_clock      (GstElement *elem, GstClock *clock);
@@ -236,7 +235,6 @@ play_on_demand_init (GstPlayOnDemand *filter)
   filter->sinkpad = gst_pad_new_from_template(
       gst_static_pad_template_get(&play_on_demand_sink_template), "sink");
 
-  gst_pad_set_bufferpool_function(filter->sinkpad, play_on_demand_get_bufferpool);
   gst_pad_set_link_function(filter->sinkpad, play_on_demand_pad_link);
 
   gst_element_add_pad(GST_ELEMENT(filter), filter->sinkpad);
@@ -366,14 +364,6 @@ play_on_demand_dispose (GObject *object)
   g_free (filter->buffer);
 }
 
-static GstBufferPool*
-play_on_demand_get_bufferpool (GstPad *pad)
-{
-  GstPlayOnDemand *filter;
-  filter = GST_PLAYONDEMAND(gst_pad_get_parent(pad));
-  return gst_pad_get_bufferpool(filter->srcpad);
-}
-
 static GstPadLinkReturn
 play_on_demand_pad_link (GstPad *pad, const GstCaps2 *caps)
 {
@@ -432,12 +422,6 @@ play_on_demand_loop (GstElement *elem)
 
   g_return_if_fail(filter != NULL);
   g_return_if_fail(GST_IS_PLAYONDEMAND(filter));
-
-  filter->bufpool = gst_pad_get_bufferpool(filter->srcpad);
-
-  if (filter->bufpool == NULL)
-    filter->bufpool = gst_buffer_pool_get_default(GST_POD_BUFPOOL_SIZE,
-                                                  GST_POD_BUFPOOL_NUM);
 
   in = (in == NULL && ! filter->eos) ? gst_pad_pull(filter->sinkpad) : NULL;
 

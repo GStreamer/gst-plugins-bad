@@ -38,7 +38,6 @@ struct _GstChart {
 
   /* pads */
   GstPad *sinkpad,*srcpad;
-  GstBufferPool *peerpool;
 
   /* the timestamp of the next frame */
   guint64 next_time;
@@ -184,7 +183,6 @@ gst_chart_init (GstChart *chart)
   gst_pad_set_link_function (chart->sinkpad, gst_chart_srcconnect);
 
   chart->next_time = 0;
-  chart->peerpool = NULL;
 
   /* reset the initial video state */
   chart->bpp = 16;

@@ -77,16 +77,6 @@ GST_STATIC_PAD_TEMPLATE (
     )
 );
 
-static GstBufferPool*
-speed_sink_get_bufferpool (GstPad *pad)
-{
-  GstSpeed *filter;
-
-  filter = GST_SPEED (gst_pad_get_parent(pad));
-
-  return filter->sinkpool;
-}
-
 static void		speed_base_init			(gpointer g_class);
 static void		speed_class_init		(GstSpeedClass *klass);
 static void		speed_init		(GstSpeed *filter);
@@ -205,7 +195,6 @@ speed_init (GstSpeed *filter)
       gst_static_pad_template_get (&gst_speed_sink_template), "sink");
   gst_pad_set_link_function(filter->sinkpad, speed_link);
   gst_element_add_pad(GST_ELEMENT(filter),filter->sinkpad);
-  gst_pad_set_bufferpool_function (filter->sinkpad, speed_sink_get_bufferpool);
 
   filter->srcpad = gst_pad_new_from_template(
       gst_static_pad_template_get (&gst_speed_src_template), "src");
@@ -213,8 +202,6 @@ speed_init (GstSpeed *filter)
   gst_element_add_pad(GST_ELEMENT(filter),filter->srcpad);
 
   gst_element_set_loop_function(GST_ELEMENT(filter),speed_loop);
-
-  filter->sinkpool = gst_buffer_pool_get_default(SPEED_BUFSIZE, SPEED_NUMBUF);
 }
 
 static void
@@ -227,8 +214,6 @@ speed_loop (GstElement *element)
 
   g_return_if_fail(filter != NULL);
   g_return_if_fail(GST_IS_SPEED(filter));
-
-  filter->srcpool = gst_pad_get_bufferpool(filter->srcpad);
 
   i = j = 0;
   speed = filter->speed;

@@ -92,16 +92,6 @@ static void			gst_v4l2src_set_clock		(GstElement     *element,
 								 GstClock       *clock);
 
 
-/* bufferpool functions */
-static GstBuffer *		gst_v4l2src_buffer_new		(GstBufferPool   *pool,
-								 guint64         offset,
-								 guint           size,
-								 gpointer        user_data);
-static void			gst_v4l2src_buffer_free		(GstBufferPool   *pool,
-								 GstBuffer       *buf,
-								 gpointer        user_data);
-
-
 static GstPadTemplate *src_template;
 
 static GstElementClass *parent_class = NULL;
@@ -221,12 +211,6 @@ gst_v4l2src_init (GstV4l2Src *v4l2src)
 	gst_pad_set_link_function(v4l2src->srcpad, gst_v4l2src_srcconnect);
 	gst_pad_set_convert_function (v4l2src->srcpad, gst_v4l2src_srcconvert);
 	gst_pad_set_getcaps_function (v4l2src->srcpad, gst_v4l2src_getcaps);
-
-	v4l2src->bufferpool = gst_buffer_pool_new(NULL, NULL,
-					gst_v4l2src_buffer_new,
-					NULL,
-					gst_v4l2src_buffer_free,
-					v4l2src);
 
 	v4l2src->breq.count = 0;
 
@@ -761,13 +745,6 @@ gst_v4l2src_get (GstPad *pad)
 	    (fps = gst_v4l2src_get_fps(v4l2src)) == 0)
 		return NULL;
 
-	buf = gst_buffer_new_from_pool(v4l2src->bufferpool, 0, 0);
-	if (!buf) {
-		gst_element_error(GST_ELEMENT(v4l2src),
-			"Failed to create a new GstBuffer");
-		return NULL;
-	}
-
 	if (v4l2src->need_writes > 0) {
 		/* use last frame */
 		num = v4l2src->last_frame;
@@ -842,8 +819,10 @@ gst_v4l2src_get (GstPad *pad)
 		v4l2src->use_num_times[num] = 1;
 	}
 
+	buf = gst_buffer_new ();
 	GST_BUFFER_DATA(buf) = gst_v4l2src_get_buffer(v4l2src, num);
 	GST_BUFFER_SIZE(buf) = v4l2src->bufsettings.bytesused;
+        GST_BUFFER_FLAG_SET(buf, GST_BUFFER_READONLY);
 	if (v4l2src->use_fixed_fps)
 		GST_BUFFER_TIMESTAMP(buf) = v4l2src->handled * GST_SECOND / fps;
 	else /* calculate time based on our own clock */
@@ -987,6 +966,7 @@ gst_v4l2src_set_clock (GstElement *element,
 }
 
 
+#if 0
 static GstBuffer*
 gst_v4l2src_buffer_new (GstBufferPool *pool,
                         guint64        offset,
@@ -1010,8 +990,9 @@ gst_v4l2src_buffer_new (GstBufferPool *pool,
 
 	return buffer;
 }
+#endif
 
-
+#if 0
 static void
 gst_v4l2src_buffer_free (GstBufferPool *pool,
                          GstBuffer     *buf,
@@ -1039,3 +1020,5 @@ gst_v4l2src_buffer_free (GstBufferPool *pool,
 	/* free the buffer itself */
 	gst_buffer_default_free(buf);
 }
+#endif
+
