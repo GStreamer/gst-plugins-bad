@@ -1,3 +1,32 @@
+2005-03-26  Chris Lee <clee@kde.org>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* configure.ac:
+	* ext/Makefile.am:
+	* ext/spc/APU.Asm:
+	* ext/spc/APU.Inc:
+	* ext/spc/APU.h:
+	* ext/spc/DSP.Asm:
+	* ext/spc/DSP.Inc:
+	* ext/spc/DSP.h:
+	* ext/spc/Macro.Inc:
+	* ext/spc/Makefile.am:
+	* ext/spc/SPC700.Asm:
+	* ext/spc/SPC700.Inc:
+	* ext/spc/SPC700.h:
+	* ext/spc/Types.h:
+	* ext/spc/gstspc.c: (gst_spc_get_type), (gst_spc_base_init),
+	(gst_spc_class_init), (gst_spc_get_formats),
+	(gst_spc_get_query_types), (gst_spc_init), (gst_spc_query),
+	(gst_spc_loop), (spc_setup), (gst_spc_change_state), (plugin_init):
+	* ext/spc/gstspc.h:
+	* ext/spc/spc.h:
+	* gst/typefind/gsttypefindfunctions.c: (plugin_init):
+	  Add SPC decoder, based on code from Michael Payne (#141189),
+	  currently pure ASM, needs to be ported over to C at some
+	  point.
+
 2005-03-26  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* gst/typefind/gsttypefindfunctions.c: (aac_type_find):

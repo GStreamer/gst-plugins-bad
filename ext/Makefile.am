@@ -394,6 +394,12 @@ else
 SNAPSHOT_DIR=
 endif
 
+if USE_SPC
+SPC_DIR=spc
+else
+SPC_DIR=
+endif
+
 if USE_SPEEX
 SPEEX_DIR=speex
 else
@@ -465,6 +471,7 @@ SUBDIRS=\
 	$(SMOOTHWAVE_DIR) \
 	$(SNAPSHOT_DIR) \
 	$(SNDFILE_DIR) \
+	$(SPC_DIR) \
 	$(SPEEX_DIR) \
 	$(SWFDEC_DIR) \
 	$(TARKIN_DIR) \
@@ -534,6 +541,7 @@ DIST_SUBDIRS=\
 	shout2 \
 	sidplay \
 	smoothwave \
+	spc \
 	speex \
 	swfdec \
 	tarkin \

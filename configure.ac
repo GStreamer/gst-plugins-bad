@@ -855,14 +855,6 @@ GST_CHECK_FEATURE(CDAUDIO, [cdaudio], cdaudio, [
   AC_SUBST(CDAUDIO_LIBS)
 ])
 
-dnl *** cdio ***
-translit(dnm, m, l) AM_CONDITIONAL(USE_CDIO, true)
-GST_CHECK_FEATURE(CDIO, [cdio library], cdio, [
-  PKG_CHECK_MODULES(CDIO, libcdio >= 0.71, HAVE_CDIO=yes, HAVE_CDIO=no)
-  AC_SUBST(CDIO_CFLAGS)
-  AC_SUBST(CDIO_LIBS)
-])
-
 
 dnl *** CDParanoia ***
 translit(dnm, m, l) AM_CONDITIONAL(USE_CDPARANOIA, true)
@@ -1617,6 +1609,20 @@ GST_CHECK_FEATURE(LIBPNG, [snapshot plug-in], snapshot, [
   AC_SUBST(LIBPNG_LIBS)
 ])
 
+dnl *** spc ***
+dnl We use our own version of a library, so we only need to have the
+dnl right CPU (it's assembler).
+translit(dnm, m, l) AM_CONDITIONAL(USE_SPC, true)
+GST_CHECK_FEATURE(SPC, [spc decoder], spcdec,  [
+  if test "x$HAVE_CPU_I386" = "xyes"; then
+    AC_PATH_PROG(NASM, nasm)
+    if test x$NASM != x; then
+      AC_SUBST(NASM)
+      HAVE_SPC=yes
+    fi
+  fi
+])
+
 dnl *** speex >= 1.0.4 or >= 1.1.5 ***
 dnl   1.1.4 and earlier were not API/ABI compatible with 1.0
 dnl   1.1.6 is the first to use a .pc/pkg-config file ***
@@ -2061,7 +2067,6 @@ ext/audiofile/Makefile
 ext/audioresample/Makefile
 ext/cairo/Makefile
 ext/cdaudio/Makefile
-ext/cdio/Makefile
 ext/cdparanoia/Makefile
 ext/dirac/Makefile
 ext/directfb/Makefile
@@ -2111,6 +2116,7 @@ ext/shout2/Makefile
 ext/sidplay/Makefile
 ext/smoothwave/Makefile
 ext/snapshot/Makefile
+ext/spc/Makefile
 ext/speex/Makefile
 ext/sndfile/Makefile
 ext/swfdec/Makefile
