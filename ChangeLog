@@ -1,3 +1,11 @@
+2005-04-07  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/mpeg2dec/gstmpeg2dec.c: (gst_mpeg2dec_skipframe_get_type),
+	(gst_mpeg2dec_class_init), (gst_mpeg2dec_init), (handle_picture):
+	* ext/mpeg2dec/gstmpeg2dec.h:
+	  Do something with speed (which is useful for some non-lineair
+	  playback systems), fixes #172697.
+
 2005-04-03  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* sys/oss/gstossmixer.c: (gst_ossmixer_get_volume):
