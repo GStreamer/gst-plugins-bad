@@ -1,3 +1,11 @@
+2005-04-08  Jan Schmidt  <thaytan@mad.scientist.com>
+	* gst/mpegstream/gstmpegparse.c: (gst_mpeg_parse_init),
+	(gst_mpeg_parse_parse_packhead), (gst_mpeg_parse_loop),
+	(gst_mpeg_parse_get_rate):
+	  Change rate initialisation and calculation to predict
+	  total time more reliably, especially in videos with
+	  disconts. Fixes #172043
+
 2005-04-07  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* ext/mpeg2dec/gstmpeg2dec.c: (gst_mpeg2dec_skipframe_get_type),
