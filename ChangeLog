@@ -1,3 +1,8 @@
+2005-04-08  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/alsa/gstalsamixer.c: (gst_alsa_mixer_get_volume):
+	  Fix unassigned variable (causing #172884).
+
 2005-04-08  Jan Schmidt  <thaytan@mad.scientist.com>
 	* gst/mpegstream/gstmpegparse.c: (gst_mpeg_parse_init),
 	(gst_mpeg_parse_parse_packhead), (gst_mpeg_parse_loop),
