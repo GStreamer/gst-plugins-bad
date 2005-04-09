@@ -2097,7 +2097,7 @@ qtdemux_parse_trak (GstQTDemux * qtdemux, GNode * trak)
     if (codec) {
       list = gst_tag_list_new ();
       gst_tag_list_add (list, GST_TAG_MERGE_REPLACE,
-          GST_TAG_VIDEO_CODEC, codec);
+          GST_TAG_VIDEO_CODEC, codec, NULL);
     }
 
     esds = NULL;
@@ -2192,7 +2192,7 @@ qtdemux_parse_trak (GstQTDemux * qtdemux, GNode * trak)
     if (codec) {
       list = gst_tag_list_new ();
       gst_tag_list_add (list, GST_TAG_MERGE_REPLACE,
-          GST_TAG_AUDIO_CODEC, codec);
+          GST_TAG_AUDIO_CODEC, codec, NULL);
     }
 
     mp4a = qtdemux_tree_get_child_by_type (stsd, FOURCC_mp4a);

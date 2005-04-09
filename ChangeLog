@@ -1,3 +1,8 @@
+2005-04-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/qtdemux/qtdemux.c: (qtdemux_parse_trak):
+	  NULL-terminate vararg functions properly (#172946).
+
 2005-04-08  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* ext/alsa/gstalsamixer.c: (gst_alsa_mixer_get_volume):
