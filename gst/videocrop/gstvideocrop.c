@@ -235,6 +235,9 @@ gst_video_crop_set_property (GObject * object, guint prop_id,
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
   }
+
+  if (gst_pad_is_negotiated (video_crop->srcpad))
+    video_crop->renegotiate_src_caps = TRUE;
 }
 static void
 gst_video_crop_get_property (GObject * object, guint prop_id, GValue * value,
@@ -263,9 +266,6 @@ gst_video_crop_get_property (GObject * object, guint prop_id, GValue * value,
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
   }
-
-  if (gst_pad_is_negotiated (video_crop->srcpad))
-    video_crop->renegotiate_src_caps = TRUE;
 }
 
 static void

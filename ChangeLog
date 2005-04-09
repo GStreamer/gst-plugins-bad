@@ -1,5 +1,12 @@
 2005-04-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* gst/videocrop/gstvideocrop.c: (gst_video_crop_set_property),
+	(gst_video_crop_get_property):
+	  Renegotiate after a set_property, not after a get_property. Fixes
+	  #172563.
+
+2005-04-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* gst/qtdemux/qtdemux.c: (qtdemux_parse_trak):
 	  NULL-terminate vararg functions properly (#172946).
 
