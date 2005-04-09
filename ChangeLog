@@ -1,5 +1,12 @@
 2005-04-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* gst/audioconvert/gstchannelmix.c:
+	(gst_audio_convert_fill_others):
+	  Center-to-front does not involve rear (which would lead to crashes
+	  because those are unassigned - fixes #163443).
+
+2005-04-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* gst/videocrop/gstvideocrop.c: (gst_video_crop_set_property),
 	(gst_video_crop_get_property):
 	  Renegotiate after a set_property, not after a get_property. Fixes
