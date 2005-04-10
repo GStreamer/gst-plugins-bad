@@ -1,3 +1,9 @@
+2005-04-10  Jan Schmidt  <thaytan@mad.scientist.com>
+	* ext/dvdread/dvdreadsrc.c: (dvdreadsrc_get_formats),
+	(dvdreadsrc_convert_timecode), (dvdreadsrc_srcpad_query),
+	(seek_sector), (dvdreadsrc_uri_get_uri), (dvdreadsrc_uri_set_uri):
+	  Handle current/total time queries from information on the DVD
+
 2005-04-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* gst/audioconvert/gstchannelmix.c:
