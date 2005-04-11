@@ -1,3 +1,9 @@
+2005-04-11  Wim Taymans  <wim@fluendo.com>
+
+	* gst/playback/gstplaybasebin.c: (gst_play_base_bin_set_property),
+	(gst_play_base_bin_get_property):
+	Fix buildbot, added property set/get code.
+
 2005-04-10  Jan Schmidt  <thaytan@mad.scientist.com>
 	* ext/dvdread/dvdreadsrc.c: (dvdreadsrc_get_formats),
 	(dvdreadsrc_convert_timecode), (dvdreadsrc_srcpad_query),
