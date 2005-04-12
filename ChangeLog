@@ -1,3 +1,9 @@
+2005-04-12  Thomas Vander Stichele  <thomas at apestaart dot org>
+
+	* configure.ac:
+	* gst/audioconvert/Makefile.am:
+	  make sure there is a test registry to work against
+
 2005-04-12  Jan Schmidt  <thaytan@mad.scientist.com>
 
 	* ext/dts/gstdtsdec.c: (gst_dtsdec_handle_event),

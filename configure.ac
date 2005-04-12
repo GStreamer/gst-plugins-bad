@@ -227,6 +227,12 @@ if test -z $GST_TOOLS_DIR; then
 fi
 AC_SUBST(GST_TOOLS_DIR)
 
+GST_LIB_DIR=`pkg-config --variable=libdir gstreamer-$GST_MAJORMINOR`
+if test -z $GST_LIB_DIR; then
+  AC_MSG_ERROR([no libdir defined in GStreamer pkg-config file; core upgrade needed.])
+fi
+AC_SUBST(GST_LIB_DIR)
+
 dnl check for gstreamer-control; uninstalled is selected preferentially
 PKG_CHECK_MODULES(GST_CONTROL, gstreamer-control-$GST_MAJORMINOR >= $GST_REQ,
   HAVE_GST_CONTROL="yes", HAVE_GST_CONTROL="no")
