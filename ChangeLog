@@ -1,3 +1,8 @@
+2005-04-12  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/gnomevfs/gstgnomevfssrc.c: (gst_gnomevfssrc_open_file):
+	  Enable random access, so we can seek over HTTP.
+
 2005-04-12  Thomas Vander Stichele  <thomas at apestaart dot org>
 
 	* configure.ac:
