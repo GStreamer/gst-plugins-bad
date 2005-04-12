@@ -1,3 +1,9 @@
+2005-04-12  Wim Taymans  <wim@fluendo.com>
+
+	* ext/theora/theoraenc.c: (theora_enc_sink_link):
+	Round up after dividing by two or else we end up with
+	wrong offsets.
+
 2005-04-12  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* ext/gnomevfs/gstgnomevfssrc.c: (gst_gnomevfssrc_open_file):
