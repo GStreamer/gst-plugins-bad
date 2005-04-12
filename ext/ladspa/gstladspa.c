@@ -113,6 +113,7 @@ gst_ladspa_base_init (GstLADSPAClass * klass)
         klass->numsrcpads++;
       }
 
+      g_free (name);
       gst_element_class_add_pad_template (element_class, templ);
     }
   }
@@ -416,6 +417,22 @@ gst_ladspa_init (GstLADSPA * ladspa)
   ladspa->controls = g_new (gfloat, oclass->numcontrols);
   ladspa->dpman = gst_dpman_new ("ladspa_dpman", GST_ELEMENT (ladspa));
 
+  if (oclass->numsinkpads > 0) {
+    ladspa->data_in = g_new0 (LADSPA_Data *, oclass->numsinkpads);
+    ladspa->buffers_in = g_new0 (GstBuffer *, oclass->numsinkpads);
+  } else {
+    ladspa->data_in = NULL;
+    ladspa->buffers_in = NULL;
+  }
+
+  if (oclass->numsrcpads > 0) {
+    ladspa->buffers_out = g_new0 (GstBuffer *, oclass->numsrcpads);
+    ladspa->data_out = g_new0 (LADSPA_Data *, oclass->numsrcpads);
+  } else {
+    ladspa->buffers_out = NULL;
+    ladspa->data_out = NULL;
+  }
+
   /* set up pads */
   sinkcount = 0;
   srccount = 0;
@@ -524,7 +541,8 @@ gst_ladspa_link (GstPad * pad, const GstCaps * caps)
   /* if this fails in some other plugin, the graph is left in an inconsistent
      state */
   for (l = gst_element_get_pad_list (element); l; l = l->next)
-    if (pad != (GstPad *) l->data)
+    if ((pad != (GstPad *) l->data)
+        && !GST_PAD_IS_NEGOTIATING ((GstPad *) l->data))
       if (gst_pad_try_set_caps ((GstPad *) l->data, caps) <= 0)
         return GST_PAD_LINK_REFUSED;
 
@@ -740,12 +758,10 @@ gst_ladspa_loop (GstElement * element)
 
   numsinkpads = oclass->numsinkpads;
   numsrcpads = oclass->numsrcpads;
-
-  /* fixme: these mallocs need to die */
-  data_in = g_new0 (LADSPA_Data *, numsinkpads);
-  data_out = g_new0 (LADSPA_Data *, numsrcpads);
-  buffers_in = g_new0 (GstBuffer *, numsinkpads);
-  buffers_out = g_new0 (GstBuffer *, numsrcpads);
+  data_in = ladspa->data_in;
+  data_out = ladspa->data_out;
+  buffers_in = ladspa->buffers_in;
+  buffers_out = ladspa->buffers_out;
 
   largest_buffer = -1;
 
@@ -775,7 +791,8 @@ gst_ladspa_loop (GstElement * element)
           MIN (GST_BUFFER_SIZE (buffers_in[i]) / sizeof (gfloat),
           largest_buffer);
     data_in[i] = (LADSPA_Data *) GST_BUFFER_DATA (buffers_in[i]);
-    GST_BUFFER_TIMESTAMP (buffers_in[i]) = ladspa->timestamp;
+    if (GST_CLOCK_TIME_IS_VALID (GST_BUFFER_TIMESTAMP (buffers_in[i])))
+      ladspa->timestamp = GST_BUFFER_TIMESTAMP (buffers_in[i]);
   }
 
   i = 0;
@@ -837,18 +854,12 @@ gst_ladspa_loop (GstElement * element)
 
   ladspa->timestamp += ladspa->buffer_frames * GST_SECOND / ladspa->samplerate;
 
-  /* FIXME: move these mallocs and frees to the state-change handler */
-
-  g_free (buffers_out);
-  g_free (buffers_in);
-  g_free (data_out);
-  g_free (data_in);
 }
 
 static void
 gst_ladspa_chain (GstPad * pad, GstData * _data)
 {
-  GstBuffer *buffer_in = GST_BUFFER (_data);
+  GstBuffer *buffer_in;
   LADSPA_Descriptor *desc;
   LADSPA_Data *data_in, **data_out = NULL;
   GstBuffer **buffers_out = NULL;
@@ -857,6 +868,10 @@ gst_ladspa_chain (GstPad * pad, GstData * _data)
   GstLADSPA *ladspa;
   GstLADSPAClass *oclass;
 
+  /* we shouldn't get events here... */
+  g_return_if_fail (GST_IS_BUFFER (_data));
+  buffer_in = GST_BUFFER (_data);
+
   ladspa = (GstLADSPA *) GST_OBJECT_PARENT (pad);
   oclass = (GstLADSPAClass *) (G_OBJECT_GET_CLASS (ladspa));
   data_in = (LADSPA_Data *) GST_BUFFER_DATA (buffer_in);
@@ -864,19 +879,15 @@ gst_ladspa_chain (GstPad * pad, GstData * _data)
   numsrcpads = oclass->numsrcpads;
   desc = ladspa->descriptor;
 
-  /* we shouldn't get events here... */
-  g_return_if_fail (GST_IS_BUFFER (buffer_in));
-
-  /* FIXME: this function shouldn't need to malloc() anything */
-  if (numsrcpads > 0) {
-    buffers_out = g_new (GstBuffer *, numsrcpads);
-    data_out = g_new (LADSPA_Data *, numsrcpads);
-  }
+  buffers_out = ladspa->buffers_out;
+  data_out = ladspa->data_out;
+  if (GST_CLOCK_TIME_IS_VALID (GST_BUFFER_TIMESTAMP (buffer_in)))
+    ladspa->timestamp = GST_BUFFER_TIMESTAMP (buffer_in);
 
   i = 0;
   if (!ladspa->inplace_broken && numsrcpads) {
     /* reuse the first (chained) buffer */
-    buffers_out[i] = buffer_in;
+    buffers_out[i] = gst_buffer_copy_on_write (buffer_in);
     GST_DEBUG ("reuse: %d", GST_BUFFER_SIZE (buffer_in));
     data_out[i] = data_in;
     i++;
@@ -888,8 +899,7 @@ gst_ladspa_chain (GstPad * pad, GstData * _data)
     data_out[i] = (LADSPA_Data *) GST_BUFFER_DATA (buffers_out[i]);
   }
 
-  GST_DPMAN_PREPROCESS (ladspa->dpman, num_samples,
-      GST_BUFFER_TIMESTAMP (buffer_in));
+  GST_DPMAN_PREPROCESS (ladspa->dpman, num_samples, ladspa->timestamp);
   num_processed = 0;
 
   /* split up processing of the buffer into chunks so that dparams can
@@ -923,9 +933,6 @@ gst_ladspa_chain (GstPad * pad, GstData * _data)
           GST_BUFFER_SIZE (buffers_out[i]), i);
       gst_pad_push (ladspa->srcpads[i], GST_DATA (buffers_out[i]));
     }
-
-    g_free (buffers_out);
-    g_free (data_out);
   }
 }
 
@@ -945,8 +952,8 @@ gst_ladspa_get (GstPad * pad)
 
   /* 4096 is arbitrary */
   buf = gst_buffer_new_and_alloc (4096);
-  GST_BUFFER_TIMESTAMP (buf) = ladspa->timestamp;
   data = (LADSPA_Data *) GST_BUFFER_DATA (buf);
+  GST_BUFFER_TIMESTAMP (buf) = ladspa->timestamp;
 
   GST_DPMAN_PREPROCESS (ladspa->dpman, ladspa->buffer_frames,
       ladspa->timestamp);

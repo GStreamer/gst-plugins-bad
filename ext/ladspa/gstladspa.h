@@ -59,10 +59,15 @@ struct _GstLADSPA {
   GstPad **sinkpads, 
          **srcpads;
 
+  LADSPA_Data **data_in;
+  LADSPA_Data **data_out;
+  GstBuffer    **buffers_in;
+  GstBuffer    **buffers_out;
+  
   gboolean activated;
 
   gint samplerate, buffer_frames;
-  gint64 timestamp;
+  GstClockTime timestamp;
   gboolean inplace_broken;
 };
 
