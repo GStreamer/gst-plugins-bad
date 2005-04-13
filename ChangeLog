@@ -1,3 +1,9 @@
+2005-04-13  David Schleef  <ds@schleef.org>
+
+	* gst/videotestsrc/videotestsrc.c: (gst_videotestsrc_smpte):
+	Fix rounding problem that causes rendering errors.  (Fixes:
+	#300469)
+
 2005-04-12  Wim Taymans  <wim@fluendo.com>
 
 	* ext/theora/theoraenc.c: (theora_enc_sink_link):
