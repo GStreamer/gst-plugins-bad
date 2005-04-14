@@ -663,6 +663,7 @@ gst_qtdemux_loop_header (GstElement * element)
         {
           GST_LOG ("unknown %08x '" GST_FOURCC_FORMAT "' at %d",
               fourcc, GST_FOURCC_ARGS (fourcc), cur_offset);
+          gst_bytestream_flush (qtdemux->bs, length);
           break;
         }
       }

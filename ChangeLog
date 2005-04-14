@@ -1,3 +1,8 @@
+2005-04-14  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/qtdemux/qtdemux.c: (gst_qtdemux_loop_header):
+	  Skip unknown nodes.
+
 2005-04-14  Gergely Nagy  <algernon@bonehunter.rulez.org>
 
 	* gst/switch/gstswitch.c: Set a default debug category. (Fixes:
