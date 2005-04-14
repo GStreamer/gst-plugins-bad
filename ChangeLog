@@ -1,3 +1,11 @@
+2005-04-14  Gergely Nagy  <algernon@bonehunter.rulez.org>
+
+	* configure.ac:
+	* gst/freeze/Makefile.am:
+	* gst/freeze/gstfreeze.c:
+	* gst/freeze/gstfreeze.h:
+	  New plugin: freeze, a stream freezer. (#165726)
+
 2005-04-14  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* gst/qtdemux/qtdemux.c: (gst_qtdemux_loop_header):

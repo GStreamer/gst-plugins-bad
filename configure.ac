@@ -389,6 +389,7 @@ GST_PLUGINS_ALL="\
 	ffmpegcolorspace \
 	filter \
 	flx \
+	freeze \
 	goom \
 	interleave \
 	law \
@@ -1995,6 +1996,7 @@ gst/festival/Makefile
 gst/ffmpegcolorspace/Makefile
 gst/filter/Makefile
 gst/flx/Makefile
+gst/freeze/Makefile
 gst/games/Makefile
 gst/goom/Makefile
 gst/interleave/Makefile
