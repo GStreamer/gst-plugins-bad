@@ -1,3 +1,17 @@
+2005-04-14  Benjamin Otte  <in7y118@public.uni-hamburg.de>
+
+	* ext/alsa/gstalsa.c: (gst_alsa_class_init), (gst_alsa_init),
+	(gst_alsa_set_property), (gst_alsa_probe_hw_params),
+	(gst_alsa_set_hw_params), (gst_alsa_close_audio):
+	* ext/alsa/gstalsa.h:
+	  add a desired_period_count that gets set to the user's desire and
+	  isn't updated. Allow period_count to be 1. Also allow a value of 0
+	  which means "don't set, use card's predefined setting" and default
+	  to this. Fixes issues with weird drivers returning EINVAL when
+	  setting period count. (noticed by Johannes Berg)
+	* ext/alsa/gstalsasink.c: (gst_alsa_sink_check_event):
+	  we want the refcount value please
+
 2005-04-14  Gergely Nagy  <algernon@bonehunter.rulez.org>
 
 	* configure.ac:
