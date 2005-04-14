@@ -1,3 +1,18 @@
+2005-04-14  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/playback/gstplaybasebin.c: (group_commit), (queue_overrun),
+	(no_more_pads), (new_decoded_pad), (state_change),
+	(setup_subtitle), (setup_source), (prepare_output),
+	(gst_play_base_bin_change_state):
+	  Use subtitle autodetection rather than hardcoding subparse. Allow
+	  bailing out, but make it non-fatal. Fixes #172854. Add error
+	  handling for stream setup (#300457).
+	* gst/subparse/gstsubparse.c: (gst_subparse_event),
+	(gst_subparse_buffer_format_autodetect),
+	(gst_subparse_format_autodetect), (gst_subparse_type_find),
+	(plugin_init):
+	  Add previously disabled subtitle format detection.
+
 2005-04-14  Benjamin Otte  <in7y118@public.uni-hamburg.de>
 
 	* ext/alsa/gstalsa.c: (gst_alsa_class_init), (gst_alsa_init),
