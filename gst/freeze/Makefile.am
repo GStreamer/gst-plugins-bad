@@ -7,4 +7,4 @@ libgstfreeze_la_LDFLAGS	= $(GST_PLUGIN_LDFLAGS)
 
 noinst_HEADERS		= gstfreeze.h
 
-EXTRA_DIST		= FAQ
+## EXTRA_DIST		= FAQ
