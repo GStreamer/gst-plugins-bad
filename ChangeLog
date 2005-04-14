@@ -1,5 +1,10 @@
 2005-04-14  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* ext/gnomevfs/gstgnomevfsuri.c: (gst_gnomevfs_get_supported_uris):
+	  Add dav/davs (#300377).
+
+2005-04-14  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* gst/playback/gstplaybasebin.c: (group_commit), (queue_overrun),
 	(no_more_pads), (new_decoded_pad), (state_change),
 	(setup_subtitle), (setup_source), (prepare_output),
