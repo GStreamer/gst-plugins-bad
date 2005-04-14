@@ -1,3 +1,8 @@
+2005-04-14  Gergely Nagy  <algernon@bonehunter.rulez.org>
+
+	* gst/switch/gstswitch.c: Set a default debug category. (Fixes:
+	#300337)
+
 2005-04-13  David Schleef  <ds@schleef.org>
 
 	* gst/videotestsrc/videotestsrc.c: (gst_videotestsrc_smpte):

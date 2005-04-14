@@ -32,6 +32,7 @@ enum
 };
 
 GST_DEBUG_CATEGORY_STATIC (switch_debug);
+#define GST_CAT_DEFAULT switch_debug
 
 /* ElementFactory information */
 static GstElementDetails gst_switch_details = GST_ELEMENT_DETAILS ("Switch",
