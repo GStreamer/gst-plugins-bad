@@ -1,0 +1,10 @@
+Freeze FAQ
+==========
+
+Q: freeze does not want to link to ximagesink: capsnego fails.
+A: Check the caps, whether the framerate is zero. If it is, insert a
+videorate element before freeze.
+
+This is because freeze does not alter the caps, it just proxies them,
+and if the source only supports a zero framerate, then freeze
+supports only that, too.
