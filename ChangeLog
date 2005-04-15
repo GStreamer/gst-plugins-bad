@@ -1,3 +1,21 @@
+2005-04-16  Jan Schmidt,,,  <thaytan@mad.scientist.com>
+
+	* ext/a52dec/gsta52dec.c: (gst_a52dec_handle_event):
+	* ext/dts/gstdtsdec.c: (gst_dtsdec_handle_event):
+	  Take filler handling back out. Decoders shouldn't need to.
+
+	* gst/mpegstream/gstdvddemux.c: (gst_dvd_demux_handle_dvd_event),
+	(gst_dvd_demux_handle_discont):
+	* gst/mpegstream/gstmpegdemux.c: (gst_mpeg_demux_send_discont),
+	(gst_mpeg_demux_init_stream), (gst_mpeg_demux_send_subbuffer),
+	(gst_mpeg_demux_synchronise_pads),
+	(gst_mpeg_demux_sync_stream_to_time):
+	* gst/mpegstream/gstmpegdemux.h:
+	* gst/mpegstream/gstmpegparse.c: (gst_mpeg_parse_parse_packhead):
+	  Use a combination of SCR and PTS to detect when a pad needs filler
+	  events.
+	  Fix discont handling so seeking works.
+
 2005-04-15  Thomas Vander Stichele  <thomas at apestaart dot org>
 
 	* ext/raw1394/gstdv1394src.c:

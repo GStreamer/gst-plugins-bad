@@ -333,27 +333,6 @@ gst_dtsdec_handle_event (GstDtsDec * dts, GstEvent * event)
         dts->cache = NULL;
       }
       break;
-    case GST_EVENT_FILLER:{
-      /* Transform filler to always have timestamp + duration */
-      GstClockTime end_ts = GST_EVENT_TIMESTAMP (event);
-      GstClockTime dur = gst_event_filler_get_duration (event);
-
-      if (!GST_CLOCK_TIME_IS_VALID (end_ts))
-        end_ts = dts->current_ts;
-
-      if (GST_CLOCK_TIME_IS_VALID (dur))
-        end_ts += dur;
-
-      dur = GST_CLOCK_DIFF (end_ts, dts->current_ts);
-
-      gst_event_unref (event);
-
-      if (dur <= 0)
-        return;
-
-      event = gst_event_new_filler_stamped (dts->current_ts, dur);
-      dts->current_ts = end_ts;
-    }
 
     default:
       break;
