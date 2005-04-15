@@ -1,3 +1,8 @@
+2005-04-15  Thomas Vander Stichele  <thomas at apestaart dot org>
+
+	* ext/raw1394/gstdv1394src.c:
+	  add some useful debug info
+
 2005-04-14  Thomas Vander Stichele  <thomas at apestaart dot org>
 
 	* po/LINGUAS:
