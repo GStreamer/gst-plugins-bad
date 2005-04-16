@@ -1,4 +1,10 @@
 2005-04-16  Jan Schmidt,,,  <thaytan@mad.scientist.com>
+	* gst/mpegstream/gstdvddemux.c: (gst_dvd_demux_send_data):
+	* gst/mpegstream/gstmpegdemux.c: (gst_mpeg_demux_send_data):
+	  Use the default event handler for EOS and other unknown events that
+	  need to be sent to inactive pads.
+
+2005-04-16  Jan Schmidt,,,  <thaytan@mad.scientist.com>
 
 	* ext/a52dec/gsta52dec.c: (gst_a52dec_handle_event):
 	* ext/dts/gstdtsdec.c: (gst_dtsdec_handle_event):
