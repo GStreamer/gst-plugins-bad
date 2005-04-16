@@ -1,4 +1,9 @@
 2005-04-16  Jan Schmidt,,,  <thaytan@mad.scientist.com>
+	* ext/gnomevfs/gstgnomevfssrc.c: (gst_gnomevfssrc_open_file):
+	  If random access is not supported, fallback to non-seekable
+	  behaviour rather than erroring out.
+
+2005-04-16  Jan Schmidt,,,  <thaytan@mad.scientist.com>
 	* gst/mpegstream/gstdvddemux.c: (gst_dvd_demux_send_data):
 	* gst/mpegstream/gstmpegdemux.c: (gst_mpeg_demux_send_data):
 	  Use the default event handler for EOS and other unknown events that
