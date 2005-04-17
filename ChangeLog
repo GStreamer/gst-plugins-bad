@@ -1,3 +1,28 @@
+2005-04-17  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/dvdread/Makefile.am:
+	* ext/dvdread/stream_labels.c:
+	* ext/dvdread/stream_labels.h:
+	  Integrate in dvdreadsrc.c.
+	* ext/dvdread/dvdreadsrc.c: (dvdreadsrc_init), (_seek_title),
+	(dvdreadsrc_get), (dvdreadsrc_change_state):
+	  Add private event for language codes of embedded sound and
+	  subtitle streams.
+	* ext/esd/esdsink.c: (gst_esdsink_soundserver_running):
+	  Use ps -e, not ps, to see if esd is running.
+	* gst/mpegstream/gstdvddemux.c: (gst_dvd_demux_init),
+	(gst_dvd_demux_handle_dvd_event), (gst_dvd_demux_get_audio_stream),
+	(gst_dvd_demux_get_subpicture_stream),
+	(gst_dvd_demux_change_state):
+	* gst/mpegstream/gstdvddemux.h:
+	  Handle private event from dvdreadsrc to signal language codes for
+	  each subtitle/sound stream.
+	* gst/playback/gststreaminfo.c: (gst_stream_info_class_init),
+	(cb_probe), (gst_stream_info_new), (gst_stream_info_dispose),
+	(gst_stream_info_get_property):
+	* gst/playback/gststreaminfo.h:
+	  Expose language code from a stream as property for applications.
+
 2005-04-16  Jan Schmidt,,,  <thaytan@mad.scientist.com>
 	* ext/gnomevfs/gstgnomevfssrc.c: (gst_gnomevfssrc_open_file):
 	  If random access is not supported, fallback to non-seekable
