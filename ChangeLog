@@ -1,5 +1,10 @@
 2005-04-18  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* ext/mad/gstmad.c: (gst_mad_chain):
+	  Add more debug.
+
+2005-04-18  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* gst/ffmpegcolorspace/gstffmpegcolorspace.c:
 	(gst_ffmpegcsp_pad_link):
 	  Attempt passthrough (massively increases performance).
