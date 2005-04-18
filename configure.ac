@@ -607,7 +607,10 @@ GST_CHECK_FEATURE(X, [X libraries and plugins],
                   [ximagesink], [
   AC_PATH_XTRA
   dnl now try to find the HEADER
+  save_cflags=$CFLAGS
+  CFLAGS="$CFLAGS $X_CFLAGS"
   AC_CHECK_HEADER(X11/Xlib.h, HAVE_X="yes", HAVE_X="no")
+  CFLAGS="$save_cflags"
 
   if test "x$HAVE_X" = "xno"
   then

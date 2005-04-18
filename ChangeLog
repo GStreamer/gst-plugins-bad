@@ -1,3 +1,10 @@
+2005-04-18  Tim-Philipp Müller  <tim at centricular dot net>
+
+	* configure.ac:
+	  Add X_CFLAGS to CFLAGS while checking for  
+	  X11/Xlib.h, otherwise we won't find X if it's
+	  installed in an unusual location (fixes #300495).
+
 2005-04-18  Edward Hervey  <bilboed@bilboed.com>
 
 	* ext/snapshot/gstsnapshot.c: (gst_snapshot_chain): 
