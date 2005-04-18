@@ -280,6 +280,9 @@ gst_snapshot_chain (GstPad * pad, GstData * _data)
           &snapshot->png_info_ptr);
       png_destroy_write_struct (&snapshot->png_struct_ptr, (png_infopp) NULL);
       fclose (fp);
+
+      g_signal_emit (G_OBJECT (snapshot), gst_snapshot_signals[SNAPSHOT_SIGNAL],
+          0);
     }
   }
 

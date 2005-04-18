@@ -1,3 +1,9 @@
+2005-04-18  Edward Hervey  <bilboed@bilboed.com>
+
+	* ext/snapshot/gstsnapshot.c: (gst_snapshot_chain): 
+	The "snapshot" signal is very useful, but it's better when it's
+	actually emitted.
+
 2005-04-18  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* gst/qtdemux/qtdemux.c: (gst_qtdemux_loop_header):
