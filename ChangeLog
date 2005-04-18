@@ -1,5 +1,18 @@
 2005-04-18  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* ext/pango/gsttextoverlay.c: (render_text),
+	(gst_text_overlay_blit_yuv420):
+	  Don't crop off bottom (fixes #172845 minus a pixel at the left in
+	  Ubuntu...?).
+	* gst/asfdemux/gstasfdemux.c: (gst_asf_demux_init),
+	(gst_asf_demux_process_chunk), (gst_asf_demux_change_state),
+	(gst_asf_demux_add_audio_stream), (gst_asf_demux_add_video_stream),
+	(gst_asf_demux_setup_pad):
+	* gst/asfdemux/gstasfdemux.h:
+	  Frame rate estimation (#168406).
+
+2005-04-18  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* ext/dvdread/dvdreadsrc.c:
 	  Remove deleted include.
 
