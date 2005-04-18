@@ -1,5 +1,10 @@
 2005-04-18  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* gst/tags/gstvorbistag.c: (gst_vorbis_tag_add):
+	  ... and to OGM / Ogg ...
+
+2005-04-18  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* gst/matroska/matroska-demux.c: (gst_matroska_demux_add_stream):
 	  Also use language code for Matroska files.
 
