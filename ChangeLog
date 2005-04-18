@@ -1,5 +1,10 @@
 2005-04-18  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* gst/qtdemux/qtdemux.c: (gst_qtdemux_loop_header):
+	  Prevent hangs that I apparently introduced a while ago.
+
+2005-04-18  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* ext/pango/gsttextoverlay.c: (render_text),
 	(gst_text_overlay_blit_yuv420):
 	  Don't crop off bottom (fixes #172845 minus a pixel at the left in

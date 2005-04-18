@@ -628,7 +628,7 @@ gst_qtdemux_loop_header (GstElement * element)
         case GST_MAKE_FOURCC ('w', 'i', 'd', 'e'):
         case GST_MAKE_FOURCC ('P', 'I', 'C', 'T'):
         case GST_MAKE_FOURCC ('p', 'n', 'o', 't'):
-          break;
+          goto the_d;
         case GST_MAKE_FOURCC ('m', 'o', 'o', 'v'):
         {
           GstBuffer *moov;
@@ -659,11 +659,22 @@ gst_qtdemux_loop_header (GstElement * element)
           qtdemux->state = QTDEMUX_STATE_MOVIE;
           break;
         }
+        the_d:
         default:
         {
+          guint32 pending;
+
           GST_LOG ("unknown %08x '" GST_FOURCC_FORMAT "' at %d",
               fourcc, GST_FOURCC_ARGS (fourcc), cur_offset);
-          gst_bytestream_flush (qtdemux->bs, length);
+          gst_bytestream_get_status (qtdemux->bs, &pending, NULL);
+          if (length <= pending)
+            gst_bytestream_flush_fast (qtdemux->bs, length);
+          else {
+            offset = cur_offset + length;
+            if (!gst_bytestream_seek (qtdemux->bs, offset, GST_SEEK_METHOD_SET)) {
+              gst_bytestream_flush (qtdemux->bs, length);
+            }
+          }
           break;
         }
       }
