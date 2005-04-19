@@ -1,3 +1,9 @@
+2005-04-19  Tim-Philipp Müller  <tim at centricular dot net>
+
+	* sys/ximage/ximagesink.c: (gst_ximagesink_chain):
+	  Minor code clean-up: remove unnecessary cast
+	  (fixes #301158).
+
 2005-04-18  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* ext/mad/gstmad.c: (gst_mad_chain):
