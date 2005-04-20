@@ -1,3 +1,9 @@
+2005-04-20  Zaheer Abbas Merali  <zaheerabbas at merali dot org>
+
+	* ext/shout2/gstshout2.c:
+	  ext/shout2/gstshout2.h
+	  fix stream name so it has a decent parameter name
+
 2005-04-20  Tim-Philipp Müller  <tim at centricular dot net>
 
 	* gst/autodetect/gstautoaudiosink.c: (gst_auto_audio_sink_detect):
