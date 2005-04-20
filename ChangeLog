@@ -1,3 +1,9 @@
+2005-04-20  Tim-Philipp Müller  <tim at centricular dot net>
+
+	* gst/autodetect/gstautoaudiosink.c: (gst_auto_audio_sink_detect):
+	  When redoing the ghostpad, make sure it's still registered with
+	  the element (otherwise gst_element_query() will fail miserably).
+
 2005-04-20  Zaheer Abbas Merali  <zaheerabbas at merali dot org>
 
 	* ext/libpng/gstpngenc.c:
