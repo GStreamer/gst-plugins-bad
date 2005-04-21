@@ -1,3 +1,8 @@
+2005-04-21  Tim-Philipp Müller  <tim at centricular dot net>
+
+	* ext/cdio/cddasrc.c: (cddasrc_get):
+	  Fix EOS emission for the last track on the disc.
+
 2005-04-21  Benjamin Otte  <in7y118@public.uni-hamburg.de>
 
 	* ext/alsa/gstalsa.c: (gst_alsa_set_hw_params):
