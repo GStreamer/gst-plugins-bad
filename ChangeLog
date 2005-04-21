@@ -1,3 +1,8 @@
+2005-04-21  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/qtdemux/qtdemux.c: (qtdemux_parse_trak):
+	  Set correct extradata for QDM2.
+
 2005-04-21  Tim-Philipp Müller  <tim at centricular dot net>
 
 	* gst/speed/gstspeed.c: (speed_change_state):

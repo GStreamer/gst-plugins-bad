@@ -2230,6 +2230,21 @@ qtdemux_parse_trak (GstQTDemux * qtdemux, GNode * trak)
       gst_caps_set_simple (stream->caps, "codec_data",
           GST_TYPE_BUFFER, buffer, NULL);
 #endif
+    } else {
+      if (QTDEMUX_FOURCC_GET (stsd->data + 16 + 4) == GST_MAKE_FOURCC ('Q', 'D',
+              'M', '2')) {
+        gint len = QTDEMUX_GUINT32_GET (stsd->data);
+
+        if (len > 0x4C) {
+          GstBuffer *buf = gst_buffer_new_and_alloc (len - 0x4C);
+
+          memcpy (GST_BUFFER_DATA (buf),
+              (guint8 *) stsd->data + 0x4C, len - 0x4C);
+          gst_caps_set_simple (stream->caps,
+              "codec_data", GST_TYPE_BUFFER, buf, NULL);
+          gst_buffer_unref (buf);
+        }
+      }
     }
     GST_INFO ("type " GST_FOURCC_FORMAT " caps %" GST_PTR_FORMAT,
         GST_FOURCC_ARGS (QTDEMUX_FOURCC_GET (stsd->data + 16 + 4)),
