@@ -1,3 +1,10 @@
+2005-04-21  Benjamin Otte  <in7y118@public.uni-hamburg.de>
+
+	* ext/alsa/gstalsa.c: (gst_alsa_set_hw_params):
+	  try to work as much as before while still working around that bug.
+	  We try to set the period-count now, but if it doesn't work we
+	  silently ignore it. Hopefully fixes reported issues with last try.
+
 2005-04-21  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* gst/qtdemux/qtdemux.c: (qtdemux_parse_trak):
