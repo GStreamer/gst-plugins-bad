@@ -1,3 +1,8 @@
+2005-04-21  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/qtdemux/qtdemux.c: (qtdemux_parse_trak):
+	  Add extradata for ALAC.
+
 2005-04-21  Tim-Philipp Müller  <tim at centricular dot net>
 
 	* ext/cdio/cddasrc.c: (cddasrc_get):
