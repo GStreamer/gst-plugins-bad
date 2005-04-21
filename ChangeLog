@@ -1,3 +1,11 @@
+2005-04-21  Tim-Philipp Müller  <tim at centricular dot net>
+
+	* gst/speed/gstspeed.c: (speed_change_state):
+	  Don't reset speed->sample_size to 0 in state change
+	  from READY to PAUSED (fixes floating point exception
+	  in chain function when using speed as part of an
+	  audiosink bin with playbin).
+
 2005-04-20  Zaheer Abbas Merali  <zaheerabbas at merali dot org>
 
 	* ext/shout2/gstshout2.c:

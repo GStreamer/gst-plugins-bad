@@ -565,12 +565,9 @@ speed_change_state (GstElement * element)
   GstSpeed *speed = GST_SPEED (element);
 
   switch (GST_STATE_TRANSITION (element)) {
-    case GST_STATE_PAUSED_TO_READY:
-      break;
     case GST_STATE_READY_TO_PAUSED:
       speed->offset = 0;
       speed->timestamp = 0;
-      speed->sample_size = 0;
       break;
     default:
       break;
