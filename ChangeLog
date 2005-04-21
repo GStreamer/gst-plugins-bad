@@ -1,3 +1,18 @@
+2005-04-22  Jan Schmidt,,,  <thaytan@mad.scientist.com>
+
+	* ext/dvdnav/dvdnavsrc.c: (dvdnavsrc_init), (dvdnavsrc_finalize),
+	(dvdnavsrc_loop), (dvdnavsrc_uri_get_uri), (dvdnavsrc_uri_set_uri):
+	  Extend URI handler for dvdnav:// to support
+	  dvdnav://[title[,chapter[,angle]]] format
+	  Send flush events on a HOP_CHANNEL. Send filler events in
+	  smaller increments, to keep get mouse movements upstream through
+	  queues faster.
+
+	* ext/dvdread/dvdreadsrc.c: (dvdreadsrc_init),
+	(dvdnavsrc_make_clut_change_event), (_seek_title), (_seek_chapter),
+	(dvdreadsrc_get), (dvdreadsrc_change_state):
+	  Send colour palette for subtitles whenever the PGC changes.
+
 2005-04-21  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* gst/qtdemux/qtdemux.c: (qtdemux_parse_trak):
