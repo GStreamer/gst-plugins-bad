@@ -55,14 +55,14 @@ struct _GstPassthrough {
 
   /* the next are valid for both int and float */
   GstPassthroughFormat format;
-  guint rate;
-  guint channels;
-  guint width;
-  guint endianness;
+  gint rate;
+  gint channels;
+  gint width;
+  gint endianness;
   guint buffer_size;
 
   /* the next are valid only for int formats */
-  guint depth;
+  gint depth;
   gboolean is_signed;
 };
 

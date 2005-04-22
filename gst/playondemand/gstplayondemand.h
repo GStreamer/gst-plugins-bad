@@ -75,9 +75,9 @@ struct _GstPlayOnDemand {
 
   /* audio format info (used to calculate buffer_samples) */
   GstPlayOnDemandFormat format;
-  guint    rate;
-  guint    channels;
-  guint    width;
+  gint    rate;
+  gint    channels;
+  gint    width;
 };
 
 struct _GstPlayOnDemandClass {

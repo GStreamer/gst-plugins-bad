@@ -1,3 +1,14 @@
+2005-04-22  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/adder/gstadder.h:
+	* gst/dvdlpcmdec/gstdvdlpcmdec.h:
+	* gst/passthrough/gstpassthrough.h:
+	* gst/playondemand/gstplayondemand.h:
+	* gst/rtp/gstrtpL16enc.c: (get_payload_type):
+	* gst/rtp/gstrtpL16enc.h:
+	* gst/rtp/gstrtpgsmenc.h:
+	  More signed/unsigned fixes for GCC4.
+
 2005-04-22  Kjartan Maraas  <kmaraas@gnome.org>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
