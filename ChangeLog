@@ -1,3 +1,11 @@
+2005-04-22  Wouter Paesen  <wouter@kangaroot.net>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/adder/gstadder.c: (gst_adder_request_new_pad),
+	(gst_adder_get_caps):
+	  Implement getcaps function (#301292).
+
 2005-04-22  Luca Ognibene  <luogni@tin.it>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
