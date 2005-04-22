@@ -1,3 +1,13 @@
+2005-04-22  Luca Ognibene  <luogni@tin.it>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/ffmpegcolorspace/gstffmpegcolorspace.c:
+	(gst_ffmpegcsp_pad_link):
+	* gst/playback/gststreamselector.c: (gst_stream_selector_init):
+	* gst/videoscale/gstvideoscale.c: (gst_videoscale_link):
+	  Use works-in-place flag (#300932).
+
 2005-04-22  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* gst/adder/gstadder.h:
