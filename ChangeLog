@@ -1,4 +1,9 @@
-2005-04-22  Jan Schmidt,,,  <thaytan@mad.scientist.com>
+2005-04-22  Thomas Vander Stichele  <thomas at apestaart dot org>
+
+	* gst/silence/gstsilence.c: (gst_silence_change_state):
+	  fix a silly bug that gcc4 caught
+
+2005-04-22  Jan Schmidt  <thaytan@mad.scientist.com>
 
 	* ext/dvdnav/dvdnavsrc.c: (dvdnavsrc_init), (dvdnavsrc_finalize),
 	(dvdnavsrc_loop), (dvdnavsrc_uri_get_uri), (dvdnavsrc_uri_set_uri):
