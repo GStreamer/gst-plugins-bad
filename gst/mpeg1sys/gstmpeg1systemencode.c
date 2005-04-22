@@ -385,7 +385,7 @@ static void
 gst_system_encode_multiplex (GstMPEG1SystemEncode * system_encode)
 {
   GList *streams;
-  Mpeg1MuxBuffer *mb = (Mpeg1MuxBuffer *) streams->data;
+  Mpeg1MuxBuffer *mb;
   guchar timestamps;
   guchar buffer_scale;
   GstBuffer *outbuf;

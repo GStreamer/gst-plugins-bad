@@ -1,3 +1,100 @@
+2005-04-22  Kjartan Maraas  <kmaraas@gnome.org>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* examples/seeking/cdplayer.c: (query_durations),
+	(query_positions), (main):
+	* examples/seeking/playbin.c: (main):
+	* examples/seeking/seek.c: (query_durations_elems),
+	(query_durations_pads), (query_positions_elems),
+	(query_positions_pads), (main):
+	* examples/seeking/spider_seek.c: (query_durations),
+	(query_positions), (main):
+	* gst-libs/gst/idct/idct.c: (gst_idct_int_sparse_idct):
+	* gst-libs/gst/media-info/media-info.c: (gst_media_info_read):
+	* gst-libs/gst/xwindowlistener/xwindowlistener.c:
+	(gst_xwin_refresh):
+	* gst/alpha/gstalpha.c: (gst_alpha_chroma_key_ayuv),
+	(gst_alpha_chroma_key_i420):
+	* gst/apetag/apedemux.c: (gst_ape_demux_parse_tags):
+	* gst/asfdemux/gstasfdemux.c: (gst_asf_demux_process_comment),
+	(gst_asf_demux_process_ext_content_desc):
+	* gst/audioconvert/gstchannelmix.c:
+	(gst_audio_convert_fill_one_other):
+	* gst/auparse/gstauparse.c: (gst_auparse_chain):
+	* gst/avi/gstavidemux.c: (gst_avi_demux_stream_data):
+	* gst/avi/gstavidemux.h:
+	* gst/avi/gstavimux.c: (gst_avimux_vidsinkconnect),
+	(gst_avimux_do_audio_buffer), (gst_avimux_do_video_buffer):
+	* gst/colorspace/yuv2rgb.c: (number_of_bits_set),
+	(free_bits_at_top), (free_bits_at_bottom):
+	* gst/effectv/gstdice.c: (gst_dicetv_draw):
+	* gst/effectv/gstwarp.c: (gst_warptv_setup):
+	* gst/festival/gstfestival.c: (gst_festival_chain):
+	* gst/flx/gstflxdec.c: (flx_decode_chunks):
+	* gst/games/gstvideoimage.c: (paint_setup_I420),
+	(paint_setup_YV12), (paint_setup_YUY2), (paint_setup_UYVY),
+	(paint_setup_YVYU), (paint_setup_IYU2), (paint_setup_Y41B),
+	(paint_setup_Y42B), (paint_setup_Y800), (paint_setup_YVU9),
+	(paint_setup_YUV9), (paint_setup_xRGB8888), (paint_setup_xBGR8888),
+	(paint_setup_RGBx8888), (paint_setup_BGRx8888),
+	(paint_setup_RGB888), (paint_setup_BGR888), (paint_setup_RGB565),
+	(paint_setup_xRGB1555):
+	* gst/games/gstvideoimage.h:
+	* gst/goom/filters.c: (zoomFilterFastRGB):
+	* gst/goom/goom_core.c: (goom_close):
+	* gst/goom/graphic.c:
+	* gst/law/mulaw-encode.c: (gst_mulawenc_chain):
+	* gst/level/demo.c: (setup_gui):
+	* gst/librfb/rfbdecoder.c:
+	(rfb_decoder_state_wait_for_protocol_version):
+	* gst/matroska/matroska-demux.c: (gst_matroska_demux_parse_index),
+	(gst_matroska_demux_parse_blockgroup):
+	* gst/matroska/matroska-mux.c: (gst_matroska_mux_create_uid):
+	* gst/monoscope/monoscope.c: (monoscope_init):
+	* gst/mpeg1sys/gstmpeg1systemencode.c:
+	(gst_system_encode_multiplex):
+	* gst/mpeg2sub/gstmpeg2subt.c: (gst_mpeg2subt_merge_title),
+	(gst_mpeg2subt_handle_dvd_event):
+	* gst/mpegaudio/encoder.h:
+	* gst/mpegaudioparse/gstmpegaudioparse.c: (gst_mp3parse_chain):
+	* gst/mpegstream/gstdvddemux.c:
+	(gst_dvd_demux_sync_stream_to_time):
+	* gst/mpegstream/gstmpegdemux.c:
+	(gst_mpeg_demux_sync_stream_to_time),
+	(gst_mpeg_demux_handle_src_event):
+	* gst/mpegstream/gstmpegparse.c: (gst_mpeg_parse_handle_discont),
+	(index_seek), (normal_seek), (gst_mpeg_parse_handle_src_event):
+	* gst/multipart/multipartdemux.c: (gst_multipart_demux_chain):
+	* gst/playback/gstplaybasebin.c: (setup_source):
+	* gst/playback/test.c: (gen_video_element), (gen_audio_element):
+	* gst/playback/test3.c: (update_scale):
+	* gst/realmedia/rmdemux.c: (re_get_pascal_string):
+	* gst/rtjpeg/RTjpeg.c: (RTjpeg_compressYUV420),
+	(RTjpeg_compressYUV422), (RTjpeg_decompressYUV422),
+	(RTjpeg_decompressYUV420), (RTjpeg_mcompress):
+	* gst/rtp/gstrtpL16enc.c: (gst_rtpL16enc_chain):
+	* gst/synaesthesia/synaescope.c: (synaescope32), (init_synaescope),
+	(synaesthesia_close):
+	* gst/tcp/fdsetstress.c: (mess_some_more):
+	* gst/vbidec/vbidata.c: (vbidata_new_file), (vbidata_new_line):
+	* sys/glsink/glimagesink.c: (gst_glimagesink_xcontext_get):
+	* sys/ximage/ximagesink.c: (gst_ximagesink_check_xshm_calls),
+	(gst_ximagesink_ximage_new), (gst_ximagesink_ximage_destroy):
+	* sys/xvimage/xvimagesink.c: (gst_xvimagesink_check_xshm_calls),
+	(gst_xvimagesink_xvimage_new), (gst_xvimagesink_xvimage_destroy):
+	* testsuite/multifilesink/fakesrc_test.c: (test_format),
+	(test_signal):
+	* testsuite/multifilesink/lame_test.c: (test_format),
+	(test_signal):
+	* testsuite/multifilesink/oggtheora_test.c: (test_format),
+	(test_signal):
+	* testsuite/multifilesink/oggvorbis_test.c: (test_format),
+	(test_signal):
+	* testsuite/multifilesink/wavenc_test.c: (test_format),
+	(test_signal):
+	  First set of GCC4 compiler fixes.
+
 2005-04-22  Thomas Vander Stichele  <thomas at apestaart dot org>
 
 	* gst/silence/gstsilence.c: (gst_silence_change_state):

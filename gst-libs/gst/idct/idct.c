@@ -67,7 +67,7 @@ static void
 gst_idct_int_sparse_idct (short *data)
 {
   short val;
-  gint32 v, *dp = (guint32 *) data;
+  gint32 v, *dp = (gint32 *) data;
 
   v = *data;
 

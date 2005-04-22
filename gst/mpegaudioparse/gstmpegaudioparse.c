@@ -387,7 +387,7 @@ gst_mp3parse_chain (GstPad * pad, GstData * _data)
             bpf);
         break;
       } else {
-        guint bitrate, layer, rate, channels;
+        guint bitrate = 0, layer = 0, rate = 0, channels = 0;
 
         if (!mp3_type_frame_length_from_header (header, &layer,
                 &channels, &bitrate, &rate)) {

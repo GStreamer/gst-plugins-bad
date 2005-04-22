@@ -379,9 +379,9 @@ gst_video_image_copy_area (GstVideoImage * dest, gint xdest, gint ydest,
 #define ROUND_UP_8(x)  (((x)+7)&~7)
 
 static void
-paint_setup_I420 (GstVideoImage * p, char *dest)
+paint_setup_I420 (GstVideoImage * p, guint8 * dest)
 {
-  p->yp = dest;
+  p->yp = (guint8 *) dest;
   p->ystride = ROUND_UP_4 (p->width);
   p->up = p->yp + p->ystride * ROUND_UP_2 (p->height);
   p->ustride = ROUND_UP_8 (p->width) / 2;
@@ -421,7 +421,7 @@ copy_hline_I420 (GstVideoImage * dest, int xdest, int ydest,
 }
 
 static void
-paint_setup_YV12 (GstVideoImage * p, char *dest)
+paint_setup_YV12 (GstVideoImage * p, guint8 * dest)
 {
   p->yp = dest;
   p->ystride = ROUND_UP_4 (p->width);
@@ -433,7 +433,7 @@ paint_setup_YV12 (GstVideoImage * p, char *dest)
 }
 
 static void
-paint_setup_YUY2 (GstVideoImage * p, char *dest)
+paint_setup_YUY2 (GstVideoImage * p, guint8 * dest)
 {
   p->yp = dest;
   p->up = dest + 1;
@@ -443,7 +443,7 @@ paint_setup_YUY2 (GstVideoImage * p, char *dest)
 }
 
 static void
-paint_setup_UYVY (GstVideoImage * p, char *dest)
+paint_setup_UYVY (GstVideoImage * p, guint8 * dest)
 {
   p->yp = dest + 1;
   p->up = dest;
@@ -453,7 +453,7 @@ paint_setup_UYVY (GstVideoImage * p, char *dest)
 }
 
 static void
-paint_setup_YVYU (GstVideoImage * p, char *dest)
+paint_setup_YVYU (GstVideoImage * p, guint8 * dest)
 {
   p->yp = dest;
   p->up = dest + 3;
@@ -503,7 +503,7 @@ copy_hline_YUY2 (GstVideoImage * dest, int xdest, int ydest,
 }
 
 static void
-paint_setup_IYU2 (GstVideoImage * p, char *dest)
+paint_setup_IYU2 (GstVideoImage * p, guint8 * dest)
 {
   /* untested */
   p->yp = dest + 1;
@@ -540,7 +540,7 @@ copy_hline_IYU2 (GstVideoImage * dest, int xdest, int ydest,
 }
 
 static void
-paint_setup_Y41B (GstVideoImage * p, char *dest)
+paint_setup_Y41B (GstVideoImage * p, guint8 * dest)
 {
   p->yp = dest;
   p->ystride = ROUND_UP_4 (p->width);
@@ -582,7 +582,7 @@ copy_hline_Y41B (GstVideoImage * dest, int xdest, int ydest,
 }
 
 static void
-paint_setup_Y42B (GstVideoImage * p, char *dest)
+paint_setup_Y42B (GstVideoImage * p, guint8 * dest)
 {
   p->yp = dest;
   p->ystride = ROUND_UP_4 (p->width);
@@ -624,7 +624,7 @@ copy_hline_Y42B (GstVideoImage * dest, int xdest, int ydest,
 }
 
 static void
-paint_setup_Y800 (GstVideoImage * p, char *dest)
+paint_setup_Y800 (GstVideoImage * p, guint8 * dest)
 {
   /* untested */
   p->yp = dest;
@@ -652,7 +652,7 @@ copy_hline_Y800 (GstVideoImage * dest, int xdest, int ydest,
 }
 
 static void
-paint_setup_YVU9 (GstVideoImage * p, char *dest)
+paint_setup_YVU9 (GstVideoImage * p, guint8 * dest)
 {
   int h = ROUND_UP_4 (p->height);
 
@@ -666,7 +666,7 @@ paint_setup_YVU9 (GstVideoImage * p, char *dest)
 }
 
 static void
-paint_setup_YUV9 (GstVideoImage * p, char *dest)
+paint_setup_YUV9 (GstVideoImage * p, guint8 * dest)
 {
   /* untested */
   int h = ROUND_UP_4 (p->height);
@@ -711,7 +711,7 @@ copy_hline_YUV9 (GstVideoImage * dest, int xdest, int ydest,
 }
 
 static void
-paint_setup_xRGB8888 (GstVideoImage * p, char *dest)
+paint_setup_xRGB8888 (GstVideoImage * p, guint8 * dest)
 {
   p->yp = dest + 1;
   p->up = dest + 2;
@@ -721,7 +721,7 @@ paint_setup_xRGB8888 (GstVideoImage * p, char *dest)
 }
 
 static void
-paint_setup_xBGR8888 (GstVideoImage * p, char *dest)
+paint_setup_xBGR8888 (GstVideoImage * p, guint8 * dest)
 {
   p->yp = dest + 3;
   p->up = dest + 2;
@@ -731,7 +731,7 @@ paint_setup_xBGR8888 (GstVideoImage * p, char *dest)
 }
 
 static void
-paint_setup_RGBx8888 (GstVideoImage * p, char *dest)
+paint_setup_RGBx8888 (GstVideoImage * p, guint8 * dest)
 {
   p->yp = dest + 0;
   p->up = dest + 1;
@@ -741,7 +741,7 @@ paint_setup_RGBx8888 (GstVideoImage * p, char *dest)
 }
 
 static void
-paint_setup_BGRx8888 (GstVideoImage * p, char *dest)
+paint_setup_BGRx8888 (GstVideoImage * p, guint8 * dest)
 {
   p->yp = dest + 2;
   p->up = dest + 1;
@@ -751,7 +751,7 @@ paint_setup_BGRx8888 (GstVideoImage * p, char *dest)
 }
 
 static void
-paint_setup_RGB888 (GstVideoImage * p, char *dest)
+paint_setup_RGB888 (GstVideoImage * p, guint8 * dest)
 {
   p->yp = dest + 0;
   p->up = dest + 1;
@@ -761,7 +761,7 @@ paint_setup_RGB888 (GstVideoImage * p, char *dest)
 }
 
 static void
-paint_setup_BGR888 (GstVideoImage * p, char *dest)
+paint_setup_BGR888 (GstVideoImage * p, guint8 * dest)
 {
   p->yp = dest + 2;
   p->up = dest + 1;
@@ -821,7 +821,7 @@ copy_hline_str3 (GstVideoImage * dest, int xdest, int ydest,
 }
 
 static void
-paint_setup_RGB565 (GstVideoImage * p, char *dest)
+paint_setup_RGB565 (GstVideoImage * p, guint8 * dest)
 {
   p->yp = dest;
   p->ystride = ROUND_UP_4 (p->width * 2);
@@ -859,7 +859,7 @@ copy_hline_str2 (GstVideoImage * dest, int xdest, int ydest,
 }
 
 static void
-paint_setup_xRGB1555 (GstVideoImage * p, char *dest)
+paint_setup_xRGB1555 (GstVideoImage * p, guint8 * dest)
 {
   p->yp = dest;
   p->ystride = ROUND_UP_4 (p->width * 2);

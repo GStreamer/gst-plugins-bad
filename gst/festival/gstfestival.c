@@ -205,7 +205,7 @@ gst_festival_chain (GstPad * pad, GstData * _data)
   gchar *wavefile;
   int filesize;
   FILE *fd;
-  char *p;
+  guchar *p;
   char ack[4];
   int n;
   GstFestival *festival;
@@ -255,7 +255,7 @@ gst_festival_chain (GstPad * pad, GstData * _data)
 
     if (wavefile) {
       outbuf = gst_buffer_new ();
-      GST_BUFFER_DATA (outbuf) = wavefile;
+      GST_BUFFER_DATA (outbuf) = (guchar *) wavefile;
       GST_BUFFER_SIZE (outbuf) = filesize;
 
       gst_pad_push (festival->srcpad, GST_DATA (outbuf));

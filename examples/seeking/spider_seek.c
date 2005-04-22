@@ -136,7 +136,7 @@ query_rates (void)
 }
 
 G_GNUC_UNUSED static void
-query_durations ()
+query_durations (void)
 {
   GList *walk = seekable_elements;
 
@@ -165,7 +165,7 @@ query_durations ()
 }
 
 G_GNUC_UNUSED static void
-query_positions ()
+query_positions (void)
 {
   GList *walk = seekable_elements;
 
@@ -345,11 +345,11 @@ main (int argc, char **argv)
   gtk_scale_set_digits (GTK_SCALE (hscale), 2);
   gtk_range_set_update_policy (GTK_RANGE (hscale), GTK_UPDATE_CONTINUOUS);
 
-  gtk_signal_connect (GTK_OBJECT (hscale),
+  g_signal_connect (hscale,
       "button_press_event", G_CALLBACK (start_seek), pipeline);
-  gtk_signal_connect (GTK_OBJECT (hscale),
+  g_signal_connect (hscale,
       "button_release_event", G_CALLBACK (stop_seek), pipeline);
-  gtk_signal_connect (GTK_OBJECT (hscale),
+  g_signal_connect (hscale,
       "format_value", G_CALLBACK (format_value), pipeline);
 
   /* do the packing stuff ... */

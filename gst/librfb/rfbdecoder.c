@@ -157,7 +157,7 @@ rfb_decoder_state_wait_for_protocol_version (RfbDecoder * decoder)
   GST_DEBUG ("\"%.11s\"", buffer->data);
   rfb_buffer_free (buffer);
 
-  rfb_decoder_send (decoder, "RFB 003.003\n", 12);
+  rfb_decoder_send (decoder, (guchar *) "RFB 003.003\n", 12);
 
   decoder->state = rfb_decoder_state_wait_for_security;
 

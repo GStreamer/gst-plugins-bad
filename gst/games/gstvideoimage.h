@@ -67,7 +67,7 @@ struct _GstVideoFormat
   char *	fourcc;
   char *	name;
   int		bitspp;
-  void		(* paint_setup) (GstVideoImage * p, char *dest);
+  void		(* paint_setup) (GstVideoImage * p, guint8 *dest);
   void		(* paint_hline) (GstVideoImage * p, int x, int y, int w, const GstVideoColor *c);
   void		(* copy_hline) (GstVideoImage * dest, int destx, int desty,
       GstVideoImage * src, int srcx, int srcy, int w);

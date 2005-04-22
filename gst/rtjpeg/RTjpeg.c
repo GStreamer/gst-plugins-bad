@@ -2544,9 +2544,9 @@ int
 RTjpeg_compressYUV420 (__s8 * sp, unsigned char *bp)
 {
   __s8 *sb;
-  register __s8 *bp1 = bp + (RTjpeg_width << 3);
-  register __s8 *bp2 = bp + RTjpeg_Ysize;
-  register __s8 *bp3 = bp2 + (RTjpeg_Csize >> 1);
+  register __u8 *bp1 = bp + (RTjpeg_width << 3);
+  register __u8 *bp2 = bp + RTjpeg_Ysize;
+  register __u8 *bp3 = bp2 + (RTjpeg_Csize >> 1);
   register int i, j, k;
 
 #ifdef HAVE_LIBMMX
@@ -2597,8 +2597,8 @@ int
 RTjpeg_compressYUV422 (__s8 * sp, unsigned char *bp)
 {
   __s8 *sb;
-  register __s8 *bp2 = bp + RTjpeg_Ysize;
-  register __s8 *bp3 = bp2 + RTjpeg_Csize;
+  register __u8 *bp2 = bp + RTjpeg_Ysize;
+  register __u8 *bp3 = bp2 + RTjpeg_Csize;
   register int i, j, k;
 
 #ifdef HAVE_LIBMMX
@@ -2666,8 +2666,8 @@ RTjpeg_compress8 (__s8 * sp, unsigned char *bp)
 void
 RTjpeg_decompressYUV422 (__s8 * sp, __u8 * bp)
 {
-  register __s8 *bp2 = bp + RTjpeg_Ysize;
-  register __s8 *bp3 = bp2 + (RTjpeg_Csize);
+  register __u8 *bp2 = bp + RTjpeg_Ysize;
+  register __u8 *bp3 = bp2 + (RTjpeg_Csize);
   int i, j, k;
 
 #ifdef HAVE_LIBMMX
@@ -2714,9 +2714,9 @@ RTjpeg_decompressYUV422 (__s8 * sp, __u8 * bp)
 void
 RTjpeg_decompressYUV420 (__s8 * sp, __u8 * bp)
 {
-  register __s8 *bp1 = bp + (RTjpeg_width << 3);
-  register __s8 *bp2 = bp + RTjpeg_Ysize;
-  register __s8 *bp3 = bp2 + (RTjpeg_Csize >> 1);
+  register __u8 *bp1 = bp + (RTjpeg_width << 3);
+  register __u8 *bp2 = bp + RTjpeg_Ysize;
+  register __u8 *bp3 = bp2 + (RTjpeg_Csize >> 1);
   int i, j, k;
 
 #ifdef HAVE_LIBMMX
@@ -2896,8 +2896,8 @@ RTjpeg_mcompress (__s8 * sp, unsigned char *bp, __u16 lmask, __u16 cmask)
 {
   __s8 *sb;
   __s16 *block;
-  register __s8 *bp2;
-  register __s8 *bp3;
+  register __u8 *bp2;
+  register __u8 *bp3;
   register int i, j, k;
 
 #ifdef HAVE_LIBMMX

@@ -457,8 +457,8 @@ gst_ape_demux_parse_tags (GstApeDemux * ape, guint8 * data, gint size)
       break;
 
     /* read */
-    tag = g_strndup (&data[8], n - 9);
-    val = g_strndup (&data[n], len);
+    tag = g_strndup ((char *) &data[8], n - 9);
+    val = g_strndup ((char *) &data[n], len);
     if (!strcasecmp (tag, "title")) {
       type = GST_TAG_TITLE;
     } else if (!strcasecmp (tag, "artist")) {

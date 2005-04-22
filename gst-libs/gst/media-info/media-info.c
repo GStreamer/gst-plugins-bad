@@ -410,7 +410,7 @@ gst_media_info_read (GstMediaInfo * info, const char *location, guint16 flags,
 
   gst_media_info_read_with_idler (info, location, flags, error);
   if (*error)
-    return FALSE;
+    return NULL;
   while (gst_media_info_read_idler (info, &stream, error) && stream == NULL)
     /* keep looping */ ;
   if (*error)

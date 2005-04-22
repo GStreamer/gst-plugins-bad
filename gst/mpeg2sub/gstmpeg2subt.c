@@ -704,6 +704,7 @@ gst_mpeg2subt_merge_title (GstMpeg2Subt * mpeg2subt, GstBuffer * buf)
       " using %s colour table", GST_BUFFER_TIMESTAMP (buf),
       mpeg2subt->forced_display ? "menu" : "subtitle");
 
+  state.next = 0;
   state.id = 0;
   state.aligned = 1;
   state.offset[0] = mpeg2subt->offset[0];
@@ -908,7 +909,7 @@ gst_mpeg2subt_handle_dvd_event (GstMpeg2Subt * mpeg2subt, GstEvent * event,
     gst_update_still_frame (mpeg2subt);
   } else if (from_sub_pad && !strcmp (event_type, "dvd-spu-clut-change")) {
     /* Take a copy of the colour table */
-    guchar name[16];
+    gchar name[16];
     int i;
     gint value;
 

@@ -203,7 +203,7 @@ const char *canf_tv[] = { "Exempt", "G", "8 ans +", "13 ans +",
   "Reserved"
 };
 
-const char *months[] = { 0, "Jan", "Feb", "Mar", "Apr", "May",
+const char *months[] = { NULL, "Jan", "Feb", "Mar", "Apr", "May",
   "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 };
 
@@ -1000,7 +1000,7 @@ vbidata_new_file (const char *filename, vbiscreen_t * vs,
   vbidata_t *vbi = (vbidata_t *) malloc (sizeof (vbidata_t));
 
   if (!vbi) {
-    return 0;
+    return NULL;
   }
 
   vbi->fd = open (filename, O_RDONLY);
@@ -1008,7 +1008,7 @@ vbidata_new_file (const char *filename, vbiscreen_t * vs,
     fprintf (stderr, "vbidata: Can't open %s: %s\n",
         filename, strerror (errno));
     free (vbi);
-    return 0;
+    return NULL;
   }
 
   vbi->vs = vs;
@@ -1026,7 +1026,7 @@ vbidata_new_line (vbiscreen_t * vs, int verbose)
   vbidata_t *vbi = (vbidata_t *) malloc (sizeof (vbidata_t));
 
   if (!vbi) {
-    return 0;
+    return NULL;
   }
 
   vbi->vs = vs;

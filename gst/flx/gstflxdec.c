@@ -167,7 +167,8 @@ gst_flxdec_init (GstFlxDec * flxdec)
 }
 
 static void
-flx_decode_chunks (GstFlxDec * flxdec, gulong count, gchar * data, gchar * dest)
+flx_decode_chunks (GstFlxDec * flxdec, gulong count, guchar * data,
+    guchar * dest)
 {
   FlxFrameChunk *hdr;
 

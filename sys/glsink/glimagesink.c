@@ -701,7 +701,7 @@ gst_glimagesink_xcontext_get (GstGLImageSink * glimagesink)
 
   /* create a GLX context */
   xcontext->glx =
-      glXCreateContext (xcontext->disp, xcontext->visualinfo, 0, GL_TRUE);
+      glXCreateContext (xcontext->disp, xcontext->visualinfo, NULL, GL_TRUE);
 
   if (glXIsDirect (xcontext->disp, xcontext->glx))
     printf ("Congrats, you have Direct Rendering!\n");

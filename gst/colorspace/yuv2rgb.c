@@ -297,8 +297,7 @@ gst_colorspace_YV12_to_bgr16_mmx (GstColorspace * space, unsigned char *src,
  */
 
 static int
-number_of_bits_set (a)
-     unsigned long a;
+number_of_bits_set (unsigned long a)
 {
   if (!a)
     return 0;
@@ -312,8 +311,7 @@ number_of_bits_set (a)
  * Low performance, do not call often.
  */
 static int
-free_bits_at_top (a)
-     unsigned long a;
+free_bits_at_top (unsigned long a)
 {
   /* assume char is 8 bits */
   if (!a)
@@ -329,8 +327,7 @@ free_bits_at_top (a)
  * Low performance, do not call often.
  */
 static int
-free_bits_at_bottom (a)
-     unsigned long a;
+free_bits_at_bottom (unsigned long a)
 {
   /* assume char is 8 bits */
   if (!a)

@@ -196,7 +196,7 @@ gst_xwin_refresh (gpointer data)
   xswa.save_under = False;
   tmp = XCreateWindow (xwin->main_display, win, 0, 0,
       attr.width, attr.height, 0,
-      CopyFromParent, InputOutput, CopyFromParent,
+      CopyFromParent, InputOutput, (Visual *) CopyFromParent,
       (CWSaveUnder | CWBackingStore | CWOverrideRedirect), &xswa);
   XMapWindow (xwin->main_display, tmp);
   XUnmapWindow (xwin->main_display, tmp);
