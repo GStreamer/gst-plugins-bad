@@ -1,3 +1,10 @@
+2005-04-25  jonathan@kaolin.hn.org
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/audioscale/gstaudioscale.c:
+	  Allow floating-point audio passthrough, makes OS X happy (#301759).
+
 2005-04-25  Koop Mast  <kwm@rainbow-runner.nl>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
