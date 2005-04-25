@@ -1,3 +1,11 @@
+2005-04-25  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/ogg/gstoggdemux.c: (get_relative), (gst_ogg_pad_new),
+	(gst_ogg_demux_push), (gst_ogg_sync):
+	  Cache start-time values; flush ogg-streams after each re-seek
+	  to make sure we don't handle cached samples (which make it
+	  hang further on). Fixes #171777.
+
 2005-04-25  jonathan@kaolin.hn.org
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
