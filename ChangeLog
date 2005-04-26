@@ -1,3 +1,16 @@
+2005-04-26  Wim Taymans  <wim@fluendo.com>
+
+	* gst/tcp/gstmultifdsink.c: (gst_multifdsink_init),
+	(gst_multifdsink_add), (gst_multifdsink_remove),
+	(gst_multifdsink_clear), (gst_multifdsink_get_stats),
+	(gst_multifdsink_remove_client_link),
+	(gst_multifdsink_queue_buffer), (gst_multifdsink_handle_clients),
+	(gst_multifdsink_close):
+	* gst/tcp/gstmultifdsink.h:
+	Made the locks recursive so that we don't have to release
+	the lock in the REMOVED signal and potentially screw up our
+	lists.
+
 2005-04-25  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* ext/ogg/gstoggdemux.c: (get_relative), (gst_ogg_pad_new),
