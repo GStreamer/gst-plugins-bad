@@ -1,3 +1,15 @@
+2005-04-27  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/cdparanoia/gstcdparanoia.c: (cdparanoia_init),
+	(cdparanoia_get_property), (get_first_sector), (get_relative),
+	(set_track), (is_track_switch), (cdparanoia_get),
+	(add_index_associations), (cdparanoia_open),
+	(cdparanoia_change_state), (cdparanoia_event),
+	(cdparanoia_convert), (cdparanoia_query), (plugin_init),
+	(cdparanoia_uri_set_uri):
+	* ext/cdparanoia/gstcdparanoia.h:
+	  Implement a per-track mode (#162355), required for #171600.
+
 2005-04-26  Wim Taymans  <wim@fluendo.com>
 
 	* gst/tcp/gstmultifdsink.c: (gst_multifdsink_init),
