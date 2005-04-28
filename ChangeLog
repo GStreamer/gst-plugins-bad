@@ -1,3 +1,15 @@
+2005-04-28  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/cdparanoia/Makefile.am:
+	* ext/cdparanoia/base64.c: (rfc822_binary):
+	* ext/cdparanoia/base64.h:
+	* ext/cdparanoia/gstcdparanoia.c: (cdparanoia_class_init),
+	(get_musicbrainz_discid), (get_cddb_info), (cdparanoia_open):
+	* ext/cdparanoia/sha1.c: (sha_transform), (sha_init), (sha_update),
+	(sha_final), (sha_stream), (sha_print), (sha_version):
+	* ext/cdparanoia/sha1.h:
+	  Calculate musicbrainz discid.
+
 2005-04-27  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* ext/cdparanoia/gstcdparanoia.c: (cdparanoia_init),
