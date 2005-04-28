@@ -1,5 +1,12 @@
 2005-04-28  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* ext/cdparanoia/gstcdparanoia.c: (cdparanoia_init),
+	(cdparanoia_get), (cdparanoia_open), (cdparanoia_change_state):
+	* ext/cdparanoia/gstcdparanoia.h:
+	  Metadata handling fixes.
+
+2005-04-28  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* ext/cdparanoia/Makefile.am:
 	* ext/cdparanoia/base64.c: (rfc822_binary):
 	* ext/cdparanoia/base64.h:
