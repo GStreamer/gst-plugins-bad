@@ -1,3 +1,8 @@
+2005-04-29  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/pango/gsttextoverlay.c: (render_text):
+	  Fix offset bug (#172845).
+
 2005-04-28  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* ext/cdparanoia/gstcdparanoia.c: (cdparanoia_init),
