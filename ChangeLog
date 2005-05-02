@@ -1,3 +1,14 @@
+2005-05-02  Wouter Paesen  <wouter@kangaroot.net>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/adder/gstadder.c: (gst_adder_link), (gst_adder_class_init),
+	(gst_adder_init), (gst_adder_request_new_pad),
+	(gst_adder_get_property), (gst_adder_set_property),
+	(gst_adder_loop):
+	* gst/adder/gstadder.h:
+	  Fix EOS handling (#301944).
+
 2005-04-29  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* ext/pango/gsttextoverlay.c: (render_text):
