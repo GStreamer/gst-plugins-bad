@@ -1,5 +1,12 @@
 2005-05-02  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* gst/playback/gstplaybasebin.c: (probe_triggered):
+	  Doh, silly. Always remove pointer to deleted objects before
+	  emitting signals that may access this pointer. Should fix
+	  the segfaults in Totem on chain-switches.
+
+2005-05-02  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* ext/pango/gsttextoverlay.c: (gst_textoverlay_event),
 	(gst_textoverlay_loop), (gst_textoverlay_change_state),
 	(gst_textoverlay_init):
