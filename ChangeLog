@@ -1,3 +1,9 @@
+2005-05-02  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/mad/gstmad.c: (gst_mad_init), (gst_mad_update_info),
+	(gst_mad_chain):
+	  Report bitrate - based on patch by jonathan@kaolin.hn.org (#302625).
+
 2005-05-02  Wouter Paesen  <wouter@kangaroot.net>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
