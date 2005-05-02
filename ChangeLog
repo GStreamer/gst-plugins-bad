@@ -1,5 +1,13 @@
 2005-05-02  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* ext/pango/gsttextoverlay.c: (gst_textoverlay_event),
+	(gst_textoverlay_loop), (gst_textoverlay_change_state),
+	(gst_textoverlay_init):
+	* ext/pango/gsttextoverlay.h:
+	  Handle EOS better (#302220).
+
+2005-05-02  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* ext/mad/gstmad.c: (gst_mad_init), (gst_mad_update_info),
 	(gst_mad_chain):
 	  Report bitrate - based on patch by jonathan@kaolin.hn.org (#302625).
