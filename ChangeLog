@@ -1,3 +1,9 @@
+2005-05-03  Gergely Nagy  <algernon@bonehunter.rulez.org>
+
+	* ext/ogg/gstoggmux.c: Lower default max-page-delay and
+	max-delay from 5 seconds to half a second. Fixes A/V
+	issues in live streams.
+
 2005-05-02  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* gst/playback/gstplaybasebin.c: (probe_triggered):
