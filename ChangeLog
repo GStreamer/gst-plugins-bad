@@ -1,6 +1,11 @@
 2005-05-04  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* ext/mad/gstmad.c: (gst_mad_update_info):
+	  Remove g_print from previous commit.
+
+2005-05-04  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/mad/gstmad.c: (gst_mad_update_info):
 	  That wasn't all too good for performance in Totem...
 
 2005-05-04  William Jon McCann  <mccann@jhu.edu>
