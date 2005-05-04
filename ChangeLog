@@ -1,3 +1,13 @@
+2005-05-04  William Jon McCann  <mccann@jhu.edu>
+
+	Reviewed by: Tim-Philipp Müller  <tim at centricular dot net>
+
+	* ext/cairo/gsttextoverlay.c: (gst_textoverlay_render_text):
+	* ext/cairo/gsttimeoverlay.c: (gst_timeoverlay_planar411):
+	  Make work with future Cairo 0.5 API. Modified patch so
+	  that things keep working with the current Cairo release
+	  (#30222).
+
 2005-05-04  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* ext/mad/gstmad.c: (gst_mad_chain):
