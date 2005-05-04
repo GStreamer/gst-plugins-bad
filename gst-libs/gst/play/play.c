@@ -314,10 +314,11 @@ gst_play_set_location (GstPlay * play, const char *location)
   else if (location[0] == '/')
     uri = g_strdup_printf ("file://%s", location);
   else {
-    char cwd[256];
+    gchar *cwd;
 
-    getcwd (cwd, 255);
+    cwd = g_get_current_dir ();
     uri = g_strdup_printf ("file://%s/%s", cwd, location);
+    g_free (cwd);
   }
   g_object_set (play->priv->playbin, "uri", uri, NULL);
   g_free (uri);
