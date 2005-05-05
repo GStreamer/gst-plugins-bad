@@ -54,6 +54,12 @@
 	* ext/nas/nassink.c: (gst_nassink_init), (gst_nassink_sync_parms),
 	(gst_nassink_sinkconnect), (gst_nassink_chain_handle_event),
 	(gst_nassink_chain):
+	  Make elment event-aware and handle discont events in a gross, but 
+	  effective manner. Makes seeking work here. (was part of the previous 
+	  commit)
+
+2005-05-05  Tim-Philipp Müller  <tim at centricular dot net>
+
 	* sys/glsink/glimagesink.c: (gst_glimagesink_buffer_alloc):
 	* sys/v4l/gstv4ltuner.c: (gst_v4l_tuner_signal_strength):
 	* sys/v4l/gstv4lxoverlay.c: (gst_v4l_xoverlay_open):
