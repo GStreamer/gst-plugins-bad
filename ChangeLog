@@ -1,3 +1,11 @@
+2005-05-05  David Schleef  <ds@schleef.org>
+
+	* gst/videotestsrc/videotestsrc.c: Convert everything that
+	means "raw bits" to guint8.  Also remove the dest field in
+	paintinfo_struct, since it's not used.  Fixes a potential
+	bug where it was used.
+	* gst/videotestsrc/videotestsrc.h:
+
 2005-05-05  Tim-Philipp Müller  <tim at centricular dot net>
 
 	* examples/seeking/cdplayer.c: (update_scale):
