@@ -1,5 +1,23 @@
 2005-05-05  Tim-Philipp Müller  <tim at centricular dot net>
 
+	* ext/nas/nassink.c: (gst_nassink_init), (gst_nassink_sync_parms),
+	(gst_nassink_sinkconnect), (gst_nassink_chain_handle_event),
+	(gst_nassink_chain):
+	* sys/glsink/glimagesink.c: (gst_glimagesink_buffer_alloc):
+	* sys/v4l/gstv4ltuner.c: (gst_v4l_tuner_signal_strength):
+	* sys/v4l/gstv4lxoverlay.c: (gst_v4l_xoverlay_open):
+	* sys/v4l2/gstv4l2element.c: (gst_v4l2element_get_property):
+	* sys/v4l2/gstv4l2xoverlay.c: (gst_v4l2_xoverlay_open):
+	* sys/v4l2/v4l2_calls.c: (gst_v4l2_fill_lists):
+	* sys/v4lradio/gstv4lradiotuner.c:
+	(gst_v4lradio_tuner_signal_strength):
+	* sys/ximage/ximagesink.c: (gst_ximagesink_buffer_alloc):
+	* sys/xvimage/xvimagesink.c: (gst_xvimagesink_get_xv_support),
+	(gst_xvimagesink_sink_link), (gst_xvimagesink_buffer_alloc):
+	  More gcc-4.0 fixes.
+
+2005-05-05  Tim-Philipp Müller  <tim at centricular dot net>
+
 	* gst/speed/demo-mp3.c: (time_tick_cb):
 	* gst/speed/gstspeed.c: (speed_parse_caps):
 	* gst/subparse/gstsubparse.c: (get_next_line),

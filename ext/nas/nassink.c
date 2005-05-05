@@ -170,6 +170,8 @@ gst_nassink_init (GstNassink * nassink)
   gst_pad_set_getcaps_function (nassink->sinkpad, gst_nassink_getcaps);
   gst_pad_set_fixate_function (nassink->sinkpad, gst_nassink_fixate);
 
+  GST_FLAG_SET (nassink, GST_ELEMENT_EVENT_AWARE);
+
   nassink->mute = FALSE;
   nassink->depth = 16;
   nassink->tracks = 2;
@@ -357,9 +359,39 @@ gst_nassink_sinkconnect (GstPad * pad, const GstCaps * caps)
 }
 
 static void
+gst_nassink_chain_handle_event (GstNassink * nassink, GstPad * pad,
+    GstEvent * event)
+{
+  switch (GST_EVENT_TYPE (event)) {
+    case GST_EVENT_EOS:
+/*
+      gst_audio_clock_set_active (GST_AUDIO_CLOCK (esdsink->provided_clock),
+          FALSE);
+*/
+      gst_pad_event_default (pad, event);
+      return;
+    case GST_EVENT_DISCONTINUOUS:
+      /* evil hack */
+      gst_nassink_close_audio (nassink);
+      gst_nassink_open_audio (nassink);
+      nassink->flow = AuGetScratchFlow (nassink->audio, NULL);
+      if (nassink->flow == 0) {
+        GST_CAT_DEBUG (NAS, "couldn't get flow");
+        // return -1 (throw error?)
+      }
+      gst_pad_event_default (pad, event);
+      return;
+    default:
+      gst_pad_event_default (pad, event);
+      return;
+  }
+  gst_event_unref (event);
+}
+
+static void
 gst_nassink_chain (GstPad * pad, GstData * _data)
 {
-  GstBuffer *buf = GST_BUFFER (_data);
+  GstBuffer *buf;
   int pos = 0;
   int remaining;
   int available;
@@ -367,12 +399,21 @@ gst_nassink_chain (GstPad * pad, GstData * _data)
 
   g_return_if_fail (pad != NULL);
   g_return_if_fail (GST_IS_PAD (pad));
-  g_return_if_fail (buf != NULL);
+  g_return_if_fail (_data != NULL);
 
   nassink = GST_NASSINK (gst_pad_get_parent (pad));
 
+  if (GST_IS_EVENT (_data)) {
+    gst_nassink_chain_handle_event (nassink, pad, GST_EVENT (_data));
+    return;
+  }
+
+  if (nassink->buf == NULL)
+    gst_nassink_sync_parms (nassink);   // FIXME: if return false, error
+
   g_return_if_fail (nassink->buf != NULL);
 
+  buf = GST_BUFFER (_data);
   if (GST_BUFFER_DATA (buf) != NULL) {
     if (!nassink->mute && nassink->audio != NULL) {
 

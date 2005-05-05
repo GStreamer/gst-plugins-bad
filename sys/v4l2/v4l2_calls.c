@@ -106,7 +106,7 @@ gst_v4l2_fill_lists (GstV4l2Element * v4l2element)
 
       v4l2channel = g_object_new (GST_TYPE_V4L2_TUNER_CHANNEL, NULL);
       channel = GST_TUNER_CHANNEL (v4l2channel);
-      channel->label = g_strdup (input.name);
+      channel->label = g_strdup ((const gchar *) input.name);
       channel->flags = GST_TUNER_CHANNEL_INPUT;
       v4l2channel->index = n;
       if (input.type == V4L2_INPUT_TYPE_TUNER) {
@@ -162,7 +162,7 @@ gst_v4l2_fill_lists (GstV4l2Element * v4l2element)
 
       v4l2channel = g_object_new (GST_TYPE_V4L2_TUNER_CHANNEL, NULL);
       channel = GST_TUNER_CHANNEL (v4l2channel);
-      channel->label = g_strdup (output.name);
+      channel->label = g_strdup ((const gchar *) output.name);
       channel->flags = GST_TUNER_CHANNEL_OUTPUT;
       v4l2channel->index = n;
       if (output.audioset) {
@@ -198,7 +198,7 @@ gst_v4l2_fill_lists (GstV4l2Element * v4l2element)
 
     v4l2norm = g_object_new (GST_TYPE_V4L2_TUNER_NORM, NULL);
     norm = GST_TUNER_NORM (v4l2norm);
-    norm->label = g_strdup (standard.name);
+    norm->label = g_strdup ((const gchar *) standard.name);
     norm->fps = (gfloat) standard.frameperiod.denominator /
         standard.frameperiod.numerator;
     v4l2norm->index = standard.id;
@@ -259,7 +259,7 @@ gst_v4l2_fill_lists (GstV4l2Element * v4l2element)
 
     v4l2channel = g_object_new (GST_TYPE_V4L2_COLOR_BALANCE_CHANNEL, NULL);
     channel = GST_COLOR_BALANCE_CHANNEL (v4l2channel);
-    channel->label = g_strdup (control.name);
+    channel->label = g_strdup ((const gchar *) control.name);
     v4l2channel->index = n;
 
 #if 0

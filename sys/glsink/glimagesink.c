@@ -1137,7 +1137,7 @@ gst_glimagesink_buffer_alloc (GstPad * pad, guint64 offset, guint size)
     /* Storing some pointers in the buffer */
     GST_BUFFER_PRIVATE (buffer) = ximage;
 
-    GST_BUFFER_DATA (buffer) = ximage->data;
+    GST_BUFFER_DATA (buffer) = (guint8 *) ximage->data;
     GST_BUFFER_FREE_DATA_FUNC (buffer) = gst_glimagesink_buffer_free;
     GST_BUFFER_SIZE (buffer) = ximage->size;
     return buffer;

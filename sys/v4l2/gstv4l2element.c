@@ -535,7 +535,7 @@ gst_v4l2element_get_property (GObject * object,
       gchar *new = NULL;
 
       if (GST_V4L2_IS_OPEN (v4l2element))
-        new = v4l2element->vcap.card;
+        new = (gchar *) v4l2element->vcap.card;
       g_value_set_string (value, new);
       break;
     }
