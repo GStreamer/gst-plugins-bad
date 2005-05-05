@@ -1,3 +1,9 @@
+2005-05-05  Edward Hervey  <bilboed@bilboed.com>
+
+	* ext/faad/gstfaad.c: (gst_faad_sinkconnect), (gst_faad_chain):
+	faacDecInit[2]() uses (unsigned int *) and not (unsigned long *) for
+	the samplerate argument.
+
 2005-05-04  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* ext/mad/gstmad.c: (gst_mad_update_info):
