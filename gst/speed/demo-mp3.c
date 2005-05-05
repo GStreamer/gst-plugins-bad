@@ -39,7 +39,7 @@ static gboolean
 time_tick_cb (GstElement * audiosink)
 {
   GstFormat format = GST_FORMAT_TIME;
-  guint64 total, pos;
+  gint64 total, pos;
 
   if (gst_element_query (audiosink, GST_QUERY_TOTAL, &format, &total)
       && gst_element_query (audiosink, GST_QUERY_POSITION, &format, &pos)) {

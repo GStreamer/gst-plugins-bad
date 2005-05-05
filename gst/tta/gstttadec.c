@@ -107,14 +107,18 @@ gst_tta_dec_link (GstPad * pad, const GstCaps * caps)
   GstStructure *structure = gst_caps_get_structure (caps, 0);
   GstCaps *srccaps;
   guint64 outsize;
-  guint bits;
+  gint bits, chans, samplerate;
 
   if (!gst_caps_is_fixed (caps))
     return GST_PAD_LINK_DELAYED;
 
-  gst_structure_get_int (structure, "rate", &ttadec->samplerate);
-  gst_structure_get_int (structure, "channels", &ttadec->channels);
-  gst_structure_get_int (structure, "width", &bits);
+  if (!gst_structure_get_int (structure, "rate", &samplerate)
+      || !gst_structure_get_int (structure, "channels", &chans)
+      || !gst_structure_get_int (structure, "width", &bits))
+    return GST_PAD_LINK_REFUSED;
+
+  ttadec->samplerate = samplerate;
+  ttadec->channels = chans;
   ttadec->bytes = bits / 8;
 
   srccaps = gst_caps_new_simple ("audio/x-raw-int",

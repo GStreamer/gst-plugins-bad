@@ -1181,8 +1181,8 @@ vbidata_process_frame (vbidata_t * vbi, int printdebug)
     return;
   }
 
-  ProcessLine (vbi, &vbi->buf[DO_LINE * 2048], 0);
-  ProcessLine (vbi, &vbi->buf[(16 + DO_LINE) * 2048], 1);
+  ProcessLine (vbi, (unsigned char *) &vbi->buf[DO_LINE * 2048], 0);
+  ProcessLine (vbi, (unsigned char *) &vbi->buf[(16 + DO_LINE) * 2048], 1);
 }
 
 void

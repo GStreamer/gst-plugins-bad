@@ -1,3 +1,43 @@
+2005-05-05  Tim-Philipp Müller  <tim at centricular dot net>
+
+	* gst/speed/demo-mp3.c: (time_tick_cb):
+	* gst/speed/gstspeed.c: (speed_parse_caps):
+	* gst/subparse/gstsubparse.c: (get_next_line),
+	(gst_subparse_buffer_format_autodetect),
+	(gst_subparse_format_autodetect), (gst_subparse_loop),
+	(gst_subparse_type_find):
+	* gst/tags/gstid3tag.c: (gst_tag_list_new_from_id3v1):
+	* gst/tags/gstvorbistag.c:
+	(gst_tag_list_from_vorbiscomment_buffer), (gst_vorbis_tag_chain):
+	* gst/tcp/gstmultifdsink.c: (gst_multifdsink_client_queue_data),
+	(gst_multifdsink_client_queue_caps),
+	(gst_multifdsink_client_queue_buffer):
+	* gst/tcp/gsttcpserversink.c:
+	(gst_tcpserversink_handle_server_read):
+	* gst/tcp/gsttcpsink.c: (gst_tcpsink_sink_link):
+	* gst/tcp/gsttcpsrc.c: (gst_tcpsrc_get):
+	* gst/tta/gstttadec.c: (gst_tta_dec_link):
+	* gst/typefind/gsttypefindfunctions.c: (mp3_type_find),
+	(qt_type_find):
+	* gst/udp/gstudpsink.c: (gst_udpsink_sink_link):
+	* gst/udp/gstudpsrc.c: (gst_udpsrc_get):
+	* gst/vbidec/vbidata.c: (vbidata_process_frame):
+	* gst/videomixer/videomixer.c: (gst_videomixer_pad_sinkconnect):
+	* gst/videotestsrc/videotestsrc.c: (gst_videotestsrc_smpte),
+	(gst_videotestsrc_snow), (gst_videotestsrc_black),
+	(paint_setup_I420), (paint_setup_YV12), (paint_setup_YUY2),
+	(paint_setup_UYVY), (paint_setup_YVYU), (paint_setup_IYU2),
+	(paint_setup_Y41B), (paint_setup_Y42B), (paint_setup_Y800),
+	(paint_setup_YVU9), (paint_setup_YUV9), (paint_setup_xRGB8888),
+	(paint_setup_xBGR8888), (paint_setup_RGBx8888),
+	(paint_setup_BGRx8888), (paint_setup_RGB888), (paint_setup_BGR888),
+	(paint_setup_RGB565), (paint_setup_xRGB1555):
+	* gst/volenv/gstvolenv.c: (gst_volenv_chain):
+	* gst/wavenc/gstwavenc.c: (gst_wavenc_setup),
+	(gst_wavenc_sinkconnect):
+	* gst/y4m/gsty4mencode.c: (gst_y4mencode_chain):
+	  gcc-4.0 fixes part one
+
 2005-05-05  Edward Hervey  <bilboed@bilboed.com>
 
 	* ext/faad/gstfaad.c: (gst_faad_sinkconnect), (gst_faad_chain):

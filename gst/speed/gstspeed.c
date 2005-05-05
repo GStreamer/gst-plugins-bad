@@ -116,7 +116,7 @@ speed_parse_caps (GstSpeed * filter, const GstCaps * caps)
 {
   const gchar *mimetype;
   GstStructure *structure;
-  gboolean ret;
+  gint rate, chans, width, buffer_frames;
 
   g_return_val_if_fail (filter != NULL, FALSE);
   g_return_val_if_fail (caps != NULL, FALSE);
@@ -131,12 +131,19 @@ speed_parse_caps (GstSpeed * filter, const GstCaps * caps)
   else
     return FALSE;
 
-  ret = gst_structure_get_int (structure, "rate", &filter->rate);
-  ret &= gst_structure_get_int (structure, "channels", &filter->channels);
-  ret &= gst_structure_get_int (structure, "width", &filter->width);
+  if (!gst_structure_get_int (structure, "rate", &rate)
+      || !gst_structure_get_int (structure, "width", &width)
+      || !gst_structure_get_int (structure, "channels", &chans))
+    return FALSE;
 
-  filter->buffer_frames = 0;
-  gst_structure_get_int (structure, "buffer-frames", &filter->buffer_frames);
+  filter->rate = rate;
+  filter->width = width;
+  filter->channels = chans;
+
+  if (gst_structure_get_int (structure, "buffer-frames", &buffer_frames))
+    filter->buffer_frames = buffer_frames;
+  else
+    filter->buffer_frames = 0;
 
   if (filter->format == GST_SPEED_FORMAT_FLOAT) {
     filter->sample_size = filter->channels * filter->width / 8;
@@ -145,7 +152,7 @@ speed_parse_caps (GstSpeed * filter, const GstCaps * caps)
     filter->sample_size = filter->channels * filter->width / 8;
   }
 
-  return ret;
+  return TRUE;
 }
 
 GType

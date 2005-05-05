@@ -213,9 +213,9 @@ gst_y4mencode_chain (GstPad * pad, GstData * _data)
     header = "FRAME\n";
   }
 
-  snprintf (GST_BUFFER_DATA (outbuf), 255, header,
+  g_snprintf ((gchar *) GST_BUFFER_DATA (outbuf), 255, header,
       filter->width, filter->height, filter->fps_idx);
-  len = strlen (GST_BUFFER_DATA (outbuf));
+  len = strlen ((gchar *) GST_BUFFER_DATA (outbuf));
 
   memcpy (GST_BUFFER_DATA (outbuf) + len, GST_BUFFER_DATA (buf),
       GST_BUFFER_SIZE (buf));
