@@ -1,5 +1,56 @@
 2005-05-05  Tim-Philipp Müller  <tim at centricular dot net>
 
+	* examples/seeking/cdplayer.c: (update_scale):
+	* examples/seeking/playbin.c: (update_scale):
+	* examples/seeking/seek.c: (update_scale):
+	* examples/seeking/spider_seek.c: (update_scale):
+	* ext/aalib/gstaasink.c: (gst_aasink_scale), (gst_aasink_chain):
+	* ext/alsa/gstalsa.c: (gst_alsa_get_format), (gst_alsa_get_caps):
+	* ext/alsa/gstalsamixer.c: (gst_alsa_mixer_get_option):
+	* ext/alsa/gstalsasink.c: (gst_alsa_sink_check_event),
+	(gst_alsa_sink_mmap):
+	* ext/alsa/gstalsasrc.c: (gst_alsa_src_mmap):
+	* ext/audiofile/gstafsink.c: (gst_afsink_open_file):
+	* ext/cairo/gsttextoverlay.c: (gst_textoverlay_render_text),
+	(gst_textoverlay_loop):
+	* ext/cairo/gsttimeoverlay.c: (gst_timeoverlay_planar411):
+	* ext/cdparanoia/gstcdparanoia.c: (get_musicbrainz_discid):
+	* ext/dv/gstdvdec.c: (gst_dvdec_handle_sink_event):
+	* ext/dvdread/dvdreadsrc.c: (dvdnavsrc_make_clut_change_event):
+	* ext/flac/gstflacdec.c: (gst_flacdec_update_metadata):
+	* ext/flac/gstflactag.c: (gst_flac_tag_chain):
+	* ext/gnomevfs/gstgnomevfssrc.c:
+	(gst_gnomevfssrc_get_icy_metadata):
+	* ext/jpeg/gstsmokedec.c: (gst_smokedec_chain):
+	* ext/jpeg/gstsmokeenc.c: (gst_smokeenc_chain):
+	* ext/jpeg/smokecodec.c: (find_best_size):
+	* ext/lame/gstlame.c: (add_one_tag), (gst_lame_chain):
+	* ext/mad/gstid3tag.c: (mad_id3_parse_latin1_string),
+	(mad_id3_parse_comment_frame), (gst_mad_id3_to_tag_list),
+	(gst_id3_tag_handle_event):
+	* ext/mad/gstmad.c: (gst_mad_handle_event), (gst_mad_chain):
+	* ext/mpeg2dec/gstmpeg2dec.c:
+	* ext/musicbrainz/gsttrm.c: (gst_musicbrainz_sinkconnect),
+	(gst_musicbrainz_chain):
+	* ext/ogg/gstoggmux.c: (gst_ogg_mux_next_buffer):
+	* ext/pango/gsttextoverlay.c: (gst_textoverlay_loop):
+	* ext/smoothwave/gstsmoothwave.c: (gst_smoothwave_chain):
+	* ext/spc/gstspc.c: (spc_setup):
+	* ext/speex/gstspeexdec.c: (speex_dec_src_event),
+	(speex_dec_event), (speex_dec_chain):
+	* ext/speex/gstspeexenc.c: (gst_speexenc_chain):
+	* ext/theora/theoradec.c: (theora_dec_src_query),
+	(theora_dec_src_event), (theora_dec_event), (theora_dec_chain):
+	* ext/theora/theoraenc.c: (theora_enc_chain):
+	* ext/vorbis/vorbisdec.c: (vorbis_dec_src_event),
+	(vorbis_dec_event), (vorbis_dec_chain):
+	* ext/vorbis/vorbisenc.c: (gst_vorbisenc_chain):
+	* ext/wavpack/unpack.c: (init_wv_bitstream), (init_wvc_bitstream),
+	(init_wvx_bitstream):
+	  Even more gcc-4.0 fixes.
+
+2005-05-05  Tim-Philipp Müller  <tim at centricular dot net>
+
 	* ext/nas/nassink.c: (gst_nassink_init), (gst_nassink_sync_parms),
 	(gst_nassink_sinkconnect), (gst_nassink_chain_handle_event),
 	(gst_nassink_chain):

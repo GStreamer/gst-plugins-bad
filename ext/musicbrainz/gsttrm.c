@@ -176,7 +176,7 @@ gst_musicbrainz_sinkconnect (GstPad * pad, const GstCaps * caps)
   GstMusicBrainz *musicbrainz;
   GstStructure *structure;
   const gchar *mimetype;
-  gint width;
+  gint width, depth, chans, rate;
 
   musicbrainz = GST_MUSICBRAINZ (gst_pad_get_parent (pad));
 
@@ -185,18 +185,18 @@ gst_musicbrainz_sinkconnect (GstPad * pad, const GstCaps * caps)
   structure = gst_caps_get_structure (caps, 0);
   mimetype = gst_structure_get_name (structure);
 
-  if (!gst_structure_get_int (structure, "depth", &musicbrainz->depth) ||
-      !gst_structure_get_int (structure, "width", &width))
+  if (!gst_structure_get_int (structure, "depth", &depth) ||
+      !gst_structure_get_int (structure, "width", &width) ||
+      !gst_structure_get_int (structure, "channels", &chans) ||
+      !gst_structure_get_int (structure, "rate", &rate))
     return GST_PAD_LINK_REFUSED;
 
-  if (musicbrainz->depth != width)
+  if (depth != width)
     return GST_PAD_LINK_REFUSED;
 
-  if (!gst_structure_get_int (structure, "channels", &musicbrainz->channels))
-    return GST_PAD_LINK_REFUSED;
-
-  if (!gst_structure_get_int (structure, "rate", &musicbrainz->rate))
-    return GST_PAD_LINK_REFUSED;
+  musicbrainz->rate = rate;
+  musicbrainz->depth = depth;
+  musicbrainz->channels = chans;
 
   trm_SetPCMDataInfo (musicbrainz->trm, musicbrainz->rate,
       musicbrainz->channels, musicbrainz->depth);
@@ -272,8 +272,8 @@ gst_musicbrainz_chain (GstPad * pad, GstData * data)
     }
 
   if (!musicbrainz->signature_available
-      && trm_GenerateSignature (musicbrainz->trm, GST_BUFFER_DATA (buf),
-          GST_BUFFER_SIZE (buf))) {
+      && trm_GenerateSignature (musicbrainz->trm,
+          (gchar *) GST_BUFFER_DATA (buf), GST_BUFFER_SIZE (buf))) {
     GST_DEBUG ("Signature");
 
     if (musicbrainz->proxy_address != NULL) {

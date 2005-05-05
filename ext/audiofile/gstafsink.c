@@ -302,12 +302,15 @@ gst_afsink_open_file (GstAFSink * sink)
   if (caps == NULL) {
     g_critical ("gstafsink chain : Could not get caps of pad !\n");
   } else {
+    gint rate = 0;
+
     structure = gst_caps_get_structure (caps, 0);
     gst_structure_get_int (structure, "channels", &sink->channels);
     gst_structure_get_int (structure, "width", &sink->width);
-    gst_structure_get_int (structure, "rate", &sink->rate);
+    gst_structure_get_int (structure, "rate", &rate);
     gst_structure_get_boolean (structure, "signed", &sink->is_signed);
     gst_structure_get_int (structure, "endianness", &sink->endianness_data);
+    sink->rate = rate;
   }
   GST_DEBUG ("channels %d, width %d, rate %d, signed %s",
       sink->channels, sink->width, sink->rate, sink->is_signed ? "yes" : "no");

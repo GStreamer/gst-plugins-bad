@@ -314,7 +314,7 @@ gst_smoothwave_chain (GstPad * pad, GstData * _data)
     gint i;
     gint qheight;
     const gint16 *samples =
-        (const guint16 *) gst_adapter_peek (smoothwave->adapter, bytesperread);
+        (const gint16 *) gst_adapter_peek (smoothwave->adapter, bytesperread);
     gint stride = smoothwave->width;
 
     /* First draw the new waveform */

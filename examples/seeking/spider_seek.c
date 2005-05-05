@@ -13,7 +13,7 @@ static GList *seekable_elements = NULL;
 static GstElement *pipeline;
 static GtkAdjustment *adjustment;
 static gboolean stats = FALSE;
-static guint64 duration;
+static gint64 duration;
 
 static guint update_id;
 
@@ -197,7 +197,7 @@ static gboolean
 update_scale (gpointer data)
 {
   GstClock *clock;
-  guint64 position;
+  gint64 position;
   GstFormat format = GST_FORMAT_TIME;
 
   duration = 0;

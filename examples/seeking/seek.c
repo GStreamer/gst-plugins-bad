@@ -12,7 +12,7 @@ static GList *rate_pads = NULL;
 static GList *seekable_elements = NULL;
 
 static GstElement *pipeline;
-static guint64 duration;
+static gint64 duration;
 static GtkAdjustment *adjustment;
 static GtkWidget *hscale;
 static gboolean stats = FALSE;
@@ -786,7 +786,7 @@ static gboolean
 update_scale (gpointer data)
 {
   GstClock *clock;
-  guint64 position;
+  gint64 position;
   GstFormat format = GST_FORMAT_TIME;
   gboolean res;
 
