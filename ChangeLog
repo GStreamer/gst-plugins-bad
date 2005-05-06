@@ -1,3 +1,10 @@
+2005-05-06  Tim-Philipp Müller  <tim at centricular dot net>
+
+	* gst/volenv/gstvolenv.c: (gst_volenv_set_property):
+	  Check whether string passed as 'controlpoint' 
+	  property is formatted as expected (checking return
+	  value of sscanf() will also make gcc-4 happy).
+
 2005-05-06  Wim Taymans  <wim@fluendo.com>
 
 	* configure.ac:
