@@ -1,3 +1,59 @@
+2005-05-06  Wim Taymans  <wim@fluendo.com>
+
+	* configure.ac:
+	* gst/rtsp/.cvsignore:
+	* gst/rtsp/Makefile.am:
+	* gst/rtsp/gstrtsp.c: (plugin_init):
+	* gst/rtsp/gstrtsp.h:
+	* gst/rtsp/gstrtspsrc.c: (gst_rtspsrc_get_type),
+	(gst_rtspsrc_base_init), (gst_rtspsrc_class_init),
+	(gst_rtspsrc_init), (gst_rtspsrc_set_property),
+	(gst_rtspsrc_get_property), (gst_rtspsrc_get), (gst_rtspsrc_send),
+	(gst_rtspsrc_open), (gst_rtspsrc_close), (gst_rtspsrc_play),
+	(gst_rtspsrc_pause), (gst_rtspsrc_change_state):
+	* gst/rtsp/gstrtspsrc.h:
+	* gst/rtsp/rtsp.h:
+	* gst/rtsp/rtspconnection.c: (rtsp_connection_open),
+	(rtsp_connection_create), (append_header), (rtsp_connection_send),
+	(read_line), (read_string), (read_key), (parse_response_status),
+	(parse_line), (read_body), (rtsp_connection_receive),
+	(rtsp_connection_close):
+	* gst/rtsp/rtspconnection.h:
+	* gst/rtsp/rtspdefs.c: (rtsp_init_status), (rtsp_method_as_text),
+	(rtsp_header_as_text), (rtsp_status_as_text),
+	(rtsp_status_to_string), (rtsp_find_header_field):
+	* gst/rtsp/rtspdefs.h:
+	* gst/rtsp/rtspmessage.c: (rtsp_message_new_request),
+	(rtsp_message_init_request), (rtsp_message_new_response),
+	(rtsp_message_init_response), (rtsp_message_init_data),
+	(rtsp_message_add_header), (rtsp_message_remove_header),
+	(rtsp_message_get_header), (rtsp_message_get_header_copy),
+	(rtsp_message_set_body), (rtsp_message_set_body_copy),
+	(rtsp_message_get_body), (rtsp_message_get_body_copy), (dump_mem),
+	(dump_key_value), (rtsp_message_dump):
+	* gst/rtsp/rtspmessage.h:
+	* gst/rtsp/rtspstream.h:
+	* gst/rtsp/rtspurl.c: (rtsp_url_parse), (rtsp_url_free):
+	* gst/rtsp/rtspurl.h:
+	* gst/rtsp/sdp.h:
+	* gst/rtsp/sdpmessage.c: (sdp_message_new), (sdp_message_init),
+	(sdp_message_clean), (sdp_message_free), (sdp_media_new),
+	(sdp_media_init), (sdp_message_set_origin),
+	(sdp_message_get_origin), (sdp_message_set_connection),
+	(sdp_message_get_connection), (sdp_message_add_bandwidth),
+	(sdp_message_add_time), (sdp_message_add_zone),
+	(sdp_message_set_key), (sdp_message_get_key),
+	(sdp_message_get_attribute_val), (sdp_message_add_attribute),
+	(sdp_message_add_media), (sdp_media_add_attribute),
+	(sdp_media_add_bandwidth), (sdp_media_add_format),
+	(sdp_media_get_attribute_val), (read_string), (read_string_del),
+	(sdp_parse_line), (sdp_message_parse_buffer), (print_media),
+	(sdp_message_dump):
+	* gst/rtsp/sdpmessage.h:
+	* gst/rtsp/test.c: (main):
+	Added rtsp with sdp support. not very functional yet but is
+	able to get rtp packets over rtsp in interleaved mode.
+
 2005-05-05  Tim-Philipp Müller  <tim at centricular dot net>
 
 	* gst/audiorate/gstaudiorate.c: (gst_audiorate_class_init):
