@@ -1,3 +1,8 @@
+2005-05-07  Gergely Nagy  <algernon@bonehunter.rulez.org>
+
+	* gst/librfb/gstrfbsrc.c: (gst_rfbsrc_get_type): Changed short
+	and long description to something meaningful.
+
 2005-05-06  Tim-Philipp Müller  <tim at centricular dot net>
 
 	* gst/volenv/gstvolenv.c: (gst_volenv_set_property):

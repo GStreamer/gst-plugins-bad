@@ -77,9 +77,9 @@ gst_rfbsrc_get_type (void)
 
 
      static GstElementDetails rfbsrc_details =
-         GST_ELEMENT_DETAILS ("Video test source",
+         GST_ELEMENT_DETAILS ("RFB (VNC) source",
     "Source/Video",
-    "Creates a test video stream",
+    "Connects to a VNC server and decodes RFB stream",
     "David A. Schleef <ds@schleef.org>");
 
 /* GstRfbsrc signals and args */
