@@ -1,5 +1,10 @@
 2005-05-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* gst/playback/gstplaybasebin.c: (gst_play_base_bin_change_state):
+	  Clean up if open failed (#302188).
+
+2005-05-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* gst/playback/gstplaybin.c: (gst_play_bin_set_property),
 	(remove_sinks):
 	  Set volume in subsequent runs, too (#302813).
