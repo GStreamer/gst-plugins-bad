@@ -1,3 +1,8 @@
+2005-05-09  Jan Schmidt  <thaytan@mad.scientist.com>
+
+	* ext/gdk_pixbuf/pixbufscale.c: (gst_pixbufscale_link):
+	  Free caps - fixes a small memory leak
+
 2005-05-07  Gergely Nagy  <algernon@bonehunter.rulez.org>
 
 	* gst/librfb/gstrfbsrc.c: (gst_rfbsrc_get_type): Changed short
