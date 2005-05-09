@@ -1,3 +1,8 @@
+2005-05-09  Luca Ognibene  <luogni@tin.it>
+
+	* gst/ffmpegcolorspace/gstffmpegcolorspace.c (gst_ffmpegcsp_base_init): 
+	  Fix some mem leaks
+
 2005-05-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* gst/playback/gstplaybasebin.c: (gst_play_base_bin_change_state):
