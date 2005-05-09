@@ -1,3 +1,8 @@
+2005-05-10  Jan Schmidt  <thaytan@mad.scientist.com>
+	* gst/interleave/interleave.c: (interleave_getcaps),
+	(interleave_link):
+	  Negotiation fix, and turn a g_print into a G_LOG
+
 2005-05-09  Luca Ognibene  <luogni@tin.it>
 
 	* gst/ffmpegcolorspace/gstffmpegcolorspace.c (gst_ffmpegcsp_base_init): 
