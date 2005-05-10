@@ -1,3 +1,8 @@
+2005-05-10  Luca Ognibene  <luogni@tin.it>
+
+	* ext/gdk_pixbuf/pixbufscale.c (gst_pixbufscale_link): 
+	  Really implement passthrough
+
 2005-05-10  Jan Schmidt  <thaytan@mad.scientist.com>
 	* gst/interleave/interleave.c: (interleave_getcaps),
 	(interleave_link):
