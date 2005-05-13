@@ -3,7 +3,7 @@
 	* ext/musicbrainz/Makefile.am:
 	* ext/musicbrainz/blank-file.cpp:
 	  Add empty .cpp file to make libtool use g++ for the
-	  linking instead of gcc (fixes #303930).
+	  linking instead of gcc (fixes #303936).
 
 2005-05-13  Luca Ognibene  <luogni@tin.it>
 
