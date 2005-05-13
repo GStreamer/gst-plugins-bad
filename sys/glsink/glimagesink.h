@@ -22,7 +22,6 @@
 
 #include <gst/video/videosink.h>
 
-#include <X11/Xlib.h>
 #include <GL/glx.h>
 #include <GL/gl.h>
 #include <GL/glu.h>
@@ -43,55 +42,8 @@ G_BEGIN_DECLS
 #define GST_IS_GLIMAGESINK_CLASS(obj) \
   (G_TYPE_CHECK_CLASS_TYPE((klass), GST_TYPE_GLIMAGESINK))
 
-typedef struct _GstXContext GstXContext;
-typedef struct _GstGLWindow GstGLWindow;
-typedef struct _GstGLImage GstGLImage;
-
 typedef struct _GstGLImageSink GstGLImageSink;
 typedef struct _GstGLImageSinkClass GstGLImageSinkClass;
-
-/* Global X Context stuff */
-struct _GstXContext {
-  Display *disp;
-  
-  Screen *screen;
-  gint screen_num;
-  
-  Visual *visual;
-  XVisualInfo *visualinfo;
-  
-  Window root;
-  GLXContext glx;
-  
-  gulong white, black;
-  
-  gint depth;
-  gint bpp;
-  gint endianness;
-  
-  gboolean use_xshm;
-  
-  GstCaps *caps;
-};
-
-/* XWindow stuff */
-struct _GstGLWindow {
-  XSetWindowAttributes attr;
-  Window win;
-  gint width, height;
-  gboolean internal;
-};
-
-/* XImage stuff */
-struct _GstGLImage {
-  /* Reference to the ximagesink we belong to */
-  GstGLImageSink *glimagesink;
-  
-  GLuint texid; 
-  
-  char *data;
-  gint width, height, size;
-};
 
 struct _GstGLImageSink {
   /* Our element stuff */
@@ -99,35 +51,36 @@ struct _GstGLImageSink {
 
   char *display_name;
   
-  GstXContext *xcontext;
-  GstGLWindow *window;
-  GstGLImage *glimage;
-  GstGLImage *cur_image;
+  Window window;
+  Window parent_window;
   
   gdouble framerate;
-  GMutex *x_lock;
   
   gint pixel_width, pixel_height;  /* Unused */
  
   GstClockTime time;
   
-  GMutex *pool_lock;
-  GSList *image_pool;
+  Display *display;
+  GLXContext context;
 
+  int max_texture_size;
+  gboolean have_yuv;
+
+  gboolean use_rgb;
+  gboolean use_rgbx;
+  gboolean use_yuy2;
+#if 0
   guint pointer_x, pointer_y;
   gboolean pointer_moved;
   gboolean pointer_button[5];
 
   gboolean synchronous;
   gboolean signal_handoffs;  
+#endif
 };
 
 struct _GstGLImageSinkClass {
   GstVideoSinkClass parent_class;
-
-  /* signals */
-  void (*handoff) (GstElement *element, GstBuffer *buf, GstPad *pad);
-  void (*bufferalloc) (GstElement *element, GstBuffer *buf, GstPad *pad);
 };
 
 GType gst_glimagesink_get_type(void);
