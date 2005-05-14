@@ -53,6 +53,7 @@ struct _GstGLImageSink {
   
   Window window;
   Window parent_window;
+  XVisualInfo *visinfo;
   
   gdouble framerate;
   

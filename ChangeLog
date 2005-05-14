@@ -1,5 +1,13 @@
 2005-05-13  David Schleef  <ds@schleef.org>
 
+	* sys/glsink/glimagesink.c:
+	* sys/glsink/glimagesink.h:
+	Delay creation of window until PAUSED->PLAYING so there's no
+	flickering.  Also allows us to create a proper subwindow or
+	toplevel window.
+
+2005-05-13  David Schleef  <ds@schleef.org>
+
 	* sys/glsink/glimagesink.c: Fix resizing issues.  Works well
 	in totem.
 

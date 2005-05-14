@@ -39,6 +39,7 @@ GST_DEBUG_CATEGORY_STATIC (gst_debug_glimagesink);
 
 static void gst_glimagesink_set_window_size (GstGLImageSink * glimagesink,
     int width, int height);
+static void gst_glimagesink_create_window (GstGLImageSink * glimagesink);
 
 
 static GstElementDetails gst_glimagesink_details =
@@ -244,6 +245,7 @@ gst_glimagesink_init_display (GstGLImageSink * glimagesink)
   int event_base;
   int mask;
   const char *extstring;
+  Window window;
 
   glimagesink->display = XOpenDisplay (NULL);
   if (glimagesink->display == NULL) {
@@ -267,6 +269,8 @@ gst_glimagesink_init_display (GstGLImageSink * glimagesink)
     return FALSE;
   }
 
+  glimagesink->visinfo = visinfo;
+
   glimagesink->context = glXCreateContext (glimagesink->display,
       visinfo, NULL, True);
 
@@ -280,16 +284,10 @@ gst_glimagesink_init_display (GstGLImageSink * glimagesink)
   //mask = CWBackPixel | CWBorderPixel | CWColormap | CWEventMask;
   mask = CWBackPixel | CWBorderPixel | CWColormap | CWOverrideRedirect;
 
-  glimagesink->window = XCreateWindow (glimagesink->display, root,
-      0, 0,
-      GST_VIDEOSINK_WIDTH (glimagesink), GST_VIDEOSINK_HEIGHT (glimagesink),
-      0, visinfo->depth, InputOutput, visinfo->visual, mask, &attr);
+  window = XCreateWindow (glimagesink->display, root, 0, 0,
+      100, 100, 0, visinfo->depth, InputOutput, visinfo->visual, mask, &attr);
 
-  //XMapWindow (glimagesink->display, glimagesink->window);
-  XFree (visinfo);
-
-  glXMakeCurrent (glimagesink->display, glimagesink->window,
-      glimagesink->context);
+  glXMakeCurrent (glimagesink->display, window, glimagesink->context);
 
   glGetIntegerv (GL_MAX_TEXTURE_SIZE, &glimagesink->max_texture_size);
 
@@ -300,11 +298,70 @@ gst_glimagesink_init_display (GstGLImageSink * glimagesink)
     glimagesink->have_yuv = FALSE;
   }
 
+  glXMakeCurrent (glimagesink->display, None, NULL);
+  XDestroyWindow (glimagesink->display, window);
+
+  return TRUE;
+}
+
+static void
+gst_glimagesink_create_window (GstGLImageSink * glimagesink)
+{
+  gboolean ret;
+  Window root;
+  XSetWindowAttributes attr;
+  Screen *screen;
+  int scrnum;
+  int mask;
+  int width, height;
+
+  screen = XDefaultScreenOfDisplay (glimagesink->display);
+  scrnum = XScreenNumberOfScreen (screen);
+  root = XRootWindow (glimagesink->display, scrnum);
+
+  if (glimagesink->parent_window) {
+    XWindowAttributes pattr;
+
+    XGetWindowAttributes (glimagesink->display, glimagesink->parent_window,
+        &pattr);
+    width = pattr.width;
+    height = pattr.height;
+  } else {
+    width = GST_VIDEOSINK (glimagesink)->width;
+    height = GST_VIDEOSINK (glimagesink)->height;
+  }
+  attr.background_pixel = 0;
+  attr.border_pixel = 0;
+  attr.colormap = XCreateColormap (glimagesink->display, root,
+      glimagesink->visinfo->visual, AllocNone);
+  if (glimagesink->parent_window) {
+    attr.override_redirect = True;
+  } else {
+    attr.override_redirect = False;
+  }
+
+  mask = CWBackPixel | CWBorderPixel | CWColormap | CWOverrideRedirect;
+
+  glimagesink->window = XCreateWindow (glimagesink->display, root, 0, 0,
+      width, height,
+      0, glimagesink->visinfo->depth, InputOutput,
+      glimagesink->visinfo->visual, mask, &attr);
+
+  if (glimagesink->parent_window) {
+    ret = XReparentWindow (glimagesink->display, glimagesink->window,
+        glimagesink->parent_window, 0, 0);
+    XMapWindow (glimagesink->display, glimagesink->window);
+  } else {
+    XMapWindow (glimagesink->display, glimagesink->window);
+  }
+
+  glXMakeCurrent (glimagesink->display, glimagesink->window,
+      glimagesink->context);
+
   glDepthFunc (GL_LESS);
   glEnable (GL_DEPTH_TEST);
   glClearColor (0.2, 0.2, 0.2, 1.0);
-
-  return TRUE;
+  glViewport (0, 0, width, height);
 }
 
 static void
@@ -314,7 +371,7 @@ gst_glimagesink_set_window_size (GstGLImageSink * glimagesink,
   GST_DEBUG ("resizing to %d x %d",
       GST_VIDEOSINK_WIDTH (glimagesink), GST_VIDEOSINK_HEIGHT (glimagesink));
 
-  if (glimagesink->display) {
+  if (glimagesink->display && glimagesink->window) {
     XResizeWindow (glimagesink->display, glimagesink->window, width, height);
     XSync (glimagesink->display, False);
     glViewport (0, 0, width, height);
@@ -343,8 +400,8 @@ gst_glimagesink_change_state (GstElement * element)
       glimagesink->time = 0;
       break;
     case GST_STATE_PAUSED_TO_PLAYING:
-      if (!glimagesink->parent_window) {
-        XMapWindow (glimagesink->display, glimagesink->window);
+      if (!glimagesink->window) {
+        gst_glimagesink_create_window (glimagesink);
       }
       break;
     case GST_STATE_PLAYING_TO_PAUSED:
@@ -380,6 +437,10 @@ gst_glimagesink_chain (GstPad * pad, GstData * data)
 
   glimagesink = GST_GLIMAGESINK (gst_pad_get_parent (pad));
 
+  if (glimagesink->display == NULL || glimagesink->window == 0) {
+    g_warning ("display or window not set up\n");
+  }
+
   if (GST_IS_EVENT (data)) {
     gst_pad_event_default (pad, GST_EVENT (data));
     return;
@@ -395,6 +456,9 @@ gst_glimagesink_chain (GstPad * pad, GstData * data)
     XGetWindowAttributes (glimagesink->display, glimagesink->parent_window,
         &attr);
     gst_glimagesink_set_window_size (glimagesink, attr.width, attr.height);
+  } else {
+    XGetWindowAttributes (glimagesink->display, glimagesink->window, &attr);
+    glViewport (0, 0, attr.width, attr.height);
   }
 
   GST_DEBUG ("clock wait: %" GST_TIME_FORMAT,
@@ -539,7 +603,6 @@ static void
 gst_glimagesink_set_xwindow_id (GstXOverlay * overlay, XID xwindow_id)
 {
   GstGLImageSink *glimagesink = GST_GLIMAGESINK (overlay);
-  int ret;
 
   GST_DEBUG ("set_xwindow_id %ld", xwindow_id);
 
@@ -556,9 +619,7 @@ gst_glimagesink_set_xwindow_id (GstXOverlay * overlay, XID xwindow_id)
   glimagesink->parent_window = xwindow_id;
 
   XSync (glimagesink->display, False);
-  ret = XReparentWindow (glimagesink->display, glimagesink->window,
-      xwindow_id, 0, 0);
-  XMapWindow (glimagesink->display, glimagesink->window);
+  gst_glimagesink_create_window (glimagesink);
 }
 
 static void
