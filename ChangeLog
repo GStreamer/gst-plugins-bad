@@ -1,3 +1,9 @@
+2005-05-14  Benjamin Otte  <in7y118@public.uni-hamburg.de>
+
+	* gst/realmedia/rmdemux.c: (plugin_init):
+	  Set rank to NONE. Prevents it from being used in autoplugging, which
+	  solves lots of reported segfaults and warnings from tag reading.
+
 2005-05-13  David Schleef  <ds@schleef.org>
 
 	* sys/glsink/Makefile.am:
