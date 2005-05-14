@@ -37,7 +37,8 @@
 GST_DEBUG_CATEGORY_STATIC (gst_debug_glimagesink);
 #define GST_CAT_DEFAULT gst_debug_glimagesink
 
-static void gst_glimagesink_set_window_size (GstGLImageSink * glimagesink);
+static void gst_glimagesink_set_window_size (GstGLImageSink * glimagesink,
+    int width, int height);
 
 
 static GstElementDetails gst_glimagesink_details =
@@ -90,8 +91,19 @@ gst_glimagesink_fixate (GstPad * pad, const GstCaps * caps)
 
   GST_DEBUG ("Linking the sink");
 
-  if (gst_caps_get_size (caps) > 1)
+  if (gst_caps_get_size (caps) > 1) {
+    int i;
+
+    for (i = 0; i < gst_caps_get_size (caps); i++) {
+      structure = gst_caps_get_structure (caps, i);
+      if (strcmp (gst_structure_get_name (structure), "video/x-raw-yuv") == 0) {
+        newcaps = gst_caps_new_empty ();
+        gst_caps_append_structure (newcaps, gst_structure_copy (structure));
+        return newcaps;
+      }
+    }
     return NULL;
+  }
 
   newcaps = gst_caps_copy (caps);
   structure = gst_caps_get_structure (newcaps, 0);
@@ -142,8 +154,10 @@ gst_glimagesink_getcaps (GstPad * pad)
   caps = gst_caps_from_string (GST_VIDEO_CAPS_RGBx ";" GST_VIDEO_CAPS_BGRx);
 #ifdef ENABLE_YUV
   if (glimagesink->have_yuv) {
-    gst_caps_append (caps,
-        gst_caps_from_string (GST_VIDEO_CAPS_YUV ("{ UYVY, YUY2 }")));
+    GstCaps *ycaps =
+        gst_caps_from_string (GST_VIDEO_CAPS_YUV ("{ UYVY, YUY2 }"));
+    gst_caps_append (ycaps, caps);
+    caps = ycaps;
   }
 #endif
 
@@ -182,6 +196,7 @@ gst_glimagesink_sink_link (GstPad * pad, const GstCaps * caps)
   if (strcmp (gst_structure_get_name (structure), "video/x-raw-rgb") == 0) {
     int red_mask;
 
+    GST_DEBUG ("using RGB");
     glimagesink->use_rgb = TRUE;
     gst_structure_get_int (structure, "red_mask", &red_mask);
 
@@ -193,6 +208,7 @@ gst_glimagesink_sink_link (GstPad * pad, const GstCaps * caps)
   } else {
     unsigned int fourcc;
 
+    GST_DEBUG ("using YUV");
     glimagesink->use_rgb = FALSE;
 
     gst_structure_get_fourcc (structure, "format", &fourcc);
@@ -203,7 +219,8 @@ gst_glimagesink_sink_link (GstPad * pad, const GstCaps * caps)
     }
   }
 
-  gst_glimagesink_set_window_size (glimagesink);
+  gst_glimagesink_set_window_size (glimagesink,
+      GST_VIDEOSINK_WIDTH (glimagesink), GST_VIDEOSINK_HEIGHT (glimagesink));
 
   gst_x_overlay_got_desired_size (GST_X_OVERLAY (glimagesink),
       GST_VIDEOSINK_WIDTH (glimagesink), GST_VIDEOSINK_HEIGHT (glimagesink));
@@ -258,18 +275,19 @@ gst_glimagesink_init_display (GstGLImageSink * glimagesink)
   attr.colormap = XCreateColormap (glimagesink->display, root,
       visinfo->visual, AllocNone);
   attr.event_mask = StructureNotifyMask | ExposureMask;
+  attr.override_redirect = True;
 
-  mask = CWBackPixel | CWBorderPixel | CWColormap | CWEventMask;
+  //mask = CWBackPixel | CWBorderPixel | CWColormap | CWEventMask;
+  mask = CWBackPixel | CWBorderPixel | CWColormap | CWOverrideRedirect;
 
   glimagesink->window = XCreateWindow (glimagesink->display, root,
       0, 0,
       GST_VIDEOSINK_WIDTH (glimagesink), GST_VIDEOSINK_HEIGHT (glimagesink),
       0, visinfo->depth, InputOutput, visinfo->visual, mask, &attr);
 
-  XMapWindow (glimagesink->display, glimagesink->window);
+  //XMapWindow (glimagesink->display, glimagesink->window);
   XFree (visinfo);
 
-  glXMakeCurrent (glimagesink->display, 0, NULL);
   glXMakeCurrent (glimagesink->display, glimagesink->window,
       glimagesink->context);
 
@@ -290,17 +308,16 @@ gst_glimagesink_init_display (GstGLImageSink * glimagesink)
 }
 
 static void
-gst_glimagesink_set_window_size (GstGLImageSink * glimagesink)
+gst_glimagesink_set_window_size (GstGLImageSink * glimagesink,
+    int width, int height)
 {
-  GST_ERROR ("resizing to %d x %d",
+  GST_DEBUG ("resizing to %d x %d",
       GST_VIDEOSINK_WIDTH (glimagesink), GST_VIDEOSINK_HEIGHT (glimagesink));
 
   if (glimagesink->display) {
-    XResizeWindow (glimagesink->display, glimagesink->window,
-        GST_VIDEOSINK_WIDTH (glimagesink), GST_VIDEOSINK_HEIGHT (glimagesink));
-    glXMakeCurrent (glimagesink->display, None, NULL);
-    glXMakeCurrent (glimagesink->display, glimagesink->window,
-        glimagesink->context);
+    XResizeWindow (glimagesink->display, glimagesink->window, width, height);
+    XSync (glimagesink->display, False);
+    glViewport (0, 0, width, height);
   }
 }
 
@@ -354,6 +371,7 @@ gst_glimagesink_chain (GstPad * pad, GstData * data)
   GstBuffer *buf = GST_BUFFER (data);
   GstGLImageSink *glimagesink;
   int texture_size;
+  XWindowAttributes attr;
 
   //GST_DEBUG("CHAIN CALL");
 
@@ -371,6 +389,12 @@ gst_glimagesink_chain (GstPad * pad, GstData * data)
   /* update time */
   if (GST_BUFFER_TIMESTAMP_IS_VALID (buf)) {
     glimagesink->time = GST_BUFFER_TIMESTAMP (buf);
+  }
+
+  if (glimagesink->parent_window) {
+    XGetWindowAttributes (glimagesink->display, glimagesink->parent_window,
+        &attr);
+    gst_glimagesink_set_window_size (glimagesink, attr.width, attr.height);
   }
 
   GST_DEBUG ("clock wait: %" GST_TIME_FORMAT,
@@ -515,8 +539,9 @@ static void
 gst_glimagesink_set_xwindow_id (GstXOverlay * overlay, XID xwindow_id)
 {
   GstGLImageSink *glimagesink = GST_GLIMAGESINK (overlay);
+  int ret;
 
-  GST_ERROR ("set_xwindow_id %ld", xwindow_id);
+  GST_DEBUG ("set_xwindow_id %ld", xwindow_id);
 
   g_return_if_fail (GST_IS_GLIMAGESINK (glimagesink));
 
@@ -530,11 +555,10 @@ gst_glimagesink_set_xwindow_id (GstXOverlay * overlay, XID xwindow_id)
 
   glimagesink->parent_window = xwindow_id;
 
-  GST_ERROR ("reparenting window");
-  XSync (glimagesink->display, FALSE);
-  XReparentWindow (glimagesink->display, glimagesink->window, xwindow_id, 0, 0);
+  XSync (glimagesink->display, False);
+  ret = XReparentWindow (glimagesink->display, glimagesink->window,
+      xwindow_id, 0, 0);
   XMapWindow (glimagesink->display, glimagesink->window);
-
 }
 
 static void
