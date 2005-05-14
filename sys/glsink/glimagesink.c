@@ -452,6 +452,9 @@ gst_glimagesink_chain (GstPad * pad, GstData * data)
     glimagesink->time = GST_BUFFER_TIMESTAMP (buf);
   }
 
+  glXMakeCurrent (glimagesink->display, glimagesink->window,
+      glimagesink->context);
+
   if (glimagesink->parent_window) {
     XGetWindowAttributes (glimagesink->display, glimagesink->parent_window,
         &attr);
