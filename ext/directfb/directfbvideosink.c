@@ -312,7 +312,7 @@ gst_directfbvideosink_sink_link (GstPad * pad, const GstCaps * caps)
     }
   } else if (g_ascii_strcasecmp (gst_structure_get_name (structure),
           "video/x-raw-yuv") == 0) {
-    gint im_format = 0;
+    guint32 im_format = 0;
 
     gst_structure_get_fourcc (structure, "format", &im_format);
     GST_DEBUG_OBJECT (directfbvideosink,

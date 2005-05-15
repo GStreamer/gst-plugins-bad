@@ -447,6 +447,7 @@ typedef struct _MODCOMMAND
 
 class IMixPlugin
 {
+	virtual ~IMixPlugin() {}
 public:
 	virtual int AddRef() = 0;
 	virtual int Release() = 0;

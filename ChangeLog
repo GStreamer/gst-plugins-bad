@@ -1,3 +1,12 @@
+2005-05-15  Tim-Philipp Müller  <tim at centricular dot net>
+
+	* ext/directfb/directfbvideosink.c:
+	(gst_directfbvideosink_sink_link):
+	* ext/libcaca/gstcacasink.c: (gst_cacasink_sinkconnect):
+	* gst/modplug/libmodplug/sndfile.cpp:
+	* gst/modplug/libmodplug/sndfile.h:
+	  Another batch of gcc-4.0 fixes (#304180).
+
 2005-05-14  David Schleef  <ds@schleef.org>
 
 	* sys/glsink/glimagesink.c: And remember to set the context
