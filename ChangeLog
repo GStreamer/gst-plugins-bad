@@ -1,5 +1,11 @@
 2005-05-15  Tim-Philipp Müller  <tim at centricular dot net>
 
+	* gst/modplug/libmodplug/sndfile.h:
+	  Let's try that again (put virtual deconstructor into
+	  the public section).
+
+2005-05-15  Tim-Philipp Müller  <tim at centricular dot net>
+
 	* ext/directfb/directfbvideosink.c:
 	(gst_directfbvideosink_sink_link):
 	* ext/libcaca/gstcacasink.c: (gst_cacasink_sinkconnect):
