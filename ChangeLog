@@ -1,5 +1,9 @@
 2005-05-17  David Schleef  <ds@schleef.org>
 
+	* gst/librfb/Makefile.am: reenable plugin
+
+2005-05-17  David Schleef  <ds@schleef.org>
+
 	* gst/librfb/rfb.h: Don't include a nonexistant header.
 
 2005-05-17  Tim-Philipp Müller  <tim at centricular dot net>
