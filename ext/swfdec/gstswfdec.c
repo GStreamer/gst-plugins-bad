@@ -264,6 +264,7 @@ gst_swfdec_loop (GstElement * element)
   } else if (ret == SWF_CHANGE) {
     GstCaps *caps;
     GstPadLinkReturn link_ret;
+    GstTagList *taglist;
 
     swfdec_decoder_get_image_size (swfdec->decoder,
         &swfdec->width, &swfdec->height);
@@ -284,6 +285,13 @@ gst_swfdec_loop (GstElement * element)
       return;
     }
     swfdec->have_format = TRUE;
+
+    taglist = gst_tag_list_new ();
+    gst_tag_list_add (taglist, GST_TAG_MERGE_REPLACE,
+        GST_TAG_ENCODER_VERSION, swfdec_decoder_get_version (swfdec->decoder),
+        NULL);
+    gst_element_found_tags (GST_ELEMENT (swfdec), taglist);
+    gst_tag_list_free (taglist);
   } else if (ret == SWF_EOF) {
     SwfdecBuffer *audio_buffer;
     SwfdecBuffer *video_buffer;
@@ -664,7 +672,7 @@ gst_swfdec_get_property (GObject * object, guint prop_id, GValue * value,
 void
 art_warn (const char *fmt, ...)
 {
-  GST_ERROR ("caught art_warn");
+  GST_LOG ("caught art_warn");
 }
 
 static gboolean
