@@ -1,3 +1,9 @@
+2005-05-17  Luca Ognibene  <luogni@tin.it>
+
+	* gst/ffmpegcolorspace/gstffmpegcodecmap.c (gst_ffmpeg_caps_to_pixfmt) 
+	(gst_ffmpeg_pixfmt_to_caps): 
+	  Add YUV444P as Y444
+
 2005-05-17  David Schleef  <ds@schleef.org>
 
 	* gst/librfb/Makefile.am: reenable plugin
