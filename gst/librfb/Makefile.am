@@ -13,17 +13,14 @@ libgstrfbsrc_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS)
 noinst_HEADERS = \
 	rfb.h \
 	rfbdecoder.h \
-	rfbbuffer.h \
-	rfbbytestream.h
+	rfbbuffer.h
 
 librfb_la_SOURCES = \
 	rfb.h \
 	rfbdecoder.c \
 	rfbdecoder.h \
 	rfbbuffer.c \
-	rfbbuffer.h \
-	rfbbytestream.c \
-	rfbbytestream.h
+	rfbbuffer.h
 
 librfb_la_CFLAGS = $(GST_CFLAGS) -I$(srcdir)/..
 librfb_la_LIBADD = $(GLIB_LIBS)

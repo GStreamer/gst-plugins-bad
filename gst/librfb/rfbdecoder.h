@@ -3,18 +3,25 @@
 #define _LIBRFB_DECODER_H_
 
 #include <glib.h>
-#include <librfb/rfbbytestream.h>
+#include <rfbbuffer.h>
 
 G_BEGIN_DECLS
 
+#define GST_CAT_DEFAULT gst_debug_rfbsrc
+
 typedef struct _RfbDecoder RfbDecoder;
+
+typedef enum {
+  RFB_DECODER_IMAGE_UNKNOWN = 0,
+  RFB_DECODER_IMAGE_RGB332,
+  RFB_DECODER_IMAGE_xRGB
+} RfbDecoderImageFormat;
 
 struct _RfbDecoder
 {
-  int (*send_data) (guint8 *buffer, int length, gpointer user_data);
-  gpointer buffer_handler_data;
+  int fd;
 
-  RfbBytestream *bytestream;
+  RfbBufferQueue *queue;
 
   gpointer decoder_private;
 
@@ -28,6 +35,7 @@ struct _RfbDecoder
 
   /* readable properties */
   gboolean inited;
+  gboolean busy;
 
   int protocol_major;
   int protocol_minor;
@@ -45,8 +53,10 @@ struct _RfbDecoder
   unsigned int red_shift;
   unsigned int green_shift;
   unsigned int blue_shift;
+  RfbDecoderImageFormat image_format;
 
   char *name;
+  char *error_msg;
 
   /* state information */
   gboolean (*state) (RfbDecoder *decoder);
@@ -70,7 +80,6 @@ typedef struct _RfbRect
 
 
 RfbDecoder *rfb_decoder_new (void);
-void rfb_decoder_use_file_descriptor (RfbDecoder * decoder, int fd);
 void rfb_decoder_connect_tcp (RfbDecoder *decoder, char * addr, unsigned int port);
 void rfb_decoder_set_peer (RfbDecoder * decoder);
 gboolean rfb_decoder_iterate (RfbDecoder * decoder);

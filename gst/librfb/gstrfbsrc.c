@@ -27,9 +27,12 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include <librfb/rfb.h>
 
+GST_DEBUG_CATEGORY (gst_debug_rfbsrc);
+#define GST_CAT_DEFAULT gst_debug_rfbsrc
 
 #define GST_TYPE_RFBSRC \
   (gst_rfbsrc_get_type())
@@ -63,6 +66,9 @@ struct _GstRfbsrc
   unsigned int button_mask;
 
   double framerate;
+
+  GstClock *clock;
+  GstClockTime timestamp;
 };
 
 struct _GstRfbsrcClass
@@ -110,6 +116,10 @@ gst_rfbsrc_get_type (void)
 
      static GstData *gst_rfbsrc_get (GstPad * pad);
 
+     static gboolean gst_rfbsrc_connect_to_server (GstRfbsrc * rfbsrc);
+     static gboolean gst_rfbsrc_handle_input (GstRfbsrc * rfbsrc, int timeout);
+     static void gst_rfbsrc_set_clock (GstElement * element, GstClock * clock);
+
      static const GstQueryType *gst_rfbsrc_get_query_types (GstPad * pad);
      static gboolean gst_rfbsrc_src_query (GstPad * pad,
     GstQueryType type, GstFormat * format, gint64 * value);
@@ -138,7 +148,7 @@ gst_rfbsrc_get_type (void)
         "green_mask = (int) 0x00ff0000, "
         "blue_mask = (int) 0xff000000, "
         "width = [ 16, 4096 ], "
-        "height = [ 16, 4096 ], " "framerate = [ 1.0, 60.0] ")
+        "height = [ 16, 4096 ], " "framerate = [ 1.0, 10.0] ")
     );
 
 GType
@@ -204,21 +214,27 @@ gst_rfbsrc_class_init (GstRfbsrcClass * klass)
   gobject_class->get_property = gst_rfbsrc_get_property;
 
   gstelement_class->change_state = gst_rfbsrc_change_state;
+  gstelement_class->set_clock = gst_rfbsrc_set_clock;
 }
 
 static GstElementStateReturn
 gst_rfbsrc_change_state (GstElement * element)
 {
   GstRfbsrc *rfbsrc;
+  gboolean ret;
+
+  GST_DEBUG ("enter");
 
   rfbsrc = GST_RFBSRC (element);
 
   switch (GST_STATE_TRANSITION (element)) {
     case GST_STATE_NULL_TO_READY:
-      rfbsrc->decoder = rfb_decoder_new ();
-      rfb_decoder_connect_tcp (rfbsrc->decoder, rfbsrc->server, rfbsrc->port);
-      rfbsrc->decoder->paint_rect = gst_rfbsrc_paint_rect;
-      rfbsrc->decoder->decoder_private = rfbsrc;
+      ret = gst_rfbsrc_connect_to_server (rfbsrc);
+      if (!ret) {
+        GST_ELEMENT_ERROR (element, STREAM, TOO_LAZY,
+            ("failed to connect to server"), (NULL));
+        return GST_STATE_FAILURE;
+      }
       break;
     case GST_STATE_READY_TO_PAUSED:
       break;
@@ -294,7 +310,7 @@ gst_rfbsrc_fixate (GstPad * pad, const GstCaps * caps)
   structure = gst_caps_get_structure (newcaps, 0);
 
   if (gst_caps_structure_fixate_field_nearest_double (structure, "framerate",
-          30.0)) {
+          10.0)) {
     return newcaps;
   }
 
@@ -408,7 +424,6 @@ gst_rfbsrc_paint_rect (RfbDecoder * decoder, int x, int y, int w, int h,
 {
   int i, j;
   guint8 *frame;
-  guint8 color;
   GstRfbsrc *rfbsrc;
   int width;
   int offset;
@@ -418,19 +433,45 @@ gst_rfbsrc_paint_rect (RfbDecoder * decoder, int x, int y, int w, int h,
 
   frame = rfbsrc->frame;
   width = decoder->width;
-  for (j = 0; j < h; j++) {
-    for (i = 0; i < w; i++) {
-      color = data[j * w + i];
+  switch (decoder->image_format) {
+    case RFB_DECODER_IMAGE_RGB332:
+      for (j = 0; j < h; j++) {
+        for (i = 0; i < w; i++) {
+          guint8 color;
+
+          color = data[j * w + i];
 
 #define RGB332_R(x)  ((((x)&0x07) * 0x124)>>3)
 #define RGB332_G(x)  ((((x)&0x38) * 0x124)>>6)
 #define RGB332_B(x)  ((((x)&0xc0) * 0x149)>>8)
-      offset = ((j + x) * width + (i + x)) * 4;
-      frame[offset + 0] = RGB332_B (color);
-      frame[offset + 1] = RGB332_G (color);
-      frame[offset + 2] = RGB332_R (color);
-      frame[offset + 3] = 0;
-    }
+          offset = ((j + y) * width + (i + x)) * 4;
+          frame[offset + 0] = RGB332_B (color);
+          frame[offset + 1] = RGB332_G (color);
+          frame[offset + 2] = RGB332_R (color);
+          frame[offset + 3] = 0;
+        }
+      }
+      break;
+    case RFB_DECODER_IMAGE_xRGB:
+      for (j = 0; j < h; j++) {
+        for (i = 0; i < w; i++) {
+          guint32 color;
+
+          color = ((guint32 *) data)[j * w + i];
+
+#define xRGB_R(x)  (((x)&0xff0000)>>16)
+#define xRGB_G(x)  (((x)&0x00ff00)>>8)
+#define xRGB_B(x)  ((x)&0x0000ff)
+          offset = ((j + y) * width + (i + x)) * 4;
+          frame[offset + 0] = xRGB_B (color);
+          frame[offset + 1] = xRGB_G (color);
+          frame[offset + 2] = xRGB_R (color);
+          frame[offset + 3] = 0;
+        }
+      }
+      break;
+    default:
+      g_assert_not_reached ();
   }
 
   rfbsrc->go = FALSE;
@@ -444,6 +485,8 @@ gst_rfbsrc_get (GstPad * pad)
   GstBuffer *buf;
   RfbDecoder *decoder;
   int ret;
+  GstClockTime the_time = 0;
+  GstClockTime delay;
 
   GST_DEBUG ("gst_rfbsrc_get");
 
@@ -453,39 +496,32 @@ gst_rfbsrc_get (GstPad * pad)
   rfbsrc = GST_RFBSRC (gst_pad_get_parent (pad));
   decoder = rfbsrc->decoder;
 
-  if (!decoder->inited) {
-    while (!decoder->inited) {
-      ret = rfb_decoder_iterate (decoder);
-      if (!ret) {
-        /* error */
-      }
-    }
-
-    gst_pad_renegotiate (rfbsrc->srcpad);
-
-    if (rfbsrc->frame)
-      g_free (rfbsrc->frame);
-    rfbsrc->frame = g_malloc (decoder->width * decoder->height * 4);
-
-    GST_DEBUG ("red_mask = %08x\n", decoder->red_max << decoder->red_shift);
-    GST_DEBUG ("green_mask = %08x\n",
-        decoder->green_max << decoder->green_shift);
-    GST_DEBUG ("blue_mask = %08x\n", decoder->blue_max << decoder->blue_shift);
-    rfbsrc->inter = FALSE;
-  }
-
   rfb_decoder_send_update_request (decoder, rfbsrc->inter, 0, 0, decoder->width,
       decoder->height);
-  //rfbsrc->inter = TRUE;
+  rfbsrc->inter = TRUE;
 
-  rfbsrc->go = TRUE;
-  while (rfbsrc->go) {
+  delay = GST_SECOND / rfbsrc->framerate / 2;
+  do {
+    ret = gst_rfbsrc_handle_input (rfbsrc, 10000);
+
     ret = rfb_decoder_iterate (decoder);
-    if (!ret) {
-      return GST_DATA (gst_event_new (GST_EVENT_EOS));
+    if (decoder->error_msg) {
+      char *msg;
+
+      msg = decoder->error_msg ? decoder->error_msg : "unknown";
+      GST_ELEMENT_ERROR (rfbsrc, STREAM, TOO_LAZY,
+          ("error in RFB decoder: %s", msg), (NULL));
+      //return GST_DATA (gst_event_new (GST_EVENT_EOS));
+      return NULL;
     }
-    GST_DEBUG ("iterate...\n");
-  }
+
+    if (rfbsrc->clock) {
+      the_time = gst_clock_get_time (rfbsrc->clock);
+      if (rfbsrc->timestamp == GST_CLOCK_TIME_NONE) {
+        rfbsrc->timestamp = the_time;
+      }
+    }
+  } while (the_time < rfbsrc->timestamp + delay);
 
   newsize = decoder->width * decoder->height * 4;
   g_return_val_if_fail (newsize > 0, NULL);
@@ -494,10 +530,102 @@ gst_rfbsrc_get (GstPad * pad)
 
   buf = gst_buffer_new_and_alloc (newsize);
   g_return_val_if_fail (GST_BUFFER_DATA (buf) != NULL, NULL);
+  GST_BUFFER_TIMESTAMP (buf) = rfbsrc->timestamp;
+  GST_BUFFER_DURATION (buf) = GST_SECOND / rfbsrc->framerate;
 
   memcpy (GST_BUFFER_DATA (buf), rfbsrc->frame, newsize);
 
+  rfbsrc->timestamp += GST_SECOND / rfbsrc->framerate;
+
+  GST_ERROR ("pushing");
   return GST_DATA (buf);
+}
+
+static gboolean
+gst_rfbsrc_handle_input (GstRfbsrc * rfbsrc, int timeout)
+{
+  fd_set readfds;
+  struct timeval tv;
+  int ret;
+
+  GST_DEBUG ("enter");
+
+  FD_ZERO (&readfds);
+  FD_SET (rfbsrc->decoder->fd, &readfds);
+  tv.tv_usec = timeout;
+  tv.tv_sec = 0;
+  ret = select (rfbsrc->decoder->fd + 1, &readfds, NULL, NULL, &tv);
+  GST_DEBUG ("select returned %d", ret);
+  if (ret > 0) {
+    RfbBuffer *buffer;
+
+    buffer = rfb_buffer_new_and_alloc (65536);
+    ret = read (rfbsrc->decoder->fd, buffer->data, 65536);
+    if (ret < 0) {
+      g_warning ("FIXME read error");
+    }
+    buffer->length = ret;
+    GST_DEBUG ("pushing buffer length %d", ret);
+    rfb_buffer_queue_push (rfbsrc->decoder->queue, buffer);
+
+    return TRUE;
+  } else {
+    GST_DEBUG ("timeout");
+    return FALSE;
+  }
+}
+
+static gboolean
+gst_rfbsrc_connect_to_server (GstRfbsrc * rfbsrc)
+{
+  int n_timeouts;
+
+  GST_DEBUG ("enter");
+
+  rfbsrc->decoder = rfb_decoder_new ();
+  rfb_decoder_connect_tcp (rfbsrc->decoder, rfbsrc->server, rfbsrc->port);
+  rfbsrc->decoder->paint_rect = gst_rfbsrc_paint_rect;
+  rfbsrc->decoder->decoder_private = rfbsrc;
+
+  n_timeouts = 10;
+  while (!rfbsrc->decoder->inited) {
+    gboolean ret;
+
+    ret = gst_rfbsrc_handle_input (rfbsrc, 10000);
+    if (!ret) {
+      n_timeouts--;
+      if (n_timeouts == 0)
+        return FALSE;
+    }
+
+    ret = rfb_decoder_iterate (rfbsrc->decoder);
+    if (rfbsrc->decoder->error_msg) {
+      char *msg;
+
+      msg = rfbsrc->decoder->error_msg ? rfbsrc->decoder->error_msg : "unknown";
+      GST_ELEMENT_ERROR (rfbsrc, STREAM, TOO_LAZY,
+          ("error in RFB decoder: %s", msg), (NULL));
+      return FALSE;
+    }
+  }
+
+  if (rfbsrc->frame)
+    g_free (rfbsrc->frame);
+
+  rfbsrc->frame =
+      g_malloc (rfbsrc->decoder->width * rfbsrc->decoder->height * 4);
+  rfbsrc->inter = FALSE;
+  rfbsrc->timestamp = GST_CLOCK_TIME_NONE;
+
+  return TRUE;
+}
+
+static void
+gst_rfbsrc_set_clock (GstElement * element, GstClock * clock)
+{
+  GstRfbsrc *rfbsrc = GST_RFBSRC (element);
+
+  gst_object_replace ((GstObject **) & rfbsrc->clock, (GstObject *) clock);
 }
 
 static void
@@ -550,8 +678,11 @@ gst_rfbsrc_get_property (GObject * object, guint prop_id, GValue * value,
 static gboolean
 plugin_init (GstPlugin * plugin)
 {
-  return gst_element_register (plugin, "rfbsrc", GST_RANK_NONE,
-      GST_TYPE_RFBSRC);
+  gst_element_register (plugin, "rfbsrc", GST_RANK_NONE, GST_TYPE_RFBSRC);
+
+  GST_DEBUG_CATEGORY_INIT (gst_debug_rfbsrc, "rfbsrc", 0, "rfbsrc element");
+
+  return TRUE;
 }
 
 GST_PLUGIN_DEFINE (GST_VERSION_MAJOR,

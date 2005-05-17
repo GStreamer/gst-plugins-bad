@@ -1,3 +1,18 @@
+2005-05-17  David Schleef  <ds@schleef.org>
+
+	* gst/librfb/Makefile.am:
+	* gst/librfb/gstrfbsrc.c:
+	* gst/librfb/rfb.h:
+	* gst/librfb/rfbbuffer.c:
+	* gst/librfb/rfbbuffer.h:
+	* gst/librfb/rfbbytestream.c:
+	* gst/librfb/rfbbytestream.h:
+	* gst/librfb/rfbdecoder.c:
+	* gst/librfb/rfbdecoder.h:
+	  Some much needed hackage.  Fixed #171659, but then went on
+	  to actually make it work with Vino, get timing correct,
+	  make sure it doesn't leak, etc.
+
 2005-05-15  Tim-Philipp Müller  <tim at centricular dot net>
 
 	* gst/modplug/libmodplug/sndfile.h:

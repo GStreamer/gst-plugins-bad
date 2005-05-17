@@ -1,26 +1,47 @@
 
-#ifndef _LIBRFB_BUFFER_H_
-#define _LIBRFB_BUFFER_H_
+#ifndef __RFB_BUFFER_H__
+#define __RFB_BUFFER_H__
 
 #include <glib.h>
 
-G_BEGIN_DECLS
-
 typedef struct _RfbBuffer RfbBuffer;
+typedef struct _RfbBufferQueue RfbBufferQueue;
 
 struct _RfbBuffer
 {
-  guint8 *data;
+  unsigned char *data;
   int length;
 
-  void (*free_data) (guint8 *data, gpointer priv);
-  gpointer buffer_private;
+  int ref_count;
+
+  RfbBuffer *parent;
+
+  void (*free) (RfbBuffer *, void *);
+  void *priv;
+};
+
+struct _RfbBufferQueue
+{
+  GList *buffers;
+  int depth;
+  int offset;
 };
 
 RfbBuffer *rfb_buffer_new (void);
-RfbBuffer *rfb_buffer_new_and_alloc (int len);
-void rfb_buffer_free (RfbBuffer *buffer);
+RfbBuffer *rfb_buffer_new_and_alloc (int size);
+RfbBuffer *rfb_buffer_new_with_data (void *data, int size);
+RfbBuffer *rfb_buffer_new_subbuffer (RfbBuffer * buffer, int offset,
+    int length);
+void rfb_buffer_ref (RfbBuffer * buffer);
+void rfb_buffer_unref (RfbBuffer * buffer);
 
-G_END_DECLS
+RfbBufferQueue *rfb_buffer_queue_new (void);
+void rfb_buffer_queue_free (RfbBufferQueue * queue);
+int rfb_buffer_queue_get_depth (RfbBufferQueue * queue);
+int rfb_buffer_queue_get_offset (RfbBufferQueue * queue);
+void rfb_buffer_queue_push (RfbBufferQueue * queue,
+    RfbBuffer * buffer);
+RfbBuffer *rfb_buffer_queue_pull (RfbBufferQueue * queue, int len);
+RfbBuffer *rfb_buffer_queue_peek (RfbBufferQueue * queue, int len);
 
 #endif

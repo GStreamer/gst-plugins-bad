@@ -10,81 +10,14 @@
 #include <gst/gst.h>
 
 
-#if 0
-struct _RfbSocketPrivate
-{
-  int fd;
-  sockaddr sa;
-}
-#endif
-
-
-static RfbBuffer *
-rfb_socket_get_buffer (int length, gpointer user_data)
-{
-  RfbBuffer *buffer;
-  int fd = GPOINTER_TO_INT (user_data);
-  int ret;
-
-  buffer = rfb_buffer_new ();
-
-  buffer->data = g_malloc (length);
-  buffer->free_data = (void *) g_free;
-
-  GST_DEBUG ("calling read(%d, %p, %d)", fd, buffer->data, length);
-  ret = read (fd, buffer->data, length);
-  if (ret <= 0) {
-    g_critical ("read: %s", strerror (errno));
-    rfb_buffer_free (buffer);
-    return NULL;
-  }
-
-  buffer->length = ret;
-
-  return buffer;
-}
-
-static int
-rfb_socket_send_buffer (guint8 * buffer, int length, gpointer user_data)
-{
-  int fd = GPOINTER_TO_INT (user_data);
-  int ret;
-
-  GST_DEBUG ("calling write(%d, %p, %d)", fd, buffer, length);
-  ret = write (fd, buffer, length);
-  if (ret < 0) {
-    g_critical ("write: %s", strerror (errno));
-    return 0;
-  }
-
-  g_assert (ret == length);
-
-  return ret;
-}
-
-
 RfbDecoder *
 rfb_decoder_new (void)
 {
   RfbDecoder *decoder = g_new0 (RfbDecoder, 1);
 
-  decoder->bytestream = rfb_bytestream_new ();
+  decoder->queue = rfb_buffer_queue_new ();
 
   return decoder;
-}
-
-void
-rfb_decoder_use_file_descriptor (RfbDecoder * decoder, int fd)
-{
-  g_return_if_fail (decoder != NULL);
-  g_return_if_fail (!decoder->inited);
-  g_return_if_fail (fd >= 0);
-
-  decoder->bytestream->get_buffer = rfb_socket_get_buffer;
-  decoder->bytestream->user_data = GINT_TO_POINTER (fd);
-
-  decoder->send_data = rfb_socket_send_buffer;
-  decoder->buffer_handler_data = GINT_TO_POINTER (fd);
 }
 
 void
@@ -100,7 +33,7 @@ rfb_decoder_connect_tcp (RfbDecoder * decoder, char *addr, unsigned int port)
   inet_pton (AF_INET, addr, &sa.sin_addr);
   connect (fd, (struct sockaddr *) &sa, sizeof (struct sockaddr));
 
-  rfb_decoder_use_file_descriptor (decoder, fd);
+  decoder->fd = fd;
 }
 
 
@@ -145,19 +78,33 @@ rfb_decoder_state_wait_for_protocol_version (RfbDecoder * decoder)
 {
   RfbBuffer *buffer;
   guint8 *data;
-  int ret;
 
-  ret = rfb_bytestream_read (decoder->bytestream, &buffer, 12);
-  if (ret < 12)
+  GST_DEBUG ("enter");
+
+  buffer = rfb_buffer_queue_pull (decoder->queue, 12);
+  if (!buffer)
     return FALSE;
 
   data = buffer->data;
 
-  g_assert (memcmp (buffer->data, "RFB 003.00", 10) == 0);
   GST_DEBUG ("\"%.11s\"", buffer->data);
-  rfb_buffer_free (buffer);
+  if (memcmp (buffer->data, "RFB 003.00", 10) != 0) {
+    decoder->error_msg = g_strdup ("bad version string from server");
+    return FALSE;
+  }
 
-  rfb_decoder_send (decoder, (guchar *) "RFB 003.003\n", 12);
+  decoder->protocol_minor = RFB_GET_UINT8 (buffer->data + 10) - '0';
+  if (decoder->protocol_minor != 3 && decoder->protocol_minor != 7) {
+    decoder->error_msg = g_strdup ("bad version number from server");
+    return FALSE;
+  }
+  rfb_buffer_unref (buffer);
+
+  if (decoder->protocol_minor == 3) {
+    rfb_decoder_send (decoder, (guchar *) "RFB 003.003\n", 12);
+  } else {
+    rfb_decoder_send (decoder, (guchar *) "RFB 003.007\n", 12);
+  }
 
   decoder->state = rfb_decoder_state_wait_for_security;
 
@@ -168,25 +115,81 @@ static gboolean
 rfb_decoder_state_wait_for_security (RfbDecoder * decoder)
 {
   RfbBuffer *buffer;
-  int ret;
+  int n;
+  int i;
 
-  ret = rfb_bytestream_read (decoder->bytestream, &buffer, 4);
-  if (ret < 4)
-    return FALSE;
+  GST_DEBUG ("enter");
 
-  decoder->security_type = RFB_GET_UINT32 (buffer->data);
-  GST_DEBUG ("security = %d", decoder->security_type);
+  if (decoder->protocol_minor == 3) {
+    buffer = rfb_buffer_queue_pull (decoder->queue, 4);
+    if (!buffer)
+      return FALSE;
 
-  rfb_buffer_free (buffer);
+    decoder->security_type = RFB_GET_UINT32 (buffer->data);
+    GST_DEBUG ("security = %d", decoder->security_type);
 
-  decoder->state = rfb_decoder_state_send_client_initialisation;
-  return TRUE;
+    if (decoder->security_type == 0) {
+      decoder->error_msg = g_strdup ("connection failed");
+    } else if (decoder->security_type == 2) {
+      decoder->error_msg =
+          g_strdup ("server asked for authentication, which is unsupported");
+    }
+
+    rfb_buffer_unref (buffer);
+
+    decoder->state = rfb_decoder_state_send_client_initialisation;
+    return TRUE;
+  } else {
+    guint8 reply;
+
+    buffer = rfb_buffer_queue_peek (decoder->queue, 1);
+    if (!buffer)
+      return FALSE;
+
+    n = RFB_GET_UINT8 (buffer->data);
+    rfb_buffer_unref (buffer);
+
+    GST_DEBUG ("n = %d", n);
+
+    if (n > 0) {
+      gboolean have_none = FALSE;
+
+      buffer = rfb_buffer_queue_pull (decoder->queue, n + 1);
+
+      for (i = 0; i < n; i++) {
+        GST_DEBUG ("security = %d", RFB_GET_UINT8 (buffer->data + 1 + i));
+        if (RFB_GET_UINT8 (buffer->data + 1 + i) == 1) {
+          /* does the server allow no authentication? */
+          have_none = TRUE;
+        }
+      }
+
+      rfb_buffer_unref (buffer);
+
+      if (!have_none) {
+        decoder->error_msg =
+            g_strdup ("server asked for authentication, which is unsupported");
+        return FALSE;
+      }
+
+      reply = 1;
+      rfb_decoder_send (decoder, &reply, 1);
+    } else {
+      g_critical ("FIXME");
+      return FALSE;
+    }
+
+    decoder->state = rfb_decoder_state_send_client_initialisation;
+    return TRUE;
+  }
 }
 
 static gboolean
 rfb_decoder_state_send_client_initialisation (RfbDecoder * decoder)
 {
   guint8 shared_flag;
+
+  GST_DEBUG ("enter");
 
   shared_flag = decoder->shared_flag;
   rfb_decoder_send (decoder, &shared_flag, 1);
@@ -200,11 +203,12 @@ rfb_decoder_state_wait_for_server_initialisation (RfbDecoder * decoder)
 {
   RfbBuffer *buffer;
   guint8 *data;
-  int ret;
   guint32 name_length;
 
-  ret = rfb_bytestream_peek (decoder->bytestream, &buffer, 24);
-  if (ret < 24)
+  GST_DEBUG ("enter");
+
+  buffer = rfb_buffer_queue_peek (decoder->queue, 24);
+  if (!buffer)
     return FALSE;
 
   data = buffer->data;
@@ -224,20 +228,49 @@ rfb_decoder_state_wait_for_server_initialisation (RfbDecoder * decoder)
 
   GST_DEBUG ("width: %d", decoder->width);
   GST_DEBUG ("height: %d", decoder->height);
+  GST_DEBUG ("bpp: %d", decoder->bpp);
+  GST_DEBUG ("depth: %d", decoder->depth);
+  GST_DEBUG ("true color: %d", decoder->true_colour);
+  GST_DEBUG ("big endian: %d", decoder->big_endian);
+
+  GST_DEBUG ("red shift: %d", decoder->red_shift);
+  GST_DEBUG ("red max: %d", decoder->red_max);
+  GST_DEBUG ("blue shift: %d", decoder->blue_shift);
+  GST_DEBUG ("blue max: %d", decoder->blue_max);
+  GST_DEBUG ("green shift: %d", decoder->green_shift);
+  GST_DEBUG ("green max: %d", decoder->green_max);
 
   name_length = RFB_GET_UINT32 (data + 20);
-  rfb_buffer_free (buffer);
+  rfb_buffer_unref (buffer);
 
-  ret = rfb_bytestream_read (decoder->bytestream, &buffer, 24 + name_length);
-  if (ret < 24 + name_length)
+  buffer = rfb_buffer_queue_pull (decoder->queue, 24 + name_length);
+  if (!buffer)
     return FALSE;
 
   decoder->name = g_strndup ((char *) (buffer->data) + 24, name_length);
   GST_DEBUG ("name: %s", decoder->name);
-  rfb_buffer_free (buffer);
+  rfb_buffer_unref (buffer);
 
   decoder->state = rfb_decoder_state_normal;
+  decoder->busy = FALSE;
   decoder->inited = TRUE;
+
+  if (decoder->bpp == 8 && decoder->depth == 8 &&
+      decoder->true_colour &&
+      decoder->red_shift == 0 && decoder->red_max == 0x07 &&
+      decoder->green_shift == 3 && decoder->green_max == 0x07 &&
+      decoder->blue_shift == 6 && decoder->blue_max == 0x03) {
+    decoder->image_format = RFB_DECODER_IMAGE_RGB332;
+  } else if (decoder->bpp == 32 && decoder->depth == 24 &&
+      decoder->true_colour && decoder->big_endian == FALSE &&
+      decoder->red_shift == 16 && decoder->red_max == 0xff &&
+      decoder->green_shift == 8 && decoder->green_max == 0xff &&
+      decoder->blue_shift == 0 && decoder->blue_max == 0xff) {
+    decoder->image_format = RFB_DECODER_IMAGE_xRGB;
+  } else {
+    decoder->error_msg = g_strdup_printf ("unsupported server image format");
+    return FALSE;
+  }
 
   return TRUE;
 }
@@ -246,13 +279,16 @@ static gboolean
 rfb_decoder_state_normal (RfbDecoder * decoder)
 {
   RfbBuffer *buffer;
-  int ret;
   int message_type;
 
-  ret = rfb_bytestream_read (decoder->bytestream, &buffer, 1);
-  if (ret < 1)
+  GST_DEBUG ("enter");
+
+  buffer = rfb_buffer_queue_pull (decoder->queue, 1);
+  if (!buffer)
     return FALSE;
   message_type = RFB_GET_UINT8 (buffer->data);
+
+  decoder->busy = TRUE;
 
   switch (message_type) {
     case 0:
@@ -263,6 +299,7 @@ rfb_decoder_state_normal (RfbDecoder * decoder)
       break;
     case 2:
       /* bell, ignored */
+      decoder->busy = FALSE;
       decoder->state = rfb_decoder_state_normal;
       break;
     case 3:
@@ -272,7 +309,7 @@ rfb_decoder_state_normal (RfbDecoder * decoder)
       g_critical ("unknown message type %d", message_type);
   }
 
-  rfb_buffer_free (buffer);
+  rfb_buffer_unref (buffer);
 
   return TRUE;
 }
@@ -281,10 +318,11 @@ static gboolean
 rfb_decoder_state_framebuffer_update (RfbDecoder * decoder)
 {
   RfbBuffer *buffer;
-  int ret;
 
-  ret = rfb_bytestream_read (decoder->bytestream, &buffer, 3);
-  if (ret < 3)
+  GST_DEBUG ("enter");
+
+  buffer = rfb_buffer_queue_pull (decoder->queue, 3);
+  if (!buffer)
     return FALSE;
 
   decoder->n_rects = RFB_GET_UINT16 (buffer->data + 1);
@@ -297,13 +335,14 @@ static gboolean
 rfb_decoder_state_framebuffer_update_rectangle (RfbDecoder * decoder)
 {
   RfbBuffer *buffer;
-  int ret;
   int x, y, w, h;
   int encoding;
   int size;
 
-  ret = rfb_bytestream_peek (decoder->bytestream, &buffer, 12);
-  if (ret < 12)
+  GST_DEBUG ("enter");
+
+  buffer = rfb_buffer_queue_peek (decoder->queue, 12);
+  if (!buffer)
     return FALSE;
 
   x = RFB_GET_UINT16 (buffer->data + 0);
@@ -315,21 +354,22 @@ rfb_decoder_state_framebuffer_update_rectangle (RfbDecoder * decoder)
   if (encoding != 0)
     g_critical ("unimplemented encoding\n");
 
-  rfb_buffer_free (buffer);
+  rfb_buffer_unref (buffer);
 
-  size = w * h;
-  ret = rfb_bytestream_read (decoder->bytestream, &buffer, size + 12);
-  if (ret < size)
+  size = w * h * (decoder->bpp / 8);
+  buffer = rfb_buffer_queue_pull (decoder->queue, size + 12);
+  if (!buffer)
     return FALSE;
 
   if (decoder->paint_rect) {
     decoder->paint_rect (decoder, x, y, w, h, buffer->data + 12);
   }
 
-  rfb_buffer_free (buffer);
+  rfb_buffer_unref (buffer);
 
   decoder->n_rects--;
   if (decoder->n_rects == 0) {
+    decoder->busy = FALSE;
     decoder->state = rfb_decoder_state_normal;
   }
   return TRUE;
@@ -397,7 +437,18 @@ rfb_decoder_send_pointer_event (RfbDecoder * decoder,
 }
 
 int
-rfb_decoder_send (RfbDecoder * decoder, guint8 * buffer, int len)
+rfb_decoder_send (RfbDecoder * decoder, guint8 * buffer, int length)
 {
-  return decoder->send_data (buffer, len, decoder->buffer_handler_data);
+  int ret;
+
+  GST_DEBUG ("calling write(%d, %p, %d)", decoder->fd, buffer, length);
+  ret = write (decoder->fd, buffer, length);
+  if (ret < 0) {
+    decoder->error_msg = g_strdup_printf ("write: %s", strerror (errno));
+    return 0;
+  }
+
+  g_assert (ret == length);
+
+  return ret;
 }
