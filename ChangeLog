@@ -1,5 +1,15 @@
 2005-05-18  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* ext/dvdnav/dvdnavsrc.c: (dvdnavsrc_make_clut_change_event):
+	* ext/hermes/gsthermescolorspace.c:
+	(gst_hermes_colorspace_structure_to_hermes_format):
+	* ext/libmms/gstmms.c: (gst_mms_get):
+	* ext/shout/gstshout.h:
+	* ext/xvid/gstxvidenc.c: (gst_xvidenc_change_state):
+	  Gcc4 fixes.
+
+2005-05-18  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* gst/wavparse/gstwavparse.c: (gst_wavparse_fmt):
 	  Fix for channels == 0 (#304588).
 

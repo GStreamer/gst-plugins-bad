@@ -480,7 +480,7 @@ gst_xvidenc_change_state (GstElement * element)
 {
   GstXvidEnc *xvidenc = GST_XVIDENC (element);
 
-  switch (GST_STATE_PENDING (element)) {
+  switch (GST_STATE_TRANSITION (element)) {
     case GST_STATE_PAUSED_TO_READY:
       if (xvidenc->handle) {
         xvid_encore (xvidenc->handle, XVID_ENC_DESTROY, NULL, NULL);

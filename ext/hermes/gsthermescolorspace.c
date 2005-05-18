@@ -329,9 +329,9 @@ static void
 gst_hermes_colorspace_structure_to_hermes_format (HermesFormat * format,
     GstStructure * structure)
 {
-  gst_structure_get_int (structure, "red_mask", &format->r);
-  gst_structure_get_int (structure, "green_mask", &format->g);
-  gst_structure_get_int (structure, "blue_mask", &format->b);
+  gst_structure_get_int (structure, "red_mask", (gint *) & format->r);
+  gst_structure_get_int (structure, "green_mask", (gint *) & format->g);
+  gst_structure_get_int (structure, "blue_mask", (gint *) & format->b);
   format->a = 0;
   gst_structure_get_int (structure, "bpp", &format->bits);
   format->indexed = 0;

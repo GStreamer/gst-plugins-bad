@@ -34,7 +34,7 @@ typedef struct _GstIcecastSend GstIcecastSend;
 struct _GstIcecastSend {
   GstElement element;
 
-  GstPad *sinkpad,*srcpad;
+  GstPad *sinkpad, *srcpad;
 
   shout_conn_t conn;
 

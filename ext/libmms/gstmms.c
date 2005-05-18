@@ -265,7 +265,8 @@ gst_mms_get (GstPad * pad)
 
   GST_BUFFER_SIZE (buf) = 0;
   GST_DEBUG ("reading %d bytes", mmssrc->blocksize);
-  result = mms_read (NULL, mmssrc->connection, data, mmssrc->blocksize);
+  result =
+      mms_read (NULL, mmssrc->connection, (char *) data, mmssrc->blocksize);
   GST_BUFFER_OFFSET (buf) = mms_get_current_pos (mmssrc->connection) - result;
   GST_BUFFER_SIZE (buf) = result;
 
