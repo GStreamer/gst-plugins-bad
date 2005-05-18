@@ -1,3 +1,17 @@
+2005-05-18  Lutz Mueller  <lutz@users.sourceforge.net>
+
+	Reviewed and modified by:  Luca Ognibene  <luogni@tin.it>
+	
+	* sys/ximage/gstximageplugin.c: 
+	* sys/ximage/ximagesrc.h: 
+	* sys/ximage/ximagesrc.c: 
+	* sys/ximage/ximagesink.c: 
+	* sys/ximage/Makefile.am: 
+	  Add ximagesrc element in the ximagesink plugin (plugin name
+	  should be changed in 0.9...)
+	  Move ximagesink element registration to gstximageplugin.c
+	  fix #161661
+
 2005-05-18  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* ext/xvid/gstxviddec.c: (gst_xviddec_change_state):
