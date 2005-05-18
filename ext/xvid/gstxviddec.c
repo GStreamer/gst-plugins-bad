@@ -355,7 +355,7 @@ gst_xviddec_change_state (GstElement * element)
 {
   GstXvidDec *xviddec = GST_XVIDDEC (element);
 
-  switch (GST_STATE_PENDING (element)) {
+  switch (GST_STATE_TRANSITION (element)) {
     case GST_STATE_PAUSED_TO_READY:
       if (xviddec->handle) {
         gst_xviddec_unset (xviddec);

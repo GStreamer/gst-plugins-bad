@@ -1,5 +1,10 @@
 2005-05-18  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* ext/xvid/gstxviddec.c: (gst_xviddec_change_state):
+	  More gcc4.
+
+2005-05-18  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* po/POTFILES.in:
 	  More updates.
 
