@@ -1,3 +1,8 @@
+2005-05-18  David Schleef  <ds@schleef.org>
+
+	* ext/swfdec/gstswfdec.c: (gst_swfdec_loop): Disable last
+	  patch, because it depends on swfdec CVS. (oops)
+
 2005-05-18  Lutz Mueller  <lutz@users.sourceforge.net>
 
 	Reviewed and modified by:  Luca Ognibene  <luogni@tin.it>

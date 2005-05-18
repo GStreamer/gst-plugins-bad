@@ -264,7 +264,11 @@ gst_swfdec_loop (GstElement * element)
   } else if (ret == SWF_CHANGE) {
     GstCaps *caps;
     GstPadLinkReturn link_ret;
+
+/* Let's not depend on features that are only in CVS */
+#ifdef HAVE_SWFDEC_0_3_5
     GstTagList *taglist;
+#endif
 
     swfdec_decoder_get_image_size (swfdec->decoder,
         &swfdec->width, &swfdec->height);
@@ -286,12 +290,14 @@ gst_swfdec_loop (GstElement * element)
     }
     swfdec->have_format = TRUE;
 
+#ifdef HAVE_SWFDEC_0_3_5
     taglist = gst_tag_list_new ();
     gst_tag_list_add (taglist, GST_TAG_MERGE_REPLACE,
         GST_TAG_ENCODER_VERSION, swfdec_decoder_get_version (swfdec->decoder),
         NULL);
     gst_element_found_tags (GST_ELEMENT (swfdec), taglist);
     gst_tag_list_free (taglist);
+#endif
   } else if (ret == SWF_EOF) {
     SwfdecBuffer *audio_buffer;
     SwfdecBuffer *video_buffer;
