@@ -1,3 +1,13 @@
+2005-05-18  Arwed v. Merkatz  <v.merkatz@gmx.net>>
+
+	* ext/nas/nassink.c: (gst_nassink_getcaps),
+	(gst_nassink_chain_handle_event), (gst_nassink_open_audio),
+	(gst_nassink_close_audio), (gst_nassink_change_state):
+	* ext/nas/nassink.h:
+	  removed unnecessary GST_NASSINK_OPEN flag, don't open multiple
+	  connections to nas server, set element error and fail the state
+	  change if connecting to server fails
+
 2005-05-18  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* gst/mpeg1videoparse/gstmp1videoparse.c:

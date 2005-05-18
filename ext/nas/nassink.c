@@ -203,17 +203,16 @@ gst_nassink_getcaps (GstPad * pad)
   GstCaps *templatecaps = gst_caps_copy (gst_pad_get_pad_template_caps (pad));
   GstCaps *caps;
   int i;
-  AuServer *server;
 
-  server = AuOpenServer (nassink->host, 0, NULL, 0, NULL, NULL);
-  if (!server)
+  if (!nassink->audio)
     return templatecaps;
 
   for (i = 0; i < gst_caps_get_size (templatecaps); i++) {
     GstStructure *structure = gst_caps_get_structure (templatecaps, i);
 
     gst_structure_set (structure, "rate", GST_TYPE_INT_RANGE,
-        AuServerMinSampleRate (server), AuServerMaxSampleRate (server), NULL);
+        AuServerMinSampleRate (nassink->audio),
+        AuServerMaxSampleRate (nassink->audio), NULL);
   }
   caps = gst_caps_intersect (templatecaps, gst_pad_get_pad_template_caps (pad));
   gst_caps_free (templatecaps);
@@ -372,13 +371,15 @@ gst_nassink_chain_handle_event (GstNassink * nassink, GstPad * pad,
       return;
     case GST_EVENT_DISCONTINUOUS:
       /* evil hack */
-      gst_nassink_close_audio (nassink);
-      gst_nassink_open_audio (nassink);
-      nassink->flow = AuGetScratchFlow (nassink->audio, NULL);
-      if (nassink->flow == 0) {
-        GST_CAT_DEBUG (NAS, "couldn't get flow");
-        // return -1 (throw error?)
-      }
+      /*
+         gst_nassink_close_audio (nassink);
+         gst_nassink_open_audio (nassink);
+         nassink->flow = AuGetScratchFlow (nassink->audio, NULL);
+         if (nassink->flow == 0) {
+         GST_CAT_DEBUG (NAS, "couldn't get flow");
+         // return -1 (throw error?)
+         }
+       */
       gst_pad_event_default (pad, event);
       return;
     default:
@@ -527,11 +528,17 @@ gst_nassink_open_audio (GstNassink * sink)
   /* Open Server */
 
   sink->audio = AuOpenServer (sink->host, 0, NULL, 0, NULL, NULL);
-  if (sink->audio == NULL)
+  if (sink->audio == NULL) {
+    GST_ELEMENT_ERROR (sink, RESOURCE, OPEN_WRITE, (NULL),
+        ("can't open connection to nas server"));
     return FALSE;
+  }
   sink->device = NAS_getDevice (sink->audio, sink->tracks);
   if (sink->device == AuNone) {
-    GST_CAT_DEBUG (NAS, "no device with %i tracks found", sink->tracks);
+    AuCloseServer (sink->audio);
+    sink->audio = NULL;
+    GST_ELEMENT_ERROR (sink, RESOURCE, OPEN_WRITE, (NULL),
+        ("can't get nas device with %i tracks", sink->tracks));
     return FALSE;
   }
 
@@ -539,10 +546,6 @@ gst_nassink_open_audio (GstNassink * sink)
   sink->size = 0;
   sink->pos = 0;
   sink->buf = NULL;
-
-  /* Start a flow */
-
-  GST_FLAG_SET (sink, GST_NASSINK_OPEN);
 
   GST_CAT_DEBUG (NAS, "opened audio device");
   return TRUE;
@@ -572,8 +575,6 @@ gst_nassink_close_audio (GstNassink * sink)
   AuCloseServer (sink->audio);
   sink->audio = NULL;
 
-  GST_FLAG_UNSET (sink, GST_NASSINK_OPEN);
-
   GST_CAT_DEBUG (NAS, "closed audio device");
 }
 
@@ -588,21 +589,26 @@ gst_nassink_change_state (GstElement * element)
 
   switch (GST_STATE_PENDING (element)) {
     case GST_STATE_NULL:
-      if (GST_FLAG_IS_SET (element, GST_NASSINK_OPEN))
-        gst_nassink_close_audio (nassink);
+      gst_nassink_close_audio (nassink);
       break;
 
     case GST_STATE_READY:
-      if (!GST_FLAG_IS_SET (element, GST_NASSINK_OPEN))
-        gst_nassink_open_audio (nassink);
+      if (!gst_nassink_open_audio (nassink))
+        return GST_STATE_FAILURE;
       break;
 
     case GST_STATE_PAUSED:
-      while (nassink->pos && nassink->buf)
-        NAS_flush (nassink);
+      if (nassink->flow != AuNone)
+        AuPauseFlow (nassink->audio, nassink->flow, NULL);
+      /*
+         while (nassink->pos && nassink->buf)
+         NAS_flush (nassink);
+       */
       break;
 
     case GST_STATE_PLAYING:
+      if (nassink->flow != AuNone)
+        AuStartFlow (nassink->audio, nassink->flow, NULL);
       break;
   }
 

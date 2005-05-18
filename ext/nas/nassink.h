@@ -39,11 +39,6 @@ extern "C" {
 #define GST_IS_NASSINK_CLASS(obj) \
   (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_NASSINK))
 
-typedef enum {
-  GST_NASSINK_OPEN            = GST_ELEMENT_FLAG_LAST,
-  GST_NASSINK_FLAG_LAST       = GST_ELEMENT_FLAG_LAST+2
-} GstNasSinkFlags;
-
 typedef struct _GstNassink GstNassink;
 typedef struct _GstNassinkClass GstNassinkClass;
 
