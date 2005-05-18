@@ -1,3 +1,10 @@
+2005-05-18  Brian Cameron  <brian.cameron@sun.com>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* po/POTFILES.in:
+	  Add some new files (#304125).
+
 2005-05-18  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* ext/dvdnav/dvdnavsrc.c: (dvdnavsrc_make_clut_change_event):
