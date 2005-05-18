@@ -20,7 +20,7 @@
 #ifndef __GST_MUSEPACK_READER_H__
 #define __GST_MUSEPACK_READER_H__
 
-#include <musepack/musepack.h>
+#include <mpcdec/mpcdec.h>
 #include <gst/bytestream/bytestream.h>
 
 void gst_musepack_init_reader (mpc_reader * r, GstByteStream * bs);

@@ -1,3 +1,13 @@
+2005-05-18  Benoit Amiaux  <benoit.amiaux@laposte.net>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* configure.ac:
+	* ext/musepack/gstmusepackdec.h:
+	* ext/musepack/gstmusepackreader.c:
+	* ext/musepack/gstmusepackreader.h:
+	  Update to 1.2 API (303117).
+
 2005-05-18  Arwed v. Merkatz  <v.merkatz@gmx.net>>
 
 	* ext/nas/nassink.c: (gst_nassink_getcaps),
@@ -7,6 +17,15 @@
 	  removed unnecessary GST_NASSINK_OPEN flag, don't open multiple
 	  connections to nas server, set element error and fail the state
 	  change if connecting to server fails
+
+2005-05-18  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* configure.ac:
+	* ext/musepack/gstmusepackdec.h:
+	* ext/musepack/gstmusepackreader.c:
+	* ext/musepack/gstmusepackreader.h:
+	* gst-libs/gst/Makefile.am:
+	* gst/typefind/gsttypefindfunctions.c: (plugin_init):
 
 2005-05-18  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 

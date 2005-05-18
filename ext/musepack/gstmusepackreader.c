@@ -89,7 +89,7 @@ gst_musepack_reader_read (void *this, void *ptr, mpc_int32_t size)
   return read;
 }
 
-static BOOL
+static mpc_bool_t
 gst_musepack_reader_seek (void *this, mpc_int32_t offset)
 {
   GstByteStream *bs = this;
@@ -126,7 +126,7 @@ gst_musepack_reader_get_size (void *this)
   return gst_bytestream_length (bs);
 }
 
-static BOOL
+static mpc_bool_t
 gst_musepack_reader_canseek (void *this)
 {
   return TRUE;
