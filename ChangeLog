@@ -1,3 +1,9 @@
+2005-05-18  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/mpeg1videoparse/gstmp1videoparse.c:
+	(mp1videoparse_valid_sync), (gst_mp1videoparse_real_chain):
+	  Prevent crash, detect keyframes (#303650).
+
 2005-05-18  Brian Cameron  <brian.cameron@sun.com>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>

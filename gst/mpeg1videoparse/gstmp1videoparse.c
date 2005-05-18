@@ -220,14 +220,17 @@ mp1videoparse_valid_sync (Mp1VideoParse * mp1videoparse, guint32 head,
     GstBuffer * buf)
 {
   switch (head) {
-    case SEQ_START_CODE:{
-      GstBuffer *subbuf = gst_buffer_create_sub (buf, 4,
-          GST_BUFFER_SIZE (buf) - 4);
+    case SEQ_START_CODE:
+      /* FIXME: may sometimes not update header (although that'll probably
+       * never happen in practice). */
+      if (GST_BUFFER_SIZE (buf) >= 8) {
+        GstBuffer *subbuf = gst_buffer_create_sub (buf, 4,
+            GST_BUFFER_SIZE (buf) - 4);
 
-      mp1videoparse_parse_seq (mp1videoparse, subbuf);
-      gst_buffer_unref (subbuf);
+        mp1videoparse_parse_seq (mp1videoparse, subbuf);
+        gst_buffer_unref (subbuf);
+      }
       return TRUE;
-    }
     case GOP_START_CODE:
     case PICTURE_START_CODE:
     case USER_START_CODE:
@@ -505,6 +508,8 @@ gst_mp1videoparse_real_chain (Mp1VideoParse * mp1videoparse, GstBuffer * buf,
       }
 
       if (GST_PAD_CAPS (outpad) != NULL) {
+        guint8 *p_ptr;
+
         if (mp1videoparse->need_discont &&
             GST_BUFFER_TIMESTAMP_IS_VALID (outbuf)) {
           GstEvent *event = gst_event_new_discontinuous (FALSE,
@@ -517,6 +522,13 @@ gst_mp1videoparse_real_chain (Mp1VideoParse * mp1videoparse, GstBuffer * buf,
         }
         GST_DEBUG ("mp1videoparse: pushing  %d bytes %" G_GUINT64_FORMAT,
             GST_BUFFER_SIZE (outbuf), GST_BUFFER_TIMESTAMP (outbuf));
+        p_ptr = GST_BUFFER_DATA (outbuf);
+        while (p_ptr[0] != 0x0 || p_ptr[1] != 0x0 ||
+            p_ptr[2] != 0x1 || p_ptr[3] != (PICTURE_START_CODE & 0xff))
+          p_ptr++;
+        if (((p_ptr[5] >> 3) & 0x7) == 0x1) {
+          GST_BUFFER_FLAG_SET (outbuf, GST_BUFFER_KEY_UNIT);
+        }
         gst_pad_push (outpad, GST_DATA (outbuf));
         GST_DEBUG ("mp1videoparse: pushing  done");
       } else {
