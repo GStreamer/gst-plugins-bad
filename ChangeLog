@@ -1,3 +1,10 @@
+2005-05-24  Wouter Paesen <wouter@kangaroot.net>
+
+	Reviewed by : Edward Hervey  <bilboed@bilboed.com>
+
+	* gst/adder/gstadder.c: (gst_adder_request_new_pad):
+	freeing the name variable
+
 2005-05-18  David Schleef  <ds@schleef.org>
 
 	* ext/swfdec/gstswfdec.c: (gst_swfdec_loop): Disable last
