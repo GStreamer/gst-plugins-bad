@@ -1,5 +1,13 @@
 2005-05-25  Thomas Vander Stichele  <thomas at apestaart dot org>
 
+	patch by: Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/alsa/gstalsa.c: (gst_alsa_get_caps),
+	(gst_alsa_set_hw_params):
+	  workaround bug in dmix.  Fixes #305186.
+
+2005-05-25  Thomas Vander Stichele  <thomas at apestaart dot org>
+
 	patch by: Luca Ognibene  <luogni@tin.it>
 
 	* sys/ximage/ximagesrc.c: (gst_ximagesrc_get),
