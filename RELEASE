@@ -1,5 +1,5 @@
 
-GStreamer: Release notes for GStreamer Plugins 0.8.8 "Fluded"
+GStreamer: Release notes for GStreamer Plugins 0.8.9 "Old Hat"
         
 
 The GStreamer team is happy to announce a new release
@@ -29,112 +29,81 @@ Features of this release
       * Parallel installability with 0.6.x series
       * Internationalization
       * Translations: af az ca cs en_GB fr hu it nb nl or sq sr sv uk vi
-      * subtitle support
-      * new element: puzzle
-      * new plugin: amrnb
-      * new element: dvdlpcmdec
-      * new plugin: autodetect
+      * new element: ximagesrc
+      * new plugin: video4linuxradio
+      * new plugin: freeze
 
 Bugs fixed in this release
     
-      * 100931 : [PATCH] subtitles
-      * 132341 : [avidemux] 'DIB ' = > image upside-down
-      * 135778 : [int2float] broken with audioconvert
-      * 138666 : [playbin] cannot handle files with large initial delay in...
-      * 139749 : [gstplay] libgstplay is *WAY* too slow
-      * 140141 : [qtdemux] cannot playback gsm audio
-      * 140845 : [strings] gst-plugins testsuite's embed.c still uses xvid...
-      * 142272 : [PATCH] [qtdemux] doesn't work with sources that cannot seek
-      * 143555 : [qtdemux] Movie fails to playback
-      * 149162 : Importing m4a files in Rhythmbox leaks memory
-      * 149274 : [PATCH] gst-plug mad gets id3v2 text tags in wrong encoding
-      * 150284 : [matroskamux] fail to mux an MP3
-      * 150576 : [v4l2src] pad v4l2src0:src returned caps that are not a r...
-      * 151661 : [PATCH] [mad] Possible bug in mad plugin
-      * 152688 : [PATCH[mad/typefind] doesn't support completely broken mp...
-      * 153434 : [PATCH] faac filter cannot create .aac files
-      * 154000 : Relocation error on Linux PowerPC causing crash
-      * 154064 : [mad] cant mix two mp3
-      * 155163 : [qtdemux] don't know audio FOURCC samr (from mobiles/3GPP...
-      * 155346 : [build] faad plugin doesn't compile against 2.0-rc3
-      * 155575 : [alsasink] broken with hw:X or when used with either alsa...
-      * 156001 : [mpeg] problem playing an mpeg file
-      * 156379 : [ffmpegcolorspace] lack of YV12 capability
-      * 159092 : thx.vob file seeker moves 'faster' than the actual movie
-      * 159295 : [mikmod/modplug] amiga.mod file segfault totem
-      * 159327 : [mpeg/dvd] playing thx.vob seeking is broken
-      * 159970 : [typefinding] mpeg/audio typefind abort with musepack file
-      * 160126 : multi.ogg is slow
-      * 160505 : [adder] problem using adder plugin
-      * 160730 : [PATCH] [mpegdemux] should remove pads on " new-media " event
-      * 160957 : [adder] EOSs when the first stream EOSs
-      * 161179 : [audioscale] quits with gmem assertion
-      * 161191 : MP3 crashes rhythmbox
-      * 161262 : [mpegdemux] cannot play a pes mpeg file
-      * 161325 : [dvdnavsrc] gst-dvd example pipeline not linking (a52dec ...
-      * 161667 : [PATCH][snapshot] seg fault in signal handler
-      * 161675 : [ffmpegcolorspace] conversion of RGB depth=15 is wrong
-      * 161726 : [ffmpegcolorspace] does not handle x-raw-rgb 24/32 BE _RGB
-      * 161929 : [PATCH] [mpegdemux] sends no discont events on new pads
-      * 162330 : [rtpgsmenc] gsmenc ! rtpgsmenc gives assertion `GST_PAD_D...
-      * 162504 : [xvimagesink] goes black when going from playing - > ready...
-      * 162626 : [videoscale] cannot handle lists of fractions
-      * 162656 : [qtdemux] extracting more metadata from AAC/M4A
-      * 162974 : [flacenc] Flac encoding is broken
-      * 163159 : [videobox] plugin segfault (gst-plugin 0.8.7)
-      * 163161 : [pngenc] only supports video/x-raw-rgb,bits=24,depth=24
-      * 163177 : [pngdec] Can't cope with png's without an alpha channel
-      * 163309 : [PATCH] typefinding for formats used by libsndfile
-      * 163323 : [pngenc] compression-level customisation support
-      * 163348 : [pngenc] Leaks and other nasty stuff
-      * 163449 : Stereo-to-Surround doesn't like seek
-      * 163485 : [PATCH] tta plugin doesn't build with gcc 2.95.4.
-      * 163634 : [playbin] doesn't like # in filenames
-      * 163676 : [PATCH] [mpeg2dec] need to crop
-      * 163867 : [mad] Totem could not play 384kbit lame 'free format' mp3...
-      * 163891 : Gst-launch-ext will not play an MPEG video
-      * 164069 : [clocking] Hang when playing audio file (.wav) with visua...
-      * 164197 : [pngdec] & [pngenc] The decoded image is in RGB(LE) byte ...
-      * 164209 : [ffmpegcolorspace] PIX_FMT_BGRA32 - > caps conversion is w...
-      * 164265 : [PATCH][ffmpegcolorspace] Converting from an RGB image wi...
-      * 164708 : [PATCH] EffectTV/Quark freed data in wrong place
-      * 164826 : [patch] Avidemux doesn't handle seek on audiopads
-      * 165013 : AVI with HuffYUV segfault
-      * 165193 : Patch for ov51x v4ljpegsrc
-      * 165290 : cannot play asf file with just wma version 2 audio
-      * 165335 : [PATCH] GstAudioScale outgoing buffers don't have duratio...
-      * 165340 : gst-launch-ext-0.8 fails to display video of an .avi file.
-      * 165446 : musepack gst-plugin doesn't work with new libmusepack
-      * 165509 : Mod playback still broken with mikmod
-      * 165525 : Problem with mplex plugin
-      * 165545 : Totem won't play low bitrate mp3
-      * 165736 : [alphacolor] BGRA handling is missing
-      * 166207 : [PATCH] [ffmpegcolorspace] AYUV- > RGB is broken
-      * 166208 : [cdparanoia] returns wrong number of tracks
-      * 166600 : law encoder/decoder are leaking caps
-      * 166892 : gnome-volume-control crashed
-      * 166917 : deadlock in queue
-      * 166931 : MP3 webradio do not work in Totem
-      * 167117 : [dvdnavsrc] could use a better error message when DVD not...
-      * 167482 : [PATCH] [avidemux] Compile fix for gcc 2.95
-      * 167483 : [PATCH] [tcpclientsrc] FreeBSD compile fix
-      * 167509 : [PATCH] [tcpserversrc] Assumes a blocking socket
-      * 167633 : [wavparse] div by 0 = > crash
-      * 167639 : Support MusicBrainz metadata tags
-      * 167704 : [PATCH] [tcpserversink] Don't depend on uninitialised values
-      * 167878 : [buffer-frames-convert] buffer_frames_convert_link leaks ...
-      * 167959 : Dirac plugins doesn't build.
-      * 168002 : [build] Musepack header files not found
-      * 168133 : [PATCH] [jpegenc] Memory leaks
-      * 168134 : [PATCH] [gdkpixbufscale] Memory leak
-      * 168254 : [PATCH] [jpegdec] Memory leaks
-      * 168260 : [PATCH] [tcpserversink] free some memory
-      * 168269 : [PATCH] [smoothwave] C99-ism
-      * 168271 : [PATCH] [gdkpixbufscale] Memory/CPU leak
-      * 168801 : autoaudio/videosink probe only in READY
-      * 168885 : AMD64 build failure in gst/librfb/rfbdecoder.c
-      * 168994 : cdparanoia plugin problem with CDs whose first track does...
-      * 169146 : gst-plugins 0.8.9 building on gcc 2.95.3
+      * 118033 : Autodetect audiosink at run-time
+      * 141189 : [PATCH] [SPC] playback
+      * 149158 : [qtdemux/faad] MP4 file encoded Nero AAC Codec 2.6.2.0 is...
+      * 154431 : [mpeg] on PPC, gstreamer segfaults on any mpeg video
+      * 161661 : [PATCH] screenshots via gstreamer
+      * 162024 : [alsasink] doesn't probe HW buffer_size/period_size/perio...
+      * 162355 : [PATCH] [cdparanoia] Fix for _QUERY_POSITION
+      * 163443 : crash when searching in a file (cvs)
+      * 165643 : [qtdemux] doesn't handle embedded URLs
+      * 165726 : [PATCH] New plugin: freeze
+      * 166113 : [faad] plugin won't compile against faad CVS (unreleased ...
+      * 168390 : data caching (queue) breaks mms/asf
+      * 168406 : asfdemux always uses 25fps
+      * 168558 : [faad] Unsupported FAAD channel position 0x0 encountered ...
+      * 168728 : [v4lsrc] Support for v4l radio (patch included)
+      * 169073 : muine crashes on song change
+      * 169081 : ogg broken stream fix
+      * 169289 : Playbin should fallback on x11 when xvideo isn't available
+      * 169333 : [pngdec, pngenc] Stride problems
+      * 169400 : decodebin finalization bug
+      * 169629 : [theoraenc] sharpness property
+      * 170060 : Segmentation Fault when open a video file with external s...
+      * 170066 : Leak in oggdemux
+      * 170083 : nautilus restarts (crashes) when trying to view the prope...
+      * 170249 : [nassink] playing .wav gives only noise
+      * 170319 : id3demuxbin loses tags
+      * 170387 : gstreamer fails to play free format mp3 using playbin
+      * 170390 : adder fails to implement a release_pad function
+      * 171341 : seeks on the silence plugin
+      * 171371 : need wavpack decoder
+      * 171530 : new plugin: libcdio-based cdda source
+      * 171777 : Ogm seek support is broken
+      * 171997 : gst-plugins structure addon for mikmod < = 3.2.0 just a on...
+      * 172242 : gstspeed doesn't handle seek events correct
+      * 172281 : Buffer overflows in gstspeed
+      * 172563 : [videocrop] corrupts video when setting property in state...
+      * 172697 : [PATCH] mpeg2dec skip-frame
+      * 172845 : one pixel cropped off at left when rendering subtitles
+      * 172854 : totem spawns error and stops when opening with a badly fo...
+      * 172884 : When un-muting the sound volume is restored to 100%
+      * 172946 : crash when playing a .mov quicktime file
+      * 300337 : [PATCH] [switch] Does not set debug category
+      * 300377 : Totem cannot read files from davs URIs (other GNOME apps ...
+      * 300457 : Totem never errors if you try playing a mp3 stream withou...
+      * 300495 : configure does not find v4l, v4l2, Xlib.h, and SDL
+      * 301158 : 2 casts of buf in the gst_ximagesink_chain function (xima...
+      * 301292 : caps nego problem in gst-adder
+      * 301894 : Wavpack doesn't compile on FreeBSD.
+      * 301944 : GstAdder doesn't EOS when all input channels did
+      * 302188 : totem crashes on a mp3 file
+      * 302222 : update for future Cairo 0.5 API
+      * 302625 : mad element doesn't report bitrate for mp3 files with no ...
+      * 302813 : volume inside playbin doesn't work after the first file h...
+      * 302837 : [playbin] gst_tag_list_copy: assertion `GST_IS_TAG_LIST (...
+      * 302864 : gst-plugins fails to compile with gcc4
+      * 303011 : compilation fails on GCC4 warnings
+      * 303117 : Gstreamer plugins 0.8.8 musepack plugin build fails
+      * 303253 : More gcc4 issues in 0.8 head plugins
+      * 303650 : mpeg1videoparse does not recognize keyframes
+      * 303936 : should use g++ to link with cpp code
+      * 304125 : POTFILES.in fixes for gst-plugins
+      * 304180 : [directfb] compilation fails with gcc-4
+      * 304284 : [dv1394src] doesn't compile with gcc4
+      * 304537 : [dvdnav] dvdnav doesn't like gcc4
+      * 304538 : [hermes] doesn't like gcc4
+      * 304540 : [libmms] libmms doesn't like gcc4
+      * 304588 : totem crashes on invalid WAV file (channels=0)
+      * 305012 : [ximage] doesn't compile with gcc4
+      * 305186 : alsasink borkage
 
 Download
 
@@ -169,30 +138,28 @@ as provided by gstreamer-gconf-0.8.pc, to access the default settings.
   
 Contributors to this release
     
-      * Amaury Jacquot
-      * Andy Wingo
+      * Ali Akcaagac
       * Arwed v. Merkatz
       * Benjamin Otte
-      * Clytie Siddall
-      * David Moore
+      * Benoit Amiaux
+      * Brian Cameron
+      * Chris Lee
       * David Schleef
       * Edward Hervey
-      * Francis Labonte
       * Gergely Nagy
-      * James Henstridge
       * Jan Schmidt
-      * Jeffrey Ollie
-      * Julien Moutte
+      * Kjartan Maraas
       * Koop Mast
       * Luca Ognibene
-      * Maciej Katafiasz
-      * Martin Eikermann
-      * Martin Holters
-      * Paul Jack
+      * Lutz Mueller
+      * Nickolay V. Shmyrev
+      * Richard Hult
       * Ronald Bultje
-      * Sebastien Cote
-      * Stephane Loeuillet
-      * Steve Baker
       * Thomas Vander Stichele
+      * Till Busch
       * Tim-Philipp Müller
+      * William Jon McCann
+      * Wim Taymans
+      * Wouter Paesen
+      * Zaheer Abbas Merali
  

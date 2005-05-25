@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gst-plugins 0.7.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-02-25 15:57+0100\n"
+"POT-Creation-Date: 2005-05-25 15:44+0200\n"
 "PO-Revision-Date: 2004-03-13 00:18+0100\n"
 "Last-Translator: Danilo Segan <dsegan@gmx.net>\n"
 "Language-Team: Serbian <gnu@prevod.org>\n"
@@ -20,31 +20,31 @@ msgstr ""
 msgid "Master"
 msgstr ""
 
-#: ext/alsa/gstalsamixertrack.c:84 sys/oss/gstossmixer.c:100
+#: ext/alsa/gstalsamixertrack.c:84 sys/oss/gstossmixer.c:99
 msgid "Bass"
 msgstr "Бас"
 
-#: ext/alsa/gstalsamixertrack.c:85 sys/oss/gstossmixer.c:102
+#: ext/alsa/gstalsamixertrack.c:85 sys/oss/gstossmixer.c:101
 msgid "Treble"
 msgstr "Шум"
 
-#: ext/alsa/gstalsamixertrack.c:86 sys/oss/gstossmixer.c:106
+#: ext/alsa/gstalsamixertrack.c:86 sys/oss/gstossmixer.c:105
 msgid "PCM"
 msgstr "ПЦМ"
 
-#: ext/alsa/gstalsamixertrack.c:87 sys/oss/gstossmixer.c:104
+#: ext/alsa/gstalsamixertrack.c:87 sys/oss/gstossmixer.c:103
 msgid "Synth"
 msgstr "Синт."
 
-#: ext/alsa/gstalsamixertrack.c:88 sys/oss/gstossmixer.c:110
+#: ext/alsa/gstalsamixertrack.c:88 sys/oss/gstossmixer.c:109
 msgid "Line-in"
 msgstr "Ул.лин."
 
-#: ext/alsa/gstalsamixertrack.c:89 sys/oss/gstossmixer.c:114
+#: ext/alsa/gstalsamixertrack.c:89 sys/oss/gstossmixer.c:113
 msgid "CD"
 msgstr "ЦД"
 
-#: ext/alsa/gstalsamixertrack.c:90 sys/oss/gstossmixer.c:112
+#: ext/alsa/gstalsamixertrack.c:90 sys/oss/gstossmixer.c:111
 msgid "Microphone"
 msgstr "Микрофон"
 
@@ -61,12 +61,36 @@ msgstr ""
 msgid "Capture"
 msgstr ""
 
-#: ext/audiofile/gstafsink.c:344 ext/sndfile/gstsf.c:624
+#: ext/alsa/gstalsa.c:1598
+#, fuzzy, c-format
+msgid "ALSA device \"%s\" is already in use by another program."
+msgstr "OSS уређај „%s“ већ користи неки програм."
+
+#: ext/alsa/gstalsa.c:1604
+#, fuzzy, c-format
+msgid "Could not access ALSA device \"%s\", check its permissions."
+msgstr "Не могу да приступим уређају „%s“, проверите његова овлашћења."
+
+#: ext/alsa/gstalsa.c:1612
+#, fuzzy, c-format
+msgid "ALSA device \"%s\" does not exist."
+msgstr "Не постоји уређај „%s“."
+
+#: ext/alsa/gstalsa.c:1616
+#, fuzzy, c-format
+msgid "ALSA device \"%s\" had an error."
+msgstr "OSS уређај „%s“ већ користи неки програм."
+
+#: ext/audiofile/gstafsink.c:347 ext/sndfile/gstsf.c:624
+#: gst/multifilesink/gstmultifilesink.c:291
+#: gst/multifilesink/gstmultifilesink.c:348
 #, c-format
 msgid "Could not open file \"%s\" for writing."
 msgstr "Не могу да отворим датотеку „%s“ ради уписа."
 
-#: ext/audiofile/gstafsink.c:366 ext/audiofile/gstafsrc.c:371
+#: ext/audiofile/gstafsink.c:369 ext/audiofile/gstafsrc.c:371
+#: gst/multifilesink/gstmultifilesink.c:311
+#: gst/multifilesink/gstmultifilesink.c:325
 #, c-format
 msgid "Error closing file \"%s\"."
 msgstr "Грешка при затварању датотеке „%s“."
@@ -76,28 +100,48 @@ msgstr "Грешка при затварању датотеке „%s“."
 msgid "Could not open file \"%s\" for reading."
 msgstr "Не могу да отворим датотеку „%s“ ради читања."
 
-#: ext/cdparanoia/gstcdparanoia.c:278
+#: ext/cdio/cddasrc.c:246 ext/cdparanoia/gstcdparanoia.c:281
 msgid "discid"
 msgstr ""
 
-#: ext/cdparanoia/gstcdparanoia.c:278
+#: ext/cdio/cddasrc.c:246 ext/cdparanoia/gstcdparanoia.c:281
 msgid "CDDA discid for metadata retrieval"
 msgstr ""
 
-#: ext/cdparanoia/gstcdparanoia.c:683 ext/cdparanoia/gstcdparanoia.c:699
+#: ext/cdio/cddasrc.c:432 ext/cdio/cddasrc.c:443
+msgid "Invalid seek"
+msgstr ""
+
+#: ext/cdio/cddasrc.c:661 ext/cdparanoia/gstcdparanoia.c:791
+#: ext/cdparanoia/gstcdparanoia.c:807
 msgid "Could not open CD device for reading."
 msgstr "Не могу да отворим ЦД уређај ради читања."
 
-# Виртуелни Систем Датотека
-#: ext/gnomevfs/gstgnomevfssrc.c:1157
-#, c-format
-msgid "Could not open vfs file \"%s\" for reading."
-msgstr "Не могу да отворим ВСД датотеку „%s“ ради читања."
+#: ext/cdio/cddasrc.c:669
+msgid "This CD has no tracks"
+msgstr ""
 
-#: ext/gnomevfs/gstgnomevfssrc.c:1165
-#, fuzzy
-msgid "No filename given."
-msgstr "Име датотеке није задато."
+#: ext/cdio/cddasrc.c:748
+msgid "Invalid track"
+msgstr ""
+
+#: ext/cdparanoia/gstcdparanoia.c:284
+msgid "musicbrainz-discid"
+msgstr ""
+
+#: ext/cdparanoia/gstcdparanoia.c:284
+msgid "Musicbrainz discid for metadata retrieval"
+msgstr ""
+
+#: ext/dvdnav/dvdnavsrc.c:56
+#, fuzzy, c-format
+msgid "Error invoking \"%s\": %s."
+msgstr "Грешка при затварању датотеке „%s“."
+
+#: ext/dvdnav/dvdnavsrc.c:1592
+#, c-format
+msgid "Failed to open DVD device '%s'."
+msgstr ""
 
 #: ext/gnomevfs/gstgnomevfssink.c:432
 #, fuzzy, c-format
@@ -114,6 +158,21 @@ msgstr "Име датотеке није задато."
 msgid "Could not close vfs file \"%s\"."
 msgstr "Не могу да затворим ВСД датотеку „%s“."
 
+# Виртуелни Систем Датотека
+#: ext/gnomevfs/gstgnomevfssrc.c:1167
+#, c-format
+msgid "Could not open vfs file \"%s\" for reading."
+msgstr "Не могу да отворим ВСД датотеку „%s“ ради читања."
+
+#: ext/gnomevfs/gstgnomevfssrc.c:1175
+#, fuzzy
+msgid "No filename given."
+msgstr "Име датотеке није задато."
+
+#: ext/jpeg/gstjpegdec.c:441
+msgid "Failed to decode JPEG image"
+msgstr ""
+
 #: ext/sndfile/gstsf.c:585
 msgid "No filename specified."
 msgstr "Име датотеке није задато."
@@ -123,12 +182,99 @@ msgstr "Име датотеке није задато."
 msgid "Could not write to file \"%s\"."
 msgstr "Не могу да пишем у датотеку „%s“."
 
-#: gst/avi/gstavimux.c:1007
+#: gst-libs/gst/play/play.c:720
+msgid "Failed to create playbin object"
+msgstr ""
+
+#: gst/avi/gstavimux.c:1008
 msgid "No or invalid input audio, AVI stream will be corrupt."
 msgstr "Улазног звука нема или је неисправан, АВИ ток ће бити искварен."
 
-#: gst-libs/gst/play/play.c:719
-msgid "Failed to create playbin object"
+#: gst/multifilesink/gstmultifilesink.c:284
+#: gst/multifilesink/gstmultifilesink.c:341
+#, fuzzy
+msgid "No file name specified for writing."
+msgstr "Име датотеке није задато."
+
+#: gst/multifilesink/gstmultifilesink.c:372
+#: gst/multifilesink/gstmultifilesink.c:454
+#: gst/multifilesink/gstmultifilesink.c:507
+#: gst/multifilesink/gstmultifilesink.c:574
+#, fuzzy, c-format
+msgid "Error while writing to file \"%s\"."
+msgstr "Грешка при затварању датотеке „%s“."
+
+#: gst/multifilesink/gstmultifilesink.c:488
+#, fuzzy, c-format
+msgid "Error switching files to \"%s\"."
+msgstr "Грешка при затварању датотеке „%s“."
+
+#: gst/tags/tags.c:37
+msgid "track ID"
+msgstr ""
+
+#: gst/tags/tags.c:37
+msgid "MusicBrainz track ID"
+msgstr ""
+
+#: gst/tags/tags.c:39
+msgid "artist ID"
+msgstr ""
+
+#: gst/tags/tags.c:39
+msgid "MusicBrainz artist ID"
+msgstr ""
+
+#: gst/tags/tags.c:41
+msgid "album ID"
+msgstr ""
+
+#: gst/tags/tags.c:41
+msgid "MusicBrainz album ID"
+msgstr ""
+
+#: gst/tags/tags.c:44
+msgid "album artist ID"
+msgstr ""
+
+#: gst/tags/tags.c:44
+msgid "MusicBrainz album artist ID"
+msgstr ""
+
+#: gst/tags/tags.c:46
+msgid "track TRM ID"
+msgstr ""
+
+#: gst/tags/tags.c:46
+msgid "MusicBrainz TRM ID"
+msgstr ""
+
+#: gst/tags/tags.c:49
+msgid "artist sortname"
+msgstr ""
+
+#: gst/tags/tags.c:49
+msgid "MusicBrainz artist sortname"
+msgstr ""
+
+#: gst/tcp/gsttcp.c:305 gst/tcp/gsttcpclientsink.c:242
+#, fuzzy, c-format
+msgid "Error while sending data to \"%s:%d\"."
+msgstr "Грешка при затварању датотеке „%s“."
+
+#: gst/tcp/gsttcp.c:338
+#, c-format
+msgid "Error while sending gdp header data to \"%s:%d\"."
+msgstr ""
+
+#: gst/tcp/gsttcp.c:352
+#, c-format
+msgid "Error while sending gdp payload data to \"%s:%d\"."
+msgstr ""
+
+#: gst/tcp/gsttcpclientsink.c:357 gst/tcp/gsttcpclientsrc.c:496
+#, c-format
+msgid "Connection to %s:%d refused."
 msgstr ""
 
 #: sys/dxr3/dxr3audiosink.c:298
@@ -136,7 +282,8 @@ msgstr ""
 msgid "Could not open audio device \"%s\" for writing."
 msgstr "Не могу да отворим звучни уређај „%s“ ради уписа."
 
-#: sys/dxr3/dxr3audiosink.c:310 sys/dxr3/dxr3videosink.c:283
+#: sys/dxr3/dxr3audiosink.c:310 sys/dxr3/dxr3spusink.c:280
+#: sys/dxr3/dxr3videosink.c:283
 #, c-format
 msgid "Could not open control device \"%s\" for writing."
 msgstr "Не могу да отворим управљачки уређај „%s“ ради уписа."
@@ -156,10 +303,21 @@ msgstr "Не могу да поставим звучни уређај „%s“ �
 msgid "Could not close audio device \"%s\"."
 msgstr "Не могу да отворим радио уређај '%s'"
 
-#: sys/dxr3/dxr3audiosink.c:429 sys/dxr3/dxr3videosink.c:308
+#: sys/dxr3/dxr3audiosink.c:429 sys/dxr3/dxr3spusink.c:305
+#: sys/dxr3/dxr3videosink.c:308
 #, c-format
 msgid "Could not close control device \"%s\"."
 msgstr "Не могу да затворим управљачки уређај „%s“."
+
+#: sys/dxr3/dxr3spusink.c:268
+#, fuzzy, c-format
+msgid "Could not open spu device \"%s\" for writing."
+msgstr "Не могу да отворим уређај „%s“ ради уписа."
+
+#: sys/dxr3/dxr3spusink.c:298
+#, fuzzy, c-format
+msgid "Could not close spu device \"%s\"."
+msgstr "Не могу да отворим радио уређај '%s'"
 
 #: sys/dxr3/dxr3videosink.c:271
 #, c-format
@@ -187,6 +345,7 @@ msgid "Could not access device \"%s\", check its permissions."
 msgstr "Не могу да приступим уређају „%s“, проверите његова овлашћења."
 
 #: sys/oss/gstosselement.c:744 sys/v4l/v4l_calls.c:168
+#: sys/v4lradio/v4lradio_calls.c:103
 #, c-format
 msgid "Device \"%s\" does not exist."
 msgstr "Не постоји уређај „%s“."
@@ -209,83 +368,88 @@ msgstr ""
 msgid "Your OSS device could not be probed correctly"
 msgstr ""
 
-#: sys/oss/gstossmixer.c:98
+#: sys/oss/gstossmixer.c:97 sys/sunaudio/gstsunmixer.c:136
 msgid "Volume"
 msgstr "Јачина звука"
 
-#: sys/oss/gstossmixer.c:108
+#: sys/oss/gstossmixer.c:107
 msgid "Speaker"
 msgstr "Звучник"
 
-#: sys/oss/gstossmixer.c:116
+#: sys/oss/gstossmixer.c:115
 msgid "Mixer"
 msgstr "Миксер"
 
-#: sys/oss/gstossmixer.c:118
+#: sys/oss/gstossmixer.c:117
 msgid "PCM-2"
 msgstr "ПЦМ-2"
 
-#: sys/oss/gstossmixer.c:120
+#: sys/oss/gstossmixer.c:119
 msgid "Record"
 msgstr "Снимање"
 
-#: sys/oss/gstossmixer.c:122
+#: sys/oss/gstossmixer.c:121
 msgid "In-gain"
 msgstr "Ул. пој."
 
-#: sys/oss/gstossmixer.c:124
+#: sys/oss/gstossmixer.c:123
 msgid "Out-gain"
 msgstr "Из. пој."
 
-#: sys/oss/gstossmixer.c:126
+#: sys/oss/gstossmixer.c:125
 msgid "Line-1"
 msgstr "Лин. 1"
 
-#: sys/oss/gstossmixer.c:128
+#: sys/oss/gstossmixer.c:127
 msgid "Line-2"
 msgstr "Лин. 2"
 
-#: sys/oss/gstossmixer.c:130
+#: sys/oss/gstossmixer.c:129
 msgid "Line-3"
 msgstr "Лин. 3"
 
-#: sys/oss/gstossmixer.c:132
+#: sys/oss/gstossmixer.c:131
 msgid "Digital-1"
 msgstr "Диг. 1"
 
-#: sys/oss/gstossmixer.c:134
+#: sys/oss/gstossmixer.c:133
 msgid "Digital-2"
 msgstr "Диг. 2"
 
-#: sys/oss/gstossmixer.c:136
+#: sys/oss/gstossmixer.c:135
 msgid "Digital-3"
 msgstr "Диг. 3"
 
-#: sys/oss/gstossmixer.c:138
+#: sys/oss/gstossmixer.c:137
 msgid "Phone-in"
 msgstr "Тел. ул."
 
-#: sys/oss/gstossmixer.c:140
+#: sys/oss/gstossmixer.c:139
 msgid "Phone-out"
 msgstr "Тел. из."
 
-#: sys/oss/gstossmixer.c:142
+#: sys/oss/gstossmixer.c:141
 msgid "Video"
 msgstr "Видео"
 
-#: sys/oss/gstossmixer.c:144
+#: sys/oss/gstossmixer.c:143
 msgid "Radio"
 msgstr "Радио"
 
-#: sys/oss/gstossmixer.c:146
+#: sys/oss/gstossmixer.c:145 sys/sunaudio/gstsunmixer.c:140
 msgid "Monitor"
 msgstr "Праћење"
 
-#: sys/v4l/v4l_calls.c:159
+#: sys/sunaudio/gstsunmixer.c:138
+msgid "Gain"
+msgstr ""
+
+#: sys/v4l/v4l_calls.c:159 sys/v4lradio/v4lradio_calls.c:94
 msgid "No device specified."
 msgstr "Уређај није наведен."
 
 #: sys/v4l/v4l_calls.c:172 sys/v4l2/v4l2_calls.c:400
+#: sys/v4lradio/v4lradio_calls.c:107
 #, c-format
 msgid "Could not open device \"%s\" for reading and writing."
 msgstr "Не могу да отворим уређај „%s“ ради читања и уписа."

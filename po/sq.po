@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gst-plugins 0.8.3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-02-25 15:57+0100\n"
+"POT-Creation-Date: 2005-05-25 15:44+0200\n"
 "PO-Revision-Date: 2004-08-07 20:29+0200\n"
 "Last-Translator: Laurent Dhima <laurenti@alblinux.net>\n"
 "Language-Team: Albanian <begraj@hotmail.com>\n"
@@ -18,31 +18,31 @@ msgstr ""
 msgid "Master"
 msgstr ""
 
-#: ext/alsa/gstalsamixertrack.c:84 sys/oss/gstossmixer.c:100
+#: ext/alsa/gstalsamixertrack.c:84 sys/oss/gstossmixer.c:99
 msgid "Bass"
 msgstr "Bas"
 
-#: ext/alsa/gstalsamixertrack.c:85 sys/oss/gstossmixer.c:102
+#: ext/alsa/gstalsamixertrack.c:85 sys/oss/gstossmixer.c:101
 msgid "Treble"
 msgstr "Treble"
 
-#: ext/alsa/gstalsamixertrack.c:86 sys/oss/gstossmixer.c:106
+#: ext/alsa/gstalsamixertrack.c:86 sys/oss/gstossmixer.c:105
 msgid "PCM"
 msgstr "PCM"
 
-#: ext/alsa/gstalsamixertrack.c:87 sys/oss/gstossmixer.c:104
+#: ext/alsa/gstalsamixertrack.c:87 sys/oss/gstossmixer.c:103
 msgid "Synth"
 msgstr "Sintetizuesi"
 
-#: ext/alsa/gstalsamixertrack.c:88 sys/oss/gstossmixer.c:110
+#: ext/alsa/gstalsamixertrack.c:88 sys/oss/gstossmixer.c:109
 msgid "Line-in"
 msgstr "Linja-hyrje"
 
-#: ext/alsa/gstalsamixertrack.c:89 sys/oss/gstossmixer.c:114
+#: ext/alsa/gstalsamixertrack.c:89 sys/oss/gstossmixer.c:113
 msgid "CD"
 msgstr "CD"
 
-#: ext/alsa/gstalsamixertrack.c:90 sys/oss/gstossmixer.c:112
+#: ext/alsa/gstalsamixertrack.c:90 sys/oss/gstossmixer.c:111
 msgid "Microphone"
 msgstr "Mikrofoni"
 
@@ -59,12 +59,36 @@ msgstr ""
 msgid "Capture"
 msgstr ""
 
-#: ext/audiofile/gstafsink.c:344 ext/sndfile/gstsf.c:624
+#: ext/alsa/gstalsa.c:1598
+#, fuzzy, c-format
+msgid "ALSA device \"%s\" is already in use by another program."
+msgstr "Dispozitivi OSS \"%s\" është duke u përdorur nga një tjetër program."
+
+#: ext/alsa/gstalsa.c:1604
+#, fuzzy, c-format
+msgid "Could not access ALSA device \"%s\", check its permissions."
+msgstr "E pamundur futja në dispozitivin \"%s\", kontrollo të drejtat e tij."
+
+#: ext/alsa/gstalsa.c:1612
+#, fuzzy, c-format
+msgid "ALSA device \"%s\" does not exist."
+msgstr "Dispozitivi \"%s\" nuk ekziston."
+
+#: ext/alsa/gstalsa.c:1616
+#, fuzzy, c-format
+msgid "ALSA device \"%s\" had an error."
+msgstr "Dispozitivi OSS \"%s\" është duke u përdorur nga një tjetër program."
+
+#: ext/audiofile/gstafsink.c:347 ext/sndfile/gstsf.c:624
+#: gst/multifilesink/gstmultifilesink.c:291
+#: gst/multifilesink/gstmultifilesink.c:348
 #, c-format
 msgid "Could not open file \"%s\" for writing."
 msgstr "E pamundur hapja e file \"%s\" në shkrim."
 
-#: ext/audiofile/gstafsink.c:366 ext/audiofile/gstafsrc.c:371
+#: ext/audiofile/gstafsink.c:369 ext/audiofile/gstafsrc.c:371
+#: gst/multifilesink/gstmultifilesink.c:311
+#: gst/multifilesink/gstmultifilesink.c:325
 #, c-format
 msgid "Error closing file \"%s\"."
 msgstr "Gabim gjatë mbylljes së file \"%s\"."
@@ -74,27 +98,48 @@ msgstr "Gabim gjatë mbylljes së file \"%s\"."
 msgid "Could not open file \"%s\" for reading."
 msgstr "E pamundur hapja e file \"%s\" për lexim."
 
-#: ext/cdparanoia/gstcdparanoia.c:278
+#: ext/cdio/cddasrc.c:246 ext/cdparanoia/gstcdparanoia.c:281
 msgid "discid"
 msgstr ""
 
-#: ext/cdparanoia/gstcdparanoia.c:278
+#: ext/cdio/cddasrc.c:246 ext/cdparanoia/gstcdparanoia.c:281
 msgid "CDDA discid for metadata retrieval"
 msgstr ""
 
-#: ext/cdparanoia/gstcdparanoia.c:683 ext/cdparanoia/gstcdparanoia.c:699
+#: ext/cdio/cddasrc.c:432 ext/cdio/cddasrc.c:443
+msgid "Invalid seek"
+msgstr ""
+
+#: ext/cdio/cddasrc.c:661 ext/cdparanoia/gstcdparanoia.c:791
+#: ext/cdparanoia/gstcdparanoia.c:807
 msgid "Could not open CD device for reading."
 msgstr "I pamundur hapja e dispozitivit CD për lexim."
 
-#: ext/gnomevfs/gstgnomevfssrc.c:1157
-#, c-format
-msgid "Could not open vfs file \"%s\" for reading."
-msgstr "E pamundur hapja e file vfs \"%s\" për lexim."
+#: ext/cdio/cddasrc.c:669
+msgid "This CD has no tracks"
+msgstr ""
 
-#: ext/gnomevfs/gstgnomevfssrc.c:1165
-#, fuzzy
-msgid "No filename given."
-msgstr "Nuk është dhënë asnjë emër file"
+#: ext/cdio/cddasrc.c:748
+msgid "Invalid track"
+msgstr ""
+
+#: ext/cdparanoia/gstcdparanoia.c:284
+msgid "musicbrainz-discid"
+msgstr ""
+
+#: ext/cdparanoia/gstcdparanoia.c:284
+msgid "Musicbrainz discid for metadata retrieval"
+msgstr ""
+
+#: ext/dvdnav/dvdnavsrc.c:56
+#, fuzzy, c-format
+msgid "Error invoking \"%s\": %s."
+msgstr "Gabim gjatë mbylljes së file \"%s\"."
+
+#: ext/dvdnav/dvdnavsrc.c:1592
+#, c-format
+msgid "Failed to open DVD device '%s'."
+msgstr ""
 
 #: ext/gnomevfs/gstgnomevfssink.c:432
 #, c-format
@@ -110,6 +155,20 @@ msgstr "Nuk është dhënë asnjë emër file"
 msgid "Could not close vfs file \"%s\"."
 msgstr "E pamundur mbyllja e file vfs \"%s\"."
 
+#: ext/gnomevfs/gstgnomevfssrc.c:1167
+#, c-format
+msgid "Could not open vfs file \"%s\" for reading."
+msgstr "E pamundur hapja e file vfs \"%s\" për lexim."
+
+#: ext/gnomevfs/gstgnomevfssrc.c:1175
+#, fuzzy
+msgid "No filename given."
+msgstr "Nuk është dhënë asnjë emër file"
+
+#: ext/jpeg/gstjpegdec.c:441
+msgid "Failed to decode JPEG image"
+msgstr ""
+
 #: ext/sndfile/gstsf.c:585
 msgid "No filename specified."
 msgstr "Nuk është përcaktuar emri i file."
@@ -119,12 +178,99 @@ msgstr "Nuk është përcaktuar emri i file."
 msgid "Could not write to file \"%s\"."
 msgstr "I pamundur shkrimi tek file \"%s\"."
 
-#: gst/avi/gstavimux.c:1007
+#: gst-libs/gst/play/play.c:720
+msgid "Failed to create playbin object"
+msgstr ""
+
+#: gst/avi/gstavimux.c:1008
 msgid "No or invalid input audio, AVI stream will be corrupt."
 msgstr "Input audio i gabuar ose mungon, stream AVI mund të jetë i dëmtuar."
 
-#: gst-libs/gst/play/play.c:719
-msgid "Failed to create playbin object"
+#: gst/multifilesink/gstmultifilesink.c:284
+#: gst/multifilesink/gstmultifilesink.c:341
+#, fuzzy
+msgid "No file name specified for writing."
+msgstr "Nuk është përcaktuar emri i file."
+
+#: gst/multifilesink/gstmultifilesink.c:372
+#: gst/multifilesink/gstmultifilesink.c:454
+#: gst/multifilesink/gstmultifilesink.c:507
+#: gst/multifilesink/gstmultifilesink.c:574
+#, fuzzy, c-format
+msgid "Error while writing to file \"%s\"."
+msgstr "Gabim gjatë mbylljes së file \"%s\"."
+
+#: gst/multifilesink/gstmultifilesink.c:488
+#, fuzzy, c-format
+msgid "Error switching files to \"%s\"."
+msgstr "Gabim gjatë mbylljes së file \"%s\"."
+
+#: gst/tags/tags.c:37
+msgid "track ID"
+msgstr ""
+
+#: gst/tags/tags.c:37
+msgid "MusicBrainz track ID"
+msgstr ""
+
+#: gst/tags/tags.c:39
+msgid "artist ID"
+msgstr ""
+
+#: gst/tags/tags.c:39
+msgid "MusicBrainz artist ID"
+msgstr ""
+
+#: gst/tags/tags.c:41
+msgid "album ID"
+msgstr ""
+
+#: gst/tags/tags.c:41
+msgid "MusicBrainz album ID"
+msgstr ""
+
+#: gst/tags/tags.c:44
+msgid "album artist ID"
+msgstr ""
+
+#: gst/tags/tags.c:44
+msgid "MusicBrainz album artist ID"
+msgstr ""
+
+#: gst/tags/tags.c:46
+msgid "track TRM ID"
+msgstr ""
+
+#: gst/tags/tags.c:46
+msgid "MusicBrainz TRM ID"
+msgstr ""
+
+#: gst/tags/tags.c:49
+msgid "artist sortname"
+msgstr ""
+
+#: gst/tags/tags.c:49
+msgid "MusicBrainz artist sortname"
+msgstr ""
+
+#: gst/tcp/gsttcp.c:305 gst/tcp/gsttcpclientsink.c:242
+#, fuzzy, c-format
+msgid "Error while sending data to \"%s:%d\"."
+msgstr "Gabim gjatë mbylljes së file \"%s\"."
+
+#: gst/tcp/gsttcp.c:338
+#, c-format
+msgid "Error while sending gdp header data to \"%s:%d\"."
+msgstr ""
+
+#: gst/tcp/gsttcp.c:352
+#, c-format
+msgid "Error while sending gdp payload data to \"%s:%d\"."
+msgstr ""
+
+#: gst/tcp/gsttcpclientsink.c:357 gst/tcp/gsttcpclientsrc.c:496
+#, c-format
+msgid "Connection to %s:%d refused."
 msgstr ""
 
 #: sys/dxr3/dxr3audiosink.c:298
@@ -132,7 +278,8 @@ msgstr ""
 msgid "Could not open audio device \"%s\" for writing."
 msgstr "E pamundur hapja e dispozitivit të zërit \"%s\" për shkrim."
 
-#: sys/dxr3/dxr3audiosink.c:310 sys/dxr3/dxr3videosink.c:283
+#: sys/dxr3/dxr3audiosink.c:310 sys/dxr3/dxr3spusink.c:280
+#: sys/dxr3/dxr3videosink.c:283
 #, c-format
 msgid "Could not open control device \"%s\" for writing."
 msgstr "E pamundur hapja e dispozitivit të kontrollit \"%s\" për shkrim."
@@ -152,10 +299,21 @@ msgstr "I pamundur rregullimi i dispozitivit audio \"%s\" në %d Hz."
 msgid "Could not close audio device \"%s\"."
 msgstr "E pamundur mbyllja e dispozitivit audio \"%s\"."
 
-#: sys/dxr3/dxr3audiosink.c:429 sys/dxr3/dxr3videosink.c:308
+#: sys/dxr3/dxr3audiosink.c:429 sys/dxr3/dxr3spusink.c:305
+#: sys/dxr3/dxr3videosink.c:308
 #, c-format
 msgid "Could not close control device \"%s\"."
 msgstr "E pamundur mbyllja e dispozitivit të kontrollit \"%s\"."
+
+#: sys/dxr3/dxr3spusink.c:268
+#, fuzzy, c-format
+msgid "Could not open spu device \"%s\" for writing."
+msgstr "E pamundur hapja e dispozitivit \"%s\" për shkrim."
+
+#: sys/dxr3/dxr3spusink.c:298
+#, fuzzy, c-format
+msgid "Could not close spu device \"%s\"."
+msgstr "E pamundur mbyllja e dispozitivit audio \"%s\"."
 
 #: sys/dxr3/dxr3videosink.c:271
 #, c-format
@@ -183,6 +341,7 @@ msgid "Could not access device \"%s\", check its permissions."
 msgstr "E pamundur futja në dispozitivin \"%s\", kontrollo të drejtat e tij."
 
 #: sys/oss/gstosselement.c:744 sys/v4l/v4l_calls.c:168
+#: sys/v4lradio/v4lradio_calls.c:103
 #, c-format
 msgid "Device \"%s\" does not exist."
 msgstr "Dispozitivi \"%s\" nuk ekziston."
@@ -206,83 +365,88 @@ msgstr "Dispozitivi juaj OSS mund të mos provohet korrektësisht"
 msgid "Your OSS device could not be probed correctly"
 msgstr "Dispozitivi juaj OSS mund të mos provohet korrektësisht"
 
-#: sys/oss/gstossmixer.c:98
+#: sys/oss/gstossmixer.c:97 sys/sunaudio/gstsunmixer.c:136
 msgid "Volume"
 msgstr "Volumi"
 
-#: sys/oss/gstossmixer.c:108
+#: sys/oss/gstossmixer.c:107
 msgid "Speaker"
 msgstr "Zë folës"
 
-#: sys/oss/gstossmixer.c:116
+#: sys/oss/gstossmixer.c:115
 msgid "Mixer"
 msgstr "Kontrolli i volumit"
 
-#: sys/oss/gstossmixer.c:118
+#: sys/oss/gstossmixer.c:117
 msgid "PCM-2"
 msgstr "PCM-2"
 
-#: sys/oss/gstossmixer.c:120
+#: sys/oss/gstossmixer.c:119
 msgid "Record"
 msgstr "Regjistrimi"
 
-#: sys/oss/gstossmixer.c:122
+#: sys/oss/gstossmixer.c:121
 msgid "In-gain"
 msgstr "In-gain"
 
-#: sys/oss/gstossmixer.c:124
+#: sys/oss/gstossmixer.c:123
 msgid "Out-gain"
 msgstr "Out-gain"
 
-#: sys/oss/gstossmixer.c:126
+#: sys/oss/gstossmixer.c:125
 msgid "Line-1"
 msgstr "Linja-1"
 
-#: sys/oss/gstossmixer.c:128
+#: sys/oss/gstossmixer.c:127
 msgid "Line-2"
 msgstr "Linja-2"
 
-#: sys/oss/gstossmixer.c:130
+#: sys/oss/gstossmixer.c:129
 msgid "Line-3"
 msgstr "Linja-3"
 
-#: sys/oss/gstossmixer.c:132
+#: sys/oss/gstossmixer.c:131
 msgid "Digital-1"
 msgstr "Dixhitale-1"
 
-#: sys/oss/gstossmixer.c:134
+#: sys/oss/gstossmixer.c:133
 msgid "Digital-2"
 msgstr "Dixhitale-2"
 
-#: sys/oss/gstossmixer.c:136
+#: sys/oss/gstossmixer.c:135
 msgid "Digital-3"
 msgstr "Dixhitale-3"
 
-#: sys/oss/gstossmixer.c:138
+#: sys/oss/gstossmixer.c:137
 msgid "Phone-in"
 msgstr "Phone-hyrja"
 
-#: sys/oss/gstossmixer.c:140
+#: sys/oss/gstossmixer.c:139
 msgid "Phone-out"
 msgstr "Phone-dalja"
 
-#: sys/oss/gstossmixer.c:142
+#: sys/oss/gstossmixer.c:141
 msgid "Video"
 msgstr "Video"
 
-#: sys/oss/gstossmixer.c:144
+#: sys/oss/gstossmixer.c:143
 msgid "Radio"
 msgstr "Radio"
 
-#: sys/oss/gstossmixer.c:146
+#: sys/oss/gstossmixer.c:145 sys/sunaudio/gstsunmixer.c:140
 msgid "Monitor"
 msgstr "Ekrani"
 
-#: sys/v4l/v4l_calls.c:159
+#: sys/sunaudio/gstsunmixer.c:138
+msgid "Gain"
+msgstr ""
+
+#: sys/v4l/v4l_calls.c:159 sys/v4lradio/v4lradio_calls.c:94
 msgid "No device specified."
 msgstr "Nuk është përcaktuar asnjë dispozitiv."
 
 #: sys/v4l/v4l_calls.c:172 sys/v4l2/v4l2_calls.c:400
+#: sys/v4lradio/v4lradio_calls.c:107
 #, c-format
 msgid "Could not open device \"%s\" for reading and writing."
 msgstr "E pamundur hapja e dispozitivit \"%s\" për lexim dhe shkrim."

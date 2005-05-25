@@ -1,3 +1,12 @@
+=== release 0.8.9 ===
+
+2005-05-25  Thomas Vander Stichele  <thomas at apestaart dot org>
+
+	* NEWS:
+	* RELEASE:
+	* configure.ac:
+	  releasing 0.8.9, "Old Hat"
+
 2005-05-25  Thomas Vander Stichele  <thomas at apestaart dot org>
 
 	patch by: Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
@@ -886,18 +895,18 @@
 	* gst/playback/gststreaminfo.h:
 	  Expose language code from a stream as property for applications.
 
-2005-04-16  Jan Schmidt,,,  <thaytan@mad.scientist.com>
+2005-04-16  Jan Schmidt  <thaytan@mad.scientist.com>
 	* ext/gnomevfs/gstgnomevfssrc.c: (gst_gnomevfssrc_open_file):
 	  If random access is not supported, fallback to non-seekable
 	  behaviour rather than erroring out.
 
-2005-04-16  Jan Schmidt,,,  <thaytan@mad.scientist.com>
+2005-04-16  Jan Schmidt  <thaytan@mad.scientist.com>
 	* gst/mpegstream/gstdvddemux.c: (gst_dvd_demux_send_data):
 	* gst/mpegstream/gstmpegdemux.c: (gst_mpeg_demux_send_data):
 	  Use the default event handler for EOS and other unknown events that
 	  need to be sent to inactive pads.
 
-2005-04-16  Jan Schmidt,,,  <thaytan@mad.scientist.com>
+2005-04-16  Jan Schmidt  <thaytan@mad.scientist.com>
 
 	* ext/a52dec/gsta52dec.c: (gst_a52dec_handle_event):
 	* ext/dts/gstdtsdec.c: (gst_dtsdec_handle_event):
@@ -1010,7 +1019,7 @@
 	* ext/a52dec/gsta52dec.c: (gst_a52dec_handle_event),
 	(gst_a52dec_chain):
 	  Handle filler events.
-          	 
+
 	* ext/dvdnav/dvdnavsrc.c: (dvdnavsrc_init),
 	(dvdnavsrc_print_event), (dvdnavsrc_structure_set_uint64),
 	(dvdnavsrc_make_dvd_nav_packet_event), (dvdnavsrc_loop),
@@ -1054,7 +1063,7 @@
 	(gst_mpeg_parse_handle_src_event):
 	* gst/mpegstream/gstmpegparse.h:
 	  Lots of changes for DVD playback. Still troublesome in playbin,
-          not sure why yet.
+	  not sure why yet.
 
 	* gst/wavparse/gstwavparse.c: (gst_wavparse_create_sourcepad),
 	(gst_wavparse_fmt):
@@ -1201,11 +1210,12 @@
 	* gst/rtp/gstrtpgsmenc.h:
 	* gst/rtp/gstrtpgsmparse.h:
 	* gst/rtp/rtp-packet.h:
-	1) Fairly complete rewrite of the encoding and parsing code, encoder now.
-	   passes analysis by ethereal and can play to the parser and to mplayer. 
-	2) Added support for configurable dynamic payload processing using a new 
-	   element property "rtpmap" which is a string of rtpmap records in the same
-	   format as would be present in an SDP record.
+	1) Fairly complete rewrite of the encoding and parsing code, encoder
+	   now passes analysis by ethereal and can play to the parser and to
+	   mplayer. 
+	2) Added support for configurable dynamic payload processing using a
+	   new element property "rtpmap" which is a string of rtpmap records
+	   in the same format as would be present in an SDP record.
 	3) Added support for big and little endian peers on the pads
 	4) Added support for mtu element property on rtpL16enc and will split 
 	   incoming buffers to avoid IP layer fragmentation.
@@ -1218,7 +1228,7 @@
 	(gst_udpsrc_init_receive):
 	* gst/udp/gstudpsrc.h:
 	  Fixed and added some comments.
-	Fixes bug#169391
+	  Fixes bug #169391
 
 2005-04-02  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
