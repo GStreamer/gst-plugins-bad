@@ -1,3 +1,11 @@
+2005-05-25  Thomas Vander Stichele  <thomas at apestaart dot org>
+
+	patch by: Luca Ognibene  <luogni@tin.it>
+
+	* sys/ximage/ximagesrc.c: (gst_ximagesrc_get),
+	(gst_ximagesrc_change_state):
+	  fix bug brought out by gcc4.  Closes #305012.
+
 2005-05-24  Wouter Paesen <wouter@kangaroot.net>
 
 	Reviewed by : Edward Hervey  <bilboed@bilboed.com>
