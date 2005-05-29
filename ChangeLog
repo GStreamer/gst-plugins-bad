@@ -1,3 +1,22 @@
+2005-05-28  David Schleef  <ds@schleef.org>
+
+	* gst/videoscale/Makefile.am:
+	* gst/videoscale/gstvideoscale.c:
+	* gst/videoscale/gstvideoscale.h:
+	* gst/videoscale/videoscale.c:
+	* gst/videoscale/videoscale.h:
+	* gst/videoscale/videoscale_x86.c:
+	* gst/videoscale/videoscale_x86.h:
+	* gst/videoscale/videoscale_x86_asm.s:
+	* gst/videoscale/vs_image.c:
+	* gst/videoscale/vs_image.h:
+	* gst/videoscale/vs_scanline.c:
+	* gst/videoscale/vs_scanline.h:
+	  Some days, you just get the urge to rewrite a bunch of code.
+	  Today, it was writing new image scaling code that is liboil
+	  compatible (although not liboilified yet), and does both
+	  nearest and bilinear scaling.
+
 2005-05-26  Arwed v. Merkatz <v.merkatz@gmx.net>
 
 	* ext/spc/Makefile.am: add the .Asm file to SOURCES so they're included
