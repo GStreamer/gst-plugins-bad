@@ -854,7 +854,7 @@ plugin_init (GstPlugin * plugin)
     return FALSE;
 
   if (!gst_element_register (plugin, "glimagesink",
-          GST_RANK_PRIMARY + 1, GST_TYPE_GLIMAGESINK))
+          GST_RANK_SECONDARY, GST_TYPE_GLIMAGESINK))
     return FALSE;
 
   GST_DEBUG_CATEGORY_INIT (gst_debug_glimagesink, "glimagesink", 0,

@@ -1,3 +1,8 @@
+2005-05-29  David Schleef  <ds@schleef.org>
+
+	* sys/glsink/glimagesink.c: (plugin_init): Change rank from
+	  PRIMARY+1 to SECONDARY (oops!)
+
 2005-05-28  David Schleef  <ds@schleef.org>
 
 	* gst/videoscale/Makefile.am:
