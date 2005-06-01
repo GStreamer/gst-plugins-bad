@@ -1,3 +1,13 @@
+2005-06-01  Benjamin Otte  <in7y118@public.uni-hamburg.de>
+
+	* gst-libs/gst/audio/multichannel.c:
+	(gst_audio_set_structure_channel_positions_list):
+	  It might help if you want to blame caps for slowness to add the same
+	  channel positions n times, but it's not really useful. And now the
+	  core warns about it too, that bastard.
+	* gst/typefind/gsttypefindfunctions.c: (plugin_init):
+	  Detect midi files.
+
 2005-05-29  David Schleef  <ds@schleef.org>
 
 	* sys/glsink/glimagesink.c: (plugin_init): Change rank from

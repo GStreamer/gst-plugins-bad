@@ -256,7 +256,7 @@ void
 gst_audio_set_structure_channel_positions_list (GstStructure * str,
     const GstAudioChannelPosition * pos, gint num_positions)
 {
-  gint channels, n, c;
+  gint channels, c;
   GValue pos_val_arr = { 0 }, pos_val_list = {
   0}, pos_val_entry = {
   0};
@@ -278,15 +278,13 @@ gst_audio_set_structure_channel_positions_list (GstStructure * str,
   /* create the array of lists */
   g_value_init (&pos_val_arr, GST_TYPE_FIXED_LIST);
   g_value_init (&pos_val_entry, GST_TYPE_AUDIO_CHANNEL_POSITION);
-  for (n = 0; n < channels; n++) {
-    g_value_init (&pos_val_list, GST_TYPE_LIST);
-    for (c = 0; c < num_positions; c++) {
-      g_value_set_enum (&pos_val_entry, pos[c]);
-      gst_value_list_append_value (&pos_val_list, &pos_val_entry);
-    }
-    gst_value_list_append_value (&pos_val_arr, &pos_val_list);
-    g_value_unset (&pos_val_list);
+  g_value_init (&pos_val_list, GST_TYPE_LIST);
+  for (c = 0; c < num_positions; c++) {
+    g_value_set_enum (&pos_val_entry, pos[c]);
+    gst_value_list_append_value (&pos_val_list, &pos_val_entry);
   }
+  gst_value_list_append_value (&pos_val_arr, &pos_val_list);
+  g_value_unset (&pos_val_list);
   g_value_unset (&pos_val_entry);
   gst_structure_set_value (str, GST_AUDIO_CHANNEL_POSITIONS_PROPERTY_NAME,
       &pos_val_arr);
