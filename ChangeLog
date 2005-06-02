@@ -1,5 +1,14 @@
 2005-06-02  Tim-Philipp Müller  <tim at centricular dot net>
 
+	* gst/audiorate/gstaudiorate.c: (gst_audiorate_chain):
+	  Fix copy'n'past-o from previous commit and actually
+	  set in_duration where we want to calculate in_duration.
+	  Make "in" and "out" properties return the number of
+	  samples (as advertised) instead of the number of 
+	  buffers.
+
+2005-06-02  Tim-Philipp Müller  <tim at centricular dot net>
+
 	* gst/audiorate/gstaudiorate.c: (gst_audiorate_link),
 	(gst_audiorate_init), (gst_audiorate_chain):
 	  Make case of overlapping buffers work (a sub buffer
