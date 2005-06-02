@@ -301,7 +301,7 @@ gst_faad_sinkconnect (GstPad * pad, const GstCaps * caps)
   faad->packetised = FALSE;
 
   if ((value = gst_structure_get_value (str, "codec_data"))) {
-    gulong samplerate;
+    guint32 samplerate;
     guchar channels;
 
     /* We have codec data, means packetised stream */
@@ -674,7 +674,7 @@ gst_faad_chain (GstPad * pad, GstData * data)
 
   /* init if not already done during capsnego */
   if (!faad->init) {
-    gulong samplerate;
+    guint32 samplerate;
     guchar channels;
     glong init_res;
 

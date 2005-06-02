@@ -1,3 +1,8 @@
+2005-06-02  Stefan Kost  <ensonic@users.sf.net>
+
+	* ext/faad/gstfaad.c: (gst_faad_sinkconnect), (gst_faad_chain):
+           if faad wants params in exact bit-width, then deliver them as such
+
 2005-06-01  Benjamin Otte  <in7y118@public.uni-hamburg.de>
 
 	* gst-libs/gst/audio/multichannel.c:
