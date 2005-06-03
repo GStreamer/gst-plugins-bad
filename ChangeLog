@@ -1,5 +1,14 @@
 2005-06-03  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* sys/ximage/ximagesrc.c: (gst_ximagesrc_getcaps),
+	(gst_ximagesrc_change_state), (gst_ximagesrc_init),
+	(gst_ximagesrc_get_property), (gst_ximagesrc_base_init),
+	(gst_ximagesrc_class_init):
+	  Some extra checks, move display initialization to state change
+	  function, proper error reporting if no $DISPLAY is available.
+
+2005-06-03  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* ext/audiofile/gstafparse.c: (gst_afparse_class_init),
 	(gst_afparse_init), (gst_afparse_finalize):
 	  Portability fix for non-exported function (#305435).
