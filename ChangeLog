@@ -1,5 +1,11 @@
 2005-06-03  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* ext/cdparanoia/gstcdparanoia.c: (set_track), (cdparanoia_event):
+	  Unbreak soundjuicer (tested gnome-cd, sound-juicer and totem,
+	  all work fine after these changes).
+
+2005-06-03  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* gst/qtdemux/qtdemux.c: (qtdemux_parse_trak):
 	  Add codecdata on avc1 (h264).
 
