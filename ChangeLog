@@ -1,5 +1,10 @@
 2005-06-03  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* gst/qtdemux/qtdemux.c: (qtdemux_parse_trak):
+	  Add codecdata on avc1 (h264).
+
+2005-06-03  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* gst/videoscale/gstvideoscale.c: (gst_videoscale_chain):
 	  Let's not break planar YUV by allocating only the Y plane.
 
