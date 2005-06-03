@@ -1,5 +1,10 @@
 2005-06-03  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* gst/videoscale/gstvideoscale.c: (gst_videoscale_chain):
+	  Let's not break planar YUV by allocating only the Y plane.
+
+2005-06-03  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* sys/ximage/ximagesrc.c: (gst_ximagesrc_getcaps),
 	(gst_ximagesrc_change_state), (gst_ximagesrc_init),
 	(gst_ximagesrc_get_property), (gst_ximagesrc_base_init),
