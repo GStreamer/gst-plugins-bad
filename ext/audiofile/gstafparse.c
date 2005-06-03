@@ -74,6 +74,7 @@ static GstStaticPadTemplate afparse_sink_factory =
 static void gst_afparse_base_init (gpointer g_class);
 static void gst_afparse_class_init (GstAFParseClass * klass);
 static void gst_afparse_init (GstAFParse * afparse);
+static void gst_afparse_finalize (GObject * object);
 
 static gboolean gst_afparse_open_file (GstAFParse * afparse);
 static void gst_afparse_close_file (GstAFParse * afparse);
@@ -92,6 +93,8 @@ static void gst_afparse_vf_destroy (AFvirtualfile * vfile);
 static long gst_afparse_vf_seek (AFvirtualfile * vfile, long offset,
     int is_relative);
 static long gst_afparse_vf_tell (AFvirtualfile * vfile);
+
+static GstElementClass *parent_class = NULL;
 
 GType
 gst_afparse_get_type (void)
@@ -140,9 +143,11 @@ gst_afparse_class_init (GstAFParseClass * klass)
   gobject_class = (GObjectClass *) klass;
   gstelement_class = (GstElementClass *) klass;
 
+  parent_class = g_type_class_ref (GST_TYPE_ELEMENT);
+
   gobject_class->set_property = gst_afparse_set_property;
   gobject_class->get_property = gst_afparse_get_property;
-
+  gobject_class->finalize = gst_afparse_finalize;
 }
 
 static void
@@ -161,7 +166,7 @@ gst_afparse_init (GstAFParse * afparse)
 
   gst_element_set_loop_function (GST_ELEMENT (afparse), gst_afparse_loop);
 
-  afparse->vfile = af_virtual_file_new ();
+  afparse->vfile = g_new (AFvirtualfile, 1);
   afparse->vfile->closure = NULL;
   afparse->vfile->read = gst_afparse_vf_read;
   afparse->vfile->length = gst_afparse_vf_length;
@@ -183,6 +188,16 @@ gst_afparse_init (GstAFParse * afparse)
   afparse->endianness_data = 1234;
   afparse->endianness_wanted = 1234;
   afparse->timestamp = 0LL;
+}
+
+static void
+gst_afparse_finalize (GObject * obj)
+{
+  GstAFParse *afparse = GST_AFPARSE (obj);
+
+  g_free (afparse->file);
+
+  G_OBJECT_CLASS (parent_class)->finalize (obj);
 }
 
 static void

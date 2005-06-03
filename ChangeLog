@@ -1,3 +1,9 @@
+2005-06-03  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/audiofile/gstafparse.c: (gst_afparse_class_init),
+	(gst_afparse_init), (gst_afparse_finalize):
+	  Portability fix for non-exported function (#305435).
+
 2005-06-02  Tim-Philipp Müller  <tim at centricular dot net>
 
 	* gst/audiorate/gstaudiorate.c: (gst_audiorate_chain):
