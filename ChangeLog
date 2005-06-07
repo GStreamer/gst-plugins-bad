@@ -1,3 +1,9 @@
+2005-06-07  David Schleef  <ds@schleef.org>
+
+	* sys/glsink/glimagesink.c: (gst_glimagesink_getcaps),
+	(gst_glimagesink_init_display), (gst_glimagesink_chain):
+	Make MESA extensions dependent on having MESA. (fixes #306660)
+
 2005-06-06  Benjamin Otte  <in7y118@public.uni-hamburg.de>
 
 	* gst-libs/gst/audio/multichannel.c:

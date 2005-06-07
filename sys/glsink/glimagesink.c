@@ -18,8 +18,6 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#define ENABLE_YUV
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -55,7 +53,7 @@ static GstStaticPadTemplate gst_glimagesink_sink_template_factory =
     GST_PAD_SINK,
     GST_PAD_ALWAYS,
     GST_STATIC_CAPS (GST_VIDEO_CAPS_RGBx ";" GST_VIDEO_CAPS_BGRx
-#ifdef ENABLE_YUV
+#ifdef GL_YCBCR_MESA
         ";" GST_VIDEO_CAPS_YUV ("{ UYVY, YUY2 }")
 #endif
     )
@@ -153,7 +151,7 @@ gst_glimagesink_getcaps (GstPad * pad)
   }
 
   caps = gst_caps_from_string (GST_VIDEO_CAPS_RGBx ";" GST_VIDEO_CAPS_BGRx);
-#ifdef ENABLE_YUV
+#ifdef GL_YCBCR_MESA
   if (glimagesink->have_yuv) {
     GstCaps *ycaps =
         gst_caps_from_string (GST_VIDEO_CAPS_YUV ("{ UYVY, YUY2 }"));
@@ -292,11 +290,15 @@ gst_glimagesink_init_display (GstGLImageSink * glimagesink)
   glGetIntegerv (GL_MAX_TEXTURE_SIZE, &glimagesink->max_texture_size);
 
   extstring = (const char *) glGetString (GL_EXTENSIONS);
+#ifdef GL_YCBCR_MESA
   if (strstr (extstring, "GL_MESA_ycbcr_texture")) {
     glimagesink->have_yuv = TRUE;
   } else {
     glimagesink->have_yuv = FALSE;
   }
+#else
+  glimagesink->have_yuv = FALSE;
+#endif
 
   glXMakeCurrent (glimagesink->display, None, NULL);
   XDestroyWindow (glimagesink->display, window);
@@ -518,6 +520,7 @@ gst_glimagesink_chain (GstPad * pad, GstData * data)
           GL_BGRA, GL_UNSIGNED_BYTE, GST_BUFFER_DATA (buf));
     }
   } else {
+#ifdef GL_YCBCR_MESA
     glTexImage2D (GL_TEXTURE_2D, 0, GL_YCBCR_MESA, texture_size,
         texture_size, 0, GL_YCBCR_MESA, GL_UNSIGNED_SHORT_8_8_REV_MESA, NULL);
 
@@ -532,6 +535,9 @@ gst_glimagesink_chain (GstPad * pad, GstData * data)
           GST_VIDEOSINK (glimagesink)->height,
           GL_YCBCR_MESA, GL_UNSIGNED_SHORT_8_8_MESA, GST_BUFFER_DATA (buf));
     }
+#else
+    g_assert_not_reached ();
+#endif
   }
 
   glColor4f (1, 0, 1, 1);
