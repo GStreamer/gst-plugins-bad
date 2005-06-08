@@ -2877,7 +2877,7 @@ qtdemux_audio_caps (GstQTDemux * qtdemux, guint32 fourcc, const guint8 * data,
       _codec ("Raw 8-bit PCM audio");
       /* FIXME */
       return gst_caps_from_string ("audio/x-raw-int, "
-          "width = (int) 8, " "depth = (int) 8, " "signed = (boolean) true");
+          "width = (int) 8, " "depth = (int) 8, " "signed = (boolean) false");
     case GST_MAKE_FOURCC ('t', 'w', 'o', 's'):
       _codec ("Raw 16-bit PCM audio");
       /* FIXME */

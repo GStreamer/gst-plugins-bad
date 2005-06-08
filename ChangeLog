@@ -1,3 +1,8 @@
+2005-06-08  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/qtdemux/qtdemux.c: (qtdemux_audio_caps):
+	  Fix distortion in 8-bit audio tracks (#306680).
+
 2005-06-07  David Schleef  <ds@schleef.org>
 
 	* sys/glsink/glimagesink.c: (gst_glimagesink_getcaps),
