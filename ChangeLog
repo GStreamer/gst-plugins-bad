@@ -1,3 +1,9 @@
+2005-06-08  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/playback/gstplaybasebin.c: (gen_preroll_element):
+	  Set max. buffer size depending on media type (larger for video
+	  than for others).
+
 2005-06-08  Arwed v. Merkatz  <v.merkatz@gmx.net>
 
 	* gst/matroska/matroska-demux.c: (gst_matroska_demux_video_caps),
