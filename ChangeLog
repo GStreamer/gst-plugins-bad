@@ -1,3 +1,10 @@
+2005-06-09  Wouter Paesen  <wouter@kangaroot.net>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/adder/gstadder.c: (gst_adder_init):
+	  Use getcaps function for source pad, too (#301292).
+
 2005-06-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* gst/typefind/gsttypefindfunctions.c: (au_type_find),
