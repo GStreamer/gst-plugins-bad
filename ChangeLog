@@ -1,3 +1,10 @@
+2005-06-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/typefind/gsttypefindfunctions.c: (au_type_find),
+	(plugin_init):
+	  Make audio/x-au its own typefind function because it has more than
+	  one incarnation. Should fix memleak in #306938.
+
 2005-06-09  Jan de Groot  <jan@jgc.homeip.net>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
