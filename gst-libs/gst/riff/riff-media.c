@@ -250,6 +250,13 @@ gst_riff_create_video_caps_with_data (guint32 codec_fcc,
         *codec_name = g_strdup ("Microsoft MPEG-4 4.3");
       break;
 
+    case GST_MAKE_FOURCC ('M', '4', 'S', '2'):
+      caps = gst_caps_new_simple ("video/mpeg",
+          "mpegversion", G_TYPE_INT, 4, NULL);
+      if (codec_name)
+        *codec_name = g_strdup ("Microsoft ISO MPEG-4 1.1");
+      break;
+
     case GST_MAKE_FOURCC ('3', 'I', 'V', '1'):
     case GST_MAKE_FOURCC ('3', 'I', 'V', '2'):
       caps = gst_caps_new_simple ("video/x-3ivx", NULL);
@@ -644,6 +651,7 @@ gst_riff_create_video_template_caps (void)
     GST_MAKE_FOURCC ('D', 'I', 'B', ' '),
     GST_MAKE_FOURCC ('X', 'x', 'a', 'n'),
     GST_MAKE_FOURCC ('I', 'V', '5', '0'),
+    GST_MAKE_FOURCC ('M', '4', 'S', '2'),
     /* FILL ME */
     0
   };

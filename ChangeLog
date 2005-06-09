@@ -1,5 +1,12 @@
 2005-06-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* gst-libs/gst/riff/riff-media.c:
+	(gst_riff_create_video_caps_with_data),
+	(gst_riff_create_video_template_caps):
+	  Add Microsoft ISO MPEG-4 1.1 (M4S2; #306659).
+
+2005-06-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* gst/qtdemux/qtdemux.c: (qtdemux_parse_trak),
 	(qtdemux_video_caps):
 	  Fix up SVQ3 caps (to fix frame order problems; #306530).
