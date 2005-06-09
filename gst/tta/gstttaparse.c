@@ -134,19 +134,19 @@ gst_tta_src_query (GstPad * pad, GstQueryType type,
 {
   GstTtaParse *ttaparse = GST_TTA_PARSE (gst_pad_get_parent (pad));
 
-  if (type == GST_QUERY_TOTAL) {
-    if (*format == GST_FORMAT_TIME) {
-      if ((ttaparse->data_length == 0) || (ttaparse->samplerate == 0)) {
-        *value = 0;
-        return FALSE;
-      }
-      *value =
-          ((gdouble) ttaparse->data_length / (gdouble) ttaparse->samplerate) *
-          GST_SECOND;
-      GST_DEBUG_OBJECT (ttaparse, "got queried for time, returned %lli",
-          *value);
-      return TRUE;
+  if ((type == GST_QUERY_TOTAL) && (*format == GST_FORMAT_TIME)) {
+    if ((ttaparse->data_length == 0) || (ttaparse->samplerate == 0)) {
+      *value = 0;
+      return FALSE;
     }
+    *value =
+        ((gdouble) ttaparse->data_length / (gdouble) ttaparse->samplerate) *
+        GST_SECOND;
+    GST_DEBUG_OBJECT (ttaparse, "got queried for time, returned %lli", *value);
+    return TRUE;
+  } else if ((type == GST_QUERY_POSITION) && (*format == GST_FORMAT_TIME)) {
+    *value = ttaparse->index[ttaparse->current_frame].time;
+    return TRUE;
   } else {
     return gst_pad_query_default (pad, type, format, value);
   }

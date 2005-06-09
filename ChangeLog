@@ -1,5 +1,11 @@
 2005-06-09  Arwed v. Merkatz  <v.merkatz@gmx.net>
 
+	* gst/tta/gstttaparse.c: (gst_tta_src_query):
+	  Fixed time query and added position query so totem can display current
+		and total time.
+
+2005-06-09  Arwed v. Merkatz  <v.merkatz@gmx.net>
+
 	* configure.ac:
 	  Check for wavpack library.
 	* ext/wavpack/Makefile.am:
