@@ -31,7 +31,7 @@
 gboolean
 gst_xvid_init (void)
 {
-  xvid_gbl_init_t xinit;
+  static xvid_gbl_init_t xinit;
   gint ret;
   static gboolean is_init = FALSE;
 

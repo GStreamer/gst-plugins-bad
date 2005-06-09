@@ -1,3 +1,10 @@
+2005-06-09  Jan de Groot  <jan@jgc.homeip.net>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/xvid/gstxvid.c: (gst_xvid_init):
+	  Make struct static, xvid crashes internally otherwise (#306641).
+
 2005-06-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* gst/asfdemux/gstasfdemux.c: (gst_asf_demux_process_chunk):
