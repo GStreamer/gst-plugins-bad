@@ -1,5 +1,10 @@
 2005-06-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* gst/adder/gstadder.c: (gst_adder_link):
+	  Remove double loop (probably copy/paste error).
+
+2005-06-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* gst/qtdemux/qtdemux.c: (gst_qtdemux_loop_header):
 	  Fix EOS handling (#305150).
 
