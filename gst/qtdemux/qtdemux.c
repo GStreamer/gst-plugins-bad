@@ -105,7 +105,6 @@ enum QtDemuxState
   QTDEMUX_STATE_SEEKING,
   QTDEMUX_STATE_MOVIE,
   QTDEMUX_STATE_SEEKING_EOS,
-  QTDEMUX_STATE_EOS
 };
 
 static GNode *qtdemux_tree_get_child_by_type (GNode * node, guint32 fourcc);
@@ -700,26 +699,27 @@ gst_qtdemux_loop_header (GstElement * element)
     {
       guint8 *data;
 
-      do {
+      for (;;) {
         ret = gst_bytestream_peek_bytes (qtdemux->bs, &data, 1);
         if (ret < 1) {
           if (gst_qtdemux_handle_sink_event (qtdemux)) {
-            return;
+            continue;
           } else {
-            break;
+            return;
           }
         } else {
-          break;
-        }
-      } while (TRUE);
-      gst_element_set_eos (element);
+          guint32 remain;
 
-      qtdemux->state = QTDEMUX_STATE_EOS;
+          gst_bytestream_get_status (qtdemux->bs, &remain, NULL);
+          if (!gst_bytestream_seek (qtdemux->bs, 0, GST_SEEK_METHOD_END)) {
+            gst_bytestream_flush_fast (qtdemux->bs, remain);
+          }
+          return;
+        }
+      }
+      while (TRUE);
       return;
     }
-    case QTDEMUX_STATE_EOS:
-      g_warning ("spinning in EOS\n");
-      return;
     case QTDEMUX_STATE_MOVIE:
     {
       QtDemuxStream *stream;
@@ -739,16 +739,6 @@ gst_qtdemux_loop_header (GstElement * element)
       }
 
       if (index == -1) {
-        for (i = 0; i < qtdemux->n_streams; i++) {
-          gst_pad_push (qtdemux->streams[i]->pad,
-              GST_DATA (gst_event_new (GST_EVENT_EOS)));
-        }
-        ret = gst_bytestream_seek (qtdemux->bs, 0, GST_SEEK_METHOD_END);
-        if (ret == FALSE) {
-          gst_bytestream_flush (qtdemux->bs, 0xffffffff);
-        }
-        GST_DEBUG ("seek returned %d", ret);
-
         qtdemux->state = QTDEMUX_STATE_SEEKING_EOS;
         return;
       }

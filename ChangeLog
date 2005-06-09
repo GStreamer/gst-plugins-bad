@@ -1,3 +1,8 @@
+2005-06-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/qtdemux/qtdemux.c: (gst_qtdemux_loop_header):
+	  Fix EOS handling (#305150).
+
 2005-06-09  Wouter Paesen  <wouter@kangaroot.net>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
