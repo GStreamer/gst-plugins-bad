@@ -1,3 +1,51 @@
+2005-06-09  Arwed v. Merkatz  <v.merkatz@gmx.net>
+
+	* configure.ac:
+	  Check for wavpack library.
+	* ext/wavpack/Makefile.am:
+	* ext/wavpack/bits.c:
+	* ext/wavpack/extra1.c:
+	* ext/wavpack/extra2.c:
+	* ext/wavpack/float.c:
+	* ext/wavpack/gstwavpack.c: (plugin_init):
+	* ext/wavpack/gstwavpackcommon.c: (gst_wavpack_read_header):
+	* ext/wavpack/gstwavpackcommon.h:
+	* ext/wavpack/gstwavpackdec.c: (gst_wavpack_dec_link),
+	(gst_wavpack_dec_wvclink), (gst_wavpack_dec_get_type),
+	(gst_wavpack_dec_base_init), (gst_wavpack_dec_dispose),
+	(gst_wavpack_dec_class_init), (gst_wavpack_dec_src_query),
+	(gst_wavpack_dec_init), (gst_wavpack_dec_setup_context),
+	(gst_wavpack_dec_format_samples), (gst_wavpack_dec_loop),
+	(gst_wavpack_dec_plugin_init):
+	* ext/wavpack/gstwavpackdec.h:
+	* ext/wavpack/gstwavpackparse.c: (gst_wavpack_parse_get_type),
+	(gst_wavpack_parse_base_init), (gst_wavpack_parse_dispose),
+	(gst_wavpack_parse_class_init), (gst_wavpack_parse_src_query),
+	(gst_wavpack_parse_src_event), (find_header), (find_sample),
+	(gst_wavpack_parse_seek), (gst_wavpack_parse_init),
+	(gst_wavpack_parse_handle_event), (gst_wavpack_parse_loop),
+	(gst_wavpack_parse_change_state), (gst_wavpack_parse_plugin_init):
+	* ext/wavpack/gstwavpackparse.h:
+	* ext/wavpack/gstwavpackreader.c:
+	* ext/wavpack/gstwavpackreader.h:
+	* ext/wavpack/metadata.c:
+	* ext/wavpack/pack.c:
+	* ext/wavpack/unpack.c:
+	* ext/wavpack/wavpack.h:
+	* ext/wavpack/words.c:
+	* ext/wavpack/wputils.c:
+	  Replace wavpack plugin by a new plugin using the wavpack library.
+		Supports playback from non-raw wavpack streams (e.g. matroska files),
+		playback with correction file and float audio.
+	* gst/matroska/matroska-demux.c:
+	(gst_matroska_demux_parse_blockgroup),
+	(gst_matroska_demux_audio_caps), (gst_matroska_demux_plugin_init):
+	* gst/matroska/matroska-ids.h:
+	  Support wavpack playback.
+	* gst/typefind/gsttypefindfunctions.c: (wavpack_type_find),
+	(plugin_init):
+	  Identify wavpack correction files, support ape-tagged wavpack files.
+
 2005-06-09  Ross Burton  <ross@burtonini.com>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>

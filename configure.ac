@@ -1759,8 +1759,10 @@ fi
 dnl *** wavpack ***
 dnl We ship our own version of the library
 translit(dnm, m, l) AM_CONDITIONAL(USE_WAVPACK, true)
-GST_CHECK_FEATURE(WAVPACK, [wavpack plug-in], wavpack,  [
-  HAVE_WAVPACK=yes
+GST_CHECK_FEATURE(WAVPACK, [wavpack plug-in], wavpack, [
+  PKG_CHECK_MODULES(WAVPACK, wavpack >= 4.2, HAVE_WAVPACK=yes, HAVE_WAVPACK=no)
+  AC_SUBST(WAVPACK_CFLAGS)
+  AC_SUBST(WAVPACK_LIBS)
 ])
 
 dnl *** xine ***
