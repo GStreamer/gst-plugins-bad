@@ -2114,10 +2114,6 @@ qtdemux_parse_trak (GstQTDemux * qtdemux, GNode * trak)
 
     esds = NULL;
     mp4v = qtdemux_tree_get_child_by_type (stsd, FOURCC_mp4v);
-    if (mp4v == NULL) {
-      /* HACK */
-      mp4v = qtdemux_tree_get_child_by_type (stsd, FOURCC_SVQ3);
-    }
     if (mp4v)
       esds = qtdemux_tree_get_child_by_type (mp4v, FOURCC_esds);
 
@@ -2144,6 +2140,16 @@ qtdemux_parse_trak (GstQTDemux * qtdemux, GNode * trak)
               "codec_data", GST_TYPE_BUFFER, buf, NULL);
           gst_buffer_unref (buf);
         }
+      } else if (QTDEMUX_FOURCC_GET (stsd->data + 16 + 4) ==
+          GST_MAKE_FOURCC ('S', 'V', 'Q', '3')) {
+        GstBuffer *buf;
+        gint len = QTDEMUX_GUINT32_GET (stsd->data);
+
+        buf = gst_buffer_new_and_alloc (len);
+        memcpy (GST_BUFFER_DATA (buf), stsd->data, len);
+        gst_caps_set_simple (stream->caps,
+            "codec_data", GST_TYPE_BUFFER, buf, NULL);
+        gst_buffer_unref (buf);
       }
     }
 
@@ -2748,55 +2754,6 @@ qtdemux_video_caps (GstQTDemux * qtdemux, guint32 fourcc,
       return gst_caps_from_string ("image/jpeg-b");
     case GST_MAKE_FOURCC ('S', 'V', 'Q', '3'):
       _codec ("Sorensen video v.3");
-      if (stsd_data != NULL) {
-        gst_getbits_t gb;
-        gint halfpel_flag;
-        gint thirdpel_flag;
-        gint unknown_svq3_flag;
-        gint low_delay;
-        gint size;
-
-        size = QTDEMUX_GUINT32_GET (stsd_data + 16);
-
-        gst_getbits_init (&gb, NULL, NULL);
-        gst_getbits_newbuf (&gb, (unsigned char *) stsd_data + 98 + 16 + 4,
-            (size - 102 + 16));
-
-        /* Infos ripped from ffmpeg see libavcodec/svq3.c */
-
-        /* 'frame size code' and optional 'width, height' */
-        if (gst_getbitsn (&gb, 3) == 7) {
-          gst_getbitsn (&gb, 12);
-          gst_getbitsn (&gb, 12);
-        }
-
-        halfpel_flag = gst_get1bit (&gb);
-        thirdpel_flag = gst_get1bit (&gb);
-
-        /* unknown fields */
-        gst_get1bit (&gb);
-        gst_get1bit (&gb);
-        gst_get1bit (&gb);
-        gst_get1bit (&gb);
-
-        low_delay = gst_get1bit (&gb);
-
-        /* unknown field */
-        gst_get1bit (&gb);
-
-        while (gst_get1bit (&gb)) {
-          gst_getbitsn (&gb, 8);
-        }
-
-        unknown_svq3_flag = gst_get1bit (&gb);
-
-        return gst_caps_new_simple ("video/x-svq",
-            "svqversion", G_TYPE_INT, 3,
-            "halfpel_flag", G_TYPE_INT, halfpel_flag,
-            "thirdpel_flag", G_TYPE_INT, thirdpel_flag,
-            "low_delay", G_TYPE_INT, low_delay,
-            "unknown_svq3_flag", G_TYPE_INT, unknown_svq3_flag, NULL);
-      }
       return gst_caps_from_string ("video/x-svq, " "svqversion = (int) 3");
     case GST_MAKE_FOURCC ('s', 'v', 'q', 'i'):
     case GST_MAKE_FOURCC ('S', 'V', 'Q', '1'):

@@ -1,3 +1,9 @@
+2005-06-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/qtdemux/qtdemux.c: (qtdemux_parse_trak),
+	(qtdemux_video_caps):
+	  Fix up SVQ3 caps (to fix frame order problems; #306530).
+
 2005-06-08  Thomas Vander Stichele  <thomas at apestaart dot org>
 
 	* ext/faad/gstfaad.c: (gst_faad_sinkconnect), (gst_faad_chain):
