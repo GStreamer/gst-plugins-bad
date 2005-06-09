@@ -1,6 +1,12 @@
 2005-06-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* gst/adder/gstadder.c: (gst_adder_link):
+	  Workaround for multi-mp3 case. Seems to work fine (#305658).
+	  Patch based on work from Akos Maroy <darkeye@tyrell.hu>.
+
+2005-06-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/adder/gstadder.c: (gst_adder_link):
 	  Remove double loop (probably copy/paste error).
 
 2005-06-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
