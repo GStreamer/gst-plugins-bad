@@ -1,3 +1,11 @@
+2005-06-09  Ross Burton  <ross@burtonini.com>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/cdparanoia/gstcdparanoia.c: (cdparanoia_open),
+	(cdparanoia_change_state):
+	  Report device when open failed. Remove warning (#304754).
+
 2005-06-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* gst/matroska/matroska-mux.c: (gst_matroska_mux_loop):
