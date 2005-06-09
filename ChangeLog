@@ -1,5 +1,14 @@
 2005-06-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* sys/v4l2/gstv4l2src.c: (gst_v4l2src_get):
+	  Don't use bytesused/length of a buffer for GST_BUFFER_SIZE(),
+	  since length is the allocated length in the kernel, which may
+	  be more, and bytesused is not set by all drivers and may be
+	  less if part of the frame was lost. Instead, use the calculated
+	  piximage size. Fixes #301718.
+
+2005-06-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* gst/adder/gstadder.c: (gst_adder_link):
 	  Workaround for multi-mp3 case. Seems to work fine (#305658).
 	  Patch based on work from Akos Maroy <darkeye@tyrell.hu>.

@@ -907,9 +907,7 @@ gst_v4l2src_get (GstPad * pad)
     g_assert (num != -1);
     GST_LOG_OBJECT (v4l2src, "buffer %d needs %d writes", num,
         v4l2src->need_writes + 1);
-    i = v4l2src->pool->buffers[num].buffer.bytesused >
-        0 ? v4l2src->pool->buffers[num].buffer.bytesused : v4l2src->pool->
-        buffers[num].length;
+    i = v4l2src->format.fmt.pix.sizeimage;
     /* check if this is the last buffer in the queue. If so do a memcpy to put it back asap
        to avoid framedrops and deadlocks because of stupid elements */
     if (gst_atomic_int_read (&v4l2src->pool->refcount) == v4l2src->breq.count) {
