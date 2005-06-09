@@ -1,5 +1,10 @@
 2005-06-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* gst/matroska/matroska-mux.c: (gst_matroska_mux_loop):
+	  Some better error reporting instead of just returning.
+
+2005-06-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* sys/v4l2/gstv4l2src.c: (gst_v4l2src_get):
 	  Don't use bytesused/length of a buffer for GST_BUFFER_SIZE(),
 	  since length is the allocated length in the kernel, which may
