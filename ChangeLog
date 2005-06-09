@@ -1,5 +1,13 @@
 2005-06-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* gconf/gstreamer.schemas.in:
+	* gst-libs/gst/gconf/gconf.c: (gst_gconf_get_default_video_sink):
+	  Default to autovideosink instead of @DEFAULT_VIDEOSINK@.
+	  Autovideosink dynamically selects between ximagesink/xvimagesink,
+	  and is thus more userfriendly
+
+2005-06-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* ext/mad/gstmad.c: (gst_mad_check_caps_reset), (gst_mad_chain):
 	  Update total_samples after new header, since it will affect our
 	  timestamps. Fixes #140237.

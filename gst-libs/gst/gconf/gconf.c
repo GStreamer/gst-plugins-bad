@@ -217,8 +217,8 @@ gst_gconf_get_default_audio_sink (void)
  * gst_gconf_get_default_video_sink:
  *
  * Render video output bin from GStreamer GConf key : "default/videosink".
- * If key is invalid, the default video sink for the platform is used
- * (typically xvimagesink or ximagesink).
+ * If key is invalid, the default video sink for the platform is used,
+ * and this is detected by the autodetection bin autovideosink.
  *
  * Returns: a #GstElement containing the video output bin, or NULL if
  * everything failed.
@@ -229,7 +229,7 @@ gst_gconf_get_default_video_sink (void)
   GstElement *ret = gst_gconf_render_bin_from_key ("default/videosink");
 
   if (!ret) {
-    ret = gst_element_factory_make (DEFAULT_VIDEOSINK, NULL);
+    ret = gst_element_factory_make ("autovideosink", NULL);
 
     if (!ret)
       g_warning ("No GConf default video sink key and %s doesn't work",
@@ -243,7 +243,7 @@ gst_gconf_get_default_video_sink (void)
  * gst_gconf_get_default_audio_src:
  *
  * Render audio acquisition bin from GStreamer GConf key : "default/audiosrc".
- * If key is invalid, the default audio source for the plaform is used.
+ * If key is invalid, the default audio source for the plaform is used
  * (typically osssrc or sunaudiosrc).
  *
  * Returns: a #GstElement containing the audio source bin, or NULL if
