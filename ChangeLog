@@ -1,5 +1,10 @@
 2005-06-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* gst/asfdemux/gstasfdemux.c: (gst_asf_demux_process_chunk):
+	  Cap framerate; should fix negotiation issues for some ASF files.
+
+2005-06-09  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* gst-libs/gst/riff/riff-media.c:
 	(gst_riff_create_video_caps_with_data),
 	(gst_riff_create_video_template_caps):
