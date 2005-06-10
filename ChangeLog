@@ -1,5 +1,10 @@
 2005-06-10  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* gst/playback/gstplaybasebin.c: (gst_play_base_bin_change_state):
+	  Crap, double free.
+
+2005-06-10  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* gst/playback/gstplaybasebin.c: (setup_source), (prepare_output),
 	(gst_play_base_bin_change_state):
 	  Mark some more for i18n.
