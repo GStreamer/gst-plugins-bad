@@ -1,5 +1,11 @@
 2005-06-10  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* gst/playback/gstplaybasebin.c: (setup_source), (prepare_output),
+	(gst_play_base_bin_change_state):
+	  Mark some more for i18n.
+
+2005-06-10  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* ext/alsa/gstalsa.c: (gst_alsa_open_audio):
 	* gst/playback/gstplaybasebin.c: (prepare_output),
 	(gst_play_base_bin_change_state):
