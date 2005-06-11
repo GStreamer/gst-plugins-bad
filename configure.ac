@@ -851,7 +851,7 @@ GST_CHECK_FEATURE(AUDIORESAMPLE, [audioresample plug-in], audioresample, [
 dnl *** cairo ***
 translit(dnm, m, l) AM_CONDITIONAL(USE_CAIRO, true)
 GST_CHECK_FEATURE(CAIRO, [cairo plug-in], cairo, [
-  PKG_CHECK_MODULES(CAIRO, cairo, HAVE_CAIRO=yes, HAVE_CAIRO=no)
+  PKG_CHECK_MODULES(CAIRO, cairo >= 0.5.0 cairo < 0.6.0, HAVE_CAIRO=yes, HAVE_CAIRO=no)
   AC_SUBST(CAIRO_CFLAGS)
   AC_SUBST(CAIRO_LIBS)
 ])
