@@ -1,3 +1,9 @@
+2005-06-12  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/amrnb/amrnbparse.c: (gst_amrnbparse_loop):
+	  Fix header (which apparently accidently worked in the previous
+	  version, even though we forgot to skip one byte).
+
 2005-06-11  Tim-Philipp Müller  <tim at centricular dot net>
 
 
