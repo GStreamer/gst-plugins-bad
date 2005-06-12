@@ -1,3 +1,10 @@
+2005-06-12  Jeroen Zwartepoorte  <jeroen.zwartepoorte@gmail.com>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/cairo/gsttextoverlay.c: (gst_textoverlay_render_text):
+	  Remove guchar * cast. This makes gst-plugins compile with gcc4.
+
 2005-06-12  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* ext/amrnb/amrnbparse.c: (gst_amrnbparse_loop):
