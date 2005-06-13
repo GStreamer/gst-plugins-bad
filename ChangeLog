@@ -1,3 +1,9 @@
+2005-06-13  Wim Taymans  <wim@fluendo.com>
+
+	* gst/tcp/gstmultifdsink.c: (gst_multifdsink_remove_client_link):
+	Avoid potential deadlock because we do not release the lock
+	when we emit a signal. 
+
 2005-06-13  Tim-Philipp Müller  <tim at centricular dot net>
 
 	* NEWS:
