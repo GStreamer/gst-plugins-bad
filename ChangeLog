@@ -1,3 +1,10 @@
+2005-06-13  James Henstridge  <james@jamesh.id.au>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/cdparanoia/gstcdparanoia.c: (cdparanoia_event):
+	  Off-by-one in illogical counting (part of our ABI...), #307459.
+
 2005-06-12  Jeroen Zwartepoorte  <jeroen.zwartepoorte@gmail.com>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
