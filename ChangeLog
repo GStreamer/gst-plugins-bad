@@ -1,3 +1,8 @@
+2005-06-13  Tim-Philipp Müller  <tim at centricular dot net>
+
+	* NEWS:
+	  Add 'new plugin: cddasrc' line to 0.8.9 notes.
+	  
 2005-06-13  James Henstridge  <james@jamesh.id.au>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
@@ -19,7 +24,6 @@
 	  version, even though we forgot to skip one byte).
 
 2005-06-11  Tim-Philipp Müller  <tim at centricular dot net>
-
 
 	* configure.ac:
 	  Require cairo 0.5.x

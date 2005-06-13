@@ -5,6 +5,7 @@ Changes since 0.8.8:
       * new element: ximagesrc
       * new plugin: video4linuxradio
       * new plugin: freeze
+      * new plugin: cddasrc
 
 Bugs fixed since 0.8.8:
 
