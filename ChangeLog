@@ -1,3 +1,8 @@
+2005-06-14  Luca Ognibene  <luogni@tin.it>
+
+	* gst/videorate/gstvideorate.c (gst_videorate_link): 
+	  Fix memory leak
+
 2005-06-13  Wim Taymans  <wim@fluendo.com>
 
 	* gst/tcp/gstmultifdsink.c: (gst_multifdsink_remove_client_link):
