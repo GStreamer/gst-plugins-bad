@@ -1,3 +1,14 @@
+2005-06-15  Martin Soto  <martinsoto@users.sourceforge.net>
+
+	* gst/mpegstream/gstdvddemux.c (gst_dvd_demux_handle_dvd_event):
+	Only process events with the right MIME type.
+	(gst_dvd_demux_get_audio_stream): Stream objects were being
+	reallocated, but the (potentially new) pointer wasn't being stored
+	in the array again. Make sure to always store the pointer after
+	reallocation. Fixes a segmentation fault when playing DVDs with
+	LPCM sound.
+	(gst_dvd_demux_plugin_init): Rename element for local use.
+
 2005-06-15  Jan Schmidt  <thaytan@mad.scientist.com>
 	* ext/dvdnav/Makefile.am:
 	* ext/dvdnav/dvdnavsrc.c: (dvdnavsrc_init), (dvdnavsrc_finalize),
