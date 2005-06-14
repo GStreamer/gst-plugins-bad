@@ -1,3 +1,12 @@
+2005-06-15  Jan Schmidt  <thaytan@mad.scientist.com>
+	* ext/dvdnav/Makefile.am:
+	* ext/dvdnav/dvdnavsrc.c: (dvdnavsrc_init), (dvdnavsrc_finalize),
+	(read_vts_info), (dvdnav_build_titlelang_event), (dvdnavsrc_loop),
+	(dvdnavsrc_change_state):
+	  Read VTS info using libdvdread, and use to send the stream
+	  info event on each VTS change.
+	  Don't gst_element_wait, rely on queues for that.
+
 2005-06-14  Luca Ognibene  <luogni@tin.it>
 
 	* gst/videorate/gstvideorate.c (gst_videorate_link): 
