@@ -1,3 +1,12 @@
+2005-06-15  Tim-Philipp Müller  <tim at centricular dot net>
+
+	* ext/cdio/cddasrc.c: (cddasrc_uri_set_uri):
+	  Default to cdda://1 when called with empty URI (cdda://)
+	  like when called from gst_element_make_from_uri(). We need
+	  to return TRUE in the set_uri() function if we can handle
+	  the protocol but don't know whether the track number
+	  is valid yet. (fixes #307804)
+
 2005-06-15  David Schleef  <ds@schleef.org>
 
 	* gst/videoscale/gstvideoscale.c: Add 24-bit and 15-bit RGB
