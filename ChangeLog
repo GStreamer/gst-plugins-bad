@@ -1,3 +1,11 @@
+2005-06-15  David Schleef  <ds@schleef.org>
+
+	* gst/videoscale/gstvideoscale.c: Add 24-bit and 15-bit RGB
+	* gst/videoscale/vs_image.c:
+	* gst/videoscale/vs_image.h:
+	* gst/videoscale/vs_scanline.c:
+	* gst/videoscale/vs_scanline.h:
+
 2005-06-15  Martin Soto  <martinsoto@users.sourceforge.net>
 
 	* gst/mpegstream/gstdvddemux.c (gst_dvd_demux_handle_dvd_event):
