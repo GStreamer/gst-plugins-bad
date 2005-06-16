@@ -1,3 +1,8 @@
+2005-06-16  Tim-Philipp Müller  <tim at centricular dot net>
+
+	* ext/cdio/cddasrc.c: (cddasrc_open), (cddasrc_change_state):
+	  Output more debug info.
+
 2005-06-15  David Schleef  <ds@schleef.org>
 
 	* gst/videotestsrc/videotestsrc.c: (paint_hline_I420): Fix I420
