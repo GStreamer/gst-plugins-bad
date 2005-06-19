@@ -1,3 +1,10 @@
+2005-06-19  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/mpeg2dec/gstmpeg2dec.c: (gst_mpeg2dec_alloc_buffer):
+	  Fix overflows.
+	* gst/avi/gstavidemux.c: (gst_avi_demux_process_next_entry):
+	  More debug.
+
 2005-06-20  Jan Schmidt  <thaytan@mad.scientist.com>
 	* ext/alsa/gstalsa.c: (gst_alsa_set_default_format):
 	* ext/alsa/gstalsa.h:
