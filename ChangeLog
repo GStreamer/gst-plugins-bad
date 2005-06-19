@@ -1,3 +1,13 @@
+2005-06-19  Paolo Borelli  <pborelli@katamail.com>
+
+	Reviewed by: Luca Ognibene <luogni@tin.it>
+
+	* gst/playback/gstplaybasebin.c (gst_play_base_bin_class_init) 
+	(gst_play_base_bin_finalize): 
+	  Fix two memory leaks (a gmutex and a gcond) and
+	  implement finalize instead of dispose. 
+	  fixes #307606	  	  
+
 2005-06-16  Tim-Philipp Müller  <tim at centricular dot net>
 
 	* ext/cdio/cddasrc.c: (cddasrc_open), (cddasrc_change_state):
