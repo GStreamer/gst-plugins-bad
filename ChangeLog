@@ -1,5 +1,11 @@
 2005-06-21  Thomas Vander Stichele  <thomas at apestaart dot org>
 
+	* ext/theora/theoraenc.c: (_ilog), (gst_theora_enc_init),
+	(theora_enc_sink_link), (theora_buffer_from_packet):
+	  fix granulepos bug from #305231
+
+2005-06-21  Thomas Vander Stichele  <thomas at apestaart dot org>
+
 	* gst/videotestsrc/gstvideotestsrc.c:
 	(gst_videotestsrc_class_init), (gst_videotestsrc_set_property),
 	  expose timestamp_offset as a gobject property
