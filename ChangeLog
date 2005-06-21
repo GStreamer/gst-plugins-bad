@@ -1,3 +1,9 @@
+2005-06-21  Thomas Vander Stichele  <thomas at apestaart dot org>
+
+	* gst/videotestsrc/gstvideotestsrc.c:
+	(gst_videotestsrc_class_init), (gst_videotestsrc_set_property),
+	  expose timestamp_offset as a gobject property
+
 2005-06-19  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* ext/mpeg2dec/gstmpeg2dec.c: (gst_mpeg2dec_alloc_buffer):
