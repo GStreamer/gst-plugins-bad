@@ -1,3 +1,12 @@
+2005-06-22  Tim-Philipp Müller  <tim at centricular dot net>
+
+	* gst/audiorate/gstaudiorate.c: (gst_audiorate_class_init),
+	(gst_audiorate_chain_handle_event), (gst_audiorate_chain),
+	(gst_audiorate_set_property), (gst_audiorate_get_property),
+	(gst_audiorate_change_state):
+	  Add 'start-offset' property and add/fix discont event
+	  handling.
+
 2005-06-22  Michael Benes  <michael dot benes at xeris dot cz>
 
 	Reviewed by: Tim-Philipp Müller  <tim at centricular dot net>
