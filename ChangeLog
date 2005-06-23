@@ -1,3 +1,16 @@
+2005-06-24  Thomas Vander Stichele  <thomas at apestaart dot org>
+
+	* ext/vorbis/vorbisenc.c: (gst_vorbisenc_buffer_from_packet),
+	(gst_vorbisenc_push_packet), (gst_vorbisenc_chain):
+	  vorbis doesn't actually count packets, so there's no point
+	  in checking the packetno.  Pass whether or not it's a header to
+	  the actual function.
+	* gst/sine/gstsinesrc.c: (gst_sinesrc_class_init),
+	(gst_sinesrc_init), (gst_sinesrc_get), (gst_sinesrc_set_property),
+	(gst_sinesrc_get_property), (gst_sinesrc_change_state):
+	* gst/sine/gstsinesrc.h:
+	  API addition: add num-buffers and timestamp-offset properties.
+
 2005-06-23  Tim-Philipp Müller  <tim at centricular dot net>
 
 	* gst/audiorate/gstaudiorate.c: (gst_audiorate_chain_handle_event):
@@ -48,7 +61,7 @@
 
 	* gst/videotestsrc/gstvideotestsrc.c:
 	(gst_videotestsrc_class_init), (gst_videotestsrc_set_property),
-	  expose timestamp_offset as a gobject property
+	  API addition: add timestamp-offset property.
 
 2005-06-19  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
