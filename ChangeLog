@@ -1,3 +1,14 @@
+2005-06-23  Tim-Philipp Müller  <tim at centricular dot net>
+
+	* gst/audioscale/gstaudioscale.c: (gst_audioscale_get_buffer),
+	(gst_audioscale_chain):
+	* gst/audioscale/gstaudioscale.h:
+	  Fix discont handling: if we get a discont before negotiation
+	  has taken place, save it and process it later before processing
+	  any buffers (ugly, but makes things work); also, create new discont
+	  event to send downstream, otherwise downstream elements might get
+	  a discont with a sample offset refering to our input rate.
+
 2005-06-22  Tim-Philipp Müller  <tim at centricular dot net>
 
 	* gst/audiorate/gstaudiorate.c: (gst_audiorate_class_init),
