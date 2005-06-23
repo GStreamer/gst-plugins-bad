@@ -1,3 +1,8 @@
+2005-06-23  Tim-Philipp Müller  <tim at centricular dot net>
+
+	* gst/audiorate/gstaudiorate.c: (gst_audiorate_chain_handle_event):
+	  Make gcc4 happy.
+
 2005-06-23  Antoine Tremblay  <hexa00 at gmail dot com>
 
 	Reviewed by: Tim-Philipp Müller  <tim at centricular dot net>
