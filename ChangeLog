@@ -1,3 +1,28 @@
+2005-06-24  Thomas Vander Stichele  <thomas at apestaart dot org>
+
+	* ext/ogg/README:
+	* ext/ogg/gstoggmux.c: (gst_ogg_mux_class_init),
+	(gst_ogg_mux_pad_link), (gst_ogg_mux_request_new_pad),
+	(gst_ogg_mux_release_request_pad), (gst_ogg_mux_next_buffer),
+	(gst_ogg_mux_buffer_from_page), (gst_ogg_mux_push_buffer),
+	(gst_ogg_mux_dequeue_page), (gst_ogg_mux_pad_queue_page),
+	(gst_ogg_mux_compare_pads), (gst_ogg_mux_get_headers),
+	(gst_ogg_mux_send_headers), (gst_ogg_mux_loop):
+	  rework the muxing algorithm.
+	  mux pages based on the timestamp that matches the granulepos of
+	  that page, which is also the granulepos/timestamp of the last
+	  packet that finishes on that page.
+	  rework logging so it's more readable and comparable to oggzdump.
+	  I can't get oggz-validate to complain anymore now.
+
+2005-06-24  Thomas Vander Stichele  <thomas at apestaart dot org>
+
+	* ext/theora/theoraenc.c: (_ilog), (gst_theora_enc_init),
+	(theora_enc_sink_link), (theora_buffer_from_packet),
+	(theora_enc_change_state):
+	  convert the timestamp that matches the granulepos to an integer
+	  multiple of the granulepos delta, otherwise muxing can screw up
+
 2005-06-24  Zaheer Abbas Merali  <zaheerabbas at merali dot org>
 
 	* ext/libpng/gstpngdec.c:
