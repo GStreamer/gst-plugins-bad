@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gst-plugins 0.8.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-05-25 15:44+0200\n"
+"POT-Creation-Date: 2005-06-24 19:45+0200\n"
 "PO-Revision-Date: 2004-04-26 10:41-0400\n"
 "Last-Translator: Gareth Owen <gowen72@yahoo.com>\n"
 "Language-Team: English (British) <en_gb@li.org>\n"
@@ -59,22 +59,22 @@ msgstr ""
 msgid "Capture"
 msgstr ""
 
-#: ext/alsa/gstalsa.c:1598
+#: ext/alsa/gstalsa.c:1631
 #, fuzzy, c-format
 msgid "ALSA device \"%s\" is already in use by another program."
 msgstr "OSS device \"%s\" is already in use by another program."
 
-#: ext/alsa/gstalsa.c:1604
+#: ext/alsa/gstalsa.c:1637
 #, fuzzy, c-format
 msgid "Could not access ALSA device \"%s\", check its permissions."
 msgstr "Could not access device \"%s\", check its permissions."
 
-#: ext/alsa/gstalsa.c:1612
+#: ext/alsa/gstalsa.c:1645
 #, fuzzy, c-format
 msgid "ALSA device \"%s\" does not exist."
 msgstr "Device \"%s\" does not exist."
 
-#: ext/alsa/gstalsa.c:1616
+#: ext/alsa/gstalsa.c:1649
 #, fuzzy, c-format
 msgid "ALSA device \"%s\" had an error."
 msgstr "OSS device \"%s\" is already in use by another program."
@@ -110,16 +110,15 @@ msgstr ""
 msgid "Invalid seek"
 msgstr ""
 
-#: ext/cdio/cddasrc.c:661 ext/cdparanoia/gstcdparanoia.c:791
-#: ext/cdparanoia/gstcdparanoia.c:807
+#: ext/cdio/cddasrc.c:662
 msgid "Could not open CD device for reading."
 msgstr "Could not open CD device for reading."
 
-#: ext/cdio/cddasrc.c:669
+#: ext/cdio/cddasrc.c:670
 msgid "This CD has no tracks"
 msgstr ""
 
-#: ext/cdio/cddasrc.c:748
+#: ext/cdio/cddasrc.c:750
 msgid "Invalid track"
 msgstr ""
 
@@ -131,15 +130,29 @@ msgstr ""
 msgid "Musicbrainz discid for metadata retrieval"
 msgstr ""
 
-#: ext/dvdnav/dvdnavsrc.c:56
+#: ext/cdparanoia/gstcdparanoia.c:792 ext/cdparanoia/gstcdparanoia.c:809
+#, fuzzy, c-format
+msgid "Could not open CD device %s for reading."
+msgstr "Could not open CD device for reading."
+
+#: ext/dvdnav/dvdnavsrc.c:59
 #, fuzzy, c-format
 msgid "Error invoking \"%s\": %s."
 msgstr "Error closing file \"%s\"."
 
-#: ext/dvdnav/dvdnavsrc.c:1592
+#: ext/dvdnav/dvdnavsrc.c:1678
+msgid "Invalid title information on DVD."
+msgstr ""
+
+#: ext/dvdnav/dvdnavsrc.c:1778
 #, c-format
 msgid "Failed to open DVD device '%s'."
 msgstr ""
+
+#: ext/dvdnav/dvdnavsrc.c:1848
+#, fuzzy
+msgid "Could not read title information for DVD."
+msgstr "Could not write to file \"%s\"."
 
 #: ext/gnomevfs/gstgnomevfssink.c:432
 #, fuzzy, c-format
