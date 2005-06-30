@@ -229,7 +229,7 @@ gst_gconf_get_default_video_sink (void)
   GstElement *ret = gst_gconf_render_bin_from_key ("default/videosink");
 
   if (!ret) {
-    ret = gst_element_factory_make ("autovideosink", NULL);
+    ret = gst_element_factory_make ("xvimagesink", NULL);
 
     if (!ret)
       g_warning ("No GConf default video sink key and %s doesn't work",

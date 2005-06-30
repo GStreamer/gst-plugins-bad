@@ -1,3 +1,10 @@
+2005-06-30  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gconf/gstreamer.schemas.in:
+	* gst-libs/gst/gconf/gconf.c: (gst_gconf_get_default_video_sink):
+	  Revert earlier commit defaulting to autovideosink because the
+	  sync-state bug is still there, breaking Totem.
+
 2005-06-30  Thomas Klausner  <tk@giga.or.at>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>

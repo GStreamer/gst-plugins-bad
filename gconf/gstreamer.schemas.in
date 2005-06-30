@@ -16,7 +16,7 @@
       <applyto>/system/gstreamer/@GST_MAJORMINOR@/default/videosink</applyto>
       <owner>gstreamer</owner>
       <type>string</type>
-      <default>autovideosink</default>
+      <default>@DEFAULT_VIDEOSINK@</default>
       <locale name="C">
         <short>default GStreamer videosink</short>
         <long>GStreamer can play video using any number of output elements.  Some possible choices are xvimagesink, ximagesink, sdlvideosink and aasink.  The videosink can be a partial pipeline instead of just one element.</long>
