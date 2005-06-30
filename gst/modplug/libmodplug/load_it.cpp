@@ -1299,6 +1299,7 @@ UINT CSoundFile::SaveMixPlugins(FILE *f, BOOL bUpdate)
 	DWORD nPluginSize;
 	UINT nTotalSize = 0;
 	UINT nChInfo = 0;
+	size_t res = 0;
 
 	for (UINT i=0; i<MAX_MIXPLUGINS; i++)
 	{
@@ -1320,13 +1321,13 @@ UINT CSoundFile::SaveMixPlugins(FILE *f, BOOL bUpdate)
 				s[1] = 'X';
 				s[2] = '0' + (i/10);
 				s[3] = '0' + (i%10);
-				fwrite(s, 1, 4, f);
-				fwrite(&nPluginSize, 1, 4, f);
-				fwrite(&p->Info, 1, sizeof(SNDMIXPLUGININFO), f);
-				fwrite(&m_MixPlugins[i].nPluginDataSize, 1, 4, f);
+				res = fwrite(s, 1, 4, f);
+				res = fwrite(&nPluginSize, 1, 4, f);
+				res = fwrite(&p->Info, 1, sizeof(SNDMIXPLUGININFO), f);
+				res = fwrite(&m_MixPlugins[i].nPluginDataSize, 1, 4, f);
 				if (m_MixPlugins[i].pPluginData)
 				{
-					fwrite(m_MixPlugins[i].pPluginData, 1, m_MixPlugins[i].nPluginDataSize, f);
+					res = fwrite(m_MixPlugins[i].pPluginData, 1, m_MixPlugins[i].nPluginDataSize, f);
 				}
 			}
 			nTotalSize += nPluginSize + 8;
@@ -1347,10 +1348,10 @@ UINT CSoundFile::SaveMixPlugins(FILE *f, BOOL bUpdate)
 		if (f)
 		{
 			nPluginSize = 0x58464843;
-			fwrite(&nPluginSize, 1, 4, f);
+			res = fwrite(&nPluginSize, 1, 4, f);
 			nPluginSize = nChInfo*4;
-			fwrite(&nPluginSize, 1, 4, f);
-			fwrite(chinfo, 1, nPluginSize, f);
+			res = fwrite(&nPluginSize, 1, 4, f);
+			res = fwrite(chinfo, 1, nPluginSize, f);
 		}
 		nTotalSize += nChInfo*4 + 8;
 	}
