@@ -262,15 +262,16 @@ gst_fameenc_class_init (GstFameEncClass * klass)
     if (array->len > 0) {
       GType type;
       GParamSpec *pspec;
+      gchar *str1, *str2;
 
-      type =
-          g_enum_register_static (g_strdup_printf ("GstFameEnc_%s",
-              current_type), (GEnumValue *) array->data);
+      str1 = g_strdup_printf ("GstFameEnc_%s", current_type);
+      type = g_enum_register_static (str1, (GEnumValue *) array->data);
+      g_free (str1);
 
-      pspec =
-          g_param_spec_enum (current_type, current_type,
-          g_strdup_printf ("The FAME \"%s\" object", current_type), type,
+      str2 = g_strdup_printf ("The FAME \"%s\" object", current_type);
+      pspec = g_param_spec_enum (current_type, current_type, str2, type,
           default_index, G_PARAM_READWRITE);
+      g_free (str2);
 
       g_param_spec_set_qdata (pspec, fame_object_name, (gpointer) current_type);
 

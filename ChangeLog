@@ -1,3 +1,8 @@
+2005-06-30  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/libfame/gstlibfame.c: (gst_fameenc_class_init):
+	  Memleak fix (#309005).
+
 2005-06-24  Thomas Vander Stichele  <thomas at apestaart dot org>
 
 	* ext/ogg/README:
