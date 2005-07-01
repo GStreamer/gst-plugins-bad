@@ -1,5 +1,5 @@
 
-GStreamer: Release notes for GStreamer Plugins 0.8.9 "Old Hat"
+GStreamer: Release notes for GStreamer Plugins 0.8.10 "Jangle"
         
 
 The GStreamer team is happy to announce a new release
@@ -29,81 +29,39 @@ Features of this release
       * Parallel installability with 0.6.x series
       * Internationalization
       * Translations: af az ca cs en_GB fr hu it nb nl or sq sr sv uk vi
-      * new element: ximagesrc
-      * new plugin: video4linuxradio
-      * new plugin: freeze
+      * new videoscale algorithm: bilinear
+      * important fixes for cd-based applications (Sound Juicer, gnome-cd)
 
 Bugs fixed in this release
     
-      * 118033 : Autodetect audiosink at run-time
-      * 141189 : [PATCH] [SPC] playback
-      * 149158 : [qtdemux/faad] MP4 file encoded Nero AAC Codec 2.6.2.0 is...
-      * 154431 : [mpeg] on PPC, gstreamer segfaults on any mpeg video
-      * 161661 : [PATCH] screenshots via gstreamer
-      * 162024 : [alsasink] doesn't probe HW buffer_size/period_size/perio...
-      * 162355 : [PATCH] [cdparanoia] Fix for _QUERY_POSITION
-      * 163443 : crash when searching in a file (cvs)
-      * 165643 : [qtdemux] doesn't handle embedded URLs
-      * 165726 : [PATCH] New plugin: freeze
-      * 166113 : [faad] plugin won't compile against faad CVS (unreleased ...
-      * 168390 : data caching (queue) breaks mms/asf
-      * 168406 : asfdemux always uses 25fps
-      * 168558 : [faad] Unsupported FAAD channel position 0x0 encountered ...
-      * 168728 : [v4lsrc] Support for v4l radio (patch included)
-      * 169073 : muine crashes on song change
-      * 169081 : ogg broken stream fix
-      * 169289 : Playbin should fallback on x11 when xvideo isn't available
-      * 169333 : [pngdec, pngenc] Stride problems
-      * 169400 : decodebin finalization bug
-      * 169629 : [theoraenc] sharpness property
-      * 170060 : Segmentation Fault when open a video file with external s...
-      * 170066 : Leak in oggdemux
-      * 170083 : nautilus restarts (crashes) when trying to view the prope...
-      * 170249 : [nassink] playing .wav gives only noise
-      * 170319 : id3demuxbin loses tags
-      * 170387 : gstreamer fails to play free format mp3 using playbin
-      * 170390 : adder fails to implement a release_pad function
-      * 171341 : seeks on the silence plugin
-      * 171371 : need wavpack decoder
-      * 171530 : new plugin: libcdio-based cdda source
-      * 171777 : Ogm seek support is broken
-      * 171997 : gst-plugins structure addon for mikmod < = 3.2.0 just a on...
-      * 172242 : gstspeed doesn't handle seek events correct
-      * 172281 : Buffer overflows in gstspeed
-      * 172563 : [videocrop] corrupts video when setting property in state...
-      * 172697 : [PATCH] mpeg2dec skip-frame
-      * 172845 : one pixel cropped off at left when rendering subtitles
-      * 172854 : totem spawns error and stops when opening with a badly fo...
-      * 172884 : When un-muting the sound volume is restored to 100%
-      * 172946 : crash when playing a .mov quicktime file
-      * 300337 : [PATCH] [switch] Does not set debug category
-      * 300377 : Totem cannot read files from davs URIs (other GNOME apps ...
-      * 300457 : Totem never errors if you try playing a mp3 stream withou...
-      * 300495 : configure does not find v4l, v4l2, Xlib.h, and SDL
-      * 301158 : 2 casts of buf in the gst_ximagesink_chain function (xima...
+      * 140237 : Mp3 playback messes up on this file
+      * 161079 : [videoscale] implement bilinear or bicubic methods for do...
+      * 300305 : videobox in YUV adds green instead of black if right=(odd...
+      * 300471 : videoscale from odd to even width adds a green line at th...
       * 301292 : caps nego problem in gst-adder
-      * 301894 : Wavpack doesn't compile on FreeBSD.
-      * 301944 : GstAdder doesn't EOS when all input channels did
-      * 302188 : totem crashes on a mp3 file
-      * 302222 : update for future Cairo 0.5 API
-      * 302625 : mad element doesn't report bitrate for mp3 files with no ...
-      * 302813 : volume inside playbin doesn't work after the first file h...
-      * 302837 : [playbin] gst_tag_list_copy: assertion `GST_IS_TAG_LIST (...
-      * 302864 : gst-plugins fails to compile with gcc4
-      * 303011 : compilation fails on GCC4 warnings
-      * 303117 : Gstreamer plugins 0.8.8 musepack plugin build fails
-      * 303253 : More gcc4 issues in 0.8 head plugins
-      * 303650 : mpeg1videoparse does not recognize keyframes
-      * 303936 : should use g++ to link with cpp code
-      * 304125 : POTFILES.in fixes for gst-plugins
-      * 304180 : [directfb] compilation fails with gcc-4
-      * 304284 : [dv1394src] doesn't compile with gcc4
-      * 304537 : [dvdnav] dvdnav doesn't like gcc4
-      * 304538 : [hermes] doesn't like gcc4
-      * 304540 : [libmms] libmms doesn't like gcc4
-      * 304588 : totem crashes on invalid WAV file (channels=0)
-      * 305012 : [ximage] doesn't compile with gcc4
-      * 305186 : alsasink borkage
+      * 304627 : asfdemux producing a strange framerate
+      * 304754 : Say what devices  couldn't be opened when cdparanoia thro...
+      * 305150 : faad plugin doesn't recognize end-of-song?
+      * 305428 : [audiorate] crashes if first buffer has offset of GST_BUF...
+      * 305435 : libgstaudiofile.so uses af_virtual_file_new, which is not...
+      * 305505 : Fail to compile plugin spc
+      * 305524 : Cairo plugin does not compile with cairo 0.5
+      * 305658 : the adder plugin doesn't connect to more than one sinks
+      * 306041 : gstreamer-plugins 0.8.8 stops Soundjuicer ripping properly
+      * 306641 : gst-compprep segfaults when mpeg2enc plugin is installed ...
+      * 306659 : [avidemux] certain avi file doesnt show video
+      * 306660 : glsink fails to build when OpenGL is used instead of MESA
+      * 306680 : mov with 8 bit raw pcm sound distorted
+      * 306938 : memory leak in gsttypefind
+      * 307354 : PATCH: gcc4 compile fix
+      * 307459 : Can not rip the last track of CDs
+      * 307606 : gstplaybasebin leaks mutex
+      * 307804 : [cdio] gst_element_make_from_uri hangs on " cdda:// " in totem
+      * 308644 : [matroska] Incorrect pixel-aspect-ratio in matroska demuxer
+      * 308794 : [auparse] minor memory leak
+      * 308827 : ogg muxer in 0.8 muxes wrong
+      * 309005 : leaks in gstlibfame.c
+      * 309043 : gstwavparse causes segfaults
 
 Download
 
@@ -138,28 +96,24 @@ as provided by gstreamer-gconf-0.8.pc, to access the default settings.
   
 Contributors to this release
     
-      * Ali Akcaagac
+      * Antoine Tremblay
       * Arwed v. Merkatz
       * Benjamin Otte
-      * Benoit Amiaux
-      * Brian Cameron
-      * Chris Lee
       * David Schleef
-      * Edward Hervey
-      * Gergely Nagy
+      * James Henstridge
+      * Jan de Groot
       * Jan Schmidt
-      * Kjartan Maraas
-      * Koop Mast
+      * Jeroen Zwartepoorte
       * Luca Ognibene
-      * Lutz Mueller
-      * Nickolay V. Shmyrev
-      * Richard Hult
+      * Martin Soto
+      * Michael Benes
+      * Paolo Borelli
       * Ronald Bultje
+      * Ross Burton
+      * Thomas Klausner
       * Thomas Vander Stichele
-      * Till Busch
+      * Stefan Kost
       * Tim-Philipp Müller
-      * William Jon McCann
-      * Wim Taymans
       * Wouter Paesen
       * Zaheer Abbas Merali
  

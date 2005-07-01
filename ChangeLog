@@ -1,3 +1,9 @@
+=== release 0.8.10 ===
+
+2005-07-01  Thomas Vander Stichele  <thomas at apestaart dot org>
+
+	* configure.ac: releasing 0.8.10, "Jangle"
+
 2005-06-30  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* gconf/gstreamer.schemas.in:
@@ -285,8 +291,8 @@
 2005-06-09  Arwed v. Merkatz  <v.merkatz@gmx.net>
 
 	* gst/tta/gstttaparse.c: (gst_tta_src_query):
-	  Fixed time query and added position query so totem can display current
-		and total time.
+	  Fixed time query and added position query so totem can display
+	  current and total time.
 
 2005-06-09  Arwed v. Merkatz  <v.merkatz@gmx.net>
 
@@ -325,8 +331,8 @@
 	* ext/wavpack/words.c:
 	* ext/wavpack/wputils.c:
 	  Replace wavpack plugin by a new plugin using the wavpack library.
-		Supports playback from non-raw wavpack streams (e.g. matroska files),
-		playback with correction file and float audio.
+	  Supports playback from non-raw wavpack streams (e.g. matroska files),
+	  playback with correction file and float audio.
 	* gst/matroska/matroska-demux.c:
 	(gst_matroska_demux_parse_blockgroup),
 	(gst_matroska_demux_audio_caps), (gst_matroska_demux_plugin_init):
@@ -514,7 +520,7 @@
 2005-06-02  Stefan Kost  <ensonic@users.sf.net>
 
 	* ext/faad/gstfaad.c: (gst_faad_sinkconnect), (gst_faad_chain):
-           if faad wants params in exact bit-width, then deliver them as such
+	if faad wants params in exact bit-width, then deliver them as such
 
 2005-06-01  Benjamin Otte  <in7y118@public.uni-hamburg.de>
 

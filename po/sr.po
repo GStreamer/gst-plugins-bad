@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gst-plugins 0.7.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-06-24 19:45+0200\n"
+"POT-Creation-Date: 2005-06-30 14:54+0200\n"
 "PO-Revision-Date: 2004-03-13 00:18+0100\n"
 "Last-Translator: Danilo Segan <dsegan@gmx.net>\n"
 "Language-Team: Serbian <gnu@prevod.org>\n"
@@ -172,12 +172,12 @@ msgid "Could not close vfs file \"%s\"."
 msgstr "Не могу да затворим ВСД датотеку „%s“."
 
 # Виртуелни Систем Датотека
-#: ext/gnomevfs/gstgnomevfssrc.c:1167
+#: ext/gnomevfs/gstgnomevfssrc.c:1177
 #, c-format
 msgid "Could not open vfs file \"%s\" for reading."
 msgstr "Не могу да отворим ВСД датотеку „%s“ ради читања."
 
-#: ext/gnomevfs/gstgnomevfssrc.c:1175
+#: ext/gnomevfs/gstgnomevfssrc.c:1185
 #, fuzzy
 msgid "No filename given."
 msgstr "Име датотеке није задато."

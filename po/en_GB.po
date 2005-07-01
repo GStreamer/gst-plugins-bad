@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gst-plugins 0.8.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-06-24 19:45+0200\n"
+"POT-Creation-Date: 2005-06-30 14:54+0200\n"
 "PO-Revision-Date: 2004-04-26 10:41-0400\n"
 "Last-Translator: Gareth Owen <gowen72@yahoo.com>\n"
 "Language-Team: English (British) <en_gb@li.org>\n"
@@ -168,12 +168,12 @@ msgstr "No filename given"
 msgid "Could not close vfs file \"%s\"."
 msgstr "Could not close vfs file \"%s\"."
 
-#: ext/gnomevfs/gstgnomevfssrc.c:1167
+#: ext/gnomevfs/gstgnomevfssrc.c:1177
 #, c-format
 msgid "Could not open vfs file \"%s\" for reading."
 msgstr "Could not open vfs file \"%s\" for reading."
 
-#: ext/gnomevfs/gstgnomevfssrc.c:1175
+#: ext/gnomevfs/gstgnomevfssrc.c:1185
 #, fuzzy
 msgid "No filename given."
 msgstr "No filename given"

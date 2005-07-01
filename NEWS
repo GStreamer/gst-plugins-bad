@@ -1,4 +1,40 @@
-This is GStreamer Plugins 0.8.9, "Old Hat"
+This is GStreamer Plugins 0.8.10, "Jangle"
+
+Changes since 0.8.9:
+
+      * new videoscale algorithm: bilinear
+      * important fixes for cd-based applications (Sound Juicer, gnome-cd)
+
+Bugs fixed since 0.8.9:
+    
+      * 140237 : Mp3 playback messes up on this file
+      * 161079 : [videoscale] implement bilinear or bicubic methods for do...
+      * 300305 : videobox in YUV adds green instead of black if right=(odd...
+      * 300471 : videoscale from odd to even width adds a green line at th...
+      * 301292 : caps nego problem in gst-adder
+      * 304627 : asfdemux producing a strange framerate
+      * 304754 : Say what devices  couldn't be opened when cdparanoia thro...
+      * 305150 : faad plugin doesn't recognize end-of-song?
+      * 305428 : [audiorate] crashes if first buffer has offset of GST_BUF...
+      * 305435 : libgstaudiofile.so uses af_virtual_file_new, which is not...
+      * 305505 : Fail to compile plugin spc
+      * 305524 : Cairo plugin does not compile with cairo 0.5
+      * 305658 : the adder plugin doesn't connect to more than one sinks
+      * 306041 : gstreamer-plugins 0.8.8 stops Soundjuicer ripping properly
+      * 306641 : gst-compprep segfaults when mpeg2enc plugin is installed ...
+      * 306659 : [avidemux] certain avi file doesnt show video
+      * 306660 : glsink fails to build when OpenGL is used instead of MESA
+      * 306680 : mov with 8 bit raw pcm sound distorted
+      * 306938 : memory leak in gsttypefind
+      * 307354 : PATCH: gcc4 compile fix
+      * 307459 : Can not rip the last track of CDs
+      * 307606 : gstplaybasebin leaks mutex
+      * 307804 : [cdio] gst_element_make_from_uri hangs on " cdda:// " in totem
+      * 308644 : [matroska] Incorrect pixel-aspect-ratio in matroska demuxer
+      * 308794 : [auparse] minor memory leak
+      * 308827 : ogg muxer in 0.8 muxes wrong
+      * 309005 : leaks in gstlibfame.c
+      * 309043 : gstwavparse causes segfaults
 
 Changes since 0.8.8:
 
@@ -704,5 +740,5 @@ Bugs fixed since 0.7.4:
       * 135038 : port gst-shorten to the new caps system
       * 135042 : fix tag writing in lame
       * 135116 : gstflacenc.c fails to build in NetBSD
-
+ 
 

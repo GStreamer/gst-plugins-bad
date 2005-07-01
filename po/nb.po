@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gst-plugins 0.8.3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-06-24 19:45+0200\n"
+"POT-Creation-Date: 2005-06-30 14:54+0200\n"
 "PO-Revision-Date: 2004-10-04 15:54+0200\n"
 "Last-Translator: Kjartan Maraas <kmaraas@broadpark.no>\n"
 "Language-Team: Norwegian Bokmaal <i18n-nb@lister.ping.uio.no>\n"
@@ -168,12 +168,12 @@ msgstr "Ingen filnavn oppgitt"
 msgid "Could not close vfs file \"%s\"."
 msgstr "Kunne ikke lukke VFS-fil «%s»."
 
-#: ext/gnomevfs/gstgnomevfssrc.c:1167
+#: ext/gnomevfs/gstgnomevfssrc.c:1177
 #, c-format
 msgid "Could not open vfs file \"%s\" for reading."
 msgstr "Kunne ikke åpne VFS-fil «%s» for lesing."
 
-#: ext/gnomevfs/gstgnomevfssrc.c:1175
+#: ext/gnomevfs/gstgnomevfssrc.c:1185
 msgid "No filename given."
 msgstr "Ingen filnavn oppgitt."
 
