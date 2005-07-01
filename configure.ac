@@ -383,6 +383,7 @@ GST_PLUGINS_ALL="\
 	debug \
 	deinterlace \
 	dvdlpcmdec \
+	dvdsubdec \
 	effectv \
 	equalizer \
 	festival \
@@ -391,6 +392,7 @@ GST_PLUGINS_ALL="\
 	flx \
 	freeze \
 	goom \
+	imagemixer \
 	interleave \
 	law \
 	level \
@@ -1995,6 +1997,7 @@ gst/cutter/Makefile
 gst/debug/Makefile
 gst/deinterlace/Makefile
 gst/dvdlpcmdec/Makefile
+gst/dvdsubdec/Makefile
 gst/effectv/Makefile
 gst/equalizer/Makefile
 gst/festival/Makefile
@@ -2004,6 +2007,7 @@ gst/flx/Makefile
 gst/freeze/Makefile
 gst/games/Makefile
 gst/goom/Makefile
+gst/imagemixer/Makefile
 gst/interleave/Makefile
 gst/law/Makefile
 gst/level/Makefile

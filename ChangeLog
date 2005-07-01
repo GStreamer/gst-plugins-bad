@@ -1,3 +1,106 @@
+2005-07-01  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* configure.ac:
+	  Add imagemixer/dvdsubdec.
+	* ext/dvdnav/dvdnavsrc.c: (dvdnav_build_titlelang_event):
+	  For menu subpicture streams, set a name too, so dvddemux picks
+	  it up and can still validly emit no-more-pads.
+	* ext/dvdnav/gst-dvd-2:
+	  Example.
+	* ext/pango/Makefile.am:
+	* ext/pango/gsttextoverlay.c: (plugin_init):
+	* ext/pango/gsttextrender.c: (gst_text_render_get_type),
+	(gst_text_render_base_init), (gst_text_render_class_init),
+	(resize_bitmap), (render_text), (gst_text_render_link),
+	(gst_text_render_fixate), (gst_text_overlay_blit_yuv420),
+	(gst_text_render_chain), (gst_text_render_finalize),
+	(gst_text_render_init), (gst_text_render_set_property),
+	(gst_text_render_get_property):
+	* ext/pango/gsttextrender.h:
+	  Chain-based text-rendering element (#306555).
+	* gst/dvdsubdec/Makefile.am:
+	* gst/dvdsubdec/dvdsubdec.c: (gst_dvdsubdec_get_type),
+	(gst_dvdsubdec_base_init), (gst_dvdsubdec_class_init),
+	(gst_dvdsubdec_init), (gst_dvdsubdec_finalize),
+	(gst_dvdsubdec_getcaps_video), (gst_dvdsubdec_link_video),
+	(gst_dvdsubdec_src_event), (dvdsubdec_get_event_delay),
+	(gst_dvdsubdec_parse_subpic), (gst_get_nibble),
+	(gst_setup_palette), (gst_get_rle_code), (gst_draw_rle_line),
+	(gst_dvdsubdec_merge_title), (gst_send_empty_fill),
+	(gst_send_subtitle_frame), (dvdsubdec_advance_time),
+	(gst_dvdsubdec_handle_subtitle), (gst_dvdsubdec_handle_dvd_event),
+	(plugin_init):
+	  Chain-based DVD subtitle decoder element (#301312), based
+	  on patch by Jan Schmidt <thaytan@mad.scientist.com>.
+	* gst/ffmpegcolorspace/gstffmpegcodecmap.c:
+	(gst_ffmpeg_pixfmt_to_caps), (gst_ffmpeg_caps_to_pixfmt):
+	* gst/ffmpegcolorspace/imgconvert.c:
+	* gst/ffmpegcolorspace/imgconvert_template.h:
+	  Conserve alpha channel for BGRA32->AYUV, fix BGRA/BGRX
+	  masks (#308638).
+	* gst/imagemixer/Makefile.am:
+	* gst/imagemixer/README:
+	* gst/imagemixer/blend.c:
+	* gst/imagemixer/blend.h:
+	* gst/imagemixer/mixer.c: (gst_image_mixer_base_init),
+	(gst_image_mixer_class_init), (gst_image_mixer_init),
+	(gst_image_mixer_request_pad), (gst_image_mixer_release_pad),
+	(gst_image_mixer_fixate), (gst_image_mixer_get_caps),
+	(gst_image_mixer_set_caps), (gst_image_mixer_read_a),
+	(gst_image_mixer_read_y), (gst_image_mixer_read_u_v),
+	(gst_image_mixer_do_mix_i420), (gst_image_mixer_do_mix_yuy2),
+	(gst_image_mixer_do_mix_x444), (gst_image_mixer_do_mix_y444),
+	(gst_image_mixer_do_mix_ayuv), (gst_image_mixer_do_mix),
+	(is_past_end), (gst_image_mixer_blend_subpicture),
+	(gst_image_mixer_src_event), (gst_image_mixer_handle_sink_event),
+	(cb_compare), (gst_image_mixer_loop),
+	(gst_image_mixer_change_state):
+	* gst/imagemixer/mixer.h:
+	* gst/imagemixer/mixerpad.c:
+	(gst_image_mixer_pad_v_align_get_type),
+	(gst_image_mixer_pad_h_align_get_type),
+	(gst_image_mixer_pad_set_property),
+	(gst_image_mixer_pad_get_property),
+	(gst_image_mixer_pad_class_init), (gst_image_mixer_pad_init):
+	* gst/imagemixer/mixerpad.h:
+	* gst/imagemixer/plugin.c: (plugin_init):
+	  Image-mixing element, in the style of the pango textrendering
+	  element, but image- instead of text-based, including all cool
+	  stuff like seeking, overlays, picture-in-picture, DVD subtitle
+	  support, text subtitle support and everything. Can do negative
+	  z-orders for inverted overlay (force to AYUV in that case) so
+	  it can be used for chroma-keying software, too (#166783).
+	* gst/imagemixer/test-dvd-subtitle.sh:
+	  Example.
+	* gst/mpegstream/gstdvddemux.c: (gst_dvd_demux_init),
+	(gst_dvd_demux_handle_dvd_event), (gst_dvd_demux_handle_discont),
+	(gst_dvd_demux_send_subbuffer), (gst_dvd_demux_reset),
+	(gst_dvd_demux_change_state):
+	* gst/mpegstream/gstdvddemux.h:
+	* gst/mpegstream/gstmpegdemux.c: (gst_mpeg_demux_reset):
+	  Implement no-more-pads if the source knows the amount of pads,
+	  which dvd sources known from the IFO files.
+	* gst/playback/gstplaybasebin.c: (gst_play_base_bin_class_init),
+	(group_is_muted), (gen_preroll_element), (probe_triggered),
+	(has_subtitle_ancestor), (new_decoded_pad),
+	(gst_play_base_bin_set_property), (gst_play_base_bin_get_property):
+	* gst/playback/gstplaybasebin.h:
+	  Implement subpicture pad support.
+	* gst/playback/gstplaybin.c: (gen_video_element),
+	(gen_subtitle_element), (gen_audio_element), (remove_sinks),
+	(add_sink), (setup_sinks):
+	  Changes so we support subtitles in a more generic way and thus
+	  support DVD subtitles and menus in addition to text subtitles.
+	* gst/playback/gststreaminfo.c: (gst_stream_type_get_type):
+	* gst/playback/gststreaminfo.h:
+	  Subpicture type.
+	* gst/playback/gststreamselector.c: (gst_stream_selector_chain):
+	  Event handling.
+	* gst/videomixer/videomixer.c: (gst_videomixer_fill_queues),
+	(gst_videomixer_update_queues):
+	  Do EOS correctly for endless streams on mainpad, while other
+	  pads are infinite (e.g. single picture; #309179).
+
 === release 0.8.10 ===
 
 2005-07-01  Thomas Vander Stichele  <thomas at apestaart dot org>
