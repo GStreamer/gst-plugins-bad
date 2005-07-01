@@ -1,5 +1,12 @@
 2005-07-01  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* sys/ximage/ximagesink.c: (gst_ximagesink_xcontext_get):
+	* sys/xvimage/xvimagesink.c: (gst_xvimagesink_get_xv_support):
+	  Allow fps to 1000 instead of 100 to workaround ffmpeg setting fps
+	  to 1000 for flv videos (#309150)
+
+2005-07-01  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* ext/artsd/gstartsdsink.c: (gst_artsdsink_class_init):
 	  Don't use the name property, since GstElement already uses that,
 	  but rename it to connection-name (#309087).
