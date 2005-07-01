@@ -1,3 +1,10 @@
+2005-07-01  Dominique Würtz  <housirer@gmx.de>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/adder/gstadder.c: (gst_adder_loop):
+	  Calculate buffer times for float audio correctly, too (#308040)
+
 2005-07-01  Chris Ouch  <couch5601@earthlink.net>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
