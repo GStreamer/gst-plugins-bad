@@ -1,3 +1,10 @@
+2005-07-01  Chris Ouch  <couch5601@earthlink.net>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/typefind/gsttypefindfunctions.c: (m4a_type_find):
+	  Add ftypmp42 as another MPEG-4 (audio) tag (#308980).
+
 2005-07-01  Wouter Paesen  <wouter@kangaroot.net>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
