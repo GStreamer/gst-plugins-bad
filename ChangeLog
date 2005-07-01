@@ -1,3 +1,12 @@
+2005-07-01  Michal Benes  <michal.benes@xeris.cz>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/matroska/matroska-mux.c: (gst_matroska_mux_prepare_data):
+	  Do not check for number, since it can be called before negotiation
+	  took place and thus not be set, which makes the muxer fail on
+	  startup (#308633).
+
 2005-07-01  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* configure.ac:
