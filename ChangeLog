@@ -1,3 +1,15 @@
+2005-07-01  jonathan@kaolin.hn.org
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/gnomevfs/gstgnomevfssrc.c: (audiocast_do_notifications),
+	(gst_gnomevfssrc_received_headers_callback),
+	(gst_gnomevfssrc_get_icy_metadata), (gst_gnomevfssrc_get),
+	(gst_gnomevfssrc_open_file):
+	  Expose shoutcast metadata through standard tagging system (#307361).
+	* gst/playback/gstplaybasebin.c: (gen_source_element):
+	  Set iradio property for http:// streams.
+
 2005-07-01  Dominique Würtz  <housirer@gmx.de>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
