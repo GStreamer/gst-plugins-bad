@@ -1,3 +1,10 @@
+2005-07-01  Wouter Paesen  <wouter@kangaroot.net>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/mad/gstmad.c: (gst_mad_chain):
+	  Make timestamp calculation more precise (rounding; #308772).
+
 2005-07-01  Akos Maroy  <darkeye@tyrell.hu>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
