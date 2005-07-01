@@ -1,3 +1,10 @@
+2005-07-01  Akos Maroy  <darkeye@tyrell.hu>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/adder/gstadder.c: (gst_adder_loop):
+	  Set GST_BUFFER_DURATION (#309218).
+
 2005-07-01  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* sys/ximage/ximagesink.c: (gst_ximagesink_xcontext_get):
