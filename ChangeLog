@@ -1,3 +1,9 @@
+2005-07-01  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/artsd/gstartsdsink.c: (gst_artsdsink_class_init):
+	  Don't use the name property, since GstElement already uses that,
+	  but rename it to connection-name (#309087).
+
 2005-07-01  Michal Benes  <michal.benes@xeris.cz>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
