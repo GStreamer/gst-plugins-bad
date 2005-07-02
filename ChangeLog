@@ -1,3 +1,11 @@
+2005-07-02  Josef Zlomek  <josef.zlomek@xeris.cz>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/matroska/ebml-write.c: (gst_ebml_write_element_size):
+	  Fix for incorrect encoding of all-bit-1 sizes (0x7f, 0x3fff, etc.),
+	  which is #309325.
+
 2005-07-01  jonathan@kaolin.hn.org
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
