@@ -1,3 +1,27 @@
+2005-07-02  Jan Schmidt  <thaytan@mad.scientist.com>
+
+	* ext/dvdnav/dvdnavsrc.c: (dvdnavsrc_init),
+	(dvdnavsrc_update_highlight), (dvdnavsrc_loop), (dvdnavsrc_open),
+	(dvdnav_handle_navigation_event), (dvdnavsrc_event),
+	(dvdnavsrc_query):
+	  Fix seeking calculation.
+	  Ignore multiple seek events until after we complete the first.
+	  Update highlight info after discont, fixes one case where buttons
+	  don't appear after jumping into the menu.
+	  Don't use gst_element_time for fixed still frame timing.
+
+	* gst/dvdsubdec/dvdsubdec.c: (gst_dvdsubdec_init),
+	(dvdsubdec_get_event_delay), (gst_dvdsubdec_parse_subpic),
+	(gst_setup_palette), (gst_draw_rle_line),
+	(gst_dvdsubdec_merge_title), (gst_send_empty_fill),
+	(gst_send_subtitle_frame), (dvdsubdec_advance_time),
+	(gst_dvdsubdec_handle_subtitle), (gst_dvdsubdec_handle_dvd_event):
+	  Draw the button region as a palette change highlight, not a clip.
+
+	* gst/mpegstream/gstmpegparse.c: (gst_mpeg_parse_reset),
+	(gst_mpeg_parse_get_rate), (gst_mpeg_parse_handle_src_event):
+	  Fix seek calculation for overflow.
+
 2005-07-02  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* gst/audioconvert/gstchannelmix.c:
