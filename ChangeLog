@@ -6,6 +6,8 @@
 	  output volume to be inverse-logarithmically related to the number
 	  of channels of the input. Also add some docs on what this function
 	  actually is supposed to do.
+	* gst/audioconvert/channelmixtest.c: (main):
+	  Fix test to represent this (test was wrong).
 
 2005-07-02  Josef Zlomek  <josef.zlomek@xeris.cz>
 
