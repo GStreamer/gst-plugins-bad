@@ -1,3 +1,14 @@
+2005-07-03  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/dvdnav/dvdnavsrc.c: (dvdnavsrc_uri_get_protocols),
+	(dvdnavsrc_uri_set_uri), (plugin_init):
+	* ext/dvdread/dvdreadsrc.c: (plugin_init):
+	  Make dvd:// primary for dvdnav, make dvdread secondary. THIS
+	  ENABLES MENUS FOR YOUR DVDs. Please file bugs for failing DVDs.
+	* gst/playback/gstplaybasebin.c: (mute_stream), (setup_substreams),
+	(set_active_source):
+	  Fix hang on subpicture change.
+
 2005-07-02  Jan Schmidt  <thaytan@mad.scientist.com>
 
 	* ext/dvdnav/dvdnavsrc.c: (dvdnavsrc_init),
