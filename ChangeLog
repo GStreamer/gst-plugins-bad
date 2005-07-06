@@ -1,3 +1,8 @@
+2005-07-06  Arwed v. Merkatz  <v.merkatz@gmx.net>
+
+	* gst/matroska/matroska-mux.c: (gst_matroska_mux_reset):
+	  use g_array_free instead of g_free, fixes bug #309532
+
 2005-07-03  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* ext/dvdnav/dvdnavsrc.c: (dvdnavsrc_uri_get_protocols),
