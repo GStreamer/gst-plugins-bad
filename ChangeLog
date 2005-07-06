@@ -1,5 +1,10 @@
 2005-07-06  Arwed v. Merkatz  <v.merkatz@gmx.net>
 
+	* gst/matroska/matroska-mux.c: (gst_matroska_mux_loop):
+	  don't create an ELEMENT_ERROR on eos, instead finish muxing correctly
+
+2005-07-06  Arwed v. Merkatz  <v.merkatz@gmx.net>
+
 	* gst/matroska/matroska-mux.c: (gst_matroska_mux_reset):
 	  use g_array_free instead of g_free, fixes bug #309532
 
