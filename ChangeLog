@@ -1,3 +1,10 @@
+2005-07-07  Benjamin Otte  <otte@gnome.org>
+
+	* configure.ac:
+	  fix xvid detection, so that we work with the new 4.1 API. This is
+	  supposed to work, because (I quote xvid.h) "$minor is incremented 
+	  when the api is changed, but remains backwards compatible".
+
 2005-07-06  Arwed v. Merkatz  <v.merkatz@gmx.net>
 
 	* gst/matroska/matroska-mux.c: (gst_matroska_mux_loop):

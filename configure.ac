@@ -1788,7 +1788,7 @@ GST_CHECK_FEATURE(XVID, [xvid plugins], xvid, [
           AC_MSG_CHECKING([for uptodate XviD API version])
           AC_TRY_RUN([
 #include <xvid.h>
-#if XVID_API != XVID_MAKE_API(4,0)
+#if XVID_API_MAJOR(XVID_API) != 4
 #error "Incompatible XviD API version"
 #endif
 int main () { return 0; }
