@@ -533,7 +533,7 @@ gst_xine_audio_dec_init_plugin (GstPlugin * plugin)
 
   klass = g_type_class_ref (GST_TYPE_XINE);
 
-  list = klass->xine->plugin_catalog->audio->first;
+  list = klass->xine->plugin_catalog->plugin_lists[PLUGIN_AUDIO_DECODER]->first;
   while (list) {
     plugin_node_t *node = list->content;
     decoder_info_t *dec;

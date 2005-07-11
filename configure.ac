@@ -1770,7 +1770,7 @@ GST_CHECK_FEATURE(WAVPACK, [wavpack plug-in], wavpack, [
 dnl *** xine ***
 translit(dnm, m, l) AM_CONDITIONAL(USE_XINE, true)
 GST_CHECK_FEATURE(XINE, [xine wrapper], xine, [
-  PKG_CHECK_MODULES(XINE, libxine >= 1.0.0, HAVE_XINE=yes, HAVE_XINE=no)
+  PKG_CHECK_MODULES(XINE, libxine >= 1.0.1, HAVE_XINE=yes, HAVE_XINE=no)
   AC_SUBST(XINE_CFLAGS)
   AC_SUBST(XINE_LIBS)
 ],disabled)

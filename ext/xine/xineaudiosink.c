@@ -312,7 +312,9 @@ gst_xine_audio_sink_init_plugin (GstPlugin * plugin)
 
   klass = g_type_class_ref (GST_TYPE_XINE);
 
-  node = xine_list_first_content (klass->xine->plugin_catalog->aout);
+  node =
+      xine_list_first_content (klass->xine->plugin_catalog->
+      plugin_lists[PLUGIN_AUDIO_OUT]);
   while (node) {
     gchar *plugin_name = g_strdup_printf ("xineaudiosink_%s", node->info->id);
     gchar *type_name = g_strdup_printf ("GstXineAudioSink%s", node->info->id);
@@ -329,7 +331,9 @@ gst_xine_audio_sink_init_plugin (GstPlugin * plugin)
     }
     g_free (plugin_name);
 
-    node = xine_list_next_content (klass->xine->plugin_catalog->aout);
+    node =
+        xine_list_next_content (klass->xine->plugin_catalog->
+        plugin_lists[PLUGIN_AUDIO_OUT]);
   }
 
   g_type_class_unref (klass);

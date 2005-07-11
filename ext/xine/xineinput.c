@@ -324,7 +324,9 @@ gst_xine_input_init_plugin (GstPlugin * plugin)
 
   klass = g_type_class_ref (GST_TYPE_XINE);
 
-  node = xine_list_first_content (klass->xine->plugin_catalog->input);
+  node =
+      xine_list_first_content (klass->xine->plugin_catalog->
+      plugin_lists[PLUGIN_INPUT]);
   while (node) {
     gchar *plugin_name = g_strdup_printf ("xinesrc_%s", node->info->id);
     gchar *type_name = g_strdup_printf ("GstXineInput%s", node->info->id);
@@ -341,7 +343,9 @@ gst_xine_input_init_plugin (GstPlugin * plugin)
     }
     g_free (plugin_name);
 
-    node = xine_list_next_content (klass->xine->plugin_catalog->input);
+    node =
+        xine_list_next_content (klass->xine->plugin_catalog->
+        plugin_lists[PLUGIN_INPUT]);
   }
 
   g_type_class_unref (klass);

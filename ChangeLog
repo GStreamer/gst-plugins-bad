@@ -1,3 +1,13 @@
+2005-07-11  Thomas Zajic  <zlatko@gmx.at>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* configure.ac:
+	* ext/xine/xineaudiodec.c: (gst_xine_audio_dec_init_plugin):
+	* ext/xine/xineaudiosink.c: (gst_xine_audio_sink_init_plugin):
+	* ext/xine/xineinput.c: (gst_xine_input_init_plugin):
+	  Compile against newer libxine, update requirement (#309503).
+
 2005-07-11  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* ext/theora/theoradec.c: (theora_dec_chain):
