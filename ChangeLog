@@ -1,3 +1,9 @@
+2005-07-11  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/theora/theoradec.c: (theora_dec_chain):
+	  Packet >= 3, not >3, is not a header. Fixes the case where we seek
+	  back to the beginning of a theora file (#308484).
+
 2005-07-07  Benjamin Otte  <otte@gnome.org>
 
 	* configure.ac:
