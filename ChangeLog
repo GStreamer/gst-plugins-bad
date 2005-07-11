@@ -1,3 +1,13 @@
+2005-07-11  Wouter Paesen  <wouter@kangaroot.net>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/audioscale/gstaudioscale.c: (gst_audioscale_link),
+	(gst_audioscale_get_buffer), (gst_audioscale_decrease_rate),
+	(gst_audioscale_increase_rate), (gst_audioscale_chain):
+	* gst/audioscale/gstaudioscale.h:
+	  Fix timestamp rounding error (#309354).
+
 2005-07-11  jonathan@kaolin.hn.org
 
 	Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
