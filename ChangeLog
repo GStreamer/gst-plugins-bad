@@ -1,5 +1,14 @@
 2005-07-11  jonathan@kaolin.hn.org
 
+	Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/cdparanoia/gstcdparanoia.c: (cdparanoia_class_init),
+	(cdparanoia_open):
+	  Allow extracting last track when using URIs as well (#309375).
+	  Also fix two typos.
+
+2005-07-11  jonathan@kaolin.hn.org
+
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* ext/gnomevfs/gstgnomevfs.c: (plugin_init):
