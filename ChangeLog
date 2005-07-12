@@ -1,3 +1,9 @@
+2005-07-12  Arwed v. Merkatz  <v.merkatz@gmx.net>
+
+	* gst-libs/gst/riff/riff-media.c:
+	(gst_riff_create_video_caps_with_data):
+	  Added FFmpegs own MPEG-4 FOURCC (FMP4)
+
 2005-07-11  Wouter Paesen  <wouter@kangaroot.net>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
