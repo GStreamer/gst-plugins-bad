@@ -432,31 +432,44 @@ gst_v4l2src_free_buffer (GstBuffer * buffer)
 gboolean
 gst_v4l2src_capture_deinit (GstV4l2Src * v4l2src)
 {
-  gint i, dequeue = 0;
+  gint i;
+  gboolean try_reinit = FALSE;
 
   GST_DEBUG_OBJECT (v4l2src, "deinitting capture system");
 
   GST_V4L2_CHECK_OPEN (GST_V4L2ELEMENT (v4l2src));
   GST_V4L2_CHECK_ACTIVE (GST_V4L2ELEMENT (v4l2src));
 
-  /* free the buffers */
-  for (i = 0; i < v4l2src->breq.count; i++) {
-    if (gst_atomic_int_dec_and_test (&v4l2src->pool->buffers[i].refcount))
-      dequeue++;
+  if (v4l2src->pool) {
+    /* free the buffers */
+    for (i = 0; i < v4l2src->breq.count; i++) {
+      if (gst_atomic_int_dec_and_test (&v4l2src->pool->buffers[i].refcount)) {
+        if (ioctl (GST_V4L2ELEMENT (v4l2src)->video_fd, VIDIOC_DQBUF,
+                &v4l2src->pool->buffers[i].buffer) < 0)
+          GST_WARNING_OBJECT (v4l2src,
+              "Could not dequeue buffer on uninitialization: %s - will try reinit instead",
+              g_strerror (errno));
+        try_reinit = TRUE;
+      }
+    }
+    if (gst_atomic_int_dec_and_test (&v4l2src->pool->refcount)) {
+      /* we're last thing that used all this */
+      gst_v4l2src_buffer_pool_free (v4l2src->pool, FALSE);
+    }
+    v4l2src->pool = NULL;
+    /* This is our second try to get the buffers dequeued.
+     * Since buffers are normally dequeued automatically when capturing is
+     * stopped, but may be enqueued before capturing has started, you get
+     * a problem when you abort before capturing started but have enqueued
+     * the buffers. We avoid that by starting/stopping capturing once so
+     * they get auto-dequeued.
+     */
+    if (try_reinit) {
+      if (!gst_v4l2src_capture_start (v4l2src) ||
+          !gst_v4l2src_capture_stop (v4l2src))
+        return FALSE;
+    }
   }
-  for (i = 0; i < dequeue; i++) {
-    struct v4l2_buffer buffer;
-
-    buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    if (ioctl (GST_V4L2ELEMENT (v4l2src)->video_fd, VIDIOC_DQBUF, &buffer) < 0)
-      GST_WARNING_OBJECT (v4l2src,
-          "Could not dequeue buffer on uninitialization");
-  }
-  if (gst_atomic_int_dec_and_test (&v4l2src->pool->refcount)) {
-    /* we're last thing that used all this */
-    gst_v4l2src_buffer_pool_free (v4l2src->pool, FALSE);
-  }
-  v4l2src->pool = NULL;
 
   GST_V4L2_SET_INACTIVE (GST_V4L2ELEMENT (v4l2src));
   return TRUE;
