@@ -1343,16 +1343,6 @@ GST_CHECK_FEATURE(LIBMMS, [mms protocol library], libmms, [
 ])
 AC_SUBST(LIBMMS_LIBS)
 
-dnl *** live.com ***
-translit(dnm, m, l) AM_CONDITIONAL(USE_LIVECOM, true)
-GST_CHECK_FEATURE(LIVECOM, [live.com rtsp library], livecom, [
-  dnl fixme
-  LIVECOM_CFLAGS="-I/usr/lib/live/liveMedia/include -I/usr/lib/live/UsageEnvironment/include -I/usr/lib/live/BasicUsageEnvironment/include -I/usr/lib/live/groupsock/include"
-  LIVECOM_LIBS="-L/usr/lib/live -lgroupsock -lliveMedia -lUsageEnvironment -lBasicUsageEnvironment"
-])
-AC_SUBST(LIVECOM_CFLAGS)
-AC_SUBST(LIVECOM_LIBS)
-
 dnl *** libmng ***
 translit(dnm, m, l) AM_CONDITIONAL(USE_LIBMNG, true)
 GST_CHECK_FEATURE(LIBMNG, [libmng library], mngdec, [
@@ -2143,7 +2133,6 @@ ext/libfame/Makefile
 ext/libmng/Makefile
 ext/libpng/Makefile
 ext/libvisual/Makefile
-ext/livecom/Makefile
 ext/mad/Makefile
 dnl ext/mas/Makefile
 ext/mikmod/Makefile
