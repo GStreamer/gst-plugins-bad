@@ -1,5 +1,11 @@
 2005-07-14  Zaheer Abbas Merali  <zaheerabbas at merali dot org>
 
+	* sys/ximage/ximagesrc.c: (gst_ximagesrc_ximage_get),
+	(composite_pixel):
+	fix warning if xfixes doesn't exist
+
+2005-07-14  Zaheer Abbas Merali  <zaheerabbas at merali dot org>
+
 	* configure.ac:
 	whoops committed something i shouldnt have from my tree :)
 
