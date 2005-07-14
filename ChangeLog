@@ -1,3 +1,11 @@
+2005-07-14  Luca Ognibene  <luogni@tin.it>
+
+	* gst/tcp/gstmultifdsink.h (enum): 
+	* gst/tcp/gstmultifdsink.c (gst_client_status_get_type) 
+	(gst_multifdsink_add): 
+	  Don't accept a client if multifdsink is in
+	  NULL state
+
 2005-07-12  Arwed v. Merkatz  <v.merkatz@gmx.net>
 
 	* gst-libs/gst/riff/riff-media.c:
