@@ -1,3 +1,23 @@
+2005-07-14  Zaheer Abbas Merali  <zaheerabbas at merali dot org>
+
+	* configure.ac:
+	* sys/ximage/Makefile.am:
+	* sys/ximage/ximagesink.c: (gst_ximagesink_ximage_new),
+	(gst_ximagesink_ximage_destroy), (gst_ximagesink_xcontext_get),
+	(gst_ximagesink_xcontext_clear), (gst_ximagesink_buffer_free):
+	* sys/ximage/ximagesink.h:
+	* sys/ximage/ximagesrc.c: (gst_ximagesrc_ximage_get),
+	(gst_ximagesrc_getcaps), (gst_ximagesrc_free_data_func),
+	(composite_pixel), (gst_ximagesrc_get), (ximagesrc_imagepool_free),
+	(gst_ximagesrc_change_state), (gst_ximagesrc_init),
+	(gst_ximagesrc_set_property), (gst_ximagesrc_get_property),
+	(gst_ximagesrc_finalize), (gst_ximagesrc_class_init):
+	+ sys/ximage/ximageutil.h:
+	+ sys/ximage/ximageutil.c:
+	Add shm support (Luca Ognibene) (bug #306292)
+	Add mouse pointer display support using XFixes extension
+	New property for ximagesrc: show-pointer
+
 2005-07-14  Luca Ognibene  <luogni@tin.it>
 
 	* gst/tcp/gstmultifdsink.h (enum): 

@@ -625,10 +625,22 @@ GST_CHECK_FEATURE(X, [X libraries and plugins],
     X_LIBS="$X_LIBS -lX11"
     AC_SUBST(X_CFLAGS)
     AC_SUBST(X_LIBS)
+    dnl check for Xfixes
+    AC_CHECK_HEADERS(X11/extensions/Xfixes.h, HAVE_XFIXES="yes", HAVE_XFIXES="no", [#include <X11/Xlib.h>])
+    if test "x$HAVE_XFIXES" = "xno"
+    then
+      AC_MSG_NOTICE([cannot find XFixes development files])
+    else
+      XFIXES_LIBS="-lXfixes"
+      AC_SUBST(XFIXES_LIBS)
+    fi
+    
+    AM_CONDITIONAL(HAVE_XFIXES, test "x$HAVE_XFIXES" = "xyes")
+
   fi
   AC_SUBST(HAVE_X)
 ])
-  
+    
 dnl *** XVideo ***
 dnl Look for the PIC library first, Debian requires it.
 dnl Check debian-devel archives for gory details.
@@ -1330,6 +1342,16 @@ GST_CHECK_FEATURE(LIBMMS, [mms protocol library], libmms, [
   PKG_CHECK_MODULES(LIBMMS, libmms >= 0.1, HAVE_LIBMMS="yes", HAVE_LIBMMS="no")
 ])
 AC_SUBST(LIBMMS_LIBS)
+
+dnl *** live.com ***
+translit(dnm, m, l) AM_CONDITIONAL(USE_LIVECOM, true)
+GST_CHECK_FEATURE(LIVECOM, [live.com rtsp library], livecom, [
+  dnl fixme
+  LIVECOM_CFLAGS="-I/usr/lib/live/liveMedia/include -I/usr/lib/live/UsageEnvironment/include -I/usr/lib/live/BasicUsageEnvironment/include -I/usr/lib/live/groupsock/include"
+  LIVECOM_LIBS="-L/usr/lib/live -lgroupsock -lliveMedia -lUsageEnvironment -lBasicUsageEnvironment"
+])
+AC_SUBST(LIVECOM_CFLAGS)
+AC_SUBST(LIVECOM_LIBS)
 
 dnl *** libmng ***
 translit(dnm, m, l) AM_CONDITIONAL(USE_LIBMNG, true)
@@ -2121,6 +2143,7 @@ ext/libfame/Makefile
 ext/libmng/Makefile
 ext/libpng/Makefile
 ext/libvisual/Makefile
+ext/livecom/Makefile
 ext/mad/Makefile
 dnl ext/mas/Makefile
 ext/mikmod/Makefile
