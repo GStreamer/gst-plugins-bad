@@ -1,9 +1,3 @@
-2005-07-15  Arwed v. Merkatz  <v.merkatz@gmx.net>
-
-	* gst/playback/gstplaybasebin.c: (mute_stream):
-	  Don't drop textstream filler events, otherwise deadlocks on subtitle
-		stream switching.
-
 2005-07-15  Zaheer Abbas Merali  <zaheerabbas at merali dot org>
 
 	* configure.ac:
