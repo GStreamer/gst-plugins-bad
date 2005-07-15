@@ -1,3 +1,8 @@
+2005-07-15  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/cdparanoia/gstcdparanoia.c: (cdparanoia_open):
+	  Fix #309834, access variable when it is NULL.
+
 2005-07-15  Benjamin Otte  <otte@gnome.org>
 
 	* sys/v4l2/v4l2src_calls.c: (gst_v4l2src_capture_deinit):
