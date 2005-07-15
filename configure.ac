@@ -626,14 +626,9 @@ GST_CHECK_FEATURE(X, [X libraries and plugins],
     AC_SUBST(X_CFLAGS)
     AC_SUBST(X_LIBS)
     dnl check for Xfixes
-    AC_CHECK_HEADERS(X11/extensions/Xfixes.h, HAVE_XFIXES="yes", HAVE_XFIXES="no", [#include <X11/Xlib.h>])
-    if test "x$HAVE_XFIXES" = "xno"
-    then
-      AC_MSG_NOTICE([cannot find XFixes development files])
-    else
-      XFIXES_LIBS="-lXfixes"
-      AC_SUBST(XFIXES_LIBS)
-    fi
+    PKG_CHECK_MODULES(XFIXES, xfixes, HAVE_XFIXES="yes", HAVE_XFIXES="no") 
+    AC_SUBST(XFIXES_LIBS)
+    AC_SUBST(XFIXES_CFLAGS)
     
     AM_CONDITIONAL(HAVE_XFIXES, test "x$HAVE_XFIXES" = "xyes")
 

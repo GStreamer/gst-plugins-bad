@@ -1,3 +1,9 @@
+2005-07-15  Zaheer Abbas Merali  <zaheerabbas at merali dot org>
+
+	* configure.ac:
+	* sys/ximage/Makefile.am:
+	Use xfixes's .pc file instead of the header check
+
 2005-07-15  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* ext/cdparanoia/gstcdparanoia.c: (cdparanoia_open):
