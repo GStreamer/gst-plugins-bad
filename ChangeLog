@@ -1,5 +1,13 @@
 2005-07-16  Arwed v. Merkatz  <v.merkatz@gmx.net>
 
+	* ext/pango/gsttextrender.c: (gst_text_renderer_bitmap_to_ayuv),
+	(gst_text_render_chain):
+	  Renamed gst_text_overlay_blit_yuv420 to
+		gst_text_renderer_bitmap_to_ayuv, removed all code handling actual video
+		overlay and unused parameters, fixes bug #310597.
+
+2005-07-16  Arwed v. Merkatz  <v.merkatz@gmx.net>
+
 	* gst/imagemixer/mixer.c: (gst_image_mixer_do_mix_i420):
 	  Fix chroma plane offsets.
 
