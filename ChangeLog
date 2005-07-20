@@ -1,3 +1,10 @@
+2005-07-20  Michal Benes  <michal.benes@xeris.cz>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/matroska/matroska-mux.c: (gst_matroska_mux_audio_pad_link):
+	  Add vorbis muxing support (#171563).
+
 2005-07-20  Andy Wingo  <wingo@pobox.com>
 
 	* gst/videoscale/vs_image.c (vs_image_scale_nearest_YUYV): Typo
