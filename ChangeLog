@@ -1,3 +1,12 @@
+2005-07-20  Paolo Borelli  <pborelli at katamail dot com>
+
+	Reviewed by: Tim-Philipp Müller  <tim at centricular dot net>
+
+	* gst/spectrum/gstspectrum.c: (gst_spectrum_init),
+	(gst_spectrum_link), (gst_spectrum_chain):
+	* gst/spectrum/gstspectrum.h:
+	  Handle mono streams.
+
 2005-07-16  Arwed v. Merkatz  <v.merkatz@gmx.net>
 
 	* ext/pango/gsttextrender.c: (gst_text_renderer_bitmap_to_ayuv),

@@ -49,6 +49,8 @@ struct _GstSpectrum {
 
   GstPad *sinkpad,*srcpad;
 
+  gint channels;
+
   gint width;
 };
 
