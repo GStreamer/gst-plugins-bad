@@ -25,10 +25,7 @@
 #include <gst/gst.h>
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-
+G_BEGIN_DECLS
 
 #define GST_TYPE_SPECTRUM \
   (gst_spectrum_get_type())
@@ -47,7 +44,8 @@ typedef struct _GstSpectrumClass GstSpectrumClass;
 struct _GstSpectrum {
   GstElement element;
 
-  GstPad *sinkpad,*srcpad;
+  GstPad *sinkpad;
+  GstPad *srcpad;
 
   gint channels;
 
@@ -60,10 +58,6 @@ struct _GstSpectrumClass {
 
 GType gst_spectrum_get_type(void);
 
-
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
-
+G_END_DECLS
 
 #endif /* __GST_SPECTRUM_H__ */

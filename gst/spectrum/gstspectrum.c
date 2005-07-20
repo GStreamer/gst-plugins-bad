@@ -24,6 +24,8 @@
 
 #include "gstspectrum.h"
 
+#define SPECTRUM_DEFAULT_WIDTH 75
+
 /* elementfactory information */
 static GstElementDetails gst_spectrum_details =
 GST_ELEMENT_DETAILS ("Spectrum analyzer",
@@ -31,12 +33,19 @@ GST_ELEMENT_DETAILS ("Spectrum analyzer",
     "Run an FFT on the audio signal, output spectrum data",
     "Erik Walthinsen <omega@cse.ogi.edu>");
 
-/* Spectrum signals and args */
-enum
-{
-  /* FILL ME */
-  LAST_SIGNAL
-};
+static GstStaticPadTemplate spectrum_sink_template_factory =
+GST_STATIC_PAD_TEMPLATE ("sink",
+    GST_PAD_SINK,
+    GST_PAD_ALWAYS,
+    GST_STATIC_CAPS ("audio/x-raw-int, "
+        "endianness = (int) " G_STRINGIFY (G_BYTE_ORDER) ", "
+        "signed = (boolean) true, "
+        "width = (int) 16, "
+        "depth = (int) 16, "
+        "rate = (int) { 8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000 }, "
+        "channels = (int) [ 1, 2 ]")
+    );
+
 
 enum
 {
@@ -55,7 +64,7 @@ static void gst_spectrum_set_property (GObject * object, guint prop_id,
 static GstPadLinkReturn gst_spectrum_link (GstPad * pad, const GstCaps * caps);
 static void gst_spectrum_chain (GstPad * pad, GstData * _data);
 
-#define fixed short
+#define fixed gint16
 int gst_spectrum_fix_fft (fixed fr[], fixed fi[], int m, int inverse);
 void gst_spectrum_fix_loud (fixed loud[], fixed fr[], fixed fi[], int n,
     int scale_shift);
@@ -63,8 +72,6 @@ void gst_spectrum_window (fixed fr[], int n);
 
 
 static GstElementClass *parent_class = NULL;
-
-/*static guint gst_spectrum_signals[LAST_SIGNAL] = { 0 }; */
 
 GType
 gst_spectrum_get_type (void)
@@ -96,6 +103,8 @@ gst_spectrum_base_init (gpointer g_class)
 {
   GstElementClass *element_class = GST_ELEMENT_CLASS (g_class);
 
+  gst_element_class_add_pad_template (element_class,
+      gst_static_pad_template_get (&spectrum_sink_template_factory));
   gst_element_class_set_details (element_class, &gst_spectrum_details);
 }
 
@@ -106,11 +115,13 @@ gst_spectrum_class_init (GstSpectrumClass * klass)
 
   gobject_class = (GObjectClass *) klass;
 
-  parent_class = g_type_class_ref (GST_TYPE_ELEMENT);
-
-  g_object_class_install_property (G_OBJECT_CLASS (klass), ARG_WIDTH, g_param_spec_int ("width", "width", "width", G_MININT, G_MAXINT, 0, G_PARAM_WRITABLE));   /* CHECKME */
+  parent_class = g_type_class_peek_parent (klass);
 
   gobject_class->set_property = gst_spectrum_set_property;
+
+  g_object_class_install_property (G_OBJECT_CLASS (klass), ARG_WIDTH,
+      g_param_spec_int ("width", "width", "width", 1, G_MAXINT,
+          SPECTRUM_DEFAULT_WIDTH, G_PARAM_WRITABLE));
 }
 
 static void
@@ -123,24 +134,23 @@ gst_spectrum_init (GstSpectrum * spectrum)
   spectrum->srcpad = gst_pad_new ("src", GST_PAD_SRC);
   gst_element_add_pad (GST_ELEMENT (spectrum), spectrum->srcpad);
 
-  spectrum->width = 75;
+  spectrum->width = SPECTRUM_DEFAULT_WIDTH;
 }
 
 static void
 gst_spectrum_set_property (GObject * object, guint prop_id,
     const GValue * value, GParamSpec * pspec)
 {
-  GstSpectrum *spectrum;
+  GstSpectrum *spectrum = (GstSpectrum *) object;
 
-  /* it's not null if we got it, but it might not be ours */
   g_return_if_fail (GST_IS_SPECTRUM (object));
-  spectrum = GST_SPECTRUM (object);
 
   switch (prop_id) {
     case ARG_WIDTH:
       spectrum->width = g_value_get_int (value);
       break;
     default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
   }
 }
@@ -153,7 +163,8 @@ gst_spectrum_link (GstPad * pad, const GstCaps * caps)
 
   structure = gst_caps_get_structure (caps, 0);
 
-  gst_structure_get_int (structure, "channels", &spectrum->channels);
+  if (!gst_structure_get_int (structure, "channels", &spectrum->channels))
+    return GST_PAD_LINK_REFUSED;
 
   return GST_PAD_LINK_OK;
 }
@@ -167,7 +178,7 @@ gst_spectrum_chain (GstPad * pad, GstData * _data)
   gint16 *re, *im, *loud;
   gint16 *samples;
   gint step, pos, i;
-  guchar *spect;
+  guint8 *spect;
   GstBuffer *newbuf;
 
   g_return_if_fail (pad != NULL);
@@ -181,18 +192,16 @@ gst_spectrum_chain (GstPad * pad, GstData * _data)
   spec_base = 8;
   spec_len = 1024;
 
-  im = g_malloc (spec_len * sizeof (gint16));
-  g_return_if_fail (im != NULL);
-  loud = g_malloc (spec_len * sizeof (gint16));
-  g_return_if_fail (loud != NULL);
+  im = g_new0 (gint16, spec_len);
+  loud = g_new0 (gint16, spec_len);
 
-  memset (im, 0, spec_len * sizeof (gint16));
   if (spectrum->channels == 2) {
     re = g_malloc (spec_len * sizeof (gint16));
     for (i = 0; i < spec_len; i++)
       re[i] = (samples[(i * 2)] + samples[(i * 2) + 1]) >> 1;
-  } else
+  } else {
     re = samples;
+  }
 
   gst_spectrum_window (re, spec_len);
   gst_spectrum_fix_fft (re, im, spec_base, FALSE);
@@ -201,7 +210,7 @@ gst_spectrum_chain (GstPad * pad, GstData * _data)
     g_free (re);
   g_free (im);
   step = spec_len / (spectrum->width * 2);
-  spect = (guchar *) g_malloc (spectrum->width);
+  spect = g_new (guint8, spectrum->width);
   for (i = 0, pos = 0; i < spectrum->width; i++, pos += step) {
     if (loud[pos] > -60)
       spect[i] = (loud[pos] + 60) / 2;
@@ -212,10 +221,8 @@ gst_spectrum_chain (GstPad * pad, GstData * _data)
   }
   g_free (loud);
   gst_buffer_unref (buf);
-/*  g_free(samples); */
 
   newbuf = gst_buffer_new ();
-  g_return_if_fail (newbuf != NULL);
   GST_BUFFER_DATA (newbuf) = spect;
   GST_BUFFER_SIZE (newbuf) = spectrum->width;
 

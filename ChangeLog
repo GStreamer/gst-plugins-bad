@@ -1,3 +1,13 @@
+2005-07-20  Tim-Philipp Müller  <tim at centricular dot net>
+
+	* gst/spectrum/gstspectrum.c: (gst_spectrum_base_init),
+	(gst_spectrum_class_init), (gst_spectrum_init),
+	(gst_spectrum_set_property), (gst_spectrum_link),
+	(gst_spectrum_chain):
+	* gst/spectrum/gstspectrum.h:
+	  Misc. clean-ups; most importantly, add a template to
+	  the sink pad, we don't accept any type of data after all.
+
 2005-07-20  Paolo Borelli  <pborelli at katamail dot com>
 
 	Reviewed by: Tim-Philipp Müller  <tim at centricular dot net>
@@ -5,7 +15,7 @@
 	* gst/spectrum/gstspectrum.c: (gst_spectrum_init),
 	(gst_spectrum_link), (gst_spectrum_chain):
 	* gst/spectrum/gstspectrum.h:
-	  Handle mono streams.
+	  Handle mono streams (#311006).
 
 2005-07-16  Arwed v. Merkatz  <v.merkatz@gmx.net>
 
