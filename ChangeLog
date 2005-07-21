@@ -1,3 +1,19 @@
+2005-07-21  Paolo Borelli  <pborelli at katamail dot com>
+
+	Reviewed by: Tim-Philipp Müller  <tim at centricular dot net>
+
+	* gst/spectrum/demo-osssrc.c: (spectrum_chain), (main):
+	  Use 32 for the graph since it's the dimension of the 
+	  drawing window; use proper buffersize (bytes != samples);
+	  connect delete-event to gtk_main_quit.
+	  
+	* gst/spectrum/gstspectrum.c: (gst_spectrum_class_init),
+	(gst_spectrum_chain):
+	  Specify max. width of 1024 in property param spec;
+	  spec_base must be 10 instead of 8, since it's the
+	  exponent of the N pased to the FFT (2^10=1024);
+	  memcpy the buffer in the mono case (fixes a  crash).
+
 2005-07-21  Zaheer Abbas Merali  <zaheerabbas at merali dot org>
 
 	* configure.ac:

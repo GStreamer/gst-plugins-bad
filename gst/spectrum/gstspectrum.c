@@ -25,6 +25,7 @@
 #include "gstspectrum.h"
 
 #define SPECTRUM_DEFAULT_WIDTH 75
+#define SPECTRUM_MAX_WIDTH     1024     /* limited by the current FFT code */
 
 /* elementfactory information */
 static GstElementDetails gst_spectrum_details =
@@ -120,7 +121,7 @@ gst_spectrum_class_init (GstSpectrumClass * klass)
   gobject_class->set_property = gst_spectrum_set_property;
 
   g_object_class_install_property (G_OBJECT_CLASS (klass), ARG_WIDTH,
-      g_param_spec_int ("width", "width", "width", 1, G_MAXINT,
+      g_param_spec_int ("width", "width", "width", 1, SPECTRUM_MAX_WIDTH,
           SPECTRUM_DEFAULT_WIDTH, G_PARAM_WRITABLE));
 }
 
@@ -177,6 +178,7 @@ gst_spectrum_chain (GstPad * pad, GstData * _data)
   gint spec_base, spec_len;
   gint16 *re, *im, *loud;
   gint16 *samples;
+  gint samples_n;
   gint step, pos, i;
   guint8 *spect;
   GstBuffer *newbuf;
@@ -188,28 +190,34 @@ gst_spectrum_chain (GstPad * pad, GstData * _data)
   spectrum = GST_SPECTRUM (GST_OBJECT_PARENT (pad));
 
   samples = (gint16 *) GST_BUFFER_DATA (buf);
+  samples_n = GST_BUFFER_SIZE (buf) / (spectrum->channels * sizeof (gint16));
 
-  spec_base = 8;
+  spec_base = 10;               /* 2^10 = 1024 */
   spec_len = 1024;
 
+  /* zero pad if samples_n < spec_len */
+  re = g_new0 (gint16, spec_len);
   im = g_new0 (gint16, spec_len);
+
   loud = g_new0 (gint16, spec_len);
 
   if (spectrum->channels == 2) {
-    re = g_malloc (spec_len * sizeof (gint16));
-    for (i = 0; i < spec_len; i++)
+    for (i = 0; i < MIN (spec_len, samples_n); i++)
       re[i] = (samples[(i * 2)] + samples[(i * 2) + 1]) >> 1;
   } else {
-    re = samples;
+    re = memcpy (re, samples, MIN (spec_len, samples_n) * sizeof (gint16));
   }
 
-  gst_spectrum_window (re, spec_len);
+  /* do not apply the window to the zero padding */
+  gst_spectrum_window (re, MIN (spec_len, samples_n));
+
   gst_spectrum_fix_fft (re, im, spec_base, FALSE);
   gst_spectrum_fix_loud (loud, re, im, spec_len, 0);
-  if (re != samples)
-    g_free (re);
+
+  g_free (re);
   g_free (im);
-  step = spec_len / (spectrum->width * 2);
+
+  step = spec_len / spectrum->width;
   spect = g_new (guint8, spectrum->width);
   for (i = 0, pos = 0; i < spectrum->width; i++, pos += step) {
     if (loud[pos] > -60)
