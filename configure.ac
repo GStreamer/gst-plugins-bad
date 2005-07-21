@@ -626,11 +626,26 @@ GST_CHECK_FEATURE(X, [X libraries and plugins],
     AC_SUBST(X_CFLAGS)
     AC_SUBST(X_LIBS)
     dnl check for Xfixes
-    PKG_CHECK_MODULES(XFIXES, xfixes, HAVE_XFIXES="yes", HAVE_XFIXES="no") 
+    PKG_CHECK_MODULES(XFIXES, xfixes, HAVE_XFIXES="yes", HAVE_XFIXES="no")
+    if test "x$HAVE_XFIXES" = "xyes"
+    then
+    	XFIXES_CFLAGS="-DHAVE_XFIXES $XFIXES_CFLAGS"
+    fi
     AC_SUBST(XFIXES_LIBS)
     AC_SUBST(XFIXES_CFLAGS)
     
     AM_CONDITIONAL(HAVE_XFIXES, test "x$HAVE_XFIXES" = "xyes")
+
+    dnl check for Xdamage
+    PKG_CHECK_MODULES(XDAMAGE, xdamage, HAVE_XDAMAGE="yes", HAVE_XDAMAGE="no")
+    if test "x$HAVE_XDAMAGE" = "xyes"
+    then
+    	XDAMAGE_CFLAGS="-DHAVE_XDAMAGE $XDAMAGE_CFLAGS"
+    fi
+    AC_SUBST(XDAMAGE_LIBS)
+    AC_SUBST(XDAMAGE_CFLAGS)
+    
+    AM_CONDITIONAL(HAVE_XDAMAGE, test "x$HAVE_XDAMAGE" = "xyes")
 
   fi
   AC_SUBST(HAVE_X)

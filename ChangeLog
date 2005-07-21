@@ -1,3 +1,16 @@
+2005-07-21  Zaheer Abbas Merali  <zaheerabbas at merali dot org>
+
+	* configure.ac:
+	* sys/ximage/Makefile.am:
+	* sys/ximage/ximagesrc.c: (gst_ximagesrc_ximage_get),
+	(gst_ximagesrc_getcaps), (gst_ximagesrc_free_data_func),
+	(composite_pixel), (gst_ximagesrc_get), (ximagesrc_imagepool_free),
+	(gst_ximagesrc_change_state), (gst_ximagesrc_init),
+	(gst_ximagesrc_set_property), (gst_ximagesrc_get_property),
+	(gst_ximagesrc_finalize), (gst_ximagesrc_class_init):
+	Fix xfixes cursor addition (thanks Luca for patch)
+	Add xdamage support
+
 2005-07-20  Michal Benes  <michal.benes@xeris.cz>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
