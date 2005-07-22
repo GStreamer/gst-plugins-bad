@@ -249,72 +249,92 @@ gst_v4l2src_capture_init (GstV4l2Src * v4l2src)
     v4l2src->breq.count = GST_V4L2_MIN_BUFFERS;
   }
   v4l2src->breq.type = v4l2src->format.type;
-  v4l2src->breq.memory = V4L2_MEMORY_MMAP;
-  if (ioctl (GST_V4L2ELEMENT (v4l2src)->video_fd, VIDIOC_REQBUFS,
-          &v4l2src->breq) < 0) {
-    GST_ELEMENT_ERROR (v4l2src, RESOURCE, READ,
-        (_("Could not get buffers from device \"%s\"."),
-            GST_V4L2ELEMENT (v4l2src)->device),
-        ("error requesting %d buffers: %s", v4l2src->breq.count,
-            g_strerror (errno)));
-    return FALSE;
-  }
-
-  if (v4l2src->breq.count < GST_V4L2_MIN_BUFFERS) {
-    GST_ELEMENT_ERROR (v4l2src, RESOURCE, READ,
-        (_("Could not get enough buffers from device \"%s\"."),
-            GST_V4L2ELEMENT (v4l2src)->device),
-        ("we received %d, we want at least %d", v4l2src->breq.count,
-            GST_V4L2_MIN_BUFFERS));
-    v4l2src->breq.count = buffers;
-    return FALSE;
-  }
-  if (v4l2src->breq.count != buffers)
-    g_object_notify (G_OBJECT (v4l2src), "num_buffers");
-
-  GST_INFO_OBJECT (v4l2src,
-      "Got %d buffers (" GST_FOURCC_FORMAT ") of size %d KB\n",
-      v4l2src->breq.count,
-      GST_FOURCC_ARGS (v4l2src->format.fmt.pix.pixelformat),
-      v4l2src->format.fmt.pix.sizeimage / 1024);
-
-  /* Map the buffers */
-  v4l2src->pool = g_new (GstV4l2BufferPool, 1);
-  gst_atomic_int_init (&v4l2src->pool->refcount, 1);
-  v4l2src->pool->video_fd = GST_V4L2ELEMENT (v4l2src)->video_fd;
-  v4l2src->pool->buffer_count = v4l2src->breq.count;
-  v4l2src->pool->buffers = g_new0 (GstV4l2Buffer, v4l2src->breq.count);
-
-  for (n = 0; n < v4l2src->breq.count; n++) {
-    GstV4l2Buffer *buffer = &v4l2src->pool->buffers[n];
-
-    gst_atomic_int_init (&buffer->refcount, 1);
-    buffer->pool = v4l2src->pool;
-    buffer->buffer.index = n;
-    buffer->buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    if (ioctl (GST_V4L2ELEMENT (v4l2src)->video_fd, VIDIOC_QUERYBUF,
-            &buffer->buffer) < 0) {
-      GST_ELEMENT_ERROR (v4l2src, RESOURCE, READ, (NULL),
-          ("Could not get buffer properties of buffer %d: %s", n,
+  if (GST_V4L2ELEMENT (v4l2src)->vcap.capabilities & V4L2_CAP_STREAMING) {
+    v4l2src->breq.memory = V4L2_MEMORY_MMAP;
+    if (ioctl (GST_V4L2ELEMENT (v4l2src)->video_fd, VIDIOC_REQBUFS,
+            &v4l2src->breq) < 0) {
+      GST_ELEMENT_ERROR (v4l2src, RESOURCE, READ,
+          (_("Could not get buffers from device \"%s\"."),
+              GST_V4L2ELEMENT (v4l2src)->device),
+          ("error requesting %d buffers: %s", v4l2src->breq.count,
               g_strerror (errno)));
-      gst_v4l2src_capture_deinit (v4l2src);
       return FALSE;
     }
-    buffer->start =
-        mmap (0, buffer->buffer.length, PROT_READ | PROT_WRITE, MAP_SHARED,
-        GST_V4L2ELEMENT (v4l2src)->video_fd, buffer->buffer.m.offset);
-    if (buffer->start == MAP_FAILED) {
-      GST_ELEMENT_ERROR (v4l2src, RESOURCE, READ, (NULL),
-          ("Could not mmap video buffer %d: %s", n, g_strerror (errno)));
-      buffer->start = 0;
-      gst_v4l2src_capture_deinit (v4l2src);
+    GST_LOG_OBJECT (v4l2src, "using default mmap method");
+  } else if (GST_V4L2ELEMENT (v4l2src)->vcap.capabilities & V4L2_CAP_READWRITE) {
+    v4l2src->breq.memory = 0;
+    GST_INFO_OBJECT (v4l2src, "using fallback read method");
+  } else {
+    GST_ELEMENT_ERROR (v4l2src, RESOURCE, READ,
+        (_("the driver of device \"%s\" is broken."),
+            GST_V4L2ELEMENT (v4l2src)->device),
+        ("no supported read capability from %s",
+            GST_V4L2ELEMENT (v4l2src)->device));
+    return FALSE;
+  }
+
+  if (v4l2src->breq.memory > 0) {
+    if (v4l2src->breq.count < GST_V4L2_MIN_BUFFERS) {
+      GST_ELEMENT_ERROR (v4l2src, RESOURCE, READ,
+          (_("Could not get enough buffers from device \"%s\"."),
+              GST_V4L2ELEMENT (v4l2src)->device),
+          ("we received %d, we want at least %d", v4l2src->breq.count,
+              GST_V4L2_MIN_BUFFERS));
+      v4l2src->breq.count = buffers;
       return FALSE;
     }
-    buffer->length = buffer->buffer.length;
-    if (!gst_v4l2src_queue_frame (v4l2src, n)) {
-      gst_v4l2src_capture_deinit (v4l2src);
-      return FALSE;
+    if (v4l2src->breq.count != buffers)
+      g_object_notify (G_OBJECT (v4l2src), "num_buffers");
+
+    GST_INFO_OBJECT (v4l2src,
+        "Got %d buffers (" GST_FOURCC_FORMAT ") of size %d KB\n",
+        v4l2src->breq.count,
+        GST_FOURCC_ARGS (v4l2src->format.fmt.pix.pixelformat),
+        v4l2src->format.fmt.pix.sizeimage / 1024);
+
+    /* Map the buffers */
+    GST_LOG_OBJECT (v4l2src, "initiating buffer pool");
+
+    v4l2src->pool = g_new (GstV4l2BufferPool, 1);
+    gst_atomic_int_init (&v4l2src->pool->refcount, 1);
+    v4l2src->pool->video_fd = GST_V4L2ELEMENT (v4l2src)->video_fd;
+    v4l2src->pool->buffer_count = v4l2src->breq.count;
+    v4l2src->pool->buffers = g_new0 (GstV4l2Buffer, v4l2src->breq.count);
+
+    for (n = 0; n < v4l2src->breq.count; n++) {
+      GstV4l2Buffer *buffer = &v4l2src->pool->buffers[n];
+
+      gst_atomic_int_init (&buffer->refcount, 1);
+      buffer->pool = v4l2src->pool;
+      buffer->buffer.index = n;
+      buffer->buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+      if (ioctl (GST_V4L2ELEMENT (v4l2src)->video_fd, VIDIOC_QUERYBUF,
+              &buffer->buffer) < 0) {
+        GST_ELEMENT_ERROR (v4l2src, RESOURCE, READ, (NULL),
+            ("Could not get buffer properties of buffer %d: %s", n,
+                g_strerror (errno)));
+        gst_v4l2src_capture_deinit (v4l2src);
+        return FALSE;
+      }
+      buffer->start =
+          mmap (0, buffer->buffer.length, PROT_READ | PROT_WRITE, MAP_SHARED,
+          GST_V4L2ELEMENT (v4l2src)->video_fd, buffer->buffer.m.offset);
+      if (buffer->start == MAP_FAILED) {
+        GST_ELEMENT_ERROR (v4l2src, RESOURCE, READ, (NULL),
+            ("Could not mmap video buffer %d: %s", n, g_strerror (errno)));
+        buffer->start = 0;
+        gst_v4l2src_capture_deinit (v4l2src);
+        return FALSE;
+      }
+      buffer->length = buffer->buffer.length;
+      if (!gst_v4l2src_queue_frame (v4l2src, n)) {
+        gst_v4l2src_capture_deinit (v4l2src);
+        return FALSE;
+      }
     }
+  } else {
+    GST_LOG_OBJECT (v4l2src, "no buffer pool used");
+    v4l2src->pool = NULL;
   }
 
   GST_V4L2_SET_ACTIVE (GST_V4L2ELEMENT (v4l2src));
@@ -344,11 +364,13 @@ gst_v4l2src_capture_start (GstV4l2Src * v4l2src)
 
   v4l2src->quit = FALSE;
 
-  if (ioctl (GST_V4L2ELEMENT (v4l2src)->video_fd, VIDIOC_STREAMON, &type) < 0) {
-    GST_ELEMENT_ERROR (v4l2src, RESOURCE, OPEN_READ, (NULL),
-        ("Error starting streaming capture from device %s: %s",
-            GST_V4L2ELEMENT (v4l2src)->device, g_strerror (errno)));
-    return FALSE;
+  if (v4l2src->breq.memory != 0) {
+    if (ioctl (GST_V4L2ELEMENT (v4l2src)->video_fd, VIDIOC_STREAMON, &type) < 0) {
+      GST_ELEMENT_ERROR (v4l2src, RESOURCE, OPEN_READ, (NULL),
+          ("Error starting streaming capture from device %s: %s",
+              GST_V4L2ELEMENT (v4l2src)->device, g_strerror (errno)));
+      return FALSE;
+    }
   }
 
   v4l2src->is_capturing = TRUE;
@@ -372,13 +394,16 @@ gst_v4l2src_capture_stop (GstV4l2Src * v4l2src)
   GST_V4L2_CHECK_OPEN (GST_V4L2ELEMENT (v4l2src));
   GST_V4L2_CHECK_ACTIVE (GST_V4L2ELEMENT (v4l2src));
 
-  /* we actually need to sync on all queued buffers but not
-   * on the non-queued ones */
-  if (ioctl (GST_V4L2ELEMENT (v4l2src)->video_fd, VIDIOC_STREAMOFF, &type) < 0) {
-    GST_ELEMENT_ERROR (v4l2src, RESOURCE, CLOSE, (NULL),
-        ("Error stopping streaming capture from device %s: %s",
-            GST_V4L2ELEMENT (v4l2src)->device, g_strerror (errno)));
-    return FALSE;
+  if (v4l2src->breq.memory != 0) {
+    /* we actually need to sync on all queued buffers but not
+     * on the non-queued ones */
+    if (ioctl (GST_V4L2ELEMENT (v4l2src)->video_fd, VIDIOC_STREAMOFF,
+            &type) < 0) {
+      GST_ELEMENT_ERROR (v4l2src, RESOURCE, CLOSE, (NULL),
+          ("Error stopping streaming capture from device %s: %s",
+              GST_V4L2ELEMENT (v4l2src)->device, g_strerror (errno)));
+      return FALSE;
+    }
   }
 
   /* make an optional pending wait stop */

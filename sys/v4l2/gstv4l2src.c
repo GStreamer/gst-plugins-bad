@@ -23,6 +23,7 @@
 
 #include <string.h>
 #include <sys/time.h>
+#include <unistd.h>
 #include "v4l2src_calls.h"
 #include "gstv4l2tuner.h"
 
@@ -788,14 +789,10 @@ gst_v4l2src_getcaps (GstPad * pad)
       continue;
     }
     /* template */
-    if (min_w < 1)
-      min_w = 1;
-    if (min_h < 1)
-      min_h = 1;
-    if (max_w > 4096)
-      max_w = 4096;
-    if (max_h > 4096)
-      max_h = 4096;
+    min_w = CLAMP (min_w, 1, 4096);
+    min_h = CLAMP (min_h, 1, 4096);
+    max_w = CLAMP (max_w, min_w, 4096);
+    max_h = CLAMP (max_h, min_h, 4096);
 
     /* add to list */
     structure = gst_v4l2src_v4l2fourcc_to_caps (format->pixelformat);
@@ -814,20 +811,51 @@ gst_v4l2src_getcaps (GstPad * pad)
 }
 
 static GstData *
-gst_v4l2src_get (GstPad * pad)
+gst_v4l2src_get_read (GstV4l2Src * v4l2src)
 {
-  GstV4l2Src *v4l2src;
+  gint amount;
+  gint buffersize;
+
+  buffersize = v4l2src->format.fmt.pix.sizeimage;
+  do {
+    GstBuffer *buf =
+        gst_pad_alloc_buffer (v4l2src->srcpad, GST_BUFFER_OFFSET_NONE,
+        buffersize);
+    amount =
+        read (GST_V4L2ELEMENT (v4l2src)->video_fd, GST_BUFFER_DATA (buf),
+        buffersize);
+    if (amount == buffersize) {
+      gdouble fps = gst_v4l2src_get_fps (v4l2src);
+
+      GST_BUFFER_TIMESTAMP (buf) = v4l2src->handled * GST_SECOND / fps;
+      GST_BUFFER_DURATION (buf) = GST_SECOND / fps;
+      return GST_DATA (buf);
+    } else if (amount == -1) {
+      if (errno == EAGAIN || errno == EINTR) {
+        continue;
+      } else {
+        GST_ELEMENT_ERROR (v4l2src, RESOURCE, SYNC, (NULL),
+            ("error read()ing a buffer on device %s: %s",
+                GST_V4L2ELEMENT (v4l2src)->device, g_strerror (errno)));
+        gst_data_unref (GST_DATA (buf));
+        return NULL;
+      }
+    } else {
+      GST_ELEMENT_ERROR (v4l2src, RESOURCE, SYNC, (NULL),
+          ("error read()ing a buffer on device %s: got only %d bytes instead of expected %d",
+              GST_V4L2ELEMENT (v4l2src)->device, amount, buffersize));
+      gst_data_unref (GST_DATA (buf));
+      return NULL;
+    }
+  } while (TRUE);
+}
+
+static GstData *
+gst_v4l2src_get_mmap (GstV4l2Src * v4l2src)
+{
   GstBuffer *buf;
   gint i, num = -1;
-  gdouble fps = 0;
-
-  v4l2src = GST_V4L2SRC (gst_pad_get_parent (pad));
-
-  if (v4l2src->use_fixed_fps && (fps = gst_v4l2src_get_fps (v4l2src)) == 0) {
-    GST_ELEMENT_ERROR (v4l2src, RESOURCE, SETTINGS, (NULL),
-        ("could not get frame rate for element"));
-    return NULL;
-  }
+  gdouble fps = gst_v4l2src_get_fps (v4l2src);
 
   if (v4l2src->need_writes > 0) {
     /* use last frame */
@@ -947,11 +975,33 @@ gst_v4l2src_get (GstPad * pad)
     }
   }
 
-  v4l2src->handled++;
-  g_signal_emit (G_OBJECT (v4l2src), gst_v4l2src_signals[SIGNAL_FRAME_CAPTURE],
-      0);
-
   return GST_DATA (buf);
+}
+
+static GstData *
+gst_v4l2src_get (GstPad * pad)
+{
+  GstV4l2Src *v4l2src = GST_V4L2SRC (gst_pad_get_parent (pad));
+  GstData *ret;
+
+  if (v4l2src->use_fixed_fps && gst_v4l2src_get_fps (v4l2src) == 0) {
+    GST_ELEMENT_ERROR (v4l2src, RESOURCE, SETTINGS, (NULL),
+        ("could not get frame rate for element"));
+    return NULL;
+  }
+
+  if (v4l2src->breq.memory == V4L2_MEMORY_MMAP) {
+    ret = gst_v4l2src_get_mmap (v4l2src);
+  } else {
+    ret = gst_v4l2src_get_read (v4l2src);
+  }
+
+  if (ret) {
+    v4l2src->handled++;
+    g_signal_emit (G_OBJECT (v4l2src),
+        gst_v4l2src_signals[SIGNAL_FRAME_CAPTURE], 0);
+  }
+  return ret;
 }
 
 static void

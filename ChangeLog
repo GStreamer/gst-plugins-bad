@@ -1,3 +1,21 @@
+2005-07-22  Benjamin Otte  <otte@gnome.org>
+
+	* sys/v4l2/v4l2src_calls.c: (gst_v4l2src_capture_init),
+	(gst_v4l2src_capture_start), (gst_v4l2src_capture_stop),
+	(gst_v4l2src_capture_deinit):
+	* sys/v4l2/gstv4l2src.c: (gst_v4l2src_getcaps),
+	(gst_v4l2src_get_read), (gst_v4l2src_get_mmap), (gst_v4l2src_get):
+	  implement read access. V4l2src will use read access if mmap doesn't
+	  work.
+	* sys/v4l2/v4l2_calls.c: (gst_v4l2_get_capabilities),
+	(gst_v4l2_get_norm), (gst_v4l2_set_norm), (gst_v4l2_get_input),
+	(gst_v4l2_set_input), (gst_v4l2_get_output), (gst_v4l2_set_output),
+	(gst_v4l2_get_frequency), (gst_v4l2_set_frequency),
+	(gst_v4l2_signal_strength), (gst_v4l2_get_attribute),
+	(gst_v4l2_set_attribute):
+	  don't GST_ELEMENT_ERROR on get/set functions. Fail silently instead,
+	  but do output a debugging message
+
 2005-07-22  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* gst-libs/gst/riff/riff-media.c:

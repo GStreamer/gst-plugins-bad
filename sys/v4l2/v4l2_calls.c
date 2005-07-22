@@ -35,6 +35,8 @@
 #include "gstv4l2colorbalance.h"
 
 #include "gstv4l2src.h"
+/* until someone comes up with a general category... */
+#define GST_CAT_DEFAULT v4l2src_debug
 
 #define DEBUG(format, args...) \
 	GST_DEBUG_OBJECT (\
@@ -52,12 +54,12 @@ static gboolean
 gst_v4l2_get_capabilities (GstV4l2Element * v4l2element)
 {
   DEBUG ("getting capabilities");
-  GST_V4L2_CHECK_OPEN (v4l2element);
+  if (!GST_V4L2_IS_OPEN (v4l2element))
+    return FALSE;
 
   if (ioctl (v4l2element->video_fd, VIDIOC_QUERYCAP, &(v4l2element->vcap)) < 0) {
-    GST_ELEMENT_ERROR (v4l2element, RESOURCE, SETTINGS, (NULL),
-        ("Error getting %s capabilities: %s",
-            v4l2element->device, g_strerror (errno)));
+    GST_ERROR_OBJECT (v4l2element, "Error getting %s capabilities: %s",
+        v4l2element->device, g_strerror (errno));
     return FALSE;
   }
 
@@ -475,12 +477,13 @@ gboolean
 gst_v4l2_get_norm (GstV4l2Element * v4l2element, v4l2_std_id * norm)
 {
   DEBUG ("getting norm");
-  GST_V4L2_CHECK_OPEN (v4l2element);
+  if (!GST_V4L2_IS_OPEN (v4l2element))
+    return FALSE;
 
   if (ioctl (v4l2element->video_fd, VIDIOC_G_STD, norm) < 0) {
-    GST_ELEMENT_ERROR (v4l2element, RESOURCE, SETTINGS, (NULL),
-        ("Failed to get the current norm for device %s: %s",
-            v4l2element->device, g_strerror (errno)));
+    GST_WARNING_OBJECT (v4l2element,
+        "Failed to get the current norm for device %s: %s", v4l2element->device,
+        g_strerror (errno));
     return FALSE;
   }
 
@@ -498,13 +501,15 @@ gboolean
 gst_v4l2_set_norm (GstV4l2Element * v4l2element, v4l2_std_id norm)
 {
   DEBUG ("trying to set norm to %llx", norm);
-  GST_V4L2_CHECK_OPEN (v4l2element);
-  GST_V4L2_CHECK_NOT_ACTIVE (v4l2element);
+  if (!GST_V4L2_IS_OPEN (v4l2element))
+    return FALSE;
+  if (!GST_V4L2_IS_ACTIVE (v4l2element))
+    return FALSE;
 
   if (ioctl (v4l2element->video_fd, VIDIOC_S_STD, &norm) < 0) {
-    GST_ELEMENT_ERROR (v4l2element, RESOURCE, SETTINGS, (NULL),
-        ("Failed to set norm 0x%llx for device %s: %s",
-            norm, v4l2element->device, g_strerror (errno)));
+    GST_WARNING_OBJECT (v4l2element,
+        "Failed to set norm 0x%llx for device %s: %s", norm,
+        v4l2element->device, g_strerror (errno));
     return FALSE;
   }
 
@@ -524,12 +529,13 @@ gst_v4l2_get_input (GstV4l2Element * v4l2element, gint * input)
   gint n;
 
   DEBUG ("trying to get input");
-  GST_V4L2_CHECK_OPEN (v4l2element);
+  if (!GST_V4L2_IS_OPEN (v4l2element))
+    return FALSE;
 
   if (ioctl (v4l2element->video_fd, VIDIOC_G_INPUT, &n) < 0) {
-    GST_ELEMENT_ERROR (v4l2element, RESOURCE, SETTINGS, (NULL),
-        ("Failed to get current input on device %s: %s",
-            v4l2element->device, g_strerror (errno)));
+    GST_WARNING_OBJECT (v4l2element,
+        "Failed to get current input on device %s: %s", v4l2element->device,
+        g_strerror (errno));
     return FALSE;
   }
 
@@ -549,13 +555,14 @@ gboolean
 gst_v4l2_set_input (GstV4l2Element * v4l2element, gint input)
 {
   DEBUG ("trying to set input to %d", input);
-  GST_V4L2_CHECK_OPEN (v4l2element);
-  GST_V4L2_CHECK_NOT_ACTIVE (v4l2element);
+  if (!GST_V4L2_IS_OPEN (v4l2element))
+    return FALSE;
+  if (!GST_V4L2_IS_ACTIVE (v4l2element))
+    return FALSE;
 
   if (ioctl (v4l2element->video_fd, VIDIOC_S_INPUT, &input) < 0) {
-    GST_ELEMENT_ERROR (v4l2element, RESOURCE, SETTINGS, (NULL),
-        ("Failed to set input %d on device %s: %s",
-            input, v4l2element->device, g_strerror (errno)));
+    GST_WARNING_OBJECT (v4l2element, "Failed to set input %d on device %s: %s",
+        input, v4l2element->device, g_strerror (errno));
     return FALSE;
   }
 
@@ -575,12 +582,13 @@ gst_v4l2_get_output (GstV4l2Element * v4l2element, gint * output)
   gint n;
 
   DEBUG ("trying to get output");
-  GST_V4L2_CHECK_OPEN (v4l2element);
+  if (!GST_V4L2_IS_OPEN (v4l2element))
+    return FALSE;
 
   if (ioctl (v4l2element->video_fd, VIDIOC_G_OUTPUT, &n) < 0) {
-    GST_ELEMENT_ERROR (v4l2element, RESOURCE, SETTINGS, (NULL),
-        ("Failed to get current output on device %s: %s",
-            v4l2element->device, g_strerror (errno)));
+    GST_WARNING_OBJECT (v4l2element,
+        "Failed to get current output on device %s: %s", v4l2element->device,
+        g_strerror (errno));
     return FALSE;
   }
 
@@ -600,13 +608,15 @@ gboolean
 gst_v4l2_set_output (GstV4l2Element * v4l2element, gint output)
 {
   DEBUG ("trying to set output to %d", output);
-  GST_V4L2_CHECK_OPEN (v4l2element);
-  GST_V4L2_CHECK_NOT_ACTIVE (v4l2element);
+  if (!GST_V4L2_IS_OPEN (v4l2element))
+    return FALSE;
+  if (!GST_V4L2_IS_ACTIVE (v4l2element))
+    return FALSE;
 
   if (ioctl (v4l2element->video_fd, VIDIOC_S_OUTPUT, &output) < 0) {
-    GST_ELEMENT_ERROR (v4l2element, RESOURCE, SETTINGS, (NULL),
-        ("Failed to set output %d on device %s: %s",
-            output, v4l2element->device, g_strerror (errno)));
+    GST_WARNING_OBJECT (v4l2element,
+        "Failed to set current output on device %s to %d: %s",
+        v4l2element->device, output, g_strerror (errno));
     return FALSE;
   }
 
@@ -628,15 +638,16 @@ gst_v4l2_get_frequency (GstV4l2Element * v4l2element,
   GstTunerChannel *channel;
 
   DEBUG ("getting current tuner frequency");
-  GST_V4L2_CHECK_OPEN (v4l2element);
+  if (!GST_V4L2_IS_OPEN (v4l2element))
+    return FALSE;
 
   channel = gst_tuner_get_channel (GST_TUNER (v4l2element));
 
   freq.tuner = tunernum;
   if (ioctl (v4l2element->video_fd, VIDIOC_G_FREQUENCY, &freq) < 0) {
-    GST_ELEMENT_ERROR (v4l2element, RESOURCE, SETTINGS, (NULL),
-        ("Failed to get current tuner frequency for device %s: %s",
-            v4l2element->device, g_strerror (errno)));
+    GST_WARNING_OBJECT (v4l2element,
+        "Failed to get current tuner frequency for device %s: %s",
+        v4l2element->device, g_strerror (errno));
     return FALSE;
   }
 
@@ -660,8 +671,10 @@ gst_v4l2_set_frequency (GstV4l2Element * v4l2element,
   GstTunerChannel *channel;
 
   DEBUG ("setting current tuner frequency to %lu", frequency);
-  GST_V4L2_CHECK_OPEN (v4l2element);
-  GST_V4L2_CHECK_NOT_ACTIVE (v4l2element);
+  if (!GST_V4L2_IS_OPEN (v4l2element))
+    return FALSE;
+  if (!GST_V4L2_IS_ACTIVE (v4l2element))
+    return FALSE;
 
   channel = gst_tuner_get_channel (GST_TUNER (v4l2element));
 
@@ -671,9 +684,9 @@ gst_v4l2_set_frequency (GstV4l2Element * v4l2element,
   freq.frequency = frequency / channel->freq_multiplicator;
 
   if (ioctl (v4l2element->video_fd, VIDIOC_S_FREQUENCY, &freq) < 0) {
-    GST_ELEMENT_ERROR (v4l2element, RESOURCE, SETTINGS, (NULL),
-        ("Failed to set tuner frequency to %lu for device %s: %s",
-            frequency, v4l2element->device, g_strerror (errno)));
+    GST_WARNING_OBJECT (v4l2element,
+        "Failed to set current tuner frequency for device %s to %lu: %s",
+        v4l2element->device, frequency, g_strerror (errno));
     return FALSE;
   }
 
@@ -694,13 +707,14 @@ gst_v4l2_signal_strength (GstV4l2Element * v4l2element,
   struct v4l2_tuner tuner;
 
   DEBUG ("trying to get signal strength");
-  GST_V4L2_CHECK_OPEN (v4l2element);
+  if (!GST_V4L2_IS_OPEN (v4l2element))
+    return FALSE;
 
   tuner.index = tunernum;
   if (ioctl (v4l2element->video_fd, VIDIOC_G_TUNER, &tuner) < 0) {
-    GST_ELEMENT_ERROR (v4l2element, RESOURCE, SETTINGS, (NULL),
-        ("Failed to get signal strength for device %s: %s",
-            v4l2element->device, g_strerror (errno)));
+    GST_WARNING_OBJECT (v4l2element,
+        "Failed to get signal strength for device %s: %s", v4l2element->device,
+        g_strerror (errno));
     return FALSE;
   }
 
@@ -722,16 +736,17 @@ gst_v4l2_get_attribute (GstV4l2Element * v4l2element,
 {
   struct v4l2_control control;
 
-  GST_V4L2_CHECK_OPEN (v4l2element);
+  if (!GST_V4L2_IS_OPEN (v4l2element))
+    return FALSE;
 
   DEBUG ("getting value of attribute %d", attribute_num);
 
   control.id = attribute_num;
 
   if (ioctl (v4l2element->video_fd, VIDIOC_G_CTRL, &control) < 0) {
-    GST_ELEMENT_ERROR (v4l2element, RESOURCE, SETTINGS, (NULL),
-        ("Failed to get value for control %d on device %s: %s",
-            attribute_num, v4l2element->device, g_strerror (errno)));
+    GST_WARNING_OBJECT (v4l2element,
+        "Failed to get value for control %d on device %s: %s", attribute_num,
+        v4l2element->device, g_strerror (errno));
     return FALSE;
   }
 
@@ -753,7 +768,8 @@ gst_v4l2_set_attribute (GstV4l2Element * v4l2element,
 {
   struct v4l2_control control;
 
-  GST_V4L2_CHECK_OPEN (v4l2element);
+  if (!GST_V4L2_IS_OPEN (v4l2element))
+    return FALSE;
 
   DEBUG ("setting value of attribute %d to %d", attribute_num, value);
 
@@ -761,9 +777,9 @@ gst_v4l2_set_attribute (GstV4l2Element * v4l2element,
   control.value = value;
 
   if (ioctl (v4l2element->video_fd, VIDIOC_S_CTRL, &control) < 0) {
-    GST_ELEMENT_ERROR (v4l2element, RESOURCE, SETTINGS, (NULL),
-        ("Failed to set value %d for control %d on device %s: %s",
-            value, attribute_num, v4l2element->device, g_strerror (errno)));
+    GST_WARNING_OBJECT (v4l2element,
+        "Failed to set value %d for control %d on device %s: %s", value,
+        attribute_num, v4l2element->device, g_strerror (errno));
     return FALSE;
   }
 
