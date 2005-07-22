@@ -1,3 +1,11 @@
+2005-07-22  Tim-Philipp Müller  <tim at centricular dot net>
+
+	* ext/flac/gstflacdec.c: (gst_flacdec_write),
+	(gst_flacdec_convert_src):
+	* ext/flac/gstflacdec.h:
+	  Handle .flac files with 24 and 32 bits per sample
+	  (fixes #311162).
+
 2005-07-21  Paolo Borelli  <pborelli at katamail dot com>
 
 	Reviewed by: Tim-Philipp Müller  <tim at centricular dot net>
