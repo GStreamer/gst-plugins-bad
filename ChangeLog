@@ -1,3 +1,11 @@
+2005-07-22  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst-libs/gst/riff/riff-media.c:
+	(gst_riff_create_audio_caps_with_data):
+	* gst/wavparse/gstwavparse.c: (gst_wavparse_loop):
+	  Allow 24/32-bpp songs, too, and blockalign samples to the
+	  header-specified size (if any). Fixes #311070.
+
 2005-07-22  Tim-Philipp Müller  <tim at centricular dot net>
 
 	* ext/flac/gstflacdec.c: (gst_flacdec_write),
