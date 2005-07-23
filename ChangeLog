@@ -1,5 +1,10 @@
 2005-07-24  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* ext/x264/x264enc.c: (gst_x264enc_base_init):
+	  Fix category so it displays in Cupid.
+
+2005-07-24  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* configure.ac:
 	* ext/Makefile.am:
 	* ext/x264/Makefile.am:
