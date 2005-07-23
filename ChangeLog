@@ -1,3 +1,18 @@
+2005-07-24  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* configure.ac:
+	* ext/Makefile.am:
+	* ext/x264/Makefile.am:
+	* ext/x264/plugin.c: (plugin_init):
+	* ext/x264/x264enc.c: (gst_x264enc_encoding_get_type),
+	(gst_x264enc_memethod_get_type), (gst_x264enc_log),
+	(gst_x264enc_base_init), (gst_x264enc_class_init),
+	(gst_x264enc_init), (gst_x264enc_getcaps), (gst_x264enc_setcaps),
+	(gst_x264enc_nal), (gst_x264enc_chain), (gst_x264enc_change_state),
+	(gst_x264enc_get_property), (gst_x264enc_set_property):
+	* ext/x264/x264enc.h:
+	  Add x264-based h264/AVC encoder.
+
 2005-07-22  Benjamin Otte  <otte@gnome.org>
 
 	* sys/v4l2/v4l2src_calls.c: (gst_v4l2src_capture_init),

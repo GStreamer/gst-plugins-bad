@@ -412,6 +412,12 @@ else
 WAVPACK_DIR=
 endif
 
+if USE_X264
+X264_DIR=x264
+else
+X264_DIR=
+endif
+
 if USE_XINE
 XINE_DIR=xine
 else
@@ -485,6 +491,7 @@ SUBDIRS=\
 	$(IVORBIS_DIR) \
 	$(VORBIS_DIR) \
 	$(WAVPACK_DIR) \
+	$(X264_DIR) \
 	$(XINE_DIR) \
 	$(XVID_DIR)
 
@@ -555,5 +562,6 @@ DIST_SUBDIRS=\
 	theora \
 	vorbis \
 	wavpack \
+	x264 \
 	xine \
 	xvid

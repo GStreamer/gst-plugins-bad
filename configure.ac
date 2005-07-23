@@ -1789,6 +1789,16 @@ GST_CHECK_FEATURE(WAVPACK, [wavpack plug-in], wavpack, [
   AC_SUBST(WAVPACK_LIBS)
 ])
 
+dnl *** libx264 (MPEG-4 part 10/h.264/AVC encoder) ***
+translit(dnm, m, l) AM_CONDITIONAL(USE_X264, true)
+GST_CHECK_FEATURE(X264, [x264 plug-in], x264, [
+  GST_CHECK_LIBHEADER(X264, x264, x264_nal_encode, -lm, x264.h,
+      X264_LIBS="$LDFLAGS -lx264 -lm"
+      X264_CFLAGS="$CFLAGS"
+      AC_SUBST(X264_LIBS)
+      AC_SUBST(X264_CFLAGS))
+])
+
 dnl *** xine ***
 translit(dnm, m, l) AM_CONDITIONAL(USE_XINE, true)
 GST_CHECK_FEATURE(XINE, [xine wrapper], xine, [
@@ -2170,6 +2180,7 @@ ext/tarkin/Makefile
 ext/theora/Makefile
 ext/vorbis/Makefile
 ext/wavpack/Makefile
+ext/x264/Makefile
 ext/xine/Makefile
 ext/xvid/Makefile
 gst-libs/Makefile
