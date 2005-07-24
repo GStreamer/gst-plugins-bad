@@ -437,7 +437,6 @@ GST_PLUGINS_ALL="\
 	videobox \
 	videocrop \
 	videodrop \
-	videoflip \
 	videofilter \
 	videomixer \
 	videorate \
@@ -2086,7 +2085,6 @@ gst/videobox/Makefile
 gst/videocrop/Makefile
 gst/videodrop/Makefile
 gst/videofilter/Makefile
-gst/videoflip/Makefile
 gst/videomixer/Makefile
 gst/videorate/Makefile
 gst/videoscale/Makefile

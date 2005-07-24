@@ -1,3 +1,16 @@
+2005-07-24  Thomas Vander Stichele  <thomas at apestaart dot org>
+
+	* configure.ac:
+	* gst/videoflip/Makefile.am:
+	* gst/videoflip/gstvideoflip.c:
+	* gst/videoflip/gstvideoflip.h:
+	* gst/videoflip/videoflip.c:
+	* gst/videoflip/videoflip.h:
+	* gst/videoflip/videoflip.vcproj:
+	  Dear God.  One videoflip element being installed is
+	  quite enough, thank you.  Three hours of puzzling
+	  wasted.
+
 2005-07-24  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* ext/x264/x264enc.c: (gst_x264enc_base_init):
