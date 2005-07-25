@@ -565,7 +565,8 @@ GST_CHECK_FEATURE(VCD, [Video CD], vcdsrc, [
 dnl *** OpenGL ***
 translit(dnm, m, l) AM_CONDITIONAL(USE_OPENGL, true)
 GST_CHECK_FEATURE(OPENGL, [Open GL], glsink, [
-  AC_CHECK_HEADER(GL/gl.h, HAVE_OPENGL="yes", HAVE_OPENGL="no")
+  GST_CHECK_LIBHEADER(GL, GLU, glTexImage2D,,
+		      GL/gl.h, HAVE_OPENGL="yes", HAVE_OPENGL="no")
 ])
 
 dnl *** CDROM Audio ***
