@@ -1,3 +1,23 @@
+2005-07-25  Thomas Vander Stichele  <thomas at apestaart dot org>
+
+	* gst/videofilter/Makefile.am:
+	* gst/videofilter/gstgamma.c: (gst_gamma_setup):
+	* gst/videofilter/gstvideobalance.c: (gst_videobalance_setup):
+	* gst/videofilter/gstvideofilter.c: (gst_videofilter_getcaps),
+	(gst_videofilter_link), (gst_videofilter_init),
+	(gst_videofilter_chain), (gst_videofilter_set_property),
+	(gst_videofilter_get_property), (gst_videofilter_setup),
+	(plugin_init):
+	* gst/videofilter/gstvideofilter.h:
+	* gst/videofilter/gstvideoflip.c: (gst_videoflip_init),
+	(gst_videoflip_set_property), (gst_videoflip_get_property),
+	(plugin_init), (gst_videoflip_setup), (gst_videoflip_planar411):
+	  make gst_videofilter_setup public
+	  make videoflip invoke the base _setup method properly,
+	  but only if it's been inited before
+	  this handles all cases where properties are set at the start
+	  or while running to change the method of flipping
+
 2005-07-24  Thomas Vander Stichele  <thomas at apestaart dot org>
 
 	* configure.ac:
