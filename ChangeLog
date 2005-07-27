@@ -1,5 +1,10 @@
 2005-07-27  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* ext/x264/x264enc.c: (gst_x264enc_chain):
+	  Possibly uninitialized value (#311662).
+
+2005-07-27  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* ext/cdparanoia/gstcdparanoia.c: (cdparanoia_get):
 	  More debug.
 	* gst/audioscale/gstaudioscale.c: (gst_audioscale_chain):
