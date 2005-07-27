@@ -1,5 +1,12 @@
 2005-07-27  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* ext/cdparanoia/gstcdparanoia.c: (cdparanoia_get):
+	  More debug.
+	* gst/audioscale/gstaudioscale.c: (gst_audioscale_chain):
+	  Process events in passthrough mode, also (fixes #311583).
+
+2005-07-27  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* ext/cdparanoia/gstcdparanoia.c: (cdparanoia_event):
 	  Coding without coffee should be forbidden. 1 is a very valid seek
 	  range, as opposed to -1.
