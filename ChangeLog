@@ -1,5 +1,11 @@
 2005-07-27  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* ext/cdparanoia/gstcdparanoia.c: (cdparanoia_event):
+	  Coding without coffee should be forbidden. 1 is a very valid seek
+	  range, as opposed to -1.
+
+2005-07-27  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* ext/cdparanoia/gstcdparanoia.c: (cdparanoia_get),
 	(cdparanoia_change_state), (cdparanoia_event):
 	  Some extra checking to make sound-juicer more happy.
