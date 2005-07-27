@@ -1,3 +1,13 @@
+2005-07-27  Wouter Paesen  <wouter@kangaroot.net>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/alpha/gstalpha.c: (gst_alpha_init), (gst_alpha_get_caps),
+	(gst_alpha_sink_link), (gst_alpha_chroma_key_ayuv),
+	(gst_alpha_chroma_key_i420), (gst_alpha_init_params),
+	(gst_alpha_chain):
+	  Fix capsnego (#311401).
+
 2005-07-27  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* gst/mpeg1videoparse/gstmp1videoparse.c:
