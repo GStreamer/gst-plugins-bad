@@ -17,21 +17,17 @@
  * Boston, MA 02111-1307, USA.
  */
 
-
 #ifndef __MP1VIDEOPARSE_H__
 #define __MP1VIDEOPARSE_H__
 
-
 #include <gst/gst.h>
-
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 
-
 #define GST_TYPE_MP1VIDEOPARSE \
-  (mp1videoparse_get_type())
+  (gst_mp1videoparse_get_type())
 #define GST_MP1VIDEOPARSE(obj) \
   (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_MP1VIDEOPARSE,Mp1VideoParse))
 #define GST_MP1VIDEOPARSE_CLASS(klass) \
@@ -57,8 +53,13 @@ struct _Mp1VideoParse {
   guint64 last_pts;
   gint picture_in_buffer;
 
-  gint width, height;
-  gfloat fps, asr;
+  /* identifiers */
+  gint width, height, width_ext, height_ext,
+      asr_idx, fps_idx, fps_ext_n, fps_ext_d, ver;
+  gboolean got_ext_hdr, require_nego;
+
+  /* properties */
+  gboolean extensions;
 };
 
 struct _Mp1VideoParseClass {

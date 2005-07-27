@@ -1,5 +1,17 @@
 2005-07-27  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* gst/mpeg1videoparse/gstmp1videoparse.c:
+	(gst_mp1videoparse_base_init), (gst_mp1videoparse_class_init),
+	(gst_mp1videoparse_init), (mp1videoparse_parse_seq),
+	(gst_mp1videoparse_negotiate), (mp1videoparse_parse_ext),
+	(mp1videoparse_read_obj), (mp1videoparse_valid_sync),
+	(mp1videoparse_find_next_gop), (gst_mp1videoparse_real_chain),
+	(gst_mp1videoparse_change_state), (plugin_init):
+	* gst/mpeg1videoparse/gstmp1videoparse.h:
+	  Add support for MPEG-2 video (#311600).
+
+2005-07-27  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* ext/x264/x264enc.c: (gst_x264enc_chain):
 	  Possibly uninitialized value (#311662).
 

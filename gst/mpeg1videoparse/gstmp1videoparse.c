@@ -21,8 +21,10 @@
 #include "config.h"
 #endif
 
-/*#define GST_DEBUG_ENABLED */
 #include "gstmp1videoparse.h"
+
+GST_DEBUG_CATEGORY_STATIC (gstmpegvideoparse_debug);
+#define GST_CAT_DEFAULT (gstmpegvideoparse_debug)
 
 /* Start codes. */
 #define SEQ_START_CODE 0x000001b3
@@ -35,18 +37,66 @@
 #define SEQUENCE_ERROR_CODE 0x000001b4
 #define SEQ_END_CODE 0x000001b7
 
-/* elementfactory information */
-static GstElementDetails mpeg1videoparse_details =
-GST_ELEMENT_DETAILS ("MPEG 1 Video Parser",
-    "Codec/Parser/Video",
-    "Parses and frames MPEG 1 video streams, provides seek",
-    "Wim Taymans <wim.taymans@chello.be>");
+static const gfloat asr_table[] = {
+  0, 000,                       /* forbidden */
+  1.000,                        /* square pixel */
+  0.6735,
+  0.7031,                       /* pal 16:9 */
+  0.7615,
+  0.8055,
+  0.8437,                       /* ntsc 16:9 */
+  0.8935,
+  0.9157,                       /* pal 4:3 */
+  0.9815,
+  1.0255,
+  1.0695,
+  1.0950,                       /* ntsc 4:3 */
+  1.1575,
+  1.2015,
+  0.0000                        /* reserved */
+};
+static const struct
+{
+  gint n, d;
+} fps_table[] = {
+  {
+  0, 0},                        /* forbidden */
+  {
+  24000, 1001},                 /* ntsc film */
+  {
+  24, 1}, {
+  25, 1},                       /* pal tv */
+  {
+  30000, 1001},                 /* ntsc tv */
+  {
+  30, 1}, {
+  50, 1},                       /* pal field */
+  {
+  60000, 1001},                 /* ntsc field */
+  {
+  60, 1}, {
+  15, 1},                       /* xing 15fps */
+  {
+  5, 1},                        /* libmpeg3 economy rate 5fps */
+  {
+  10, 1},                       /* libmpeg3 economy rate 10fps */
+  {
+  12, 1},                       /* libmpeg3 economy rate 12fps */
+  {
+  15, 1},                       /* libmpeg3 economy rate 15fps */
+  {
+  0, 0},                        /* reserved */
+  {
+  0, 0}                         /* reserved */
+};
+
+#define FPS(idx) ((gdouble) fps_table[idx].n / fps_table[idx].d)
 
 static GstStaticPadTemplate src_factory = GST_STATIC_PAD_TEMPLATE ("src",
     GST_PAD_SRC,
     GST_PAD_ALWAYS,
     GST_STATIC_CAPS ("video/mpeg, "
-        "mpegversion = (int) 1, "
+        "mpegversion = (int) { 1, 2 }, "
         "systemstream = (boolean) false, "
         "width = (int) [ 16, 4096 ], "
         "height = (int) [ 16, 4096 ], "
@@ -58,25 +108,8 @@ static GstStaticPadTemplate sink_factory = GST_STATIC_PAD_TEMPLATE ("sink",
     GST_PAD_SINK,
     GST_PAD_ALWAYS,
     GST_STATIC_CAPS ("video/mpeg, "
-        "mpegversion = (int) 1, " "systemstream = (boolean) false")
+        "mpegversion = (int) { 1, 2 }, " "systemstream = (boolean) false")
     );
-
-/* Mp1VideoParse signals and args */
-enum
-{
-  /* FILL ME */
-  LAST_SIGNAL
-};
-
-enum
-{
-  ARG_0
-      /* FILL ME */
-};
-
-static void gst_mp1videoparse_class_init (Mp1VideoParseClass * klass);
-static void gst_mp1videoparse_base_init (Mp1VideoParseClass * klass);
-static void gst_mp1videoparse_init (Mp1VideoParse * mp1videoparse);
 
 static void gst_mp1videoparse_chain (GstPad * pad, GstData * _data);
 static void gst_mp1videoparse_real_chain (Mp1VideoParse * mp1videoparse,
@@ -85,39 +118,19 @@ static void gst_mp1videoparse_flush (Mp1VideoParse * mp1videoparse);
 static GstElementStateReturn
 gst_mp1videoparse_change_state (GstElement * element);
 
-static GstElementClass *parent_class = NULL;
-
-/*static guint gst_mp1videoparse_signals[LAST_SIGNAL] = { 0 }; */
-
-GType
-mp1videoparse_get_type (void)
-{
-  static GType mp1videoparse_type = 0;
-
-  if (!mp1videoparse_type) {
-    static const GTypeInfo mp1videoparse_info = {
-      sizeof (Mp1VideoParseClass),
-      (GBaseInitFunc) gst_mp1videoparse_base_init,
-      NULL,
-      (GClassInitFunc) gst_mp1videoparse_class_init,
-      NULL,
-      NULL,
-      sizeof (Mp1VideoParse),
-      0,
-      (GInstanceInitFunc) gst_mp1videoparse_init,
-    };
-
-    mp1videoparse_type =
-        g_type_register_static (GST_TYPE_ELEMENT, "Mp1VideoParse",
-        &mp1videoparse_info, 0);
-  }
-  return mp1videoparse_type;
-}
+GST_BOILERPLATE (Mp1VideoParse, gst_mp1videoparse, GstElement,
+    GST_TYPE_ELEMENT);
 
 static void
-gst_mp1videoparse_base_init (Mp1VideoParseClass * klass)
+gst_mp1videoparse_base_init (gpointer klass)
 {
   GstElementClass *element_class = GST_ELEMENT_CLASS (klass);
+  GstElementDetails mpeg1videoparse_details =
+      GST_ELEMENT_DETAILS ("MPEG 1/2 Video Parser",
+      "Codec/Parser/Video",
+      "Parses and frames MPEG 1/2 video streams, provides seek",
+      "Wim Taymans <wim.taymans@chello.be>, "
+      "Ronald S. Bultje <rbultje@ronald.bitfreak.net>");
 
   gst_element_class_add_pad_template (element_class,
       gst_static_pad_template_get (&src_factory));
@@ -129,13 +142,7 @@ gst_mp1videoparse_base_init (Mp1VideoParseClass * klass)
 static void
 gst_mp1videoparse_class_init (Mp1VideoParseClass * klass)
 {
-  GstElementClass *gstelement_class;
-
-  gstelement_class = (GstElementClass *) klass;
-
-  parent_class = g_type_class_ref (GST_TYPE_ELEMENT);
-
-  gstelement_class->change_state = gst_mp1videoparse_change_state;
+  GST_ELEMENT_CLASS (klass)->change_state = gst_mp1videoparse_change_state;
 }
 
 static void
@@ -159,89 +166,140 @@ gst_mp1videoparse_init (Mp1VideoParse * mp1videoparse)
   mp1videoparse->last_pts = GST_CLOCK_TIME_NONE;
   mp1videoparse->picture_in_buffer = 0;
   mp1videoparse->width = mp1videoparse->height = -1;
-  mp1videoparse->fps = mp1videoparse->asr = 0.;
+  mp1videoparse->ver = 0;
+  mp1videoparse->width_ext = mp1videoparse->height_ext = 0;
+  mp1videoparse->fps_idx = mp1videoparse->asr_idx = 0;
+  mp1videoparse->fps_ext_n = mp1videoparse->fps_ext_d = 0;
+  mp1videoparse->got_ext_hdr = FALSE;
+  mp1videoparse->require_nego = TRUE;
+
+  mp1videoparse->extensions = TRUE;
 }
 
 static void
-mp1videoparse_parse_seq (Mp1VideoParse * mp1videoparse, GstBuffer * buf)
+mp1videoparse_parse_seq (Mp1VideoParse * mp1videoparse, guint8 * data)
 {
   gint width, height, asr_idx, fps_idx;
-  gfloat asr_table[] = { 0., 1.,
-    0.6735, 0.7031, 0.7615, 0.8055, 0.8437,
-    0.8935, 0.9157, 0.9815, 1.0255, 1.0695,
-    1.0950, 1.1575, 1.2015
-  };
-  gfloat fps_table[] = { 0., 24. / 1.001, 24., 25.,
-    30. / 1.001, 30.,
-    50., 60. / 1.001, 60.
-  };
-  guint32 n = GST_READ_UINT32_BE (GST_BUFFER_DATA (buf));
+  guint32 n = GST_READ_UINT32_BE (data);
 
   width = (n & 0xfff00000) >> 20;
   height = (n & 0x000fff00) >> 8;
   asr_idx = (n & 0x000000f0) >> 4;
   fps_idx = (n & 0x0000000f) >> 0;
 
-  if (fps_idx >= 9 || fps_idx <= 0)
-    fps_idx = 3;                /* well, we need a default */
+  /* safety checks */
+  if (fps_idx >= (mp1videoparse->extensions ? 13 : 9) || fps_idx <= 0)
+    fps_idx = 3;
   if (asr_idx >= 15 || asr_idx <= 0)
-    asr_idx = 1;                /* no aspect ratio */
-
-  if (asr_table[asr_idx] != mp1videoparse->asr ||
-      fps_table[fps_idx] != mp1videoparse->fps ||
+    asr_idx = 1;
+  if (asr_idx != mp1videoparse->asr_idx || fps_idx != mp1videoparse->fps_idx ||
       width != mp1videoparse->width || height != mp1videoparse->height) {
-    GstCaps *caps;
-    gint p_w, p_h;
-
-    mp1videoparse->asr = asr_table[asr_idx];
-    mp1videoparse->fps = fps_table[fps_idx];
-    mp1videoparse->width = width;
-    mp1videoparse->height = height;
-
-    p_w = (asr_table[asr_idx] < 1.0) ? (100 / asr_table[asr_idx]) : 1;
-    p_h = (asr_table[asr_idx] > 1.0) ? (100 * asr_table[asr_idx]) : 1;
-
-    caps = gst_caps_new_simple ("video/mpeg",
-        "systemstream", G_TYPE_BOOLEAN, FALSE,
-        "mpegversion", G_TYPE_INT, 1,
-        "width", G_TYPE_INT, width,
-        "height", G_TYPE_INT, height,
-        "framerate", G_TYPE_DOUBLE, fps_table[fps_idx],
-        "pixel_width", G_TYPE_INT, p_w, "pixel_height", G_TYPE_INT, p_h, NULL);
-
-    GST_DEBUG ("New mpeg1videoparse caps: " GST_PTR_FORMAT, caps);
-
-    gst_pad_set_explicit_caps (mp1videoparse->srcpad, caps);
+    mp1videoparse->require_nego = TRUE;
   }
+
+  mp1videoparse->asr_idx = asr_idx;
+  mp1videoparse->fps_idx = fps_idx;
+  mp1videoparse->width = width;
+  mp1videoparse->height = height;
 }
 
 static gboolean
-mp1videoparse_valid_sync (Mp1VideoParse * mp1videoparse, guint32 head,
-    GstBuffer * buf)
+gst_mp1videoparse_negotiate (Mp1VideoParse * mp1videoparse)
 {
-  switch (head) {
-    case SEQ_START_CODE:
-      /* FIXME: may sometimes not update header (although that'll probably
-       * never happen in practice). */
-      if (GST_BUFFER_SIZE (buf) >= 8) {
-        GstBuffer *subbuf = gst_buffer_create_sub (buf, 4,
-            GST_BUFFER_SIZE (buf) - 4);
+  GstCaps *caps;
+  gint w, h, a_n, a_d;
+  gdouble fps;
 
-        mp1videoparse_parse_seq (mp1videoparse, subbuf);
-        gst_buffer_unref (subbuf);
-      }
-      return TRUE;
-    case GOP_START_CODE:
-    case PICTURE_START_CODE:
-    case USER_START_CODE:
-    case EXT_START_CODE:
-      return TRUE;
-    default:
-      if (head >= SLICE_MIN_START_CODE && head <= SLICE_MAX_START_CODE)
-        return TRUE;
+  if (!mp1videoparse->require_nego &&
+      (mp1videoparse->got_ext_hdr ? 2 : 1) == mp1videoparse->ver) {
+    GST_DEBUG_OBJECT (mp1videoparse, "no caps change");
+    return TRUE;
+  } else if (mp1videoparse->width < 0 || mp1videoparse->height < 0) {
+    GST_DEBUG_OBJECT (mp1videoparse, "no headers prepared yet");
+    return FALSE;
   }
 
-  return FALSE;
+  /* set-up */
+  w = mp1videoparse->width;
+  h = mp1videoparse->height;
+  fps = (gdouble) fps_table[mp1videoparse->fps_idx].n /
+      fps_table[mp1videoparse->fps_idx].d;
+  a_n = asr_table[mp1videoparse->asr_idx] * 1000;
+  a_d = 1000;
+  if (mp1videoparse->got_ext_hdr) {
+    w |= mp1videoparse->width_ext << 12;
+    h |= mp1videoparse->height_ext << 12;
+    fps = fps * (mp1videoparse->fps_ext_n + 1) / (mp1videoparse->fps_ext_d + 1);
+  }
+  caps = gst_caps_new_simple ("video/mpeg",
+      "systemstream", G_TYPE_BOOLEAN, FALSE,
+      "mpegversion", G_TYPE_INT, mp1videoparse->got_ext_hdr ? 2 : 1,
+      "width", G_TYPE_INT, w, "height", G_TYPE_INT, h,
+      "framerate", G_TYPE_DOUBLE, fps,
+      "pixel-aspect-ratio", GST_TYPE_FRACTION, a_n, a_d, NULL);
+  GST_DEBUG ("New mpeg1videoparse caps: %" GST_PTR_FORMAT, caps);
+  mp1videoparse->ver = mp1videoparse->got_ext_hdr ? 2 : 1;
+  mp1videoparse->require_nego = FALSE;
+
+  return gst_pad_set_explicit_caps (mp1videoparse->srcpad, caps);
+}
+
+static void
+mp1videoparse_parse_ext (Mp1VideoParse * mp1videoparse, guint8 * data)
+{
+  guint32 n1 = GST_READ_UINT32_BE (data), n2 = GST_READ_UINT32_BE (&data[3]);   /* !! */
+  gint h_ext, v_ext, f_ext_n, f_ext_d;
+
+  GST_DEBUG_OBJECT (mp1videoparse, "Received exthdr, code=0x%x/0x%x", n1, n2);
+  if (((n1 & 0xf0000000) >> 28) != 0x01)
+    return;
+
+  h_ext = (n1 & 0x00018000) >> 15;
+  v_ext = (n1 & 0x00006000) >> 13;
+  f_ext_n = (n2 & 0x00006000) >> 13;
+  f_ext_d = (n2 & 0x00001f00) >> 8;
+
+  if (v_ext != mp1videoparse->height_ext ||
+      h_ext != mp1videoparse->width_ext ||
+      f_ext_d != mp1videoparse->fps_ext_d ||
+      f_ext_n != mp1videoparse->fps_ext_n) {
+    mp1videoparse->require_nego = TRUE;
+  }
+
+  mp1videoparse->got_ext_hdr = TRUE;
+  mp1videoparse->fps_ext_n = f_ext_n;
+  mp1videoparse->fps_ext_d = f_ext_d;
+  mp1videoparse->width_ext = h_ext;
+  mp1videoparse->height_ext = v_ext;
+}
+
+static void
+mp1videoparse_read_obj (Mp1VideoParse * mp1videoparse, guint8 * data, gint size)
+{
+  if (size >= 4)
+    switch (GST_READ_UINT32_BE (data)) {
+      case SEQ_START_CODE:
+        if (size >= 8) {
+          mp1videoparse_parse_seq (mp1videoparse, data + 4);
+        }
+        break;
+      case EXT_START_CODE:
+        if (size >= 11) {
+          mp1videoparse_parse_ext (mp1videoparse, data + 4);
+        }
+        break;
+      default:
+        break;
+    }
+}
+
+static gboolean
+mp1videoparse_valid_sync (Mp1VideoParse * mp1videoparse, guint32 head)
+{
+  return (head == SEQ_START_CODE || head == EXT_START_CODE ||
+      head == GOP_START_CODE || head == PICTURE_START_CODE ||
+      head == USER_START_CODE || (head >= SLICE_MIN_START_CODE &&
+          head <= SLICE_MAX_START_CODE));
 }
 
 static gint
@@ -263,7 +321,8 @@ mp1videoparse_find_next_gop (Mp1VideoParse * mp1videoparse, GstBuffer * buf)
       sync_zeros = 0;
       have_sync = TRUE;
     } else if (have_sync) {
-      if (byte == (SEQ_START_CODE & 0xff) || byte == (GOP_START_CODE & 0xff)) {
+      if (byte == (SEQ_START_CODE & 0xff) ||
+          byte == (GOP_START_CODE & 0xff) || byte == (EXT_START_CODE & 0xff)) {
         return offset - 4;
       } else {
         sync_zeros = 0;
@@ -386,10 +445,10 @@ gst_mp1videoparse_real_chain (Mp1VideoParse * mp1videoparse, GstBuffer * buf,
 
     head = GST_READ_UINT32_BE (data);
 
-    GST_DEBUG ("mp1videoparse: head is %08x", (unsigned int) head);
+    GST_DEBUG ("mp1videoparse: head is 0x%08x", (unsigned int) head);
 
-    if (!mp1videoparse_valid_sync (mp1videoparse, head,
-            mp1videoparse->partialbuf) || mp1videoparse->need_resync) {
+    if (!mp1videoparse_valid_sync (mp1videoparse, head) ||
+        mp1videoparse->need_resync) {
       sync_pos =
           mp1videoparse_find_next_gop (mp1videoparse,
           mp1videoparse->partialbuf);
@@ -413,8 +472,7 @@ gst_mp1videoparse_real_chain (Mp1VideoParse * mp1videoparse, GstBuffer * buf,
         /* re-call this function so that if we hadn't already, we can
          * now read the sequence header and parse video properties,
          * set caps, stream data, be happy, bla, bla, bla... */
-        if (!mp1videoparse_valid_sync (mp1videoparse, head,
-                mp1videoparse->partialbuf))
+        if (!mp1videoparse_valid_sync (mp1videoparse, head))
           g_error ("Found sync but no valid sync point at pos 0x0");
       } else {
         GST_DEBUG ("mp1videoparse: could not sync");
@@ -440,6 +498,8 @@ gst_mp1videoparse_real_chain (Mp1VideoParse * mp1videoparse, GstBuffer * buf,
         sync_state++;
       } else if ((sync_byte == 1) && (sync_state >= 2)) {
         GST_DEBUG ("mp1videoparse: code 0x000001%02x", data[offset + 1]);
+        mp1videoparse_read_obj (mp1videoparse,
+            &data[offset - 2], size + 2 - offset);
         if (data[offset + 1] == (PICTURE_START_CODE & 0xff)) {
           mp1videoparse->picture_in_buffer++;
           if (mp1videoparse->picture_in_buffer == 1) {
@@ -459,11 +519,12 @@ gst_mp1videoparse_real_chain (Mp1VideoParse * mp1videoparse, GstBuffer * buf,
         /* A new sequence (or GOP) is a valid sync too. Note that the
          * sequence header should be put in the next buffer, not here. */
         else if (data[offset + 1] == (SEQ_START_CODE & 0xFF) ||
-            data[offset + 1] == (GOP_START_CODE & 0xFF)) {
+            data[offset + 1] == (GOP_START_CODE & 0xFF) ||
+            data[offset + 1] == (EXT_START_CODE & 0xff)) {
           if (mp1videoparse->picture_in_buffer == 0 &&
               data[offset + 1] == (GOP_START_CODE & 0xFF)) {
             mp1videoparse->last_pts = gst_mp1videoparse_time_code (&data[2],
-                mp1videoparse->fps);
+                FPS (mp1videoparse->fps_idx));
           } else if (mp1videoparse->picture_in_buffer == 1) {
             have_sync = TRUE;
             break;
@@ -499,7 +560,7 @@ gst_mp1videoparse_real_chain (Mp1VideoParse * mp1videoparse, GstBuffer * buf,
       outbuf = gst_buffer_create_sub (mp1videoparse->partialbuf, 0, offset);
       g_assert (outbuf != NULL);
       GST_BUFFER_TIMESTAMP (outbuf) = mp1videoparse->last_pts;
-      GST_BUFFER_DURATION (outbuf) = GST_SECOND / mp1videoparse->fps;
+      GST_BUFFER_DURATION (outbuf) = GST_SECOND / FPS (mp1videoparse->fps_idx);
       mp1videoparse->last_pts += GST_BUFFER_DURATION (outbuf);
 
       if (mp1videoparse->in_flush) {
@@ -507,7 +568,7 @@ gst_mp1videoparse_real_chain (Mp1VideoParse * mp1videoparse, GstBuffer * buf,
         mp1videoparse->in_flush = FALSE;
       }
 
-      if (GST_PAD_CAPS (outpad) != NULL) {
+      if (gst_mp1videoparse_negotiate (mp1videoparse)) {
         guint8 *p_ptr;
 
         if (mp1videoparse->need_discont &&
@@ -520,8 +581,8 @@ gst_mp1videoparse_real_chain (Mp1VideoParse * mp1videoparse, GstBuffer * buf,
           gst_pad_push (outpad, GST_DATA (event));
           mp1videoparse->need_discont = FALSE;
         }
-        GST_DEBUG ("mp1videoparse: pushing  %d bytes %" G_GUINT64_FORMAT,
-            GST_BUFFER_SIZE (outbuf), GST_BUFFER_TIMESTAMP (outbuf));
+
+        /* get keyframe flag */
         p_ptr = GST_BUFFER_DATA (outbuf);
         while (p_ptr[0] != 0x0 || p_ptr[1] != 0x0 ||
             p_ptr[2] != 0x1 || p_ptr[3] != (PICTURE_START_CODE & 0xff))
@@ -529,8 +590,14 @@ gst_mp1videoparse_real_chain (Mp1VideoParse * mp1videoparse, GstBuffer * buf,
         if (((p_ptr[5] >> 3) & 0x7) == 0x1) {
           GST_BUFFER_FLAG_SET (outbuf, GST_BUFFER_KEY_UNIT);
         }
+
+        /* push */
+        GST_DEBUG ("mp1videoparse: pushing %d bytes at %" GST_TIME_FORMAT
+            ", key=%s", GST_BUFFER_SIZE (outbuf),
+            GST_TIME_ARGS (GST_BUFFER_TIMESTAMP (outbuf)),
+            GST_BUFFER_FLAG_IS_SET (outbuf,
+                GST_BUFFER_KEY_UNIT) ? "yes" : "no");
         gst_pad_push (outpad, GST_DATA (outbuf));
-        GST_DEBUG ("mp1videoparse: pushing  done");
       } else {
         GST_DEBUG ("No capsnego yet, delaying buffer push");
         gst_buffer_unref (outbuf);
@@ -569,21 +636,23 @@ gst_mp1videoparse_change_state (GstElement * element)
       gst_mp1videoparse_flush (mp1videoparse);
       mp1videoparse->need_discont = TRUE;
       mp1videoparse->width = mp1videoparse->height = -1;
-      mp1videoparse->fps = mp1videoparse->asr = 0.;
+      mp1videoparse->fps_idx = 3;
+      mp1videoparse->asr_idx = 1;
       break;
     default:
       break;
   }
 
-  if (GST_ELEMENT_CLASS (parent_class)->change_state)
-    return GST_ELEMENT_CLASS (parent_class)->change_state (element);
-
-  return GST_STATE_SUCCESS;
+  return GST_CALL_PARENT_WITH_DEFAULT (GST_ELEMENT_CLASS, change_state,
+      (element), GST_STATE_SUCCESS);
 }
 
 static gboolean
 plugin_init (GstPlugin * plugin)
 {
+  GST_DEBUG_CATEGORY_INIT (gstmpegvideoparse_debug, "mpegvideoparse", 0,
+      "MPEG 1/2 video parsing element");
+
   return gst_element_register (plugin, "mpeg1videoparse",
       GST_RANK_NONE, GST_TYPE_MP1VIDEOPARSE);
 }
