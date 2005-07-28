@@ -1,5 +1,13 @@
 2005-07-28  Tim-Philipp Müller  <tim at centricular dot net>
 
+	* sys/ximage/ximagesrc.c: (gst_ximagesrc_getcaps):
+	  In GStreamerville, it's "endianness", not "endianess".
+	  
+	* testsuite/gst-lint:
+	  Check for occurances of "endianess" (#311777).
+
+2005-07-28  Tim-Philipp Müller  <tim at centricular dot net>
+
 	* configure.ac:
 	  Bump libx264 requirement to a more recent version (my version had
 	  x264_nal_encode, but X264_ME_UMH was missing from the header file,
