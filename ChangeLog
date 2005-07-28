@@ -1,3 +1,17 @@
+2005-07-28  Tim-Philipp Müller  <tim at centricular dot net>
+
+	* configure.ac:
+	  Bump libx264 requirement to a more recent version (my version had
+	  x264_nal_encode, but X264_ME_UMH was missing from the header file,
+	  among other things)
+	  
+	* ext/x264/x264enc.c:
+	  Use "_stdint.h" instead of <stdint.h>
+
+	* ext/x264/x264enc.h:
+	* ext/mad/gstid3demuxbin.c:
+	  HAVE_CONFIG_G => HAVE_CONFIG_H
+
 2005-07-28  Michael Smith  <msmith@fluendo.com>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
