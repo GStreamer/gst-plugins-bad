@@ -1,5 +1,10 @@
 2005-07-28  Tim-Philipp Müller  <tim at centricular dot net>
 
+	* testsuite/gst-lint:
+	  Add check for bad header <stdint.h>
+
+2005-07-28  Tim-Philipp Müller  <tim at centricular dot net>
+
 	* sys/ximage/ximagesrc.c: (gst_ximagesrc_getcaps):
 	  In GStreamerville, it's "endianness", not "endianess".
 	  
