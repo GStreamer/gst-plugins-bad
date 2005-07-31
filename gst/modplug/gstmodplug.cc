@@ -333,6 +333,9 @@ gst_modplug_src_query (GstPad * pad, GstQueryType type,
 
   modplug = GST_MODPLUG (gst_pad_get_parent (pad));
 
+  if (!modplug->mSoundFile)
+    return FALSE;
+
   switch (type) {
     case GST_QUERY_TOTAL:
       switch (*format) {

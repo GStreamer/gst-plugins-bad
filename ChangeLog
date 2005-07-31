@@ -1,3 +1,11 @@
+2005-07-31  Jonathan Matthew  <jonathan at kaolin dot hn dot org>
+
+	Reviewed by: Tim-Philipp Müller  <tim at centricular dot net>
+
+	* gst/modplug/gstmodplug.cc:
+	  Don't crash if a query comes in and we're not set 
+	  up yet (fixes #312121).
+
 2005-07-28  Tim-Philipp Müller  <tim at centricular dot net>
 
 	* testsuite/gst-lint:
