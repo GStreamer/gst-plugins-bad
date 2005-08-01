@@ -1,3 +1,10 @@
+2005-08-01  Tim-Philipp Müller  <tim at centricular dot net>
+
+	* ext/jpeg/gstjpegdec.c: (gst_jpegdec_get_type):
+	* ext/jpeg/gstjpegenc.c: (gst_jpegenc_get_type):
+	  First member in GTypeInfo is class size, not  
+	  instance size.
+
 2005-07-31  Jonathan Matthew  <jonathan at kaolin dot hn dot org>
 
 	Reviewed by: Tim-Philipp Müller  <tim at centricular dot net>
