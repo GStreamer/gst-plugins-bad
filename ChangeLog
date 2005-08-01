@@ -1,3 +1,9 @@
+2005-08-01  Stefan Kost  <ensonic@users.sf.net>
+
+	* gst/volume/gstvolume.c: (gst_volume_dispose):
+          Do not unref the dparam-manager as gst_dpman_get_manager() does not
+          ref it.
+
 2005-08-01  Tim-Philipp Müller  <tim at centricular dot net>
 
 	* ext/jpeg/gstjpegdec.c: (gst_jpegdec_get_type):
