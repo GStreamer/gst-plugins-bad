@@ -1,3 +1,11 @@
+2005-08-03  Madhan Raj M  <madhanrm@gnome.org>
+
+	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/flac/gstflacenc.c: (gst_flacenc_class_init):
+	  Register musicbrainz tags, since we use them. Based on suggestions
+	  from Ross Burton <ross@burtonini.com>, closes #312272.
+
 2005-08-01  Stefan Kost  <ensonic@users.sf.net>
 
 	* gst/volume/gstvolume.c: (gst_volume_dispose):
