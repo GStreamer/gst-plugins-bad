@@ -1,5 +1,10 @@
 2005-08-07  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* gst/playback/gstplaybasebin.c: (setup_source):
+	  Assign proper error code and domain, fixes #310020.
+
+2005-08-07  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* ext/gnomevfs/gstgnomevfssrc.c: (gst_gnomevfssrc_open_file):
 	  Error code fix backport from HEAD.
 
