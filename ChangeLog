@@ -1,3 +1,8 @@
+2005-08-07  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/gnomevfs/gstgnomevfssrc.c: (gst_gnomevfssrc_open_file):
+	  Error code fix backport from HEAD.
+
 2005-08-03  Madhan Raj M  <madhanrm@gnome.org>
 
 	Reviewed by:  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
