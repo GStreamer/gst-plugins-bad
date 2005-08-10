@@ -1,3 +1,13 @@
+2005-08-10  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/gnomevfs/gstgnomevfssrc.c: (gst_gnomevfssrc_get):
+	  Fix premature EOS. This causes issues when reading ID3v1 tags using
+	  gnomevfssrc instead of filesrc; after ID3v1 tag typefinding, the
+	  typefind element will EOS rather than send a discont, which makes
+	  actual tag-reading in id3demux fail; the result is that the ID3v1
+	  tags are not stripped off the file, which causes an infinite loop
+	  of id3demux plugging to the pipeline.
+
 2005-08-10  Thomas Vander Stichele  <thomas at apestaart dot org>
 
 	* gst/level/filter.func:
