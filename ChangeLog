@@ -1,3 +1,20 @@
+2005-08-10  Thomas Vander Stichele  <thomas at apestaart dot org>
+
+	* gst/level/filter.func:
+	  comment a little better
+	  remove unnecessary casts
+	* gst/level/gstlevel.c: (gst_level_link), (gst_level_chain),
+	(gst_level_class_init), (gst_level_init):
+	* gst/level/gstlevel.h:
+	  remove unused MS struct member
+	  don't reset the CS values for channels on every _chain, so that
+	  level actually correctly calculates the RMS value.  sigh.
+	  calculate RMS values correctly for peak and decay peak sums;
+	  before we were signalling them as if they already were amplitude
+	  and not power values.  sigh.
+	Remind me to not try and pretend I'm writing DSP code.
+
+
 2005-08-07  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* gst/playback/gstplaybasebin.c: (setup_source):
