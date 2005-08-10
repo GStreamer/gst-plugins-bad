@@ -1,5 +1,24 @@
 2005-08-10  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* ext/gdk_pixbuf/gstgdkpixbuf.c: (gst_gdk_pixbuf_chain):
+	  Support various image formats (e.g. RGBA). Makes gif images work.
+	* gst/qtdemux/qtdemux.c: (gst_qtdemux_loop_header),
+	(gst_qtdemux_add_stream), (qtdemux_parse_trak):
+	  Some workarounds for odd behaviour I found while crawling through
+	  apple.com/trailers. For one, if you load single-image (still-image)
+	  trailers containing gif images, they will have an infinite framerate
+	  since there is no duration. Capping framerate makes negotiation work.
+	  Also, some movies don't actually have size markers, since they only
+	  contain a single chunk of data (or so? I don't understand quicktime
+	  at all, I guess), so throwing the whole binary blob from the offset
+	  to end-of-file to the decoder makes at least something display (yes,
+	  this actually works :) ). Lastly, for some reason, one redirect URI
+	  movies caused an assertion because it read a negative size (immediate
+	  return) and tried to flush it (guint, signflip), leading to odd
+	  stuff and subsequent crashes.
+
+2005-08-10  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* ext/gnomevfs/gstgnomevfssrc.c: (gst_gnomevfssrc_get):
 	  Fix premature EOS. This causes issues when reading ID3v1 tags using
 	  gnomevfssrc instead of filesrc; after ID3v1 tag typefinding, the

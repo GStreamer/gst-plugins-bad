@@ -730,14 +730,12 @@ gst_qtdemux_loop_header (GstElement * element)
       min_time = G_MAXUINT64;
       for (i = 0; i < qtdemux->n_streams; i++) {
         stream = qtdemux->streams[i];
-
         if (stream->sample_index < stream->n_samples &&
             stream->samples[stream->sample_index].timestamp < min_time) {
           min_time = stream->samples[stream->sample_index].timestamp;
           index = i;
         }
       }
-
       if (index == -1) {
         qtdemux->state = QTDEMUX_STATE_SEEKING_EOS;
         return;
@@ -790,7 +788,8 @@ gst_qtdemux_loop_header (GstElement * element)
           break;
         }
       } while (TRUE);
-      gst_bytestream_flush_fast (qtdemux->bs, size);
+      if (size > 0)
+        gst_bytestream_flush_fast (qtdemux->bs, size);
       qtdemux->offset += size;
 
       if (buf) {
@@ -864,6 +863,10 @@ gst_qtdemux_add_stream (GstQTDemux * qtdemux,
         (&gst_qtdemux_videosrc_template), name);
     g_free (name);
     stream->fps = 1. * GST_SECOND / stream->samples[0].duration;
+    if (stream->fps < 1)
+      stream->fps = 1;
+    else if (stream->fps > 100)
+      stream->fps = 100;
     if (stream->caps) {
       gst_caps_set_simple (stream->caps,
           "width", G_TYPE_INT, stream->width,
@@ -2417,6 +2420,10 @@ qtdemux_parse_trak (GstQTDemux * qtdemux, GNode * trak)
           samples[j].size =
               samples_per_chunk * stream->bytes_per_frame /
               stream->samples_per_packet / stream->compression;
+        else if (n_samples == 1 && j == 0 &&
+            gst_bytestream_length (qtdemux->bs) > samples[j].offset)
+          samples[j].size =
+              gst_bytestream_length (qtdemux->bs) - samples[j].offset;
         else
           samples[j].size = stream->bytes_per_frame;
         samples[j].duration =
