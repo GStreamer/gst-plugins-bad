@@ -1,3 +1,9 @@
+2005-08-11  Tim-Philipp Müller  <tim at centricular dot net>
+
+	* gst/freeze/gstfreeze.c: (gst_freeze_loop):
+	  Fix invalid memory access: GST_IS_BUFFER() can't be used
+	  on an event that we have already unref'ed.
+
 2005-08-10  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* ext/gdk_pixbuf/gstgdkpixbuf.c: (gst_gdk_pixbuf_chain):

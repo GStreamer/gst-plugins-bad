@@ -177,10 +177,9 @@ gst_freeze_loop (GstElement * element)
           break;
         default:
           gst_pad_event_default (GST_PAD (freeze->sinkpad), GST_EVENT (data));
+          break;
       }
-    }
-
-    if (GST_IS_BUFFER (data)) {
+    } else if (GST_IS_BUFFER (data)) {
       if (g_list_length (freeze->buffers) < freeze->max_buffers ||
           freeze->max_buffers == 0) {
         freeze->buffers = g_list_append (freeze->buffers, GST_BUFFER (data));
@@ -190,6 +189,7 @@ gst_freeze_loop (GstElement * element)
         gst_buffer_unref (GST_BUFFER (data));
       }
     }
+    data = NULL;
   }
 
   if (freeze->buffers == NULL) {
