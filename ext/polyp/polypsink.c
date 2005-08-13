@@ -244,6 +244,7 @@ stream_state_callback (struct pa_stream *s, void *userdata)
       /* Pass over */
     case PA_STREAM_TERMINATED:
     default:
+      GST_DEBUG ("stream terminated");
       polypsink->mainloop_api->quit (polypsink->mainloop_api, 1);
       destroy_context (polypsink);
       break;
@@ -284,6 +285,7 @@ context_state_callback (struct pa_context *c, void *userdata)
       /* Pass over */
     case PA_CONTEXT_TERMINATED:
     default:
+      GST_DEBUG ("stream terminated");
       polypsink->mainloop_api->quit (polypsink->mainloop_api, 1);
       destroy_context (polypsink);
       break;
@@ -502,6 +504,7 @@ gst_polypsink_link (GstPad * pad, const GstCaps * caps)
   char t[256];
   GstElementState state;
   int n_channels;
+  int tmp;
 
   polypsink = GST_POLYPSINK (gst_pad_get_parent (pad));
 
@@ -543,7 +546,8 @@ gst_polypsink_link (GstPad * pad, const GstCaps * caps)
 
   gst_structure_get_int (structure, "channels", &n_channels);
   polypsink->sample_spec.channels = n_channels;
-  gst_structure_get_int (structure, "rate", &polypsink->sample_spec.rate);
+  gst_structure_get_int (structure, "rate", &tmp);
+  polypsink->sample_spec.rate = tmp;
 
   pa_sample_spec_snprint (t, sizeof (t), &polypsink->sample_spec);
   GST_DEBUG ("using format %s", t);

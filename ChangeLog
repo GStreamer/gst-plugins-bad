@@ -1,3 +1,10 @@
+2005-08-13  David Schleef  <ds@schleef.org>
+
+	* ext/polyp/polypsink.c: (stream_state_callback),
+	(context_state_callback), (gst_polypsink_link): This compile fix
+	could have been in my checkout for months.  Apparently nobody
+	but me builds this.
+
 2005-08-12  Tim-Philipp Müller  <tim at centricular dot net>
 
 	* ext/jpeg/gstjpegdec.c: (gst_jpegdec_init),
