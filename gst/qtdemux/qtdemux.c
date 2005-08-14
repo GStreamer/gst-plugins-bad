@@ -2804,7 +2804,7 @@ qtdemux_video_caps (GstQTDemux * qtdemux, guint32 fourcc,
       _codec ("H.264 / AVC");
       return gst_caps_from_string ("video/x-h264");
     case GST_MAKE_FOURCC ('r', 'l', 'e', ' '):
-      _codec ("Run-time length encoding");
+      _codec ("Run-length encoding");
       return gst_caps_from_string ("video/x-rle, layout=(string)quicktime");
     case GST_MAKE_FOURCC ('s', 'm', 'c', ' '):
     case GST_MAKE_FOURCC ('k', 'p', 'c', 'd'):

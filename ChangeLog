@@ -1,5 +1,10 @@
 2005-08-14  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* gst/qtdemux/qtdemux.c: (qtdemux_video_caps):
+	  That was a nice freudian slip.
+
+2005-08-14  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* gst/qtdemux/qtdemux.c: (qtdemux_parse_trak),
 	(qtdemux_video_caps):
 	  Handle quicktime-RLE.
