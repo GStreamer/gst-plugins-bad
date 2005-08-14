@@ -1,3 +1,9 @@
+2005-08-14  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* gst/qtdemux/qtdemux.c: (qtdemux_parse_trak),
+	(qtdemux_video_caps):
+	  Handle quicktime-RLE.
+
 2005-08-13  David Schleef  <ds@schleef.org>
 
 	* ext/polyp/polypsink.c: (stream_state_callback),
