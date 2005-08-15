@@ -1,3 +1,15 @@
+2005-08-15  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
+	* ext/esd/esdsink.c: (gst_esdsink_get_time), (gst_esdsink_chain):
+	  Basic hacks to make video playback using esdsink not totally make
+	  yuou rip your heart out. We write a few samples per cycle, so that
+	  the clock will increment in a slightly lineair fashion instead of
+	  in large hiccuped steps (which makes video playback in an ok'ish
+	  way, compared to how it was), and we take timestamps into account for
+	  calculating the clock position, so that _get_time() at least returns
+	  a value that will make video playback in sync. Should make Ubuntu
+	  users happy (they default to esdsink).
+
 2005-08-14  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* gst/qtdemux/qtdemux.c: (qtdemux_video_caps):
