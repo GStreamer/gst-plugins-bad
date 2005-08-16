@@ -1,5 +1,10 @@
 2005-08-16  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
+	* ext/ogg/gstoggdemux.c: (gst_ogg_pad_push):
+	  Don't push empty pages (#313444).
+
+2005-08-16  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+
 	* ext/esd/esdsink.c: (gst_esdsink_change_state):
 	  Reset on pause->ready (#313600).
 
