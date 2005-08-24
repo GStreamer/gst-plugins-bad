@@ -1,3 +1,10 @@
+2005-08-24  Thomas Vander Stichele  <thomas at apestaart dot org>
+
+	* gst/adder/gstadder.c: (gst_adder_request_new_pad),
+	(gst_adder_release_pad), (gst_adder_loop):
+	  add some debugging. add a warning when not releasing a pad
+	  owned by adder.
+
 2005-08-16  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
 	* ext/ogg/gstoggdemux.c: (gst_ogg_pad_push):
@@ -105,7 +112,6 @@
 	  before we were signalling them as if they already were amplitude
 	  and not power values.  sigh.
 	Remind me to not try and pretend I'm writing DSP code.
-
 
 2005-08-07  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
 
