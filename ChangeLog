@@ -1,3 +1,11 @@
+2005-08-27  Thomas Vander Stichele  <thomas at apestaart dot org>
+
+	* gst/adder/gstadder.c: (gst_adder_request_new_pad),
+	(gst_adder_release_pad):
+	  cosmetics
+	* gst/level/gstlevel.c: (gst_level_chain):
+	  push the pad only after doing stuff to it
+
 2005-08-24  Thomas Vander Stichele  <thomas at apestaart dot org>
 
 	* gst/adder/gstadder.c: (gst_adder_request_new_pad),
