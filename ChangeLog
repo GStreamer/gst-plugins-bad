@@ -1,3 +1,10 @@
+2005-08-29  Michael Smith <msmith@fluendo.com>
+
+	* ext/ogg/Makefile.am:
+	* ext/ogg/gstogg.c: (plugin_init):
+	* ext/ogg/gstoggparse.c:
+	Added ogg parser, 0.8 version
+
 2005-08-27  Thomas Vander Stichele  <thomas at apestaart dot org>
 
 	* gst/adder/gstadder.c: (gst_adder_request_new_pad),
