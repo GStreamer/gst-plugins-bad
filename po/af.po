@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gst-plugins 0.7.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-06-30 14:54+0200\n"
+"POT-Creation-Date: 2005-08-29 20:31+0200\n"
 "PO-Revision-Date: 2004-03-18 14:16+0200\n"
 "Last-Translator: Petri Jooste <rkwjpj@puk.ac.za>\n"
 "Language-Team: Afrikaans <i18n@af.org.za>\n"
@@ -111,7 +111,7 @@ msgstr ""
 msgid "Invalid seek"
 msgstr ""
 
-#: ext/cdio/cddasrc.c:662
+#: ext/cdio/cddasrc.c:662 ext/cdparanoia/gstcdparanoia.c:803
 msgid "Could not open CD device for reading."
 msgstr "Kon nie CD-toestel oopmaak om te lees nie."
 
@@ -131,7 +131,7 @@ msgstr ""
 msgid "Musicbrainz discid for metadata retrieval"
 msgstr ""
 
-#: ext/cdparanoia/gstcdparanoia.c:792 ext/cdparanoia/gstcdparanoia.c:809
+#: ext/cdparanoia/gstcdparanoia.c:819
 #, fuzzy, c-format
 msgid "Could not open CD device %s for reading."
 msgstr "Kon nie CD-toestel oopmaak om te lees nie."
@@ -141,46 +141,50 @@ msgstr "Kon nie CD-toestel oopmaak om te lees nie."
 msgid "Error invoking \"%s\": %s."
 msgstr "Fout tydens toemaak van lêer \"%s\"."
 
-#: ext/dvdnav/dvdnavsrc.c:1678
+#: ext/dvdnav/dvdnavsrc.c:1690
 msgid "Invalid title information on DVD."
 msgstr ""
 
-#: ext/dvdnav/dvdnavsrc.c:1778
+#: ext/dvdnav/dvdnavsrc.c:1791
 #, c-format
 msgid "Failed to open DVD device '%s'."
 msgstr ""
 
-#: ext/dvdnav/dvdnavsrc.c:1848
+#: ext/dvdnav/dvdnavsrc.c:1800
+msgid "Failed to set PGC based seeking."
+msgstr ""
+
+#: ext/dvdnav/dvdnavsrc.c:1867
 #, fuzzy
 msgid "Could not read title information for DVD."
 msgstr "Kon nie skryf na lêer \"%s\" nie."
 
-#: ext/gnomevfs/gstgnomevfssink.c:432
+#: ext/gnomevfs/gstgnomevfssink.c:435
 #, fuzzy, c-format
 msgid "Could not open vfs file \"%s\" for writing: %s."
 msgstr "Kon nie vfs-lêer \"%s\" oopmaak vir skryf nie."
 
-#: ext/gnomevfs/gstgnomevfssink.c:439
+#: ext/gnomevfs/gstgnomevfssink.c:442
 #, fuzzy
 msgid "No filename given"
 msgstr "Geen lêernaam gespesifiseer."
 
-#: ext/gnomevfs/gstgnomevfssink.c:467
+#: ext/gnomevfs/gstgnomevfssink.c:470
 #, c-format
 msgid "Could not close vfs file \"%s\"."
 msgstr "Kon nie vfs-lêer \"%s\" toemaak nie."
 
-#: ext/gnomevfs/gstgnomevfssrc.c:1177
+#: ext/gnomevfs/gstgnomevfssrc.c:1266 ext/gnomevfs/gstgnomevfssrc.c:1270
 #, c-format
 msgid "Could not open vfs file \"%s\" for reading."
 msgstr "Kon nie vfs-lêer \"%s\" oopmaak vir lees nie."
 
-#: ext/gnomevfs/gstgnomevfssrc.c:1185
+#: ext/gnomevfs/gstgnomevfssrc.c:1279
 #, fuzzy
 msgid "No filename given."
 msgstr "Geen lêernaam gespesifiseer."
 
-#: ext/jpeg/gstjpegdec.c:441
+#: ext/jpeg/gstjpegdec.c:521
 msgid "Failed to decode JPEG image"
 msgstr ""
 
@@ -459,7 +463,7 @@ msgstr ""
 msgid "No device specified."
 msgstr "Geen toestel gespesifiseer"
 
-#: sys/v4l/v4l_calls.c:172 sys/v4l2/v4l2_calls.c:400
+#: sys/v4l/v4l_calls.c:172 sys/v4l2/v4l2_calls.c:402
 #: sys/v4lradio/v4lradio_calls.c:107
 #, c-format
 msgid "Could not open device \"%s\" for reading and writing."
@@ -473,17 +477,22 @@ msgstr "Toestel is nie oop nie."
 msgid "Device is open."
 msgstr "Toestel is oop."
 
-#: sys/v4l2/v4l2_calls.c:414
+#: sys/v4l2/v4l2_calls.c:416
 #, c-format
 msgid "Device \"%s\" is not a capture device."
 msgstr "Toestel \"%s\" is nie 'n vasleggingtoestel nie."
 
-#: sys/v4l2/v4l2src_calls.c:256
+#: sys/v4l2/v4l2src_calls.c:257
 #, c-format
 msgid "Could not get buffers from device \"%s\"."
 msgstr "Kon nie buffers vanaf toestel \"%s\" verkry nie."
 
-#: sys/v4l2/v4l2src_calls.c:265
+#: sys/v4l2/v4l2src_calls.c:269
+#, c-format
+msgid "the driver of device \"%s\" is broken."
+msgstr ""
+
+#: sys/v4l2/v4l2src_calls.c:279
 #, c-format
 msgid "Could not get enough buffers from device \"%s\"."
 msgstr "Kon nie genoeg buffers vanaf toestel \"%s\" kry nie."
