@@ -1,3 +1,10 @@
+2005-08-31  Tim-Philipp Müller  <tim at centricular dot net>
+
+	* configure.ac:
+	  Our cairo plugin code seems to be unaffected by the last bunch of
+	  cairo API chances and seems to work with any cairo version between
+	  0.5.0 and 1.0.0, so let's adjust our checks accordingly.
+
 2005-08-29  Michael Smith <msmith@fluendo.com>
 
 	* ext/ogg/Makefile.am:
