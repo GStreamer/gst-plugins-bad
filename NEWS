@@ -1,4 +1,59 @@
-This is GStreamer Plugins 0.8.10, "Jangle"
+This is GStreamer Plugins 0.8.11, "... And Thanks For All The Fix"
+
+Changes since 0.8.10:
+    
+      * new element: dvdsubdec
+      * new element: imagemixer
+      * new element: textrender
+      * new element: x264enc
+      * new element: oggparse
+      * important fixes for esound synchronisation
+
+Bugs fixed since 0.8.10:
+    
+      * 166528 : [playbin] hang playing dvdnav:// location
+      * 166783 : [PATCH] New plugin: imagemixer
+      * 167122 : seeking DVD stops playback
+      * 171563 : Vorbis support for Matroska muxer
+      * 301312 : dvdsubdec element
+      * 305754 : [PATCH] Internal GStreamer error: pad problem.
+      * 306555 : chain-based text rendering element
+      * 307326 : esdsink makes video choppy totem
+      * 307361 : please expose shoutcast stream metadata through playbin
+      * 308040 : gstadder: using adder with float audio results in corrupt...
+      * 308484 : Totem gives error when seeking back to beginning of Ogg T...
+      * 308633 : Matroska muxer always fails
+      * 308638 : ffmpegcolorspace does not handle bgra32 correctly
+      * 308772 : mad timestamp inconsistency
+      * 308980 : gst-typefind incorrectly identifies m4a files encoded wit...
+      * 309087 : artsdsink registers conflicting property " name " which cau...
+      * 309150 : [xvimagesink/ximagesink] Incremenet framerate properties
+      * 309179 : videomixer does not love static images and eos
+      * 309218 : adder element does not supply duration values to data it ...
+      * 309325 : Matroska: incorrect element size
+      * 309354 : timestamp inconsitency in audioscale
+      * 309375 : cdparanoia can't extract last track
+      * 309503 : gst-plugins: xine wrapper compile problem with xine-lib-1...
+      * 309524 : no debug category for gnome-vfs elements
+      * 309532 : Matroska: Invalid free()
+      * 309834 : Totem crashes when trying to Play Disc 'cdrecorder'
+      * 310020 : Totem segfaults due to bad location
+      * 310335 : [decodebin] problems with audio streams in a mkv
+      * 310597 : gsttextrender cuts of pixels at the right and bottom of s...
+      * 311006 : [spectrum] handle mono streams
+      * 311070 : wavparse returns caps not in template
+      * 311162 : [flacdec] doesn't handle 24-bit files
+      * 311401 : alpha capsnego broken
+      * 311487 : configure doesn't check for libGLU?
+      * 311491 : ogg muxer can get pages out of order (patch)
+      * 311583 : Skips when playing CD
+      * 311600 : Add MPEG-2 support to mpeg1videoparse
+      * 311662 :  " uninitialized value " warning causes build to fail
+      * 312121 : [modplug] crashes on query before song fully loaded
+      * 312272 : Musicbrainz tags not registered for FLAC encoder
+      * 313084 : Eats memory decoding mp3
+      * 313374 : Crashes in libgstcdparanoia when missing device permissions
+      * 313600 : recent change to esdsink in the 0.8.x branch breaks playback
 
 Changes since 0.8.9:
 

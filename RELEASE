@@ -1,5 +1,5 @@
 
-GStreamer: Release notes for GStreamer Plugins 0.8.10 "Jangle"
+GStreamer: Release notes for GStreamer Plugins 0.8.11 "... And Thanks For All The Fix"
         
 
 The GStreamer team is happy to announce a new release
@@ -23,45 +23,68 @@ want support for a lot of popular video formats, you need to install this
 module along with the GStreamer Core and Plugins.  An FFmpeg-based colorspace
 element has been added to the Plugins however.
 
+
+A special "thank you" to Ronald Bultje, who has done most of the work on 0.8
+in the past year.  We wish him luck on his new adventure in NYC.  So long !
+
   
 Features of this release
     
       * Parallel installability with 0.6.x series
       * Internationalization
       * Translations: af az ca cs en_GB fr hu it nb nl or sq sr sv uk vi
-      * new videoscale algorithm: bilinear
-      * important fixes for cd-based applications (Sound Juicer, gnome-cd)
+      * new element: dvdsubdec
+      * new element: imagemixer
+      * new element: textrender
+      * new element: x264enc
+      * new element: oggparse
+      * important fixes for esound synchronisation
 
 Bugs fixed in this release
     
-      * 140237 : Mp3 playback messes up on this file
-      * 161079 : [videoscale] implement bilinear or bicubic methods for do...
-      * 300305 : videobox in YUV adds green instead of black if right=(odd...
-      * 300471 : videoscale from odd to even width adds a green line at th...
-      * 301292 : caps nego problem in gst-adder
-      * 304627 : asfdemux producing a strange framerate
-      * 304754 : Say what devices  couldn't be opened when cdparanoia thro...
-      * 305150 : faad plugin doesn't recognize end-of-song?
-      * 305428 : [audiorate] crashes if first buffer has offset of GST_BUF...
-      * 305435 : libgstaudiofile.so uses af_virtual_file_new, which is not...
-      * 305505 : Fail to compile plugin spc
-      * 305524 : Cairo plugin does not compile with cairo 0.5
-      * 305658 : the adder plugin doesn't connect to more than one sinks
-      * 306041 : gstreamer-plugins 0.8.8 stops Soundjuicer ripping properly
-      * 306641 : gst-compprep segfaults when mpeg2enc plugin is installed ...
-      * 306659 : [avidemux] certain avi file doesnt show video
-      * 306660 : glsink fails to build when OpenGL is used instead of MESA
-      * 306680 : mov with 8 bit raw pcm sound distorted
-      * 306938 : memory leak in gsttypefind
-      * 307354 : PATCH: gcc4 compile fix
-      * 307459 : Can not rip the last track of CDs
-      * 307606 : gstplaybasebin leaks mutex
-      * 307804 : [cdio] gst_element_make_from_uri hangs on " cdda:// " in totem
-      * 308644 : [matroska] Incorrect pixel-aspect-ratio in matroska demuxer
-      * 308794 : [auparse] minor memory leak
-      * 308827 : ogg muxer in 0.8 muxes wrong
-      * 309005 : leaks in gstlibfame.c
-      * 309043 : gstwavparse causes segfaults
+      * 166528 : [playbin] hang playing dvdnav:// location
+      * 166783 : [PATCH] New plugin: imagemixer
+      * 167122 : seeking DVD stops playback
+      * 171563 : Vorbis support for Matroska muxer
+      * 301312 : dvdsubdec element
+      * 305754 : [PATCH] Internal GStreamer error: pad problem.
+      * 306555 : chain-based text rendering element
+      * 307326 : esdsink makes video choppy totem
+      * 307361 : please expose shoutcast stream metadata through playbin
+      * 308040 : gstadder: using adder with float audio results in corrupt...
+      * 308484 : Totem gives error when seeking back to beginning of Ogg T...
+      * 308633 : Matroska muxer always fails
+      * 308638 : ffmpegcolorspace does not handle bgra32 correctly
+      * 308772 : mad timestamp inconsistency
+      * 308980 : gst-typefind incorrectly identifies m4a files encoded wit...
+      * 309087 : artsdsink registers conflicting property " name " which cau...
+      * 309150 : [xvimagesink/ximagesink] Incremenet framerate properties
+      * 309179 : videomixer does not love static images and eos
+      * 309218 : adder element does not supply duration values to data it ...
+      * 309325 : Matroska: incorrect element size
+      * 309354 : timestamp inconsitency in audioscale
+      * 309375 : cdparanoia can't extract last track
+      * 309503 : gst-plugins: xine wrapper compile problem with xine-lib-1...
+      * 309524 : no debug category for gnome-vfs elements
+      * 309532 : Matroska: Invalid free()
+      * 309834 : Totem crashes when trying to Play Disc 'cdrecorder'
+      * 310020 : Totem segfaults due to bad location
+      * 310335 : [decodebin] problems with audio streams in a mkv
+      * 310597 : gsttextrender cuts of pixels at the right and bottom of s...
+      * 311006 : [spectrum] handle mono streams
+      * 311070 : wavparse returns caps not in template
+      * 311162 : [flacdec] doesn't handle 24-bit files
+      * 311401 : alpha capsnego broken
+      * 311487 : configure doesn't check for libGLU?
+      * 311491 : ogg muxer can get pages out of order (patch)
+      * 311583 : Skips when playing CD
+      * 311600 : Add MPEG-2 support to mpeg1videoparse
+      * 311662 :  " uninitialized value " warning causes build to fail
+      * 312121 : [modplug] crashes on query before song fully loaded
+      * 312272 : Musicbrainz tags not registered for FLAC encoder
+      * 313084 : Eats memory decoding mp3
+      * 313374 : Crashes in libgstcdparanoia when missing device permissions
+      * 313600 : recent change to esdsink in the 0.8.x branch breaks playback
 
 Download
 
@@ -96,22 +119,25 @@ as provided by gstreamer-gconf-0.8.pc, to access the default settings.
   
 Contributors to this release
     
-      * Antoine Tremblay
+      * Akos Maroy
+      * Andy Wingo
       * Arwed v. Merkatz
+      * Chris Ouch
       * Benjamin Otte
       * David Schleef
-      * James Henstridge
-      * Jan de Groot
+      * Dominique Würtz
       * Jan Schmidt
-      * Jeroen Zwartepoorte
+      * Jonathan Matthew
+      * Josef Zlomek
       * Luca Ognibene
-      * Martin Soto
+      * Madhan Raj M
       * Michael Benes
+      * Michael Smith
       * Paolo Borelli
       * Ronald Bultje
       * Ross Burton
-      * Thomas Klausner
       * Thomas Vander Stichele
+      * Thomas Zajic
       * Stefan Kost
       * Tim-Philipp Müller
       * Wouter Paesen

@@ -1,3 +1,13 @@
+=== release 0.8.11 ===
+
+2005-09-04  Thomas Vander Stichele  <thomas at apestaart dot org>
+
+	* Makefile.am:
+	* NEWS:
+	* RELEASE:
+	* configure.ac:
+	  releasing 0.8.11, "... And Thanks For All The Fix"
+
 2005-08-31  Tim-Philipp Müller  <tim at centricular dot net>
 
 	* configure.ac:
@@ -156,8 +166,8 @@
 2005-08-01  Stefan Kost  <ensonic@users.sf.net>
 
 	* gst/volume/gstvolume.c: (gst_volume_dispose):
-          Do not unref the dparam-manager as gst_dpman_get_manager() does not
-          ref it.
+	  Do not unref the dparam-manager as gst_dpman_get_manager() does not
+	  ref it.
 
 2005-08-01  Tim-Philipp Müller  <tim at centricular dot net>
 
@@ -413,8 +423,8 @@
 	* ext/pango/gsttextrender.c: (gst_text_renderer_bitmap_to_ayuv),
 	(gst_text_render_chain):
 	  Renamed gst_text_overlay_blit_yuv420 to
-		gst_text_renderer_bitmap_to_ayuv, removed all code handling actual video
-		overlay and unused parameters, fixes bug #310597.
+	  gst_text_renderer_bitmap_to_ayuv, removed all code handling 
+	  actual video overlay and unused parameters, fixes bug #310597.
 
 2005-07-16  Arwed v. Merkatz  <v.merkatz@gmx.net>
 
