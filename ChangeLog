@@ -1,3 +1,13 @@
+2005-09-05  Tim-Philipp Müller  <tim at centricular dot net>
+
+	* ext/flac/gstflacdec.c: (flac_caps_factory), (raw_caps_factory):
+	  Fix source pad template factory caps (we can do up to 6 channels
+	  and multiple depths)
+	  
+	* gst/matroska/matroska-demux.c:
+	(gst_matroska_demux_parse_contents):
+	  Fix minor (hypothetical) logic error.
+
 2005-09-04  Thomas Vander Stichele  <thomas at apestaart dot org>
 
 	* configure.ac:
