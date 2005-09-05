@@ -1,3 +1,8 @@
+2005-09-05  Thomas Vander Stichele  <thomas at apestaart dot org>
+
+	* configure.ac:
+	  build fix for configure --disable-x
+
 2005-09-05  Tim-Philipp Müller  <tim at centricular dot net>
 
 	* ext/flac/gstflacdec.c: (flac_caps_factory), (raw_caps_factory):

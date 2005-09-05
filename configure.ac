@@ -634,8 +634,6 @@ GST_CHECK_FEATURE(X, [X libraries and plugins],
     AC_SUBST(XFIXES_LIBS)
     AC_SUBST(XFIXES_CFLAGS)
     
-    AM_CONDITIONAL(HAVE_XFIXES, test "x$HAVE_XFIXES" = "xyes")
-
     dnl check for Xdamage
     PKG_CHECK_MODULES(XDAMAGE, xdamage, HAVE_XDAMAGE="yes", HAVE_XDAMAGE="no")
     if test "x$HAVE_XDAMAGE" = "xyes"
@@ -644,12 +642,11 @@ GST_CHECK_FEATURE(X, [X libraries and plugins],
     fi
     AC_SUBST(XDAMAGE_LIBS)
     AC_SUBST(XDAMAGE_CFLAGS)
-    
-    AM_CONDITIONAL(HAVE_XDAMAGE, test "x$HAVE_XDAMAGE" = "xyes")
-
   fi
   AC_SUBST(HAVE_X)
 ])
+AM_CONDITIONAL(HAVE_XFIXES, test "x$HAVE_XFIXES" = "xyes")
+AM_CONDITIONAL(HAVE_XDAMAGE, test "x$HAVE_XDAMAGE" = "xyes")
     
 dnl *** XVideo ***
 dnl Look for the PIC library first, Debian requires it.
