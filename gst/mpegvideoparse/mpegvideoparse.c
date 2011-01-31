@@ -366,7 +366,7 @@ picture_start_code_name (guint8 psc)
     0xb2, "User Data Start"}, {
     0xb3, "Sequence Header Start"}, {
     0xb4, "Sequence Error"}, {
-    0xb5, "Extnsion Start"}, {
+    0xb5, "Extension Start"}, {
     0xb6, "Reserved"}, {
     0xb7, "Sequence End"}, {
     0xb8, "Group Start"}, {
