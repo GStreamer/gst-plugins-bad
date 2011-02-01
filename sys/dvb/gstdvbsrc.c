@@ -883,7 +883,7 @@ gst_dvbsrc_finalize (GObject * _object)
 /*
  ******************************
  *                            *
- *      Plugin Realisation    *
+ *      Plugin Realization    *
  *                            *
  ******************************
  */
