@@ -416,12 +416,8 @@ gstspu_vobsub_render (GstDVDSpu * dvdspu, GstBuffer * buf)
 
   /* Store the start of each plane */
   planes[0] = GST_BUFFER_DATA (buf);
-  planes[1] = planes[0] + (state->Y_height * state->Y_stride);
-  planes[2] = planes[1] + (state->UV_height * state->UV_stride);
-
-  /* Sanity check */
-  g_return_if_fail (planes[2] + (state->UV_height * state->UV_stride) <=
-      GST_BUFFER_DATA (buf) + GST_BUFFER_SIZE (buf));
+  planes[1] = planes[0] + state->U_offset;
+  planes[2] = planes[1] + state->V_offset;
 
   GST_DEBUG_OBJECT (dvdspu,
       "Rendering SPU. disp_rect %d,%d to %d,%d. hl_rect %d,%d to %d,%d",

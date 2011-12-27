@@ -61,7 +61,7 @@ static GstStaticPadTemplate video_sink_factory =
 GST_STATIC_PAD_TEMPLATE ("video",
     GST_PAD_SINK,
     GST_PAD_ALWAYS,
-    GST_STATIC_CAPS ("video/x-raw-yuv, " "format = (fourcc) { I420 }, "
+    GST_STATIC_CAPS ("video/x-raw-yuv, " "format = (fourcc) { I420, NV12 }, "
         "width = (int) [ 16, 4096 ], " "height = (int) [ 16, 4096 ]")
     /* FIXME: Can support YV12 one day too */
     );
@@ -69,7 +69,7 @@ GST_STATIC_PAD_TEMPLATE ("video",
 static GstStaticPadTemplate src_factory = GST_STATIC_PAD_TEMPLATE ("src",
     GST_PAD_SRC,
     GST_PAD_ALWAYS,
-    GST_STATIC_CAPS ("video/x-raw-yuv, " "format = (fourcc) { I420 }, "
+    GST_STATIC_CAPS ("video/x-raw-yuv, " "format = (fourcc) { I420, NV12 }, "
         "width = (int) [ 16, 4096 ], " "height = (int) [ 16, 4096 ]")
     /* FIXME: Can support YV12 one day too */
     );
@@ -325,13 +325,15 @@ gst_dvd_spu_video_set_caps (GstPad * pad, GstCaps * caps)
   gint w, h;
   gint i;
   gint fps_n, fps_d;
+  guint32 format;
   SpuState *state;
 
   s = gst_caps_get_structure (caps, 0);
 
   if (!gst_structure_get_int (s, "width", &w) ||
       !gst_structure_get_int (s, "height", &h) ||
-      !gst_structure_get_fraction (s, "framerate", &fps_n, &fps_d)) {
+      !gst_structure_get_fraction (s, "framerate", &fps_n, &fps_d) ||
+      !gst_structure_get_fourcc (s, "format", &format)) {
     goto done;
   }
 
@@ -346,14 +348,24 @@ gst_dvd_spu_video_set_caps (GstPad * pad, GstCaps * caps)
   state->Y_height = GST_ROUND_UP_2 (h);
   state->UV_height = state->Y_height / 2;
 
-  if (state->vid_width != w) {
-    state->vid_width = w;
-    state->Y_stride = GST_ROUND_UP_4 (w);
+  state->vid_width = w;
+  state->Y_stride = GST_ROUND_UP_4 (w);
+
+  state->U_offset  = state->Y_height * state->Y_stride;
+
+  if (format == GST_STR_FOURCC("NV12")) {
+    state->UV_stride = GST_ROUND_UP_4 (state->Y_stride);
+    state->V_offset  = 1;
+    state->UV_pixstride = 2;
+  } else {
     state->UV_stride = GST_ROUND_UP_4 (state->Y_stride / 2);
-    for (i = 0; i < 3; i++) {
-      state->comp_bufs[i] = g_realloc (state->comp_bufs[i],
-          sizeof (guint32) * state->UV_stride);
-    }
+    state->V_offset  = state->UV_stride * state->UV_height;
+    state->UV_pixstride = 1;
+  }
+
+  for (i = 0; i < 3; i++) {
+	  state->comp_bufs[i] = g_realloc (state->comp_bufs[i],
+			  sizeof (guint32) * state->UV_stride);
   }
   DVD_SPU_UNLOCK (dvdspu);
 

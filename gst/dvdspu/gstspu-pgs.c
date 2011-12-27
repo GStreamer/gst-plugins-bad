@@ -196,12 +196,8 @@ pgs_composition_object_render (PgsCompositionObject * obj, SpuState * state,
 
   /* Store the start of each plane */
   planes[0] = GST_BUFFER_DATA (dest_buf);
-  planes[1] = planes[0] + (state->Y_height * state->Y_stride);
-  planes[2] = planes[1] + (state->UV_height * state->UV_stride);
-
-  /* Sanity check */
-  g_return_if_fail (planes[2] + (state->UV_height * state->UV_stride) <=
-      GST_BUFFER_DATA (dest_buf) + GST_BUFFER_SIZE (dest_buf));
+  planes[1] = planes[0] + state->U_offset;
+  planes[2] = planes[1] + state->V_offset;
 
   y = MIN (obj->y, state->Y_height);
 
