@@ -90,6 +90,7 @@ GST_DEBUG_CATEGORY_STATIC (uvc_h264_mjpg_demux_debug);
 
 struct _GstUvcH264MjpgDemuxPrivate
 {
+  GstPad *sink_pad;
   GstPad *jpeg_pad;
   GstPad *h264_pad;
   GstPad *yuy2_pad;
@@ -118,7 +119,7 @@ static GstFlowReturn gst_uvc_h264_mjpg_demux_chain (GstPad * pad,
     GstBuffer * buffer);
 static gboolean gst_uvc_h264_mjpg_demux_sink_setcaps (GstPad * pad,
     GstCaps * caps);
-static GstCaps *gst_uvc_h264_mjpg_demux_src_getcaps (GstPad * pad);
+static GstCaps *gst_uvc_h264_mjpg_demux_getcaps (GstPad * pad);
 static GstStateChangeReturn gst_uvc_h264_mjpg_demux_change_state (GstElement *
     element, GstStateChange transition);
 
@@ -171,51 +172,48 @@ static void
 gst_uvc_h264_mjpg_demux_init (GstUvcH264MjpgDemux * self,
     GstUvcH264MjpgDemuxClass * g_class)
 {
-  GstPad *sinkpad;
-
   self->priv = G_TYPE_INSTANCE_GET_PRIVATE (self, GST_TYPE_UVC_H264_MJPG_DEMUX,
       GstUvcH264MjpgDemuxPrivate);
 
   /* create the sink and src pads */
-  sinkpad =
+  self->priv->sink_pad =
       gst_pad_new_from_static_template
       (&gst_uvc_h264_mjpg_demux_sink_pad_template, "sink");
-  gst_pad_set_chain_function (sinkpad,
+  gst_pad_set_chain_function (self->priv->sink_pad,
       GST_DEBUG_FUNCPTR (gst_uvc_h264_mjpg_demux_chain));
-  gst_pad_set_setcaps_function (sinkpad,
+  gst_pad_set_setcaps_function (self->priv->sink_pad,
       GST_DEBUG_FUNCPTR (gst_uvc_h264_mjpg_demux_sink_setcaps));
-  gst_element_add_pad (GST_ELEMENT (self), sinkpad);
+  gst_pad_set_getcaps_function (self->priv->sink_pad,
+      GST_DEBUG_FUNCPTR (gst_uvc_h264_mjpg_demux_getcaps));
+  gst_element_add_pad (GST_ELEMENT (self), self->priv->sink_pad);
 
   /* JPEG */
   self->priv->jpeg_pad =
       gst_pad_new_from_static_template
       (&gst_uvc_h264_mjpg_demux_jpegsrc_pad_template, "jpeg");
   gst_pad_set_getcaps_function (self->priv->jpeg_pad,
-      GST_DEBUG_FUNCPTR (gst_uvc_h264_mjpg_demux_src_getcaps));
+      GST_DEBUG_FUNCPTR (gst_uvc_h264_mjpg_demux_getcaps));
   gst_element_add_pad (GST_ELEMENT (self), self->priv->jpeg_pad);
 
   /* H264 */
   self->priv->h264_pad =
       gst_pad_new_from_static_template
       (&gst_uvc_h264_mjpg_demux_h264src_pad_template, "h264");
-  gst_pad_set_getcaps_function (self->priv->h264_pad,
-      GST_DEBUG_FUNCPTR (gst_uvc_h264_mjpg_demux_src_getcaps));
+  gst_pad_use_fixed_caps (self->priv->h264_pad);
   gst_element_add_pad (GST_ELEMENT (self), self->priv->h264_pad);
 
   /* YUY2 */
   self->priv->yuy2_pad =
       gst_pad_new_from_static_template
       (&gst_uvc_h264_mjpg_demux_yuy2src_pad_template, "yuy2");
-  gst_pad_set_getcaps_function (self->priv->yuy2_pad,
-      GST_DEBUG_FUNCPTR (gst_uvc_h264_mjpg_demux_src_getcaps));
+  gst_pad_use_fixed_caps (self->priv->yuy2_pad);
   gst_element_add_pad (GST_ELEMENT (self), self->priv->yuy2_pad);
 
   /* NV12 */
   self->priv->nv12_pad =
       gst_pad_new_from_static_template
       (&gst_uvc_h264_mjpg_demux_nv12src_pad_template, "nv12");
-  gst_pad_set_getcaps_function (self->priv->nv12_pad,
-      GST_DEBUG_FUNCPTR (gst_uvc_h264_mjpg_demux_src_getcaps));
+  gst_pad_use_fixed_caps (self->priv->nv12_pad);
   gst_element_add_pad (GST_ELEMENT (self), self->priv->nv12_pad);
 
   self->priv->app4_buffer = NULL;
@@ -246,17 +244,19 @@ gst_uvc_h264_mjpg_demux_sink_setcaps (GstPad * pad, GstCaps * caps)
 }
 
 static GstCaps *
-gst_uvc_h264_mjpg_demux_src_getcaps (GstPad * pad)
+gst_uvc_h264_mjpg_demux_getcaps (GstPad * pad)
 {
-  GstCaps *result;
+  GstUvcH264MjpgDemux *self = GST_UVC_H264_MJPG_DEMUX (GST_OBJECT_PARENT (pad));
+  GstCaps *result = NULL;
 
-  if ((result = GST_PAD_CAPS (pad))) {
-    result = gst_caps_ref (result);
-    GST_DEBUG_OBJECT (pad, "using pad caps %" GST_PTR_FORMAT, result);
-  } else {
-    result = gst_caps_ref (GST_PAD_TEMPLATE_CAPS (GST_PAD_PAD_TEMPLATE (pad)));
-    GST_DEBUG_OBJECT (pad, "using pad template caps %" GST_PTR_FORMAT, result);
-  }
+  if (pad == self->priv->jpeg_pad)
+    result = gst_pad_peer_get_caps (self->priv->sink_pad);
+  else if (pad == self->priv->sink_pad)
+    result = gst_pad_peer_get_caps (self->priv->jpeg_pad);
+
+  if (result == NULL)
+    result = gst_caps_copy (gst_pad_get_pad_template_caps (pad));
+
   return result;
 }
 
@@ -342,6 +342,8 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
     goto error;
   }
 
+  /* TODO: do this at the same time as parsing, use sub buffers, buffers lists
+   * and no memcpy */
   i = 0;
   while (i < self->priv->app4_len) {
     AuxiliaryStreamHeader aux_header;
