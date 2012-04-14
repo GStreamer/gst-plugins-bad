@@ -528,9 +528,6 @@ gst_mpegv_parse_check_valid_frame (GstBaseParse * parse,
 
     GST_LOG_OBJECT (mpvparse, "next start code at %d", codoffsz->offset);
 
-    if (codoffsz->size < 0)
-      break;
-
     ret = gst_mpegv_parse_process_sc (mpvparse, buf, codoffsz->offset,
         codoffsz->type);
 
@@ -552,9 +549,7 @@ end:
 
   } else {
     /* resume scan where we left it */
-    if (!mpvparse->last_sc)
-      *skipsize = mpvparse->last_sc = GST_BUFFER_SIZE (buf) - 3;
-    else if (mpvparse->typeoffsize)
+    if (mpvparse->typeoffsize)
       mpvparse->last_sc = GST_BUFFER_SIZE (buf) - 3;
     else
       *skipsize = 0;
