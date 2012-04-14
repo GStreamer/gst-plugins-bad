@@ -86,8 +86,7 @@ gst_mpegv_parse_base_init (gpointer klass)
   GstElementClass *element_class = GST_ELEMENT_CLASS (klass);
 
   gst_element_class_add_static_pad_template (element_class, &src_template);
-  gst_element_class_add_static_pad_template (element_class,
-      &sink_template);
+  gst_element_class_add_static_pad_template (element_class, &sink_template);
 
   gst_element_class_set_details_simple (element_class,
       "MPEG video elementary stream parser",
@@ -233,11 +232,26 @@ gst_mpegv_parse_process_config (GstMpegvParse * mpvparse, GstBuffer * buf,
 {
   GList *tmp;
   guint8 *data = GST_BUFFER_DATA (buf);
+  guint8 *data_with_prefix;
+
   data = data + mpvparse->seq_offset;
 
-  /* only do stuff if something new */
+  if (mpvparse->seq_offset < 4) {
+    /* This shouldn't happen, but just in case... */
+    GST_WARNING_OBJECT (mpvparse, "Sequence header start code missing.");
+    return FALSE;
+  }
+
+  /* pointer to sequence header data including the start code prefix -
+     used for codec private data */
+  data_with_prefix = data - 4;
+
+  /* only do stuff if something new; only compare first 11 bytes, changes in
+     quantiser matrix doesn't matter here. Also changing the matrices in
+     codec_data seems to cause problem with decoders */
   if (mpvparse->config && size == GST_BUFFER_SIZE (mpvparse->config) &&
-      memcmp (GST_BUFFER_DATA (mpvparse->config), data, size) == 0)
+      memcmp (GST_BUFFER_DATA (mpvparse->config), data_with_prefix, MIN (size,
+              11)) == 0)
     return TRUE;
 
   if (gst_mpeg_video_parse_sequence_header (&mpvparse->sequencehdr, data,
@@ -285,7 +299,7 @@ gst_mpegv_parse_process_config (GstMpegvParse * mpvparse, GstBuffer * buf,
     gst_buffer_unref (mpvparse->config);
 
   mpvparse->config = gst_buffer_new_and_alloc (size);
-  memcpy (GST_BUFFER_DATA (mpvparse->config), data, size);
+  memcpy (GST_BUFFER_DATA (mpvparse->config), data_with_prefix, size);
 
   /* trigger src caps update */
   mpvparse->update_caps = TRUE;
