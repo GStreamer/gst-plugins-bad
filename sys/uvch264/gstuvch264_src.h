@@ -26,7 +26,6 @@
 
 #include <gst/gst.h>
 
-#define GST_USE_UNSTABLE_API
 #include <gst/basecamerabinsrc/gstbasecamerasrc.h>
 
 G_BEGIN_DECLS
