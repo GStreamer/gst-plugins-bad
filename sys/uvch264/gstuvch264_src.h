@@ -25,6 +25,7 @@
 #define __GST_UVC_H264_SRC_H__
 
 #include <gst/gst.h>
+#include "uvc_h264.h"
 
 #include <gst/basecamerabinsrc/gstbasecamerasrc.h>
 
@@ -51,6 +52,13 @@ enum GstVideoRecordingStatus {
   GST_VIDEO_RECORDING_STATUS_FINISHING
 };
 
+enum  {
+  QP_ALL_FRAMES = 0,
+  QP_I_FRAME,
+  QP_P_FRAME,
+  QP_B_FRAME,
+  QP_FRAMES
+};
 
 /**
  * GstUcH264Src:
@@ -68,6 +76,7 @@ struct _GstUvcH264Src
   GstElement *v4l2_src;
   GstElement *mjpg_demux;
   GstElement *jpeg_dec;
+  int v4l2_fd;
 
   GstPadEventFunction srcpad_event_func;
 
@@ -75,6 +84,27 @@ struct _GstUvcH264Src
 
   /* When restarting the source */
   gboolean drop_newseg;
+
+  /* Static controls */
+  guint32 initial_bitrate;
+  guint16 slice_units;
+  UvcH264SliceMode slice_mode;
+  guint16 iframe_period;
+  UvcH264UsageType usage_type;
+  UvcH264StreamFormat stream_format;
+  UvcH264Entropy entropy;
+  gboolean enable_sei;
+  guint8 num_reorder_frames;
+  gboolean preview_flipped;
+
+  /* Dynamic controls */
+  UvcH264RateControl rate_control;
+  gboolean fixed_framerate;
+  guint8 level_idc;
+  guint32 peak_bitrate;
+  guint32 average_bitrate;
+  gint8 min_qp[QP_FRAMES];
+  gint8 max_qp[QP_FRAMES];
 };
 
 
