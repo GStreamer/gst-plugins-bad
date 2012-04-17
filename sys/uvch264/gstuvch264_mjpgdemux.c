@@ -294,6 +294,7 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
   gst_buffer_list_iterator_add_group (jpeg_it);
   for (i = 0; i < size - 1; i++) {
     if (data[i] == 0xff && data[i + 1] == 0xe4) {
+      GstBuffer *sub_buffer = NULL;
       guint16 segment_size;
 
       if (i + 4 >= size) {
@@ -313,16 +314,20 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
           last_offset, i, i, i + 2 + segment_size);
       gst_uvc_h264_mjpg_add_app4 (self, data + i + 4, segment_size - 2);
 
-      gst_buffer_list_iterator_add (jpeg_it,
-          gst_buffer_create_sub (buf, last_offset, i - last_offset));
+      sub_buffer = gst_buffer_create_sub (buf, last_offset, i - last_offset);
+      gst_buffer_copy_metadata (sub_buffer, buf, GST_BUFFER_COPY_ALL);
+      gst_buffer_list_iterator_add (jpeg_it, sub_buffer);
       i += 2 + segment_size - 1;
       last_offset = i;
     } else if (data[i] == 0xff && data[i + 1] == 0xda) {
-      GST_DEBUG_OBJECT (self, "Found SOS marker.");
-      /* The APP4 markers must be before the SOS marker, so this is the end */
+      GstBuffer *sub_buffer = NULL;
 
-      gst_buffer_list_iterator_add (jpeg_it,
-          gst_buffer_create_sub (buf, last_offset, size - last_offset));
+      /* The APP4 markers must be before the SOS marker, so this is the end */
+      GST_DEBUG_OBJECT (self, "Found SOS marker.");
+
+      sub_buffer = gst_buffer_create_sub (buf, last_offset, size - last_offset);
+      gst_buffer_copy_metadata (sub_buffer, buf, GST_BUFFER_COPY_ALL);
+      gst_buffer_list_iterator_add (jpeg_it, sub_buffer);
       last_offset = size;
       break;
     }
