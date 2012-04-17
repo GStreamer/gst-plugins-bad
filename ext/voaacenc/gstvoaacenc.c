@@ -493,7 +493,7 @@ gst_voaacenc_handle_frame (GstAudioEncoder * benc, GstBuffer * buf)
     goto encode_failed;
   }
 
-  GST_LOG_OBJECT (voaacenc, "encoded to %d bytes", output.Length);
+  GST_LOG_OBJECT (voaacenc, "encoded to %lu bytes", output.Length);
   GST_BUFFER_SIZE (out) = output.Length;
 
   GST_LOG_OBJECT (voaacenc, "Pushing out buffer time: %" GST_TIME_FORMAT
