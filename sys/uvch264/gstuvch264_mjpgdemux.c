@@ -335,12 +335,13 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
   gst_buffer_list_iterator_free (jpeg_it);
 
   if (last_offset != size) {
-    /* This shouldn't happen, would mean there was no SOS marker in the jpg */
-    GST_ERROR_OBJECT (self, "SOS marker wasn't found");
-    ret = GST_FLOW_UNEXPECTED;
-    goto error;
+    /* this means there was no SOS marker in the jpg, so we assume the JPG was
+       just a container */
+    GST_DEBUG_OBJECT (self, "SOS marker wasn't found. MJPG is container only");
+    gst_buffer_list_unref (jpeg_buf);
+  } else {
+    ret = gst_pad_push_list (self->priv->jpeg_pad, jpeg_buf);
   }
-  ret = gst_pad_push_list (self->priv->jpeg_pad, jpeg_buf);
 
   if (ret != GST_FLOW_OK) {
     GST_WARNING_OBJECT (self, "Error pushing jpeg data");
