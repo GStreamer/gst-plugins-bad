@@ -314,8 +314,7 @@ gst_dvbsrc_base_init (gpointer gclass)
   GstDvbSrcClass *klass = (GstDvbSrcClass *) gclass;
   GstElementClass *element_class = GST_ELEMENT_CLASS (klass);
 
-  gst_element_class_add_static_pad_template (element_class,
-      &ts_src_factory);
+  gst_element_class_add_static_pad_template (element_class, &ts_src_factory);
 
   gst_element_class_set_details_simple (element_class, "DVB Source",
       "Source/Video",
@@ -903,18 +902,18 @@ gst_dvbsrc_plugin_init (GstPlugin * plugin)
       GST_TYPE_DVBSRC);
 }
 
-static GstBuffer *
-gst_dvbsrc_read_device (GstDvbSrc * object, int size)
+static GstFlowReturn
+gst_dvbsrc_read_device (GstDvbSrc * object, int size, GstBuffer ** buffer)
 {
   gint count = 0;
   gint ret_val = 0;
   GstBuffer *buf = gst_buffer_new_and_alloc (size);
   GstClockTime timeout = object->timeout * GST_USECOND;
 
-  g_return_val_if_fail (GST_IS_BUFFER (buf), NULL);
+  g_return_val_if_fail (GST_IS_BUFFER (buf), GST_FLOW_ERROR);
 
   if (object->fd_dvr < 0)
-    return NULL;
+    return GST_FLOW_ERROR;
 
   while (count < size) {
     ret_val = gst_poll_wait (object->poll, timeout);
@@ -947,18 +946,23 @@ gst_dvbsrc_read_device (GstDvbSrc * object, int size)
   }
 
   GST_BUFFER_SIZE (buf) = count;
-  return buf;
+  *buffer = buf;
+
+  return GST_FLOW_OK;
 
 stopped:
-  GST_DEBUG_OBJECT (object, "stop called");
-  gst_buffer_unref (buf);
-  return NULL;
-
+  {
+    GST_DEBUG_OBJECT (object, "stop called");
+    gst_buffer_unref (buf);
+    return GST_FLOW_WRONG_STATE;
+  }
 select_error:
-  GST_ELEMENT_ERROR (object, RESOURCE, READ, (NULL),
-      ("select error %d: %s (%d)", ret_val, g_strerror (errno), errno));
-  gst_buffer_unref (buf);
-  return NULL;
+  {
+    GST_ELEMENT_ERROR (object, RESOURCE, READ, (NULL),
+        ("select error %d: %s (%d)", ret_val, g_strerror (errno), errno));
+    gst_buffer_unref (buf);
+  }
+  return GST_FLOW_ERROR;
 }
 
 static GstFlowReturn
@@ -981,15 +985,9 @@ gst_dvbsrc_create (GstPushSrc * element, GstBuffer ** buf)
   if (object->fd_dvr > -1) {
     /* --- Read TS from DVR device --- */
     GST_DEBUG_OBJECT (object, "Reading from DVR device");
-    *buf = gst_dvbsrc_read_device (object, buffer_size);
-    if (*buf != NULL) {
-      GstCaps *caps;
-
-      retval = GST_FLOW_OK;
-
-      caps = gst_pad_get_caps (GST_BASE_SRC_PAD (object));
-      gst_buffer_set_caps (*buf, caps);
-      gst_caps_unref (caps);
+    retval = gst_dvbsrc_read_device (object, buffer_size, buf);
+    if (retval == GST_FLOW_OK) {
+      gst_buffer_set_caps (*buf, GST_PAD_CAPS (GST_BASE_SRC_PAD (object)));
     }
 
     if (object->stats_interval != 0 &&
