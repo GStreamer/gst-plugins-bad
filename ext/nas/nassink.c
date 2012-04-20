@@ -1,4 +1,3 @@
-/* patch by OHt based on  .../gst-plugins-bad-0.10.23/ext/nas/nassink.c */
 /* GStreamer
  * Copyright (C) <2003> Laurent Vivier <Laurent.Vivier@bull.net>
  * Copyright (C) <2004> Arwed v. Merkatz <v.merkatz@gmx.net>
