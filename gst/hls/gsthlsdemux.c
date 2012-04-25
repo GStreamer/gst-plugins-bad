@@ -1159,6 +1159,7 @@ gst_hls_demux_get_next_fragment (GstHLSDemux * demux, gboolean caching)
   g_object_unref (download);
   if (!caching) {
     GST_TASK_SIGNAL (demux->updates_task);
+    gst_task_start (demux->stream_task);
   }
 
   return TRUE;
