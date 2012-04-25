@@ -148,11 +148,6 @@ gst_rsvg_dec_reset (GstRsvgDec * dec)
   g_list_foreach (dec->pending_events, (GFunc) gst_mini_object_unref, NULL);
   g_list_free (dec->pending_events);
   dec->pending_events = NULL;
-
-  if (dec->pending_tags) {
-    gst_tag_list_free (dec->pending_tags);
-    dec->pending_tags = NULL;
-  }
 }
 
 #define CAIRO_UNPREMULTIPLY(a,r,g,b) G_STMT_START { \
@@ -196,7 +191,6 @@ gst_rsvg_decode_image (GstRsvgDec * rsvg, const guint8 * data, guint size,
   GError *error = NULL;
   RsvgDimensionData dimension;
   gdouble scalex, scaley;
-  const gchar *title = NULL, *comment = NULL;
 
   GST_LOG_OBJECT (rsvg, "parsing svg");
 
@@ -205,23 +199,6 @@ gst_rsvg_decode_image (GstRsvgDec * rsvg, const guint8 * data, guint size,
     GST_ERROR_OBJECT (rsvg, "Failed to parse SVG image: %s", error->message);
     g_error_free (error);
     return GST_FLOW_ERROR;
-  }
-
-  title = rsvg_handle_get_title (handle);
-  comment = rsvg_handle_get_desc (handle);
-
-  if (title || comment) {
-    GST_LOG_OBJECT (rsvg, "adding tags");
-
-    if (!rsvg->pending_tags)
-      rsvg->pending_tags = gst_tag_list_new ();
-
-    if (title && *title)
-      gst_tag_list_add (rsvg->pending_tags, GST_TAG_MERGE_REPLACE_ALL,
-          GST_TAG_TITLE, title, NULL);
-    if (comment && *comment)
-      gst_tag_list_add (rsvg->pending_tags, GST_TAG_MERGE_REPLACE_ALL,
-          GST_TAG_COMMENT, comment, NULL);
   }
 
   rsvg_handle_get_dimensions (handle, &dimension);
@@ -425,11 +402,6 @@ gst_rsvg_dec_chain (GstPad * pad, GstBuffer * buffer)
           gst_pad_push_event (rsvg->srcpad, l->data);
         g_list_free (rsvg->pending_events);
         rsvg->pending_events = NULL;
-      }
-
-      if (rsvg->pending_tags) {
-        gst_element_found_tags (GST_ELEMENT_CAST (rsvg), rsvg->pending_tags);
-        rsvg->pending_tags = NULL;
       }
 
       GST_LOG_OBJECT (rsvg, "image rendered okay");
