@@ -25,7 +25,7 @@
  * SECTION:element-uvch264-mjpgdemux
  * @short_description: UVC H264 compliant MJPG demuxer
  *
- * Parses a MJPG stream from a UVC H264 compliant encoding camera and extracts the
+ * Parses a MJPG stream from a UVC H264 compliant encoding camera and extracts
  * each muxed stream into separate pads.
  *
  */
@@ -95,10 +95,6 @@ struct _GstUvcH264MjpgDemuxPrivate
   GstPad *h264_pad;
   GstPad *yuy2_pad;
   GstPad *nv12_pad;
-
-  gchar *app4_buffer;
-  guint app4_size;
-  guint app4_len;
 };
 
 typedef struct
@@ -113,15 +109,11 @@ typedef struct
   guint32 pts;
 } __attribute__ ((packed)) AuxiliaryStreamHeader;
 
-static void gst_uvc_h264_mjpg_demux_dispose (GObject * object);
-
 static GstFlowReturn gst_uvc_h264_mjpg_demux_chain (GstPad * pad,
     GstBuffer * buffer);
 static gboolean gst_uvc_h264_mjpg_demux_sink_setcaps (GstPad * pad,
     GstCaps * caps);
 static GstCaps *gst_uvc_h264_mjpg_demux_getcaps (GstPad * pad);
-static GstStateChangeReturn gst_uvc_h264_mjpg_demux_change_state (GstElement *
-    element, GstStateChange transition);
 
 #define _do_init(x) \
   GST_DEBUG_CATEGORY_INIT (uvc_h264_mjpg_demux_debug, \
@@ -155,17 +147,9 @@ gst_uvc_h264_mjpg_demux_base_init (gpointer g_class)
 static void
 gst_uvc_h264_mjpg_demux_class_init (GstUvcH264MjpgDemuxClass * klass)
 {
-  GstElementClass *gstelement_class;
-  GObjectClass *gobject_class;
-
-  gstelement_class = (GstElementClass *) klass;
-  gobject_class = (GObjectClass *) klass;
+  GObjectClass *gobject_class = (GObjectClass *) klass;
 
   g_type_class_add_private (gobject_class, sizeof (GstUvcH264MjpgDemuxPrivate));
-  gobject_class->dispose = gst_uvc_h264_mjpg_demux_dispose;
-
-  gstelement_class->change_state =
-      GST_DEBUG_FUNCPTR (gst_uvc_h264_mjpg_demux_change_state);
 }
 
 static void
@@ -215,24 +199,6 @@ gst_uvc_h264_mjpg_demux_init (GstUvcH264MjpgDemux * self,
       (&gst_uvc_h264_mjpg_demux_nv12src_pad_template, "nv12");
   gst_pad_use_fixed_caps (self->priv->nv12_pad);
   gst_element_add_pad (GST_ELEMENT (self), self->priv->nv12_pad);
-
-  self->priv->app4_buffer = NULL;
-  self->priv->app4_size = 0;
-  self->priv->app4_len = 0;
-}
-
-static void
-gst_uvc_h264_mjpg_demux_dispose (GObject * object)
-{
-  GstUvcH264MjpgDemux *self = GST_UVC_H264_MJPG_DEMUX (object);
-
-  if (self->priv->app4_buffer != NULL) {
-    g_free (self->priv->app4_buffer);
-    self->priv->app4_buffer = NULL;
-    self->priv->app4_size = 0;
-    self->priv->app4_len = 0;
-  }
-  G_OBJECT_CLASS (parent_class)->dispose (object);
 }
 
 static gboolean
@@ -260,67 +226,165 @@ gst_uvc_h264_mjpg_demux_getcaps (GstPad * pad)
   return result;
 }
 
-static void
-gst_uvc_h264_mjpg_add_app4 (GstUvcH264MjpgDemux * self, guchar * data,
-    guint16 size)
-{
-  if (self->priv->app4_len + size > self->priv->app4_size) {
-    self->priv->app4_size += 64 * 1024;
-    self->priv->app4_buffer = g_realloc (self->priv->app4_buffer,
-        self->priv->app4_size);
-  }
-  memcpy (self->priv->app4_buffer + self->priv->app4_len, data, size);
-  self->priv->app4_len += size;
-}
-
 static GstFlowReturn
 gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
 {
   GstUvcH264MjpgDemux *self;
   GstFlowReturn ret = GST_FLOW_OK;
+  GstBufferList *jpeg_buf = gst_buffer_list_new ();
+  GstBufferListIterator *jpeg_it = gst_buffer_list_iterate (jpeg_buf);
+  GstBufferList *aux_buf = NULL;
+  GstBufferListIterator *aux_it = NULL;
+  AuxiliaryStreamHeader aux_header = { 0 };
+  GstBuffer *sub_buffer = NULL;
+  guint32 aux_size = 0;
+  GstPad *aux_pad = NULL;
+  GstCaps *aux_caps = NULL;
   guint last_offset;
   guint i;
   guchar *data;
   guint size;
-  GstBufferList *jpeg_buf = gst_buffer_list_new ();
-  GstBufferListIterator *jpeg_it = gst_buffer_list_iterate (jpeg_buf);
 
   self = GST_UVC_H264_MJPG_DEMUX (GST_PAD_PARENT (pad));
 
-  /* FIXME: should actually read each marker and skip its content */
   last_offset = 0;
   data = GST_BUFFER_DATA (buf);
   size = GST_BUFFER_SIZE (buf);
   gst_buffer_list_iterator_add_group (jpeg_it);
   for (i = 0; i < size - 1; i++) {
+    /* Check for APP4 (0xe4) marker in the jpeg */
     if (data[i] == 0xff && data[i + 1] == 0xe4) {
-      GstBuffer *sub_buffer = NULL;
       guint16 segment_size;
 
+      /* Sanity check sizes and get segment size */
       if (i + 4 >= size) {
         GST_ERROR_OBJECT (self, "Not enough data to read marker size");
         ret = GST_FLOW_UNEXPECTED;
-        goto error;
+        goto done;
       }
       segment_size = GUINT16_FROM_BE (*((guint16 *) (data + i + 2)));
 
       if (i + segment_size + 2 >= size) {
         GST_ERROR_OBJECT (self, "Not enough data to read marker content");
         ret = GST_FLOW_UNEXPECTED;
-        goto error;
+        goto done;
       }
       GST_DEBUG_OBJECT (self,
           "Found APP4 marker (%d). JPG: %d-%d - APP4: %d - %d", segment_size,
           last_offset, i, i, i + 2 + segment_size);
-      gst_uvc_h264_mjpg_add_app4 (self, data + i + 4, segment_size - 2);
 
-      sub_buffer = gst_buffer_create_sub (buf, last_offset, i - last_offset);
-      gst_buffer_copy_metadata (sub_buffer, buf, GST_BUFFER_COPY_ALL);
-      gst_buffer_list_iterator_add (jpeg_it, sub_buffer);
-      i += 2 + segment_size - 1;
-      last_offset = i;
+      /* Add JPEG data between the last offset and this market */
+      if (i - last_offset > 0) {
+        sub_buffer = gst_buffer_create_sub (buf, last_offset, i - last_offset);
+        gst_buffer_copy_metadata (sub_buffer, buf, GST_BUFFER_COPY_ALL);
+        gst_buffer_list_iterator_add (jpeg_it, sub_buffer);
+      }
+      last_offset = i + 2 + segment_size - 1;
+
+      /* Reset i/segment size to the app4 data (ignore marker header/size) */
+      i += 4;
+      segment_size -= 2;
+
+      /* If this is a new auxiliary stream, initialize everything properly */
+      if (aux_buf == NULL) {
+        if (segment_size < sizeof (aux_header) + sizeof (aux_size)) {
+          GST_ERROR_OBJECT (self, "Not enough data to read aux header");
+          ret = GST_FLOW_UNEXPECTED;
+          goto done;
+        }
+
+        aux_header = *((AuxiliaryStreamHeader *) (data + i));
+        /* version should be little endian but it looks more like BE */
+        aux_header.version = GUINT16_FROM_BE (aux_header.version);
+        aux_header.header_len = GUINT16_FROM_LE (aux_header.header_len);
+        aux_header.width = GUINT16_FROM_LE (aux_header.width);
+        aux_header.height = GUINT16_FROM_LE (aux_header.height);
+        aux_header.frame_interval = GUINT32_FROM_LE (aux_header.frame_interval);
+        aux_header.delay = GUINT16_FROM_LE (aux_header.delay);
+        aux_header.pts = GUINT32_FROM_LE (aux_header.pts);
+        GST_DEBUG_OBJECT (self, "New auxiliary stream : v%d - %d bytes - %"
+            GST_FOURCC_FORMAT " %dx%d -- %d *100ns -- %d ms -- %d",
+            aux_header.version, aux_header.header_len,
+            GST_FOURCC_ARGS (aux_header.type),
+            aux_header.width, aux_header.height,
+            aux_header.frame_interval, aux_header.delay, aux_header.pts);
+        aux_size = *((guint32 *) (data + i + aux_header.header_len));
+        GST_DEBUG_OBJECT (self, "Auxiliary stream size : %d bytes", aux_size);
+
+        /* Find the auxiliary stream's pad and caps */
+        switch (aux_header.type) {
+          case GST_MAKE_FOURCC ('H', '2', '6', '4'):
+            aux_pad = self->priv->h264_pad;
+            aux_caps = gst_caps_new_simple ("video/x-h264", NULL);
+            break;
+          case GST_MAKE_FOURCC ('Y', 'U', 'Y', '2'):
+            aux_pad = self->priv->yuy2_pad;
+            aux_caps = gst_caps_new_simple ("video/x-raw-yuv",
+                "format", GST_TYPE_FOURCC, aux_header.type, NULL);
+            break;
+          case GST_MAKE_FOURCC ('N', 'V', '1', '2'):
+            aux_pad = self->priv->nv12_pad;
+            aux_caps = gst_caps_new_simple ("video/x-raw-yuv",
+                "format", GST_TYPE_FOURCC, aux_header.type, NULL);
+            break;
+          default:
+            GST_WARNING_OBJECT (self, "Unknown auxiliary stream format : %"
+                GST_FOURCC_FORMAT, GST_FOURCC_ARGS (aux_header.type));
+            ret = GST_FLOW_UNEXPECTED;
+            break;
+        }
+
+        if (ret != GST_FLOW_OK)
+          goto done;
+
+        gst_caps_set_simple (aux_caps,
+            "width", G_TYPE_INT, aux_header.width,
+            "height", G_TYPE_INT, aux_header.height,
+            "framerate", GST_TYPE_FRACTION,
+            1000000000 / aux_header.frame_interval, 100, NULL);
+
+        /* Create new auxiliary buffer list and adjust i/segment size */
+        aux_buf = gst_buffer_list_new ();
+        aux_it = gst_buffer_list_iterate (aux_buf);
+        gst_buffer_list_iterator_add_group (aux_it);
+
+        i += sizeof (aux_header) + sizeof (aux_size);
+        segment_size -= sizeof (aux_header) + sizeof (aux_size);
+      }
+
+      sub_buffer = gst_buffer_create_sub (buf, i, segment_size);
+      /* TODO: Transform PTS into proper buffer timestamp */
+      //GST_BUFFER_TIMESTAMP (aux_buffer) = aux_header.pts;
+      gst_buffer_copy_metadata (sub_buffer, buf, GST_BUFFER_COPY_TIMESTAMPS);
+      gst_buffer_set_caps (sub_buffer, aux_caps);
+      gst_buffer_list_iterator_add (aux_it, sub_buffer);
+
+      if (segment_size > aux_size) {
+        GST_WARNING_OBJECT (self, "Expected %d auxiliary data, got %d bytes",
+            aux_size, segment_size);
+        ret = GST_FLOW_UNEXPECTED;
+        goto done;
+      }
+      aux_size -= segment_size;
+
+      /* Push completed aux data */
+      if (aux_size == 0) {
+        gst_buffer_list_iterator_free (aux_it);
+        aux_it = NULL;
+        GST_DEBUG_OBJECT (self, "Pushing %" GST_FOURCC_FORMAT
+            " auxiliary buffer %" GST_PTR_FORMAT,
+            GST_FOURCC_ARGS (aux_header.type), aux_caps);
+        ret = gst_pad_push_list (aux_pad, aux_buf);
+        aux_buf = NULL;
+        if (ret != GST_FLOW_OK) {
+          GST_WARNING_OBJECT (self, "Error pushing %" GST_FOURCC_FORMAT
+              " auxiliary data", GST_FOURCC_ARGS (aux_header.type));
+          goto done;
+        }
+      }
+
+      i += segment_size - 1;
     } else if (data[i] == 0xff && data[i + 1] == 0xda) {
-      GstBuffer *sub_buffer = NULL;
 
       /* The APP4 markers must be before the SOS marker, so this is the end */
       GST_DEBUG_OBJECT (self, "Found SOS marker.");
@@ -333,157 +397,44 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
     }
   }
   gst_buffer_list_iterator_free (jpeg_it);
+  jpeg_it = NULL;
+
+  if (aux_buf != NULL) {
+    GST_WARNING_OBJECT (self, "Incomplete auxiliary stream. %d bytes missing",
+        aux_size);
+    ret = GST_FLOW_UNEXPECTED;
+    goto done;
+  }
 
   if (last_offset != size) {
     /* this means there was no SOS marker in the jpg, so we assume the JPG was
        just a container */
     GST_DEBUG_OBJECT (self, "SOS marker wasn't found. MJPG is container only");
     gst_buffer_list_unref (jpeg_buf);
+    jpeg_buf = NULL;
   } else {
     ret = gst_pad_push_list (self->priv->jpeg_pad, jpeg_buf);
+    jpeg_buf = NULL;
   }
 
   if (ret != GST_FLOW_OK) {
     GST_WARNING_OBJECT (self, "Error pushing jpeg data");
-    goto error;
+    goto done;
   }
 
-  /* TODO: do this at the same time as parsing, use sub buffers, buffers lists
-   * and no memcpy */
-  i = 0;
-  while (i < self->priv->app4_len) {
-    AuxiliaryStreamHeader aux_header;
-    guint32 aux_size;
-    GstPad *aux_pad = NULL;
-    GstCaps *caps = NULL;
+done:
+  /* In case of error, unref whatever was left */
+  if (aux_it)
+    gst_buffer_list_iterator_free (aux_it);
+  if (aux_buf)
+    gst_buffer_list_unref (aux_buf);
+  if (jpeg_it)
+    gst_buffer_list_iterator_free (jpeg_it);
+  if (jpeg_buf)
+    gst_buffer_list_unref (jpeg_buf);
 
-    GST_DEBUG_OBJECT (self, "Parsing APP4 data of size %d (offset %d)",
-        self->priv->app4_len, i);
-
-    aux_header = *((AuxiliaryStreamHeader *) (self->priv->app4_buffer + i));
-    aux_header.version = GUINT16_FROM_BE (aux_header.version);
-    aux_header.header_len = GUINT16_FROM_LE (aux_header.header_len);
-    aux_header.width = GUINT16_FROM_LE (aux_header.width);
-    aux_header.height = GUINT16_FROM_LE (aux_header.height);
-    aux_header.frame_interval = GUINT32_FROM_LE (aux_header.frame_interval);
-    aux_header.delay = GUINT16_FROM_LE (aux_header.delay);
-    aux_header.pts = GUINT32_FROM_LE (aux_header.pts);
-    GST_DEBUG_OBJECT (self, "New auxiliary stream : v%d - %d bytes - %"
-        GST_FOURCC_FORMAT " %dx%d -- %d *100ns -- %d ms -- %d",
-        aux_header.version, aux_header.header_len,
-        GST_FOURCC_ARGS (aux_header.type),
-        aux_header.width, aux_header.height,
-        aux_header.frame_interval, aux_header.delay, aux_header.pts);
-    aux_size = *((guint32 *)
-        (self->priv->app4_buffer + i + aux_header.header_len));
-    GST_DEBUG_OBJECT (self, "Auxiliary stream size : %d bytes", aux_size);
-
-    i += aux_header.header_len + sizeof (guint32);
-    if (aux_size > self->priv->app4_len - i) {
-      GST_ERROR_OBJECT (self,
-          "Not enough APP4 data for current auxiliary stream");
-      ret = GST_FLOW_UNEXPECTED;
-      goto error;
-    }
-
-    switch (aux_header.type) {
-      case GST_MAKE_FOURCC ('H', '2', '6', '4'):
-        aux_pad = self->priv->h264_pad;
-        caps = gst_caps_new_simple ("video/x-h264", NULL);
-        break;
-      case GST_MAKE_FOURCC ('Y', 'U', 'Y', '2'):
-        aux_pad = self->priv->yuy2_pad;
-        caps = gst_caps_new_simple ("video/x-raw-yuv",
-            "format", GST_TYPE_FOURCC, aux_header.type, NULL);
-        break;
-      case GST_MAKE_FOURCC ('N', 'V', '1', '2'):
-        aux_pad = self->priv->nv12_pad;
-        caps = gst_caps_new_simple ("video/x-raw-yuv",
-            "format", GST_TYPE_FOURCC, aux_header.type, NULL);
-        break;
-      default:
-        GST_WARNING_OBJECT (self, "Unknown auxiliary stream format : %"
-            GST_FOURCC_FORMAT, GST_FOURCC_ARGS (aux_header.type));
-        ret = GST_FLOW_UNEXPECTED;
-        goto error;
-        break;
-    }
-
-    if (caps != NULL && aux_pad != NULL) {
-      GstBuffer *aux_buffer = NULL;
-
-      gst_caps_set_simple (caps,
-          "width", G_TYPE_INT, aux_header.width,
-          "height", G_TYPE_INT, aux_header.height,
-          "framerate", GST_TYPE_FRACTION,
-          1000000000 / aux_header.frame_interval, 100, NULL);
-
-      ret = gst_pad_alloc_buffer (aux_pad, 0, aux_size, caps, &aux_buffer);
-      if (ret != GST_FLOW_OK) {
-        GST_WARNING_OBJECT (self,
-            "Could not pad_alloc buffer, mem allocating it instead");
-        aux_buffer = gst_buffer_new_and_alloc (aux_size);
-        GST_BUFFER_SIZE (aux_buffer) = aux_size;
-      }
-      memcpy (GST_BUFFER_DATA (aux_buffer), self->priv->app4_buffer + i,
-          aux_size);
-      gst_buffer_set_caps (aux_buffer, caps);
-
-      /* TODO: Transform PTS into proper buffer timestamp */
-      //GST_BUFFER_TIMESTAMP (aux_buffer) = aux_header.pts;
-      gst_buffer_copy_metadata (aux_buffer, buf, GST_BUFFER_COPY_TIMESTAMPS);
-      GST_DEBUG_OBJECT (self, "Pushing auxiliary buffer %" GST_PTR_FORMAT,
-          caps);
-      ret = gst_pad_push (aux_pad, aux_buffer);
-      if (ret != GST_FLOW_OK) {
-        GST_ERROR_OBJECT (self, "Error pushing auxiliary stream");
-        goto error;
-      }
-    }
-    i += aux_size;
-  }
-  self->priv->app4_len = 0;
-
-error:
-  return ret;
-}
-
-static GstStateChangeReturn
-gst_uvc_h264_mjpg_demux_change_state (GstElement * element,
-    GstStateChange transition)
-{
-  GstStateChangeReturn ret;
-  GstUvcH264MjpgDemux *self;
-
-  self = GST_UVC_H264_MJPG_DEMUX (element);
-
-  switch (transition) {
-    case GST_STATE_CHANGE_NULL_TO_READY:
-      /* Initialize the buffer to 64K */
-      self->priv->app4_buffer = g_malloc (64 * 1024);
-      self->priv->app4_size = 64 * 1024;
-      self->priv->app4_len = 0;
-      break;
-    default:
-      break;
-  }
-
-  ret = GST_ELEMENT_CLASS (parent_class)->change_state (element, transition);
-  if (ret != GST_STATE_CHANGE_SUCCESS)
-    return ret;
-
-  switch (transition) {
-    case GST_STATE_CHANGE_READY_TO_NULL:
-      if (self->priv->app4_buffer != NULL) {
-        g_free (self->priv->app4_buffer);
-        self->priv->app4_buffer = NULL;
-        self->priv->app4_size = 0;
-        self->priv->app4_len = 0;
-      }
-      break;
-    default:
-      break;
-  }
+  /* We must always unref the input buffer since we never push it out */
+  gst_buffer_unref (buf);
 
   return ret;
 }
