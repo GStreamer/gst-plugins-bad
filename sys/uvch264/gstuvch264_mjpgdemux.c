@@ -258,15 +258,17 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
 
       /* Sanity check sizes and get segment size */
       if (i + 4 >= size) {
-        GST_ERROR_OBJECT (self, "Not enough data to read marker size");
-        ret = GST_FLOW_UNEXPECTED;
+        GST_ELEMENT_ERROR (self, STREAM, DEMUX,
+            ("Not enough data to read marker size"), (NULL));
+        ret = GST_FLOW_ERROR;
         goto done;
       }
       segment_size = GUINT16_FROM_BE (*((guint16 *) (data + i + 2)));
 
       if (i + segment_size + 2 >= size) {
-        GST_ERROR_OBJECT (self, "Not enough data to read marker content");
-        ret = GST_FLOW_UNEXPECTED;
+        GST_ELEMENT_ERROR (self, STREAM, DEMUX,
+            ("Not enough data to read marker content"), (NULL));
+        ret = GST_FLOW_ERROR;
         goto done;
       }
       GST_DEBUG_OBJECT (self,
@@ -288,8 +290,9 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
       /* If this is a new auxiliary stream, initialize everything properly */
       if (aux_buf == NULL) {
         if (segment_size < sizeof (aux_header) + sizeof (aux_size)) {
-          GST_ERROR_OBJECT (self, "Not enough data to read aux header");
-          ret = GST_FLOW_UNEXPECTED;
+          GST_ELEMENT_ERROR (self, STREAM, DEMUX,
+              ("Not enough data to read aux header"), (NULL));
+          ret = GST_FLOW_ERROR;
           goto done;
         }
 
@@ -328,9 +331,10 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
                 "format", GST_TYPE_FOURCC, aux_header.type, NULL);
             break;
           default:
-            GST_WARNING_OBJECT (self, "Unknown auxiliary stream format : %"
-                GST_FOURCC_FORMAT, GST_FOURCC_ARGS (aux_header.type));
-            ret = GST_FLOW_UNEXPECTED;
+            GST_ELEMENT_ERROR (self, STREAM, DEMUX,
+                ("Unknown auxiliary stream format : %" GST_FOURCC_FORMAT,
+                    GST_FOURCC_ARGS (aux_header.type)), (NULL));
+            ret = GST_FLOW_ERROR;
             break;
         }
 
@@ -360,9 +364,10 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
       gst_buffer_list_iterator_add (aux_it, sub_buffer);
 
       if (segment_size > aux_size) {
-        GST_WARNING_OBJECT (self, "Expected %d auxiliary data, got %d bytes",
-            aux_size, segment_size);
-        ret = GST_FLOW_UNEXPECTED;
+        GST_ELEMENT_ERROR (self, STREAM, DEMUX,
+            ("Expected %d auxiliary data, got %d bytes", aux_size,
+                segment_size), (NULL));
+        ret = GST_FLOW_ERROR;
         goto done;
       }
       aux_size -= segment_size;
@@ -400,9 +405,9 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
   jpeg_it = NULL;
 
   if (aux_buf != NULL) {
-    GST_WARNING_OBJECT (self, "Incomplete auxiliary stream. %d bytes missing",
-        aux_size);
-    ret = GST_FLOW_UNEXPECTED;
+    GST_ELEMENT_ERROR (self, STREAM, DEMUX,
+        ("Incomplete auxiliary stream. %d bytes missing", aux_size), (NULL));
+    ret = GST_FLOW_ERROR;
     goto done;
   }
 
