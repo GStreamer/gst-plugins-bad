@@ -42,7 +42,6 @@ struct _GstFragmentPrivate
 {
   GstBufferList *buffer_list;
   GstBufferListIterator *buffer_iterator;
-  gboolean headers_set;
 };
 
 G_DEFINE_TYPE (GstFragment, gst_fragment, G_TYPE_OBJECT);
@@ -128,7 +127,6 @@ gst_fragment_init (GstFragment * fragment)
   priv->buffer_list = gst_buffer_list_new ();
   priv->buffer_iterator = gst_buffer_list_iterate (priv->buffer_list);
   gst_buffer_list_iterator_add_group (priv->buffer_iterator);
-  priv->headers_set = FALSE;
   fragment->download_start_time = g_get_real_time ();
   fragment->start_time = 0;
   fragment->stop_time = 0;
@@ -181,26 +179,6 @@ gst_fragment_get_buffer_list (GstFragment * fragment)
 }
 
 gboolean
-gst_fragment_set_headers (GstFragment * fragment, GstBuffer ** buffer,
-    guint count)
-{
-  guint i;
-
-  g_return_val_if_fail (fragment != NULL, FALSE);
-  g_return_val_if_fail (buffer != NULL, FALSE);
-
-  if (fragment->priv->headers_set)
-    return FALSE;
-
-  for (i = 0; i < count; i++) {
-    /* We steal the buffers you pass in */
-    gst_buffer_list_iterator_add (fragment->priv->buffer_iterator, buffer[i]);
-    gst_buffer_list_iterator_add_group (fragment->priv->buffer_iterator);
-  }
-  return TRUE;
-}
-
-gboolean
 gst_fragment_add_buffer (GstFragment * fragment, GstBuffer * buffer)
 {
   g_return_val_if_fail (fragment != NULL, FALSE);
@@ -210,10 +188,6 @@ gst_fragment_add_buffer (GstFragment * fragment, GstBuffer * buffer)
     GST_WARNING ("Fragment is completed, could not add more buffers");
     return FALSE;
   }
-
-  /* if this is the first buffer forbid setting the headers anymore */
-  if (G_UNLIKELY (fragment->priv->headers_set == FALSE))
-    fragment->priv->headers_set = TRUE;
 
   GST_DEBUG ("Adding new buffer to the fragment");
   /* We steal the buffers you pass in */

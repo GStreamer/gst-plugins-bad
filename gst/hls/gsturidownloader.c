@@ -91,7 +91,7 @@ gst_uri_downloader_init (GstUriDownloader * downloader)
   gst_pad_set_event_function (downloader->priv->pad,
       GST_DEBUG_FUNCPTR (gst_uri_downloader_sink_event));
   gst_pad_set_element_private (downloader->priv->pad, downloader);
-  gst_pad_activate_push (downloader->priv->pad, TRUE);
+  gst_pad_set_active (downloader->priv->pad, TRUE);
 
   /* Create a bus to handle error and warning message from the source element */
   downloader->priv->bus = gst_bus_new ();
@@ -148,8 +148,10 @@ gst_uri_downloader_new (void)
 static gboolean
 gst_uri_downloader_sink_event (GstPad * pad, GstEvent * event)
 {
-  GstUriDownloader *downloader =
-      (GstUriDownloader *) (gst_pad_get_element_private (pad));
+  gboolean ret = FALSE;
+  GstUriDownloader *downloader;
+
+  downloader = GST_URI_DOWNLOADER (gst_pad_get_element_private (pad));
 
   switch (event->type) {
     case GST_EVENT_EOS:{
@@ -162,18 +164,18 @@ gst_uri_downloader_sink_event (GstPad * pad, GstEvent * event)
         GST_OBJECT_UNLOCK (downloader);
         GST_DEBUG_OBJECT (downloader, "Signaling chain funtion");
         g_cond_signal (downloader->priv->cond);
-
       } else {
         GST_OBJECT_UNLOCK (downloader);
       }
+      gst_event_unref (event);
       break;
     }
     default:
+      ret = gst_pad_event_default (pad, event);
       break;
   }
 
-  gst_event_unref (event);
-  return FALSE;
+  return ret;
 }
 
 static GstBusSyncReply
@@ -207,8 +209,9 @@ gst_uri_downloader_bus_handler (GstBus * bus,
 static GstFlowReturn
 gst_uri_downloader_chain (GstPad * pad, GstBuffer * buf)
 {
-  GstUriDownloader *downloader =
-      (GstUriDownloader *) gst_pad_get_element_private (pad);
+  GstUriDownloader *downloader;
+
+  downloader = GST_URI_DOWNLOADER (gst_pad_get_element_private (pad));
 
   /* HTML errors (404, 500, etc...) are also pushed through this pad as
    * response but the source element will also post a warning or error message

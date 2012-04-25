@@ -430,15 +430,16 @@ gst_hls_demux_src_event (GstPad * pad, GstEvent * event)
 static gboolean
 gst_hls_demux_sink_event (GstPad * pad, GstEvent * event)
 {
-  GstHLSDemux *demux = GST_HLS_DEMUX (gst_pad_get_parent (pad));
+  GstHLSDemux *demux;
   GstQuery *query;
   gboolean ret;
   gchar *uri;
 
+  demux = GST_HLS_DEMUX (gst_pad_get_parent (pad));
 
   switch (event->type) {
     case GST_EVENT_EOS:{
-      gchar *playlist;
+      gchar *playlist = NULL;
 
       if (demux->playlist == NULL) {
         GST_WARNING_OBJECT (demux, "Received EOS without a playlist.");
@@ -467,6 +468,7 @@ gst_hls_demux_sink_event (GstPad * pad, GstEvent * event)
          * the playlist */
         GST_ELEMENT_ERROR (demux, STREAM, DECODE, ("Invalid playlist."),
             (NULL));
+        gst_object_unref (demux);
         return FALSE;
       }
 
@@ -474,20 +476,25 @@ gst_hls_demux_sink_event (GstPad * pad, GstEvent * event)
         GST_ELEMENT_ERROR (demux, RESOURCE, NOT_FOUND,
             ("Failed querying the playlist uri, "
                 "required for live sources."), (NULL));
+        gst_object_unref (demux);
         return FALSE;
       }
 
       gst_task_start (demux->stream_task);
       gst_event_unref (event);
+      gst_object_unref (demux);
       return TRUE;
     }
     case GST_EVENT_NEWSEGMENT:
       /* Swallow newsegments, we'll push our own */
       gst_event_unref (event);
+      gst_object_unref (demux);
       return TRUE;
     default:
       break;
   }
+
+  gst_object_unref (demux);
 
   return gst_pad_event_default (pad, event);
 }
@@ -634,6 +641,7 @@ switch_pads (GstHLSDemux * demux, GstCaps * newcaps)
 static void
 gst_hls_demux_stream_loop (GstHLSDemux * demux)
 {
+  GstFragment *fragment;
   GstBufferList *buffer_list;
   GstBuffer *buf;
   GstFlowReturn ret;
@@ -661,16 +669,21 @@ gst_hls_demux_stream_loop (GstHLSDemux * demux)
     goto pause_task;
   }
 
-  buffer_list = g_queue_pop_head (demux->queue);
+  fragment = g_queue_pop_head (demux->queue);
+  buffer_list = gst_fragment_get_buffer_list (fragment);
   /* Work with the first buffer of the list */
   buf = gst_buffer_list_get (buffer_list, 0, 0);
+
   /* Figure out if we need to create/switch pads */
   if (G_UNLIKELY (!demux->srcpad
-          || GST_BUFFER_CAPS (buf) != GST_PAD_CAPS (demux->srcpad)
+          || !gst_caps_is_equal_fixed (GST_BUFFER_CAPS (buf),
+              GST_PAD_CAPS (demux->srcpad))
           || demux->need_segment)) {
     switch_pads (demux, GST_BUFFER_CAPS (buf));
     demux->need_segment = TRUE;
   }
+  g_object_unref (fragment);
+
   if (demux->need_segment) {
     GstClockTime start = demux->position + demux->position_shift;
     /* And send a newsegment */
@@ -756,8 +769,8 @@ gst_hls_demux_reset (GstHLSDemux * demux, gboolean dispose)
   }
 
   while (!g_queue_is_empty (demux->queue)) {
-    GstBufferList *buffer_list = g_queue_pop_head (demux->queue);
-    gst_buffer_list_unref (buffer_list);
+    GstFragment *fragment = g_queue_pop_head (demux->queue);
+    g_object_unref (fragment);
   }
   g_queue_clear (demux->queue);
 
@@ -939,7 +952,7 @@ gst_hls_src_buf_to_utf8_playlist (GstBuffer * buf)
   size = GST_BUFFER_SIZE (buf);
 
   if (!g_utf8_validate (data, size, NULL))
-    return NULL;
+    goto validate_error;
 
   /* alloc size + 1 to end with a null character */
   playlist = g_malloc0 (size + 1);
@@ -947,6 +960,10 @@ gst_hls_src_buf_to_utf8_playlist (GstBuffer * buf)
 
   gst_buffer_unref (buf);
   return playlist;
+
+validate_error:
+  gst_buffer_unref (buf);
+  return NULL;
 }
 
 static gboolean
@@ -967,9 +984,6 @@ gst_hls_demux_update_playlist (GstHLSDemux * demux)
   /* Merge all the buffers in the list to build a unique buffer with the
    * playlist */
   it = gst_buffer_list_iterate (gst_fragment_get_buffer_list (download));
-
-  /* skip the first group, which contains the headers, which are not set in the
-   * demuxer*/
   gst_buffer_list_iterator_next_group (it);
   buf = gst_buffer_list_iterator_merge_group (it);
 
@@ -1145,8 +1159,8 @@ gst_hls_demux_get_next_fragment (GstHLSDemux * demux, gboolean caching)
       GST_INFO_OBJECT (demux, "Input source caps: %" GST_PTR_FORMAT,
           demux->input_caps);
       demux->do_typefind = FALSE;
-    } else
-      gst_caps_unref (caps);
+    }
+    gst_caps_unref (caps);
   }
   gst_buffer_set_caps (buf, demux->input_caps);
 
@@ -1155,13 +1169,12 @@ gst_hls_demux_get_next_fragment (GstHLSDemux * demux, gboolean caching)
     GST_BUFFER_FLAG_SET (buf, GST_BUFFER_FLAG_DISCONT);
   }
 
-  g_queue_push_tail (demux->queue, buffer_list);
-  g_object_unref (download);
+  g_queue_push_tail (demux->queue, download);
+  gst_buffer_list_unref (buffer_list);
   if (!caching) {
     GST_TASK_SIGNAL (demux->updates_task);
     gst_task_start (demux->stream_task);
   }
-
   return TRUE;
 
 error:
