@@ -281,7 +281,7 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
         gst_buffer_copy_metadata (sub_buffer, buf, GST_BUFFER_COPY_ALL);
         gst_buffer_list_iterator_add (jpeg_it, sub_buffer);
       }
-      last_offset = i + 2 + segment_size - 1;
+      last_offset = i + 2 + segment_size;
 
       /* Reset i/segment size to the app4 data (ignore marker header/size) */
       i += 4;
