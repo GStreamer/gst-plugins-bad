@@ -376,6 +376,8 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
       if (aux_size == 0) {
         gst_buffer_list_iterator_free (aux_it);
         aux_it = NULL;
+        gst_caps_unref (aux_caps);
+        aux_caps = NULL;
         GST_DEBUG_OBJECT (self, "Pushing %" GST_FOURCC_FORMAT
             " auxiliary buffer %" GST_PTR_FORMAT,
             GST_FOURCC_ARGS (aux_header.type), aux_caps);
@@ -433,6 +435,8 @@ done:
     gst_buffer_list_iterator_free (aux_it);
   if (aux_buf)
     gst_buffer_list_unref (aux_buf);
+  if (aux_caps)
+    gst_caps_unref (aux_caps);
   if (jpeg_it)
     gst_buffer_list_iterator_free (jpeg_it);
   if (jpeg_buf)
