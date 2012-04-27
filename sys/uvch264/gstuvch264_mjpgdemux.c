@@ -250,6 +250,11 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
   last_offset = 0;
   data = GST_BUFFER_DATA (buf);
   size = GST_BUFFER_SIZE (buf);
+  if (data == NULL || size == 0) {
+    ret = gst_pad_push (self->priv->jpeg_pad, buf);
+    goto done;
+  }
+
   gst_buffer_list_iterator_add_group (jpeg_it);
   for (i = 0; i < size - 1; i++) {
     /* Check for APP4 (0xe4) marker in the jpeg */
@@ -314,54 +319,48 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
         aux_size = *((guint32 *) (data + i + aux_header.header_len));
         GST_DEBUG_OBJECT (self, "Auxiliary stream size : %d bytes", aux_size);
 
-        /* Find the auxiliary stream's pad and caps */
-        switch (aux_header.type) {
-          case GST_MAKE_FOURCC ('H', '2', '6', '4'):
-            aux_pad = self->priv->h264_pad;
-            aux_caps = gst_caps_new_simple ("video/x-h264", NULL);
-            break;
-          case GST_MAKE_FOURCC ('Y', 'U', 'Y', '2'):
-            aux_pad = self->priv->yuy2_pad;
-            aux_caps = gst_caps_new_simple ("video/x-raw-yuv",
-                "format", GST_TYPE_FOURCC, aux_header.type, NULL);
-            break;
-          case GST_MAKE_FOURCC ('N', 'V', '1', '2'):
-            aux_pad = self->priv->nv12_pad;
-            aux_caps = gst_caps_new_simple ("video/x-raw-yuv",
-                "format", GST_TYPE_FOURCC, aux_header.type, NULL);
-            break;
-          default:
-            GST_ELEMENT_ERROR (self, STREAM, DEMUX,
-                ("Unknown auxiliary stream format : %" GST_FOURCC_FORMAT,
-                    GST_FOURCC_ARGS (aux_header.type)), (NULL));
-            ret = GST_FLOW_ERROR;
-            break;
+        if (aux_size > 0) {
+          /* Find the auxiliary stream's pad and caps */
+          switch (aux_header.type) {
+            case GST_MAKE_FOURCC ('H', '2', '6', '4'):
+              aux_pad = self->priv->h264_pad;
+              aux_caps = gst_caps_new_simple ("video/x-h264", NULL);
+              break;
+            case GST_MAKE_FOURCC ('Y', 'U', 'Y', '2'):
+              aux_pad = self->priv->yuy2_pad;
+              aux_caps = gst_caps_new_simple ("video/x-raw-yuv",
+                  "format", GST_TYPE_FOURCC, aux_header.type, NULL);
+              break;
+            case GST_MAKE_FOURCC ('N', 'V', '1', '2'):
+              aux_pad = self->priv->nv12_pad;
+              aux_caps = gst_caps_new_simple ("video/x-raw-yuv",
+                  "format", GST_TYPE_FOURCC, aux_header.type, NULL);
+              break;
+            default:
+              GST_ELEMENT_ERROR (self, STREAM, DEMUX,
+                  ("Unknown auxiliary stream format : %" GST_FOURCC_FORMAT,
+                      GST_FOURCC_ARGS (aux_header.type)), (NULL));
+              ret = GST_FLOW_ERROR;
+              break;
+          }
+
+          if (ret != GST_FLOW_OK)
+            goto done;
+
+          gst_caps_set_simple (aux_caps,
+              "width", G_TYPE_INT, aux_header.width,
+              "height", G_TYPE_INT, aux_header.height,
+              "framerate", GST_TYPE_FRACTION,
+              1000000000 / aux_header.frame_interval, 100, NULL);
+
+          /* Create new auxiliary buffer list and adjust i/segment size */
+          aux_buf = gst_buffer_list_new ();
+          aux_it = gst_buffer_list_iterate (aux_buf);
+          gst_buffer_list_iterator_add_group (aux_it);
         }
-
-        if (ret != GST_FLOW_OK)
-          goto done;
-
-        gst_caps_set_simple (aux_caps,
-            "width", G_TYPE_INT, aux_header.width,
-            "height", G_TYPE_INT, aux_header.height,
-            "framerate", GST_TYPE_FRACTION,
-            1000000000 / aux_header.frame_interval, 100, NULL);
-
-        /* Create new auxiliary buffer list and adjust i/segment size */
-        aux_buf = gst_buffer_list_new ();
-        aux_it = gst_buffer_list_iterate (aux_buf);
-        gst_buffer_list_iterator_add_group (aux_it);
-
         i += sizeof (aux_header) + sizeof (aux_size);
         segment_size -= sizeof (aux_header) + sizeof (aux_size);
       }
-
-      sub_buffer = gst_buffer_create_sub (buf, i, segment_size);
-      /* TODO: Transform PTS into proper buffer timestamp */
-      //GST_BUFFER_TIMESTAMP (aux_buffer) = aux_header.pts;
-      gst_buffer_copy_metadata (sub_buffer, buf, GST_BUFFER_COPY_TIMESTAMPS);
-      gst_buffer_set_caps (sub_buffer, aux_caps);
-      gst_buffer_list_iterator_add (aux_it, sub_buffer);
 
       if (segment_size > aux_size) {
         GST_ELEMENT_ERROR (self, STREAM, DEMUX,
@@ -370,23 +369,33 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
         ret = GST_FLOW_ERROR;
         goto done;
       }
-      aux_size -= segment_size;
 
-      /* Push completed aux data */
-      if (aux_size == 0) {
-        gst_buffer_list_iterator_free (aux_it);
-        aux_it = NULL;
-        gst_caps_unref (aux_caps);
-        aux_caps = NULL;
-        GST_DEBUG_OBJECT (self, "Pushing %" GST_FOURCC_FORMAT
-            " auxiliary buffer %" GST_PTR_FORMAT,
-            GST_FOURCC_ARGS (aux_header.type), aux_caps);
-        ret = gst_pad_push_list (aux_pad, aux_buf);
-        aux_buf = NULL;
-        if (ret != GST_FLOW_OK) {
-          GST_WARNING_OBJECT (self, "Error pushing %" GST_FOURCC_FORMAT
-              " auxiliary data", GST_FOURCC_ARGS (aux_header.type));
-          goto done;
+      if (segment_size > 0) {
+        sub_buffer = gst_buffer_create_sub (buf, i, segment_size);
+        /* TODO: Transform PTS into proper buffer timestamp */
+        //GST_BUFFER_TIMESTAMP (aux_buffer) = aux_header.pts;
+        gst_buffer_copy_metadata (sub_buffer, buf, GST_BUFFER_COPY_TIMESTAMPS);
+        gst_buffer_set_caps (sub_buffer, aux_caps);
+        gst_buffer_list_iterator_add (aux_it, sub_buffer);
+
+        aux_size -= segment_size;
+
+        /* Push completed aux data */
+        if (aux_size == 0) {
+          gst_buffer_list_iterator_free (aux_it);
+          aux_it = NULL;
+          gst_caps_unref (aux_caps);
+          aux_caps = NULL;
+          GST_DEBUG_OBJECT (self, "Pushing %" GST_FOURCC_FORMAT
+              " auxiliary buffer %" GST_PTR_FORMAT,
+              GST_FOURCC_ARGS (aux_header.type), aux_caps);
+          ret = gst_pad_push_list (aux_pad, aux_buf);
+          aux_buf = NULL;
+          if (ret != GST_FLOW_OK) {
+            GST_WARNING_OBJECT (self, "Error pushing %" GST_FOURCC_FORMAT
+                " auxiliary data", GST_FOURCC_ARGS (aux_header.type));
+            goto done;
+          }
         }
       }
 
