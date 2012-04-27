@@ -29,6 +29,8 @@ static GstElement *demux;
 static GstPad *mjpg_pad, *h264_pad, *yuy2_pad, *nv12_pad, *jpg_pad;
 static gboolean have_h264_eos, have_yuy2_eos, have_nv12_eos, have_jpg_eos;
 static GstBuffer *buffer_h264, *buffer_yuy2, *buffer_nv12, *buffer_jpg;
+static GError *gerror;
+static gchar *error_debug;
 
 static GstStaticPadTemplate mjpg_template =
 GST_STATIC_PAD_TEMPLATE ("src", GST_PAD_SRC, GST_PAD_ALWAYS,
@@ -82,10 +84,27 @@ _sink_event_func (yuy2);
 _sink_event_func (nv12);
 _sink_event_func (jpg);
 
+
+static GstBusSyncReply
+_bus_sync_handler (GstBus * bus, GstMessage * message, gpointer data)
+{
+  if (GST_MESSAGE_TYPE (message) == GST_MESSAGE_ERROR) {
+    fail_unless (gerror == NULL && error_debug == NULL);
+    fail_unless (GST_MESSAGE_SRC (message) == GST_OBJECT (demux));
+    gst_message_parse_error (message, &gerror, &error_debug);
+  }
+  return GST_BUS_PASS;
+}
+
 static void
 _teardown_test (void)
 {
+  GstBus *bus;
   gst_element_set_state (demux, GST_STATE_NULL);
+
+  bus = GST_ELEMENT_BUS (demux);
+  gst_bus_set_flushing (bus, TRUE);
+  gst_object_unref (bus);
 
   gst_pad_set_active (mjpg_pad, FALSE);
   gst_object_unref (mjpg_pad);
@@ -105,6 +124,15 @@ _teardown_test (void)
     gst_pad_set_active (jpg_pad, FALSE);
     gst_object_unref (jpg_pad);
   }
+  if (gerror) {
+    g_error_free (gerror);
+    gerror = NULL;
+  }
+  if (error_debug) {
+    g_free (error_debug);
+    error_debug = NULL;
+  }
+
   gst_object_unref (demux);
   mjpg_pad = h264_pad = yuy2_pad = nv12_pad = jpg_pad = NULL;
   demux = NULL;
@@ -114,6 +142,7 @@ static void
 _setup_test (gboolean link_h264, gboolean link_yuy2, gboolean link_nv12,
     gboolean link_jpg)
 {
+  GstBus *bus = gst_bus_new ();
   GstPad *sinkpad, *h264pad, *yuy2pad, *nv12pad, *jpgpad;
 
   have_h264_eos = have_yuy2_eos = have_nv12_eos = have_jpg_eos = FALSE;
@@ -121,6 +150,9 @@ _setup_test (gboolean link_h264, gboolean link_yuy2, gboolean link_nv12,
 
   demux = gst_element_factory_make ("uvch264_mjpgdemux", NULL);
   fail_unless (demux != NULL);
+
+  gst_element_set_bus (demux, bus);
+  gst_bus_set_sync_handler (bus, _bus_sync_handler, NULL);
 
   mjpg_pad = gst_pad_new_from_static_template (&mjpg_template, "src");
   fail_unless (mjpg_pad != NULL);
@@ -238,6 +270,7 @@ GST_START_TEST (test_valid_h264_jpg)
   fail_unless (buffer_jpg != NULL);
   fail_unless (buffer_nv12 == NULL);
   fail_unless (buffer_yuy2 == NULL);
+  fail_unless (gerror == NULL && error_debug == NULL);
   fail_unless (gst_caps_is_always_compatible (GST_BUFFER_CAPS (buffer_h264),
           h264_caps));
   fail_unless (gst_caps_is_always_compatible (GST_BUFFER_CAPS (buffer_jpg),
@@ -295,6 +328,7 @@ GST_START_TEST (test_valid_h264_yuy2)
   fail_unless (buffer_jpg == NULL);
   fail_unless (buffer_nv12 == NULL);
   fail_unless (buffer_yuy2 != NULL);
+  fail_unless (gerror == NULL && error_debug == NULL);
   fail_unless (gst_caps_is_always_compatible (GST_BUFFER_CAPS (buffer_h264),
           h264_caps));
   fail_unless (gst_caps_is_always_compatible (GST_BUFFER_CAPS (buffer_yuy2),
@@ -318,6 +352,323 @@ GST_START_TEST (test_valid_h264_yuy2)
 
 GST_END_TEST;
 
+GST_START_TEST (test_no_data)
+{
+  GstCaps *mjpg_caps = gst_static_pad_template_get_caps (&mjpg_template);
+  GstBuffer *buffer = gst_buffer_new ();
+
+  _setup_test (TRUE, TRUE, TRUE, TRUE);
+
+  gst_buffer_set_caps (buffer, mjpg_caps);
+  fail_unless (gst_pad_push (mjpg_pad, buffer) == GST_FLOW_OK);
+  fail_unless (gst_pad_push_event (mjpg_pad, gst_event_new_eos ()));
+
+  fail_unless (have_h264_eos && have_yuy2_eos && have_nv12_eos && have_jpg_eos);
+  fail_unless (buffer_h264 == NULL && buffer_jpg != NULL);
+  fail_unless (buffer_nv12 == NULL && buffer_yuy2 == NULL);
+  fail_unless (gerror == NULL && error_debug == NULL);
+
+  _teardown_test ();
+}
+
+GST_END_TEST;
+
+GST_START_TEST (test_data_zero)
+{
+  GstCaps *mjpg_caps = gst_static_pad_template_get_caps (&mjpg_template);
+  GstBuffer *buffer = gst_buffer_new_and_alloc (1024);
+
+  _setup_test (TRUE, TRUE, TRUE, TRUE);
+
+  memset (GST_BUFFER_DATA (buffer), 0, 1024);
+  GST_BUFFER_SIZE (buffer) = 1024;
+  gst_buffer_set_caps (buffer, mjpg_caps);
+  fail_unless (gst_pad_push (mjpg_pad, buffer) == GST_FLOW_OK);
+  fail_unless (gst_pad_push_event (mjpg_pad, gst_event_new_eos ()));
+
+  fail_unless (have_h264_eos && have_yuy2_eos && have_nv12_eos && have_jpg_eos);
+  fail_unless (buffer_h264 == NULL && buffer_jpg == NULL);
+  fail_unless (buffer_nv12 == NULL && buffer_yuy2 == NULL);
+
+  _teardown_test ();
+}
+
+GST_END_TEST;
+
+GST_START_TEST (test_no_marker_size)
+{
+  GstCaps *mjpg_caps = gst_static_pad_template_get_caps (&mjpg_template);
+  GstBuffer *buffer = gst_buffer_new_and_alloc (1024);
+  const guchar data[] = {
+    0xff, 0xd8, 0xff, 0xe4, 0x00
+  };
+
+  _setup_test (TRUE, TRUE, TRUE, TRUE);
+
+  memcpy (GST_BUFFER_DATA (buffer), data, sizeof (data));
+  GST_BUFFER_SIZE (buffer) = sizeof (data);
+  gst_buffer_set_caps (buffer, mjpg_caps);
+  fail_unless (gst_pad_push (mjpg_pad, buffer) == GST_FLOW_ERROR);
+  fail_unless (gst_pad_push_event (mjpg_pad, gst_event_new_eos ()));
+
+  fail_unless (have_h264_eos && have_yuy2_eos && have_nv12_eos && have_jpg_eos);
+  fail_unless (buffer_h264 == NULL && buffer_jpg == NULL);
+  fail_unless (buffer_nv12 == NULL && buffer_yuy2 == NULL);
+  fail_unless (gerror != NULL);
+  fail_unless (gerror->domain == GST_STREAM_ERROR);
+  fail_unless (gerror->code == GST_STREAM_ERROR_DEMUX);
+  fail_unless (memcmp (gerror->message,
+          "Not enough data to read marker size",
+          strlen (gerror->message)) == 0);
+
+  _teardown_test ();
+}
+
+GST_END_TEST;
+
+GST_START_TEST (test_not_enough_data)
+{
+  GstCaps *mjpg_caps = gst_static_pad_template_get_caps (&mjpg_template);
+  GstBuffer *buffer = gst_buffer_new_and_alloc (1024);
+  const guchar data[] = {
+    0xff, 0xd8, 0xff, 0xe4, 0x00, 0xff, 0x00, 0x00
+  };
+
+  _setup_test (TRUE, TRUE, TRUE, TRUE);
+
+  memcpy (GST_BUFFER_DATA (buffer), data, sizeof (data));
+  GST_BUFFER_SIZE (buffer) = sizeof (data);
+  gst_buffer_set_caps (buffer, mjpg_caps);
+  fail_unless (gst_pad_push (mjpg_pad, buffer) == GST_FLOW_ERROR);
+  fail_unless (gst_pad_push_event (mjpg_pad, gst_event_new_eos ()));
+
+  fail_unless (have_h264_eos && have_yuy2_eos && have_nv12_eos && have_jpg_eos);
+  fail_unless (buffer_h264 == NULL && buffer_jpg == NULL);
+  fail_unless (buffer_nv12 == NULL && buffer_yuy2 == NULL);
+  fail_unless (gerror != NULL);
+  fail_unless (gerror->domain == GST_STREAM_ERROR);
+  fail_unless (gerror->code == GST_STREAM_ERROR_DEMUX);
+  fail_unless (memcmp (gerror->message,
+          "Not enough data to read marker content",
+          strlen (gerror->message)) == 0);
+
+  _teardown_test ();
+}
+
+GST_END_TEST;
+
+GST_START_TEST (test_no_aux_header)
+{
+  GstCaps *mjpg_caps = gst_static_pad_template_get_caps (&mjpg_template);
+  GstBuffer *buffer = gst_buffer_new_and_alloc (1024);
+  const guchar data[] = {
+    0xff, 0xd8, 0xff, 0xe4, 0x00, 0x02, 0x00, 0x00,
+    0xff, 0xd9
+  };
+
+  _setup_test (TRUE, TRUE, TRUE, TRUE);
+
+  memcpy (GST_BUFFER_DATA (buffer), data, sizeof (data));
+  GST_BUFFER_SIZE (buffer) = sizeof (data);
+  gst_buffer_set_caps (buffer, mjpg_caps);
+  fail_unless (gst_pad_push (mjpg_pad, buffer) == GST_FLOW_ERROR);
+  fail_unless (gst_pad_push_event (mjpg_pad, gst_event_new_eos ()));
+
+  fail_unless (have_h264_eos && have_yuy2_eos && have_nv12_eos && have_jpg_eos);
+  fail_unless (buffer_h264 == NULL && buffer_jpg == NULL);
+  fail_unless (buffer_nv12 == NULL && buffer_yuy2 == NULL);
+  fail_unless (gerror != NULL);
+  fail_unless (gerror->domain == GST_STREAM_ERROR);
+  fail_unless (gerror->code == GST_STREAM_ERROR_DEMUX);
+  fail_unless (memcmp (gerror->message,
+          "Not enough data to read aux header", strlen (gerror->message)) == 0);
+
+  _teardown_test ();
+}
+
+GST_END_TEST;
+
+GST_START_TEST (test_empty_aux_data)
+{
+  GstCaps *mjpg_caps = gst_static_pad_template_get_caps (&mjpg_template);
+  GstBuffer *buffer = gst_buffer_new_and_alloc (1024);
+  const guchar data[] = {
+    0xff, 0xd8, 0xff, 0xe4, 0x00, 0x1C, 0x00, 0x01,
+    0x16, 0x00, 0x48, 0x32, 0x36, 0x34, 0x80, 0x07,
+    0x38, 0x04, 0x2a, 0x2c, 0x0a, 0x00, 0x1b, 0x00,
+    0x40, 0x62, 0xcb, 0x0a, 0x00, 0x00, 0x00, 0x00,
+    0xff, 0xd9
+  };
+
+  _setup_test (TRUE, TRUE, TRUE, TRUE);
+
+  memcpy (GST_BUFFER_DATA (buffer), data, sizeof (data));
+  GST_BUFFER_SIZE (buffer) = sizeof (data);
+  gst_buffer_set_caps (buffer, mjpg_caps);
+  fail_unless (gst_pad_push (mjpg_pad, buffer) == GST_FLOW_OK);
+  fail_unless (gst_pad_push_event (mjpg_pad, gst_event_new_eos ()));
+
+  fail_unless (have_h264_eos && have_yuy2_eos && have_nv12_eos && have_jpg_eos);
+  fail_unless (buffer_h264 == NULL && buffer_jpg == NULL);
+  fail_unless (buffer_nv12 == NULL && buffer_yuy2 == NULL);
+  fail_unless (gerror == NULL);
+
+  _teardown_test ();
+}
+
+GST_END_TEST;
+
+GST_START_TEST (test_unknown_fcc)
+{
+  GstCaps *mjpg_caps = gst_static_pad_template_get_caps (&mjpg_template);
+  GstBuffer *buffer = gst_buffer_new_and_alloc (1024);
+  const guchar data[] = {
+    0xff, 0xd8, 0xff, 0xe4, 0x00, 0x2C, 0x00, 0x01,
+    0x16, 0x00, 0x48, 0x30, 0x30, 0x30, 0x80, 0x07,
+    0x38, 0x04, 0x2a, 0x2c, 0x0a, 0x00, 0x1b, 0x00,
+    0x40, 0x62, 0xcb, 0x0a, 0x10, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0xff, 0xd9
+  };
+
+  _setup_test (TRUE, TRUE, TRUE, TRUE);
+
+  memcpy (GST_BUFFER_DATA (buffer), data, sizeof (data));
+  GST_BUFFER_SIZE (buffer) = sizeof (data);
+  gst_buffer_set_caps (buffer, mjpg_caps);
+  fail_unless (gst_pad_push (mjpg_pad, buffer) == GST_FLOW_ERROR);
+  fail_unless (gst_pad_push_event (mjpg_pad, gst_event_new_eos ()));
+
+  fail_unless (have_h264_eos && have_yuy2_eos && have_nv12_eos && have_jpg_eos);
+  fail_unless (buffer_h264 == NULL && buffer_jpg == NULL);
+  fail_unless (buffer_nv12 == NULL && buffer_yuy2 == NULL);
+  fail_unless (gerror != NULL);
+  fail_unless (gerror->domain == GST_STREAM_ERROR);
+  fail_unless (gerror->code == GST_STREAM_ERROR_DEMUX);
+  fail_unless (memcmp (gerror->message,
+          "Unknown auxiliary stream format : H000",
+          strlen (gerror->message)) == 0);
+
+  _teardown_test ();
+}
+
+GST_END_TEST;
+
+GST_START_TEST (test_not_enough_aux_data)
+{
+  GstCaps *mjpg_caps = gst_static_pad_template_get_caps (&mjpg_template);
+  GstBuffer *buffer = gst_buffer_new_and_alloc (1024);
+  const guchar data[] = {
+    0xff, 0xd8, 0xff, 0xe4, 0x00, 0x1C, 0x00, 0x01,
+    0x16, 0x00, 0x48, 0x32, 0x36, 0x34, 0x80, 0x07,
+    0x38, 0x04, 0x2a, 0x2c, 0x0a, 0x00, 0x1b, 0x00,
+    0x40, 0x62, 0xcb, 0x0a, 0x10, 0x00, 0x00, 0x00,
+    0xff, 0xd9
+  };
+
+  _setup_test (TRUE, TRUE, TRUE, TRUE);
+
+  memcpy (GST_BUFFER_DATA (buffer), data, sizeof (data));
+  GST_BUFFER_SIZE (buffer) = sizeof (data);
+  gst_buffer_set_caps (buffer, mjpg_caps);
+  fail_unless (gst_pad_push (mjpg_pad, buffer) == GST_FLOW_ERROR);
+  fail_unless (gst_pad_push_event (mjpg_pad, gst_event_new_eos ()));
+
+  fail_unless (have_h264_eos && have_yuy2_eos && have_nv12_eos && have_jpg_eos);
+  fail_unless (buffer_h264 == NULL && buffer_jpg == NULL);
+  fail_unless (buffer_nv12 == NULL && buffer_yuy2 == NULL);
+  fail_unless (gerror != NULL);
+  fail_unless (gerror->domain == GST_STREAM_ERROR);
+  fail_unless (gerror->code == GST_STREAM_ERROR_DEMUX);
+  fail_unless (memcmp (gerror->message,
+          "Incomplete auxiliary stream. 16 bytes missing",
+          strlen (gerror->message)) == 0);
+
+  _teardown_test ();
+}
+
+GST_END_TEST;
+
+GST_START_TEST (test_too_much_aux_data)
+{
+  GstCaps *mjpg_caps = gst_static_pad_template_get_caps (&mjpg_template);
+  GstBuffer *buffer = gst_buffer_new_and_alloc (1024);
+  const guchar data[] = {
+    0xff, 0xd8, 0xff, 0xe4, 0x00, 0x3C, 0x00, 0x01,
+    0x16, 0x00, 0x48, 0x32, 0x36, 0x34, 0x80, 0x07,
+    0x38, 0x04, 0x2a, 0x2c, 0x0a, 0x00, 0x1b, 0x00,
+    0x40, 0x62, 0xcb, 0x0a, 0x10, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0xff, 0xd9
+  };
+
+  _setup_test (TRUE, TRUE, TRUE, TRUE);
+
+  memcpy (GST_BUFFER_DATA (buffer), data, sizeof (data));
+  GST_BUFFER_SIZE (buffer) = sizeof (data);
+  gst_buffer_set_caps (buffer, mjpg_caps);
+  fail_unless (gst_pad_push (mjpg_pad, buffer) == GST_FLOW_ERROR);
+  fail_unless (gst_pad_push_event (mjpg_pad, gst_event_new_eos ()));
+
+  fail_unless (have_h264_eos && have_yuy2_eos && have_nv12_eos && have_jpg_eos);
+  fail_unless (buffer_h264 == NULL && buffer_jpg == NULL);
+  fail_unless (buffer_nv12 == NULL && buffer_yuy2 == NULL);
+  fail_unless (gerror != NULL);
+  fail_unless (gerror->domain == GST_STREAM_ERROR);
+  fail_unless (gerror->code == GST_STREAM_ERROR_DEMUX);
+  fail_unless (memcmp (gerror->message,
+          "Expected 16 auxiliary data, got 32 bytes",
+          strlen (gerror->message)) == 0);
+
+  _teardown_test ();
+}
+
+GST_END_TEST;
+
+
+GST_START_TEST (test_no_sos_marker)
+{
+  GstCaps *mjpg_caps = gst_static_pad_template_get_caps (&mjpg_template);
+  GstBuffer *buffer = gst_buffer_new_and_alloc (1024);
+  const guchar data[] = {
+    0xff, 0xd8, 0xff, 0xe4, 0x00, 0x2C, 0x00, 0x01,
+    0x16, 0x00, 0x48, 0x32, 0x36, 0x34, 0x80, 0x07,
+    0x38, 0x04, 0x2a, 0x2c, 0x0a, 0x00, 0x1b, 0x00,
+    0x40, 0x62, 0xcb, 0x0a, 0x10, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0xff, 0xd9
+  };
+  const guchar h264_data[] = {
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+  };
+
+  _setup_test (TRUE, TRUE, TRUE, TRUE);
+
+  memcpy (GST_BUFFER_DATA (buffer), data, sizeof (data));
+  GST_BUFFER_SIZE (buffer) = sizeof (data);
+  gst_buffer_set_caps (buffer, mjpg_caps);
+  fail_unless (gst_pad_push (mjpg_pad, buffer) == GST_FLOW_OK);
+  fail_unless (gst_pad_push_event (mjpg_pad, gst_event_new_eos ()));
+
+  fail_unless (have_h264_eos && have_yuy2_eos && have_nv12_eos && have_jpg_eos);
+  fail_unless (buffer_h264 != NULL && buffer_jpg == NULL);
+  fail_unless (buffer_nv12 == NULL && buffer_yuy2 == NULL);
+  fail_unless (gerror == NULL);
+  fail_unless (GST_BUFFER_SIZE (buffer_h264) == sizeof (h264_data));
+  fail_unless (memcmp (GST_BUFFER_DATA (buffer_h264), h264_data,
+          sizeof (h264_data)) == 0);
+
+  _teardown_test ();
+}
+
+GST_END_TEST;
+
 static Suite *
 uvch264demux_suite (void)
 {
@@ -328,14 +679,16 @@ uvch264demux_suite (void)
   tcase_set_timeout (tc_chain, 180);
   tcase_add_test (tc_chain, test_valid_h264_jpg);
   tcase_add_test (tc_chain, test_valid_h264_yuy2);
-  /*
-     bad size
-     not enough data
-     no sos
-     no app4
-     unknown fourcc
-     unlinked
-   */
+  tcase_add_test (tc_chain, test_no_data);
+  tcase_add_test (tc_chain, test_data_zero);
+  tcase_add_test (tc_chain, test_no_marker_size);
+  tcase_add_test (tc_chain, test_not_enough_data);
+  tcase_add_test (tc_chain, test_no_aux_header);
+  tcase_add_test (tc_chain, test_empty_aux_data);
+  tcase_add_test (tc_chain, test_unknown_fcc);
+  tcase_add_test (tc_chain, test_no_sos_marker);
+  tcase_add_test (tc_chain, test_not_enough_aux_data);
+  tcase_add_test (tc_chain, test_too_much_aux_data);
 
   return s;
 }
