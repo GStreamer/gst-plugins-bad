@@ -95,6 +95,18 @@ struct _GstUvcH264MjpgDemuxPrivate
   GstPad *h264_pad;
   GstPad *yuy2_pad;
   GstPad *nv12_pad;
+  GstCaps *h264_caps;
+  GstCaps *yuy2_caps;
+  GstCaps *nv12_caps;
+  guint16 h264_width;
+  guint16 h264_height;
+  guint32 h264_frame_interval;
+  guint16 yuy2_width;
+  guint16 yuy2_height;
+  guint32 yuy2_frame_interval;
+  guint16 nv12_width;
+  guint16 nv12_height;
+  guint32 nv12_frame_interval;
 };
 
 typedef struct
@@ -109,6 +121,7 @@ typedef struct
   guint32 pts;
 } __attribute__ ((packed)) AuxiliaryStreamHeader;
 
+static void gst_uvc_h264_mjpg_demux_dispose (GObject * object);
 static GstFlowReturn gst_uvc_h264_mjpg_demux_chain (GstPad * pad,
     GstBuffer * buffer);
 static gboolean gst_uvc_h264_mjpg_demux_sink_setcaps (GstPad * pad,
@@ -150,6 +163,8 @@ gst_uvc_h264_mjpg_demux_class_init (GstUvcH264MjpgDemuxClass * klass)
   GObjectClass *gobject_class = (GObjectClass *) klass;
 
   g_type_class_add_private (gobject_class, sizeof (GstUvcH264MjpgDemuxPrivate));
+
+  gobject_class->dispose = gst_uvc_h264_mjpg_demux_dispose;
 }
 
 static void
@@ -199,6 +214,36 @@ gst_uvc_h264_mjpg_demux_init (GstUvcH264MjpgDemux * self,
       (&gst_uvc_h264_mjpg_demux_nv12src_pad_template, "nv12");
   gst_pad_use_fixed_caps (self->priv->nv12_pad);
   gst_element_add_pad (GST_ELEMENT (self), self->priv->nv12_pad);
+
+  self->priv->h264_caps = gst_caps_new_simple ("video/x-h264", NULL);
+  self->priv->yuy2_caps = gst_caps_new_simple ("video/x-raw-yuv",
+      "format", GST_TYPE_FOURCC, GST_MAKE_FOURCC ('Y', 'U', 'Y', '2'), NULL);
+  self->priv->nv12_caps = gst_caps_new_simple ("video/x-raw-yuv",
+      "format", GST_TYPE_FOURCC, GST_MAKE_FOURCC ('N', 'V', '1', '2'), NULL);
+  self->priv->h264_width = self->priv->h264_height = 0;
+  self->priv->yuy2_width = self->priv->yuy2_height = 0;
+  self->priv->nv12_width = self->priv->nv12_height = 0;
+  self->priv->h264_frame_interval = 0;
+  self->priv->yuy2_frame_interval = 0;
+  self->priv->nv12_frame_interval = 0;
+}
+
+static void
+gst_uvc_h264_mjpg_demux_dispose (GObject * object)
+{
+  GstUvcH264MjpgDemux *self = GST_UVC_H264_MJPG_DEMUX (object);
+
+  if (self->priv->h264_caps)
+    gst_caps_unref (self->priv->h264_caps);
+  self->priv->h264_caps = NULL;
+  if (self->priv->yuy2_caps)
+    gst_caps_unref (self->priv->yuy2_caps);
+  self->priv->yuy2_caps = NULL;
+  if (self->priv->nv12_caps)
+    gst_caps_unref (self->priv->nv12_caps);
+  self->priv->nv12_caps = NULL;
+
+  G_OBJECT_CLASS (parent_class)->dispose (object);
 }
 
 static gboolean
@@ -220,6 +265,7 @@ gst_uvc_h264_mjpg_demux_getcaps (GstPad * pad)
   else if (pad == self->priv->sink_pad)
     result = gst_pad_peer_get_caps (self->priv->jpeg_pad);
 
+  /* TODO: intersect with template and fixate caps */
   if (result == NULL)
     result = gst_caps_copy (gst_pad_get_pad_template_caps (pad));
 
@@ -320,21 +366,33 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
         GST_DEBUG_OBJECT (self, "Auxiliary stream size : %d bytes", aux_size);
 
         if (aux_size > 0) {
+          gboolean caps_changed = FALSE;
+
           /* Find the auxiliary stream's pad and caps */
           switch (aux_header.type) {
             case GST_MAKE_FOURCC ('H', '2', '6', '4'):
               aux_pad = self->priv->h264_pad;
-              aux_caps = gst_caps_new_simple ("video/x-h264", NULL);
+              aux_caps = self->priv->h264_caps;
+              if (self->priv->h264_width != aux_header.width ||
+                  self->priv->h264_height != aux_header.height ||
+                  self->priv->h264_frame_interval != aux_header.frame_interval)
+                caps_changed = TRUE;
               break;
             case GST_MAKE_FOURCC ('Y', 'U', 'Y', '2'):
               aux_pad = self->priv->yuy2_pad;
-              aux_caps = gst_caps_new_simple ("video/x-raw-yuv",
-                  "format", GST_TYPE_FOURCC, aux_header.type, NULL);
+              aux_caps = self->priv->yuy2_caps;
+              if (self->priv->yuy2_width != aux_header.width ||
+                  self->priv->yuy2_height != aux_header.height ||
+                  self->priv->yuy2_frame_interval != aux_header.frame_interval)
+                caps_changed = TRUE;
               break;
             case GST_MAKE_FOURCC ('N', 'V', '1', '2'):
               aux_pad = self->priv->nv12_pad;
-              aux_caps = gst_caps_new_simple ("video/x-raw-yuv",
-                  "format", GST_TYPE_FOURCC, aux_header.type, NULL);
+              aux_caps = self->priv->nv12_caps;
+              if (self->priv->nv12_width != aux_header.width ||
+                  self->priv->nv12_height != aux_header.height ||
+                  self->priv->nv12_frame_interval != aux_header.frame_interval)
+                caps_changed = TRUE;
               break;
             default:
               GST_ELEMENT_ERROR (self, STREAM, DEMUX,
@@ -347,17 +405,20 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
           if (ret != GST_FLOW_OK)
             goto done;
 
-          gst_caps_set_simple (aux_caps,
-              "width", G_TYPE_INT, aux_header.width,
-              "height", G_TYPE_INT, aux_header.height,
-              "framerate", GST_TYPE_FRACTION,
-              1000000000 / aux_header.frame_interval, 100, NULL);
+          if (caps_changed) {
+            gst_caps_set_simple (aux_caps,
+                "width", G_TYPE_INT, aux_header.width,
+                "height", G_TYPE_INT, aux_header.height,
+                "framerate", GST_TYPE_FRACTION,
+                1000000000 / aux_header.frame_interval, 100, NULL);
+          }
 
           /* Create new auxiliary buffer list and adjust i/segment size */
           aux_buf = gst_buffer_list_new ();
           aux_it = gst_buffer_list_iterate (aux_buf);
           gst_buffer_list_iterator_add_group (aux_it);
         }
+
         i += sizeof (aux_header) + sizeof (aux_size);
         segment_size -= sizeof (aux_header) + sizeof (aux_size);
       }
@@ -384,8 +445,6 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
         if (aux_size == 0) {
           gst_buffer_list_iterator_free (aux_it);
           aux_it = NULL;
-          gst_caps_unref (aux_caps);
-          aux_caps = NULL;
           GST_DEBUG_OBJECT (self, "Pushing %" GST_FOURCC_FORMAT
               " auxiliary buffer %" GST_PTR_FORMAT,
               GST_FOURCC_ARGS (aux_header.type), aux_caps);
@@ -444,8 +503,6 @@ done:
     gst_buffer_list_iterator_free (aux_it);
   if (aux_buf)
     gst_buffer_list_unref (aux_buf);
-  if (aux_caps)
-    gst_caps_unref (aux_caps);
   if (jpeg_it)
     gst_buffer_list_iterator_free (jpeg_it);
   if (jpeg_buf)
