@@ -1055,6 +1055,7 @@ gst_ts_demux_stream_flush (TSDemuxStream * stream)
     stream->currentlist = NULL;
   }
 
+  stream->state = PENDING_PACKET_EMPTY;
   stream->expected_size = 0;
   stream->current_size = 0;
   stream->current = NULL;
