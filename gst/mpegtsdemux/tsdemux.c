@@ -1032,6 +1032,8 @@ gst_ts_demux_stream_flush (TSDemuxStream * stream)
 
   stream->pts = GST_CLOCK_TIME_NONE;
 
+  GST_DEBUG ("flushing stream %p", stream);
+
   for (i = 0; i < stream->nbpending; i++)
     gst_buffer_unref (stream->pendingbuffers[i]);
   memset (stream->pendingbuffers, 0, TS_MAX_PENDING_BUFFERS);
@@ -1320,6 +1322,8 @@ gst_ts_demux_parse_pes_header (GstTSDemux * demux, TSDemuxStream * stream)
       stream->currentlist = NULL;
       gst_buffer_list_iterator_add_group (stream->currentit);
 
+      GST_DEBUG_OBJECT (base, "starting new bufferlist %p", stream->current);
+
       /* Push pending buffers into the list */
       for (i = stream->nbpending; i; i--)
         stream->currentlist =
@@ -1372,7 +1376,7 @@ gst_ts_demux_queue_data (GstTSDemux * demux, TSDemuxStream * stream,
   switch (stream->state) {
     case PENDING_PACKET_HEADER:
     {
-      GST_LOG ("HEADER: appending data to array");
+      GST_LOG ("HEADER: %p appending data to array", buf);
       /* Append to the array */
       stream->pendingbuffers[stream->nbpending++] = buf;
       stream->current_size += GST_BUFFER_SIZE (buf);
@@ -1383,14 +1387,14 @@ gst_ts_demux_queue_data (GstTSDemux * demux, TSDemuxStream * stream,
     }
     case PENDING_PACKET_BUFFER:
     {
-      GST_LOG ("BUFFER: appending data to bufferlist");
+      GST_LOG ("BUFFER: %p appending data to bufferlist", buf);
       stream->currentlist = g_list_prepend (stream->currentlist, buf);
       stream->current_size += GST_BUFFER_SIZE (buf);
       break;
     }
     case PENDING_PACKET_DISCONT:
     {
-      GST_LOG ("DISCONT: dropping buffer");
+      GST_LOG ("DISCONT: %p dropping buffer", buf);
       gst_buffer_unref (packet->buffer);
       break;
     }
@@ -1581,12 +1585,10 @@ gst_ts_demux_handle_packet (GstTSDemux * demux, TSDemuxStream * stream,
 {
   GstFlowReturn res = GST_FLOW_OK;
 
-  GST_DEBUG ("buffer:%p, data:%p", GST_BUFFER_DATA (packet->buffer),
-      packet->data);
-  GST_LOG ("pid 0x%04x pusi:%d, afc:%d, cont:%d, payload:%p",
-      packet->pid,
-      packet->payload_unit_start_indicator,
-      packet->adaptation_field_control,
+  GST_DEBUG ("buffer:%p %p, data:%p", packet->buffer,
+      GST_BUFFER_DATA (packet->buffer), packet->data);
+  GST_LOG ("pid 0x%04x pusi:%d, afc:%d, cont:%d, payload:%p", packet->pid,
+      packet->payload_unit_start_indicator, packet->adaptation_field_control,
       packet->continuity_counter, packet->payload);
 
   if (section) {
