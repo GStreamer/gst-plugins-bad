@@ -382,13 +382,16 @@ opus_dec_chain_parse_data (GstOpusDec * dec, GstBuffer * buffer)
      to potentially wait for next buffer to decode a missing buffer */
   if (dec->use_inband_fec && !dec->primed) {
     GST_DEBUG_OBJECT (dec, "First buffer received in FEC mode, early out");
+    gst_buffer_replace (&dec->last_buffer, buffer);
+    dec->primed = TRUE;
     goto done;
   }
 
   /* That's the buffer we'll be sending to the opus decoder. */
-  buf = dec->use_inband_fec && dec->last_buffer ? dec->last_buffer : buffer;
+  buf = (dec->use_inband_fec
+      && GST_BUFFER_SIZE (dec->last_buffer) > 0) ? dec->last_buffer : buffer;
 
-  if (buf) {
+  if (buf && GST_BUFFER_SIZE (buf) > 0) {
     data = GST_BUFFER_DATA (buf);
     size = GST_BUFFER_SIZE (buf);
     GST_DEBUG_OBJECT (dec, "Using buffer of size %u", size);
@@ -418,20 +421,24 @@ opus_dec_chain_parse_data (GstOpusDec * dec, GstBuffer * buffer)
   if (dec->use_inband_fec) {
     if (dec->last_buffer) {
       /* normal delayed decode */
+      GST_LOG_OBJECT (dec, "FEC enabled, decoding last delayed buffer");
       n = opus_multistream_decode (dec->state, data, size, out_data, samples,
           0);
     } else {
       /* FEC reconstruction decode */
+      GST_LOG_OBJECT (dec, "FEC enabled, reconstructing last buffer");
       n = opus_multistream_decode (dec->state, data, size, out_data, samples,
           1);
     }
   } else {
     /* normal decode */
+    GST_LOG_OBJECT (dec, "FEC disabled, decoding buffer");
     n = opus_multistream_decode (dec->state, data, size, out_data, samples, 0);
   }
 
   if (n < 0) {
     GST_ELEMENT_ERROR (dec, STREAM, DECODE, ("Decoding error: %d", n), (NULL));
+    gst_buffer_unref (outbuf);
     return GST_FLOW_ERROR;
   }
   GST_DEBUG_OBJECT (dec, "decoded %d samples", n);
@@ -472,17 +479,16 @@ opus_dec_chain_parse_data (GstOpusDec * dec, GstBuffer * buffer)
     }
   }
 
+  if (dec->use_inband_fec) {
+    gst_buffer_replace (&dec->last_buffer, buffer);
+  }
+
   res = gst_audio_decoder_finish_frame (GST_AUDIO_DECODER (dec), outbuf, 1);
 
   if (res != GST_FLOW_OK)
     GST_DEBUG_OBJECT (dec, "flow: %s", gst_flow_get_name (res));
 
 done:
-  if (dec->use_inband_fec) {
-    gst_buffer_replace (&dec->last_buffer, buffer);
-    dec->primed = TRUE;
-  }
-
   return res;
 
 creation_failed:
