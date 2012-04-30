@@ -1385,6 +1385,7 @@ mpegts_base_chain (GstPad * pad, GstBuffer * buf)
                   &packet)) != PACKET_NEED_MORE)) {
     if (G_UNLIKELY (pret == PACKET_BAD)) {
       GST_DEBUG_OBJECT (base, "bad packet, skipping");
+      gst_buffer_unref (packet.buffer);
       /* bad header, skip the packet */
       goto next;
     }
