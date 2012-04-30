@@ -1379,11 +1379,15 @@ mpegts_base_chain (GstPad * pad, GstBuffer * buf)
   }
 
   mpegts_packetizer_push (base->packetizer, buf);
-  while (((pret = mpegts_packetizer_next_packet (base->packetizer,
-                  &packet)) != PACKET_NEED_MORE) && res == GST_FLOW_OK) {
-    if (G_UNLIKELY (pret == PACKET_BAD))
+  while (res == GST_FLOW_OK
+      && ((pret =
+              mpegts_packetizer_next_packet (base->packetizer,
+                  &packet)) != PACKET_NEED_MORE)) {
+    if (G_UNLIKELY (pret == PACKET_BAD)) {
+      GST_DEBUG_OBJECT (base, "bad packet, skipping");
       /* bad header, skip the packet */
       goto next;
+    }
 
     /* base PSI data */
     if (packet.payload != NULL && mpegts_base_is_psi (base, &packet)) {
