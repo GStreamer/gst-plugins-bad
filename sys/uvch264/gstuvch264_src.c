@@ -757,7 +757,7 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
 
     gst_ghost_pad_set_target (GST_GHOST_PAD (self->vidsrc), h264_pad);
     gst_ghost_pad_set_target (GST_GHOST_PAD (self->vfsrc), vf_pad);
-    g_signal_connect (self->v4l2_src, "pre-set-format",
+    g_signal_connect (self->v4l2_src, "prepare-format",
         (GCallback) v4l2src_pre_set_format, self);
   }
 
