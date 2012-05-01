@@ -285,7 +285,7 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
   GstBuffer *sub_buffer = NULL;
   guint32 aux_size = 0;
   GstPad *aux_pad = NULL;
-  GstCaps *aux_caps = NULL;
+  GstCaps **aux_caps = NULL;
   guint last_offset;
   guint i;
   guchar *data;
@@ -366,33 +366,32 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
         GST_DEBUG_OBJECT (self, "Auxiliary stream size : %d bytes", aux_size);
 
         if (aux_size > 0) {
-          gboolean caps_changed = FALSE;
+          guint16 *width = NULL;
+          guint16 *height = NULL;
+          guint32 *frame_interval = NULL;
 
           /* Find the auxiliary stream's pad and caps */
           switch (aux_header.type) {
             case GST_MAKE_FOURCC ('H', '2', '6', '4'):
               aux_pad = self->priv->h264_pad;
-              aux_caps = self->priv->h264_caps;
-              if (self->priv->h264_width != aux_header.width ||
-                  self->priv->h264_height != aux_header.height ||
-                  self->priv->h264_frame_interval != aux_header.frame_interval)
-                caps_changed = TRUE;
+              aux_caps = &self->priv->h264_caps;
+              width = &self->priv->h264_width;
+              height = &self->priv->h264_height;
+              frame_interval = &self->priv->h264_frame_interval;
               break;
             case GST_MAKE_FOURCC ('Y', 'U', 'Y', '2'):
               aux_pad = self->priv->yuy2_pad;
-              aux_caps = self->priv->yuy2_caps;
-              if (self->priv->yuy2_width != aux_header.width ||
-                  self->priv->yuy2_height != aux_header.height ||
-                  self->priv->yuy2_frame_interval != aux_header.frame_interval)
-                caps_changed = TRUE;
+              aux_caps = &self->priv->yuy2_caps;
+              width = &self->priv->yuy2_width;
+              height = &self->priv->yuy2_height;
+              frame_interval = &self->priv->yuy2_frame_interval;
               break;
             case GST_MAKE_FOURCC ('N', 'V', '1', '2'):
               aux_pad = self->priv->nv12_pad;
-              aux_caps = self->priv->nv12_caps;
-              if (self->priv->nv12_width != aux_header.width ||
-                  self->priv->nv12_height != aux_header.height ||
-                  self->priv->nv12_frame_interval != aux_header.frame_interval)
-                caps_changed = TRUE;
+              aux_caps = &self->priv->nv12_caps;
+              width = &self->priv->nv12_width;
+              height = &self->priv->nv12_height;
+              frame_interval = &self->priv->nv12_frame_interval;
               break;
             default:
               GST_ELEMENT_ERROR (self, STREAM, DEMUX,
@@ -405,8 +404,14 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
           if (ret != GST_FLOW_OK)
             goto done;
 
-          if (caps_changed) {
-            gst_caps_set_simple (aux_caps,
+          if (*width != aux_header.width ||
+              *height != aux_header.height ||
+              *frame_interval != aux_header.frame_interval) {
+            *width = aux_header.width;
+            *height = aux_header.height;
+            *frame_interval = aux_header.frame_interval;
+            *aux_caps = gst_caps_make_writable (*aux_caps);
+            gst_caps_set_simple (*aux_caps,
                 "width", G_TYPE_INT, aux_header.width,
                 "height", G_TYPE_INT, aux_header.height,
                 "framerate", GST_TYPE_FRACTION,
@@ -436,7 +441,7 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
         /* TODO: Transform PTS into proper buffer timestamp */
         //GST_BUFFER_TIMESTAMP (aux_buffer) = aux_header.pts;
         gst_buffer_copy_metadata (sub_buffer, buf, GST_BUFFER_COPY_TIMESTAMPS);
-        gst_buffer_set_caps (sub_buffer, aux_caps);
+        gst_buffer_set_caps (sub_buffer, *aux_caps);
         gst_buffer_list_iterator_add (aux_it, sub_buffer);
 
         aux_size -= segment_size;
@@ -447,7 +452,7 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
           aux_it = NULL;
           GST_DEBUG_OBJECT (self, "Pushing %" GST_FOURCC_FORMAT
               " auxiliary buffer %" GST_PTR_FORMAT,
-              GST_FOURCC_ARGS (aux_header.type), aux_caps);
+              GST_FOURCC_ARGS (aux_header.type), *aux_caps);
           ret = gst_pad_push_list (aux_pad, aux_buf);
           aux_buf = NULL;
           if (ret != GST_FLOW_OK) {
