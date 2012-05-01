@@ -38,7 +38,7 @@
 
 #include "gstuvch264_mjpgdemux.h"
 
-static GstStaticPadTemplate gst_uvc_h264_mjpg_demux_sink_pad_template =
+static GstStaticPadTemplate mjpgsink_pad_template =
 GST_STATIC_PAD_TEMPLATE ("sink",
     GST_PAD_SINK,
     GST_PAD_ALWAYS,
@@ -47,7 +47,7 @@ GST_STATIC_PAD_TEMPLATE ("sink",
         "height = (int) [ 0, MAX ], " "framerate = (fraction) [ 0/1, MAX ] ")
     );
 
-static GstStaticPadTemplate gst_uvc_h264_mjpg_demux_jpegsrc_pad_template =
+static GstStaticPadTemplate jpegsrc_pad_template =
 GST_STATIC_PAD_TEMPLATE ("jpeg",
     GST_PAD_SRC,
     GST_PAD_ALWAYS,
@@ -56,7 +56,7 @@ GST_STATIC_PAD_TEMPLATE ("jpeg",
         "height = (int) [ 0, MAX ], " "framerate = (fraction) [ 0/1, MAX ] ")
     );
 
-static GstStaticPadTemplate gst_uvc_h264_mjpg_demux_h264src_pad_template =
+static GstStaticPadTemplate h264src_pad_template =
 GST_STATIC_PAD_TEMPLATE ("h264",
     GST_PAD_SRC,
     GST_PAD_ALWAYS,
@@ -65,7 +65,7 @@ GST_STATIC_PAD_TEMPLATE ("h264",
         "height = (int) [ 0, MAX ], " "framerate = (fraction) [ 0/1, MAX ] ")
     );
 
-static GstStaticPadTemplate gst_uvc_h264_mjpg_demux_yuy2src_pad_template =
+static GstStaticPadTemplate yuy2src_pad_template =
 GST_STATIC_PAD_TEMPLATE ("yuy2",
     GST_PAD_SRC,
     GST_PAD_ALWAYS,
@@ -74,7 +74,7 @@ GST_STATIC_PAD_TEMPLATE ("yuy2",
         "width = (int) [ 0, MAX ], "
         "height = (int) [ 0, MAX ], " "framerate = (fraction) [ 0/1, MAX ] ")
     );
-static GstStaticPadTemplate gst_uvc_h264_mjpg_demux_nv12src_pad_template =
+static GstStaticPadTemplate nv12src_pad_template =
 GST_STATIC_PAD_TEMPLATE ("nv12",
     GST_PAD_SRC,
     GST_PAD_ALWAYS,
@@ -139,17 +139,26 @@ static void
 gst_uvc_h264_mjpg_demux_base_init (gpointer g_class)
 {
   GstElementClass *element_class = GST_ELEMENT_CLASS (g_class);
+  GstPadTemplate *pt;
 
-  gst_element_class_add_static_pad_template (element_class,
-      &gst_uvc_h264_mjpg_demux_sink_pad_template);
-  gst_element_class_add_static_pad_template (element_class,
-      &gst_uvc_h264_mjpg_demux_jpegsrc_pad_template);
-  gst_element_class_add_static_pad_template (element_class,
-      &gst_uvc_h264_mjpg_demux_h264src_pad_template);
-  gst_element_class_add_static_pad_template (element_class,
-      &gst_uvc_h264_mjpg_demux_yuy2src_pad_template);
-  gst_element_class_add_static_pad_template (element_class,
-      &gst_uvc_h264_mjpg_demux_nv12src_pad_template);
+  /* do not use gst_element_class_add_static_pad_template to stay compatible
+   * with gstreamer 0.10.35 */
+  pt = gst_static_pad_template_get (&mjpgsink_pad_template);
+  gst_element_class_add_pad_template (element_class, pt);
+  gst_object_unref (pt);
+  pt = gst_static_pad_template_get (&jpegsrc_pad_template);
+  gst_element_class_add_pad_template (element_class, pt);
+  gst_object_unref (pt);
+  pt = gst_static_pad_template_get (&h264src_pad_template);
+  gst_element_class_add_pad_template (element_class, pt);
+  gst_object_unref (pt);
+  pt = gst_static_pad_template_get (&yuy2src_pad_template);
+  gst_element_class_add_pad_template (element_class, pt);
+  gst_object_unref (pt);
+  pt = gst_static_pad_template_get (&nv12src_pad_template);
+  gst_element_class_add_pad_template (element_class, pt);
+  gst_object_unref (pt);
+
   gst_element_class_set_details_simple (element_class,
       "UVC H264 MJPG Demuxer",
       "Video/Demuxer",
@@ -176,8 +185,7 @@ gst_uvc_h264_mjpg_demux_init (GstUvcH264MjpgDemux * self,
 
   /* create the sink and src pads */
   self->priv->sink_pad =
-      gst_pad_new_from_static_template
-      (&gst_uvc_h264_mjpg_demux_sink_pad_template, "sink");
+      gst_pad_new_from_static_template (&mjpgsink_pad_template, "sink");
   gst_pad_set_chain_function (self->priv->sink_pad,
       GST_DEBUG_FUNCPTR (gst_uvc_h264_mjpg_demux_chain));
   gst_pad_set_setcaps_function (self->priv->sink_pad,
@@ -188,30 +196,26 @@ gst_uvc_h264_mjpg_demux_init (GstUvcH264MjpgDemux * self,
 
   /* JPEG */
   self->priv->jpeg_pad =
-      gst_pad_new_from_static_template
-      (&gst_uvc_h264_mjpg_demux_jpegsrc_pad_template, "jpeg");
+      gst_pad_new_from_static_template (&jpegsrc_pad_template, "jpeg");
   gst_pad_set_getcaps_function (self->priv->jpeg_pad,
       GST_DEBUG_FUNCPTR (gst_uvc_h264_mjpg_demux_getcaps));
   gst_element_add_pad (GST_ELEMENT (self), self->priv->jpeg_pad);
 
   /* H264 */
   self->priv->h264_pad =
-      gst_pad_new_from_static_template
-      (&gst_uvc_h264_mjpg_demux_h264src_pad_template, "h264");
+      gst_pad_new_from_static_template (&h264src_pad_template, "h264");
   gst_pad_use_fixed_caps (self->priv->h264_pad);
   gst_element_add_pad (GST_ELEMENT (self), self->priv->h264_pad);
 
   /* YUY2 */
   self->priv->yuy2_pad =
-      gst_pad_new_from_static_template
-      (&gst_uvc_h264_mjpg_demux_yuy2src_pad_template, "yuy2");
+      gst_pad_new_from_static_template (&yuy2src_pad_template, "yuy2");
   gst_pad_use_fixed_caps (self->priv->yuy2_pad);
   gst_element_add_pad (GST_ELEMENT (self), self->priv->yuy2_pad);
 
   /* NV12 */
   self->priv->nv12_pad =
-      gst_pad_new_from_static_template
-      (&gst_uvc_h264_mjpg_demux_nv12src_pad_template, "nv12");
+      gst_pad_new_from_static_template (&nv12src_pad_template, "nv12");
   gst_pad_use_fixed_caps (self->priv->nv12_pad);
   gst_element_add_pad (GST_ELEMENT (self), self->priv->nv12_pad);
 
