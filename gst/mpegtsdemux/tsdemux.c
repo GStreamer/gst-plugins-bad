@@ -1384,6 +1384,13 @@ gst_ts_demux_queue_data (GstTSDemux * demux, TSDemuxStream * stream,
 
       /* parse the header */
       gst_ts_demux_parse_pes_header (demux, stream);
+
+      if (G_UNLIKELY (stream->state == PENDING_PACKET_DISCONT)) {
+        stream->pendingbuffers[--stream->nbpending] = NULL;
+        stream->current_size -= GST_BUFFER_SIZE (buf);
+        GST_LOG ("Error parsing PES header -> DISCONT: dropping buffer");
+        gst_buffer_unref (packet->buffer);
+      }
       break;
     }
     case PENDING_PACKET_BUFFER:
