@@ -53,6 +53,24 @@ GST_DEBUG_CATEGORY (wrapper_camera_bin_src_debug);
 GST_BOILERPLATE (GstWrapperCameraBinSrc, gst_wrapper_camera_bin_src,
     GstBaseCameraSrc, GST_TYPE_BASE_CAMERA_SRC);
 
+static GstStaticPadTemplate vfsrc_template =
+GST_STATIC_PAD_TEMPLATE (GST_BASE_CAMERA_SRC_VIEWFINDER_PAD_NAME,
+    GST_PAD_SRC,
+    GST_PAD_ALWAYS,
+    GST_STATIC_CAPS_ANY);
+
+static GstStaticPadTemplate imgsrc_template =
+GST_STATIC_PAD_TEMPLATE (GST_BASE_CAMERA_SRC_IMAGE_PAD_NAME,
+    GST_PAD_SRC,
+    GST_PAD_ALWAYS,
+    GST_STATIC_CAPS_ANY);
+
+static GstStaticPadTemplate vidsrc_template =
+GST_STATIC_PAD_TEMPLATE (GST_BASE_CAMERA_SRC_VIDEO_PAD_NAME,
+    GST_PAD_SRC,
+    GST_PAD_ALWAYS,
+    GST_STATIC_CAPS_ANY);
+
 static void set_capsfilter_caps (GstWrapperCameraBinSrc * self,
     GstCaps * new_caps);
 
@@ -1093,6 +1111,14 @@ gst_wrapper_camera_bin_src_base_init (gpointer g_class)
 
   GST_DEBUG_CATEGORY_INIT (wrapper_camera_bin_src_debug, "wrappercamerabinsrc",
       0, "V4l2 camera src");
+
+  gst_element_class_add_static_pad_template (gstelement_class, &vfsrc_template);
+
+  gst_element_class_add_static_pad_template (gstelement_class,
+      &imgsrc_template);
+
+  gst_element_class_add_static_pad_template (gstelement_class,
+      &vidsrc_template);
 
   gst_element_class_set_details_simple (gstelement_class,
       "V4l2 camera src element for camerabin", "Source/Video",
