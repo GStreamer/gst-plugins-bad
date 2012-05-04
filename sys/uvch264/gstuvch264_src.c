@@ -32,6 +32,7 @@
 #  include <config.h>
 #endif
 
+#include <gst/video/video.h>
 #include <linux/uvcvideo.h>
 #include <sys/ioctl.h>
 
@@ -96,6 +97,44 @@ GST_DEBUG_CATEGORY (uvc_h264_src_debug);
 GST_BOILERPLATE (GstUvcH264Src, gst_uvc_h264_src,
     GstBaseCameraSrc, GST_TYPE_BASE_CAMERA_SRC);
 
+#define GST_UVC_H264_SRC_VF_CAPS_STR                                 \
+  GST_VIDEO_CAPS_RGB ";"                                             \
+  GST_VIDEO_CAPS_YUV ("{ I420 , NV12 , NV21 , YV12 , YUY2 ,"         \
+      " Y42B , Y444 , YUV9 , YVU9 , Y41B , Y800 , Y8 , GREY ,"       \
+      " Y16 , UYVY , YVYU , IYU1 , v308 , AYUV, A420}") ";"          \
+  "image/jpeg, "                                                     \
+  "width = " GST_VIDEO_SIZE_RANGE ", "                               \
+  "height = " GST_VIDEO_SIZE_RANGE ", "                              \
+  "framerate = " GST_VIDEO_FPS_RANGE
+#define GST_UVC_H264_SRC_VID_CAPS_STR                                   \
+  GST_UVC_H264_SRC_VF_CAPS_STR ";"                                      \
+  "video/x-h264, "                                                      \
+  "width = " GST_VIDEO_SIZE_RANGE ", "                                  \
+  "height = " GST_VIDEO_SIZE_RANGE ", "                                 \
+  "framerate = " GST_VIDEO_FPS_RANGE ", "                               \
+  "stream-format = (string) { byte-stream, avc }, "                     \
+  "alignment = (string) { au }, "                                       \
+  "profile = (string) { constrained-baseline, baseline, high, main }"
+
+static GstStaticPadTemplate vfsrc_template =
+GST_STATIC_PAD_TEMPLATE (GST_BASE_CAMERA_SRC_VIEWFINDER_PAD_NAME,
+    GST_PAD_SRC,
+    GST_PAD_ALWAYS,
+    GST_STATIC_CAPS (GST_UVC_H264_SRC_VF_CAPS_STR));
+
+static GstStaticPadTemplate imgsrc_template =
+GST_STATIC_PAD_TEMPLATE (GST_BASE_CAMERA_SRC_IMAGE_PAD_NAME,
+    GST_PAD_SRC,
+    GST_PAD_ALWAYS,
+    GST_STATIC_CAPS_NONE);
+
+static GstStaticPadTemplate vidsrc_template =
+GST_STATIC_PAD_TEMPLATE (GST_BASE_CAMERA_SRC_VIDEO_PAD_NAME,
+    GST_PAD_SRC,
+    GST_PAD_ALWAYS,
+    GST_STATIC_CAPS (GST_UVC_H264_SRC_VID_CAPS_STR));
+
+
 static void gst_uvc_h264_src_dispose (GObject * object);
 static void gst_uvc_h264_src_set_property (GObject * object,
     guint prop_id, const GValue * value, GParamSpec * pspec);
@@ -120,6 +159,7 @@ static void
 gst_uvc_h264_src_base_init (gpointer g_class)
 {
   GstElementClass *gstelement_class = GST_ELEMENT_CLASS (g_class);
+  GstPadTemplate *pt;
 
   GST_DEBUG_CATEGORY_INIT (uvc_h264_src_debug, "uvch264_src",
       0, "UVC H264 Compliant camera bin source");
@@ -129,6 +169,20 @@ gst_uvc_h264_src_base_init (gpointer g_class)
       "Source/Video",
       "UVC H264 Encoding camera source",
       "Youness Alaoui <youness.alaoui@collabora.co.uk>");
+
+  /* Don't use gst_element_class_add_static_pad_template in order to keep
+   * the plugin compatible with gst 0.10.35 */
+  pt = gst_static_pad_template_get (&vidsrc_template);
+  gst_element_class_add_pad_template (gstelement_class, pt);
+  gst_object_unref (pt);
+
+  pt = gst_static_pad_template_get (&imgsrc_template);
+  gst_element_class_add_pad_template (gstelement_class, pt);
+  gst_object_unref (pt);
+
+  pt = gst_static_pad_template_get (&vfsrc_template);
+  gst_element_class_add_pad_template (gstelement_class, pt);
+  gst_object_unref (pt);
 }
 
 static void
