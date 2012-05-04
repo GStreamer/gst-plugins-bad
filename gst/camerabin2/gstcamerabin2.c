@@ -2229,6 +2229,25 @@ gst_camera_bin_set_property (GObject * object, guint prop_id,
         gst_encoding_profile_unref (camera->image_profile);
       camera->image_profile =
           (GstEncodingProfile *) gst_value_dup_mini_object (value);
+
+      /* make sure we set variable framerate here to prevent videorate from
+       * being used in encodebin. It will always keep a buffer stored
+       * internally and push it when a second one arrives. This breaks
+       * the image capture */
+      if (GST_IS_ENCODING_VIDEO_PROFILE (camera->image_profile))
+        gst_encoding_video_profile_set_variableframerate (
+            (GstEncodingVideoProfile *) camera->image_profile, TRUE);
+      else if (GST_IS_ENCODING_CONTAINER_PROFILE (camera->image_profile)) {
+        const GList *profs =
+            gst_encoding_container_profile_get_profiles (
+            (GstEncodingContainerProfile *) camera->image_profile);
+        for (; profs; profs = g_list_next (profs)) {
+          if (GST_IS_ENCODING_VIDEO_PROFILE (profs->data)) {
+            gst_encoding_video_profile_set_variableframerate (profs->data,
+                TRUE);
+          }
+        }
+      }
       camera->image_profile_switch = TRUE;
       break;
     case PROP_FLAGS:
