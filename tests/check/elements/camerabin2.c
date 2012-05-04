@@ -42,6 +42,24 @@
 #define VIDEO_PAD_SUPPORTED_CAPS GST_VIDEO_CAPS_RGB ", width=600, height=480"
 #define IMAGE_PAD_SUPPORTED_CAPS GST_VIDEO_CAPS_RGB ", width=800, height=600"
 
+static GstStaticPadTemplate vfsrc_template =
+GST_STATIC_PAD_TEMPLATE (GST_BASE_CAMERA_SRC_VIEWFINDER_PAD_NAME,
+    GST_PAD_SRC,
+    GST_PAD_ALWAYS,
+    GST_STATIC_CAPS_ANY);
+
+static GstStaticPadTemplate imgsrc_template =
+GST_STATIC_PAD_TEMPLATE (GST_BASE_CAMERA_SRC_IMAGE_PAD_NAME,
+    GST_PAD_SRC,
+    GST_PAD_ALWAYS,
+    GST_STATIC_CAPS_ANY);
+
+static GstStaticPadTemplate vidsrc_template =
+GST_STATIC_PAD_TEMPLATE (GST_BASE_CAMERA_SRC_VIDEO_PAD_NAME,
+    GST_PAD_SRC,
+    GST_PAD_ALWAYS,
+    GST_STATIC_CAPS_ANY);
+
 /* custom test camera src element */
 #define GST_TYPE_TEST_CAMERA_SRC \
   (gst_test_camera_src_get_type())
@@ -121,10 +139,18 @@ gst_test_camera_src_base_init (gpointer g_class)
 static void
 gst_test_camera_src_class_init (GstTestCameraSrcClass * klass)
 {
+  GstElementClass *gstelement_class;
   GstBaseCameraSrcClass *gstbasecamera_class;
 
+  gstelement_class = GST_ELEMENT_CLASS (klass);
   gstbasecamera_class = GST_BASE_CAMERA_SRC_CLASS (klass);
   gstbasecamera_class->set_mode = gst_test_camera_src_set_mode;
+
+  gst_element_class_add_static_pad_template (gstelement_class,
+      &vidsrc_template);
+  gst_element_class_add_static_pad_template (gstelement_class,
+      &imgsrc_template);
+  gst_element_class_add_static_pad_template (gstelement_class, &vfsrc_template);
 }
 
 static void
