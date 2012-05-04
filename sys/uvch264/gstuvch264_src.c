@@ -356,7 +356,6 @@ gst_uvc_h264_src_init (GstUvcH264Src * self, GstUvcH264SrcClass * klass)
   gst_pad_set_event_function (self->vfsrc, gst_uvc_h264_src_event);
 
   self->v4l2_fd = -1;
-  self->auto_start = TRUE;
   gst_base_camera_src_set_mode (GST_BASE_CAMERA_SRC (self), MODE_VIDEO);
   /* Static controls */
   self->initial_bitrate = DEFAULT_INITIAL_BITRATE;
@@ -878,10 +877,6 @@ gst_uvc_h264_src_change_state (GstElement * element, GstStateChange trans)
   switch (trans) {
     case GST_STATE_CHANGE_NULL_TO_READY:
       /*  TODO: Check for H264 XU */
-      break;
-    case GST_STATE_CHANGE_READY_TO_PAUSED:
-      if (self->auto_start)
-        g_signal_emit_by_name (G_OBJECT (self), "start-capture", NULL);
       break;
     default:
       break;
