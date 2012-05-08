@@ -63,6 +63,7 @@ GType gst_fragment_get_type (void);
 GstBufferList * gst_fragment_get_buffer_list (GstFragment *fragment);
 gboolean gst_fragment_set_headers (GstFragment *fragment, GstBuffer **buffer, guint count);
 gboolean gst_fragment_add_buffer (GstFragment *fragment, GstBuffer *buffer);
+gsize gst_fragment_get_total_size (GstFragment * fragment);
 GstFragment * gst_fragment_new (void);
 
 G_END_DECLS

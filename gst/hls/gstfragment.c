@@ -40,6 +40,7 @@ enum
 
 struct _GstFragmentPrivate
 {
+  gsize accumulated_size;
   GstBufferList *buffer_list;
   GstBufferListIterator *buffer_iterator;
 };
@@ -126,6 +127,7 @@ gst_fragment_init (GstFragment * fragment)
 
   priv->buffer_list = gst_buffer_list_new ();
   priv->buffer_iterator = gst_buffer_list_iterate (priv->buffer_list);
+  priv->accumulated_size = 0;
   gst_buffer_list_iterator_add_group (priv->buffer_iterator);
   fragment->download_start_time = g_get_real_time ();
   fragment->start_time = 0;
@@ -192,5 +194,15 @@ gst_fragment_add_buffer (GstFragment * fragment, GstBuffer * buffer)
   GST_DEBUG ("Adding new buffer to the fragment");
   /* We steal the buffers you pass in */
   gst_buffer_list_iterator_add (fragment->priv->buffer_iterator, buffer);
+
+  fragment->priv->accumulated_size += GST_BUFFER_SIZE (buffer);
   return TRUE;
+}
+
+gsize
+gst_fragment_get_total_size (GstFragment * fragment)
+{
+  g_return_val_if_fail (GST_IS_FRAGMENT (fragment), 0);
+
+  return fragment->priv->accumulated_size;
 }
