@@ -44,7 +44,7 @@ G_BEGIN_DECLS
  * GST_VIDEO_CAPS_SURFACE:
  *
  * Base caps for GstSurfaceBuffer. Implementation specific type must be marked
- * using the type attribute (e.g. type=vaapi). Available convertion shall be
+ * using the type attribute (e.g. type=vaapi). Available conversions shall be
  * specified using boolean attributes (e.g. opengl=true).
  */
 #define GST_VIDEO_CAPS_SURFACE "video/x-surface"

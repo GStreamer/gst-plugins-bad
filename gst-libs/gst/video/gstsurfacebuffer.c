@@ -31,12 +31,12 @@
  * @short_description: Accelerated surface base class
  *
  * This base class is used to abstract hardware accelerated buffers and enable
- * generic convertion to standard type such as GL textures. The media type for
+ * generic conversion to standard types such as GL textures. The media type for
  * those buffers is defined by #GST_VIDEO_CAPS_SURFACE. An implementation
  * specific type must be set using the "type" key (e.g. type="vaapi").
- * Available convertion type are speficied using seperate boolean
- * arguement (e.g. opengl=true). Having this information in the capabilities
- * allow easy negotiating of such feature with other elements (e.g. a
+ * Available conversion types are specified using separate boolean
+ * arguments (e.g. opengl=true). Having this information in the capabilities
+ * allows easy negotiating of such features with other elements (e.g. a
  * ClutterGstVideoSink can claim accpeting caps "video/x-surface,opengl=true").
  * <note>
  *   The GstVideoContext interface is unstable API and may change in future.
@@ -72,11 +72,11 @@ gst_surface_buffer_init (GstSurfaceBuffer * surface)
  * @dest: a #GValue containing the destination to upload
  *
  * This method is used to create a type specific converter. The converter will
- * serve as context to accelerate the data convertion. This converter object
- * shall be discarded when the pipeline state changes to NULL and renewed when
- * caps are changed.
+ * serve as context to accelerate the data conversion. This converter object
+ * shall be discarded when the pipeline state changes to #GST_STATE_NULL and
+ * renewed when caps are changed.
  *
- * Returns: newly allocated #GstSurfaceConverter
+ * Returns: a newly allocated #GstSurfaceConverter
  */
 GstSurfaceConverter *
 gst_surface_buffer_create_converter (GstSurfaceBuffer * buffer,

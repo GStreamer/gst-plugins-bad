@@ -29,11 +29,11 @@
 
 /**
  * SECTION:gstsurfaceconverter
- * @short_description: Interface for #GstSurfaceBuffer convertion
+ * @short_description: Interface for #GstSurfaceBuffer conversion
  *
- * Objects implementing this interface are used as a convertion context. This
- * allow element optimizing the upload by keeping required resources between
- * uploads. The context must be discarded when the pipeline goes to
+ * Objects implementing this interface are used as a conversion context. This
+ * allows elements to optimize the upload by keeping ahold of required resources
+ * between uploads. The context must be discarded when the pipeline goes to
  * #GST_STATE_NULL or renewed whenever the caps are changed.
  * <note>
  *   The GstVideoContext interface is unstable API and may change in future.
@@ -46,7 +46,7 @@
  * if (G_UNLIKELY (priv->converter == NULL))
  *   priv->converter = gst_surface_buffer_create_converter (surface, "opengl", &value);
  *
- * gst_surface_converter_uplaod (priv->converter, surface);
+ * gst_surface_converter_upload (priv->converter, surface);
  * ]|
  * </refsect2>
  */

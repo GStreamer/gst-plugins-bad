@@ -33,8 +33,8 @@
  * SECTION:gstvideocontext
  * @short_description: Interface to handle video library context
  *
- * The Video Context interface enable sharing video context (such as display
- * name, X11 Display, VA-API Display, etc) between neighboor elements and the
+ * The Video Context interface enables sharing video context (such as display
+ * name, X11 Display, VA-API Display, etc) between neighbor elements and the
  * application.
  * <note>
  *   The GstVideoContext interface is unstable API and may change in future.
@@ -44,39 +44,39 @@
  * <refsect2>
  * <title>For Element</title>
  * <para>
- *   This interface shall be implement by group of elements that need to share
- *   a specific video context (like VDPAU, LibVA, OpenGL elements) or by video
- *   sink in order to let the application select appropriate display information
- *   (like the X11 display name) when those sink are auto-plugged.
+ *   This interface shall be implemented by a group of elements that need to
+ *   share a specific video context (like VDPAU, LibVA, OpenGL elements) or by
+ *   video sinks in order to let the application select appropriate display
+ *   information (like the X11 display name) when those sinks are auto-plugged.
  * </para>
  * <para>
  *   Along with implementing the interface, elements will need to query
- *   neighboor elements or send message to the application when preparing
+ *   neighbor elements or send a message to the application when preparing
  *   the context (see gst_video_context_prepare()). They also need to reply
- *   to the neighboors element queries, so the context can be shared without
- *   the application help.
+ *   to their neighbors element queries, so the context can be shared without
+ *   the applications help.
  * </para>
  * <para>
- *   Elements that are guarantied to have both upstream and downstream
- *   neighboors element implementing the #GstVideoContext (like the gloverlay
- *   element in gst-plugins-opengl) is not required to also implement the
- *   interface. Relying on neighboors query shall be sufficient (see
+ *   Elements that are guaranteed to have both upstream and downstream
+ *   neighbor elements implementing the #GstVideoContext (like the gloverlay
+ *   element in gst-plugins-opengl) are not required to also implement the
+ *   interface. Relying on neighbors query shall be sufficient (see
  *   gst_video_context_run_query()).
  * </para>
  * <para>
  *   The query is an application query with a structure name set to
  *   "prepare-video-context" and an array of supported video context types set
- *   in the field named "types". This query shall be send downstream and
- *   upstream, iterating the pads in order to find neighboors regardless of a
+ *   in the field named "types". This query shall be sent downstream and
+ *   upstream, iterating the pads in order to find neighbors regardless of a
  *   static (sink to src) or a dynamic (src to sink) activation. Element should
- *   used the helpers method gst_video_context_prepare() (or
- *   gst_video_context_run_query() if no GstVideoContext interface) to
- *   correctly execute the query . The result is set using the query helper
- *   functions, the structures fields name being "video-context-type" as
- *   string and "video-context" as a #GValue.
+ *   use the helper method gst_video_context_prepare() (or
+ *   gst_video_context_run_query() if not implementing a  #GstVideoContext
+ *   interface) to correctly execute the query. The result is set using the
+ *   query helper functions, the structures field names being
+ *   "video-context-type" as string and "video-context" as a #GValue.
  * </para>
  * <para>
- *   If the query is not handled by any neighboor, the element should ask the
+ *   If the query is not handled by any neighbor, the element should ask the
  *   application using the "prepare-video-context" message. The application
  *   may then use the interface to set the video context information. If no
  *   context was set, the element shall create one using default configuration.
@@ -93,29 +93,29 @@
  * <refsect2>
  * <title>For Application</title>
  * <para>
- *   In the case there is no neighboor element with video context to share,
- *   the element will first turn toward the application, by sending a
+ *   In the case there is no neighbor element with video context to share,
+ *   the element will first turn towards the application, by sending a
  *   "prepare-video-context" message. This message is sent along with a list
  *   of supported display types. The application can optionally reply to this
  *   message by calling appropriate setter through the #GstVideoContext
  *   interface. If the application supports more then one video context type,
- *   it should choose the first one to occure in the supported list. It's
+ *   it should choose the first one to occur in the supported list. It's
  *   important to remember that the message is delivered from the streaming
  *   thread, and appropriate locking should be considered. If the application
  *   does not have a video context to share, the element will simply allocate
- *   one base on default settings. Usually, only applications using OpenGL
+ *   one based on default settings. Usually, only applications using OpenGL
  *   base sink, or running on special X11 display need to share a video context.
  *   <note>
  *     Applications sharing X11 Display structure should always initialize the
  *     X11 threading support using XInitThreads() as GStreamer will need to
- *     manipulate the display from a separeate threads.
+ *     manipulate the display from separate threads.
  *   </note>
  * </para>
  * <refsect2>
  * <title>Example using ClutterVideoGstVideoSink</title>
  * <para>
  *   This example is for user of ClutterGstVideoSink element, the
- *   ClutterGstPlayer object transparently handle this.
+ *   ClutterGstPlayer object transparently handles this.
  *  </para>
  * |[
  * #if CLUTTER_WINDOWING_X11
@@ -278,9 +278,9 @@ gst_video_context_set_context_pointer (GstVideoContext * context,
  * @type: the type of display being set
  * @object: a #GObject resenting the display
  *
- * This is for video context that are #GObject, this helper allow taking
- * benifit of the #GObject refcounting. It is particularly handy for element
- * to have refcounting as the order in which element will stop using the
+ * This is for video context that are #GObject, this helper allows taking
+ * benefit of the #GObject refcounting. It is particularly handy for element
+ * to have refcounting, as the order in which elements will stop using the
  * display is not defined.
  */
 void
@@ -298,10 +298,10 @@ gst_video_context_set_context_object (GstVideoContext * context,
 /**
  * gst_video_context_prepare:
  * @context: an element implementing #GstVideoContext interface
- * @types: an array of supported types, prefered first
+ * @types: an array of supported types, preferred first
  *
  * This method run "prepare-video-context" custom query dowstream, and
- * upstream. If * the query has a reply, it sets the context value using
+ * upstream. If the query has a reply, it sets the context value using
  * gst_video_context_set_context(). Otherwise, it sends a
  * "prepare-video-context" message to the application. The element can then
  * continue video context initialization.
@@ -336,11 +336,11 @@ gst_video_context_prepare (GstVideoContext * context, const gchar ** types)
  * @types: return value for supported types
  * @context: return value for the element the implements #GstVideoContext
  *
- * This helper shall be used by application to simply handling of the
+ * This helper shall be used by application to simplify handling of the
  * "prepare-video-context" message.
  *
- * Rerturns: #FALSE is the message was not valid "prepare-video-context"
- *           element message, otherwise #TRUE with @types and @context set.
+ * Returns: %FALSE if the message was not a valid "prepare-video-context"
+ *           element message, otherwise %TRUE with @types and @context set.
  */
 gboolean
 gst_video_context_message_parse_prepare (GstMessage * message,
@@ -394,7 +394,7 @@ gst_video_context_query_new (const gchar ** types)
  *
  * This helper runs the query on each downstream, then upstream pads in an
  * element. This is called by gst_video_context_prepare(). This method is only
- * used directly within elements that are required to have two neighboors
+ * used directly within elements that are required to have two neighbor
  * elements with appropriate video context. This would be the case of
  * specialized filters that only manipulate non-raw buffers (e.g.
  * gldeinterlace). Those elements do not have to implement #GstVideoContext
