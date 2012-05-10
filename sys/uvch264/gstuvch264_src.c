@@ -846,9 +846,9 @@ gst_uvc_h264_src_set_mode (GstBaseCameraSrc * bcamsrc, GstCameraBinMode mode)
 {
   GstUvcH264Src *self = GST_UVC_H264_SRC (bcamsrc);
 
-  GST_DEBUG_OBJECT (self, "set mode");
+  GST_DEBUG_OBJECT (self, "set mode to %d", mode);
 
-  return TRUE;
+  return (mode == MODE_VIDEO);
 }
 
 static gboolean
@@ -857,6 +857,7 @@ gst_uvc_h264_src_start_capture (GstBaseCameraSrc * camerasrc)
   GstUvcH264Src *self = GST_UVC_H264_SRC (camerasrc);
 
   GST_DEBUG_OBJECT (self, "start capture");
+
   return TRUE;
 }
 
