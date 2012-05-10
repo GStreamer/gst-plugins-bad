@@ -60,6 +60,13 @@ enum  {
   QP_FRAMES
 };
 
+typedef enum {
+  UVC_H264_SRC_FORMAT_NONE,
+  UVC_H264_SRC_FORMAT_JPG,
+  UVC_H264_SRC_FORMAT_H264,
+  UVC_H264_SRC_FORMAT_RAW
+} GstUvcH264SrcFormat;
+
 /**
  * GstUcH264Src:
  *
@@ -76,6 +83,20 @@ struct _GstUvcH264Src
   GstElement *v4l2_src;
   GstElement *mjpg_demux;
   GstElement *jpeg_dec;
+  GstElement *vid_colorspace;
+  GstElement *vf_colorspace;
+
+  GstUvcH264SrcFormat main_format;
+  guint16 main_width;
+  guint16 main_height;
+  guint32 main_frame_interval;
+  UvcH264StreamFormat main_stream_format;
+  guint16 main_profile;
+  GstUvcH264SrcFormat secondary_format;
+  guint16 secondary_width;
+  guint16 secondary_height;
+  guint32 secondary_frame_interval;
+
   int v4l2_fd;
 
   GstPadEventFunction srcpad_event_func;

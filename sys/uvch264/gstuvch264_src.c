@@ -35,6 +35,7 @@
 #include <gst/video/video.h>
 #include <linux/uvcvideo.h>
 #include <sys/ioctl.h>
+#include <string.h>
 
 #include "gstuvch264_src.h"
 
@@ -97,15 +98,35 @@ GST_DEBUG_CATEGORY (uvc_h264_src_debug);
 GST_BOILERPLATE (GstUvcH264Src, gst_uvc_h264_src,
     GstBaseCameraSrc, GST_TYPE_BASE_CAMERA_SRC);
 
-#define GST_UVC_H264_SRC_VF_CAPS_STR                                 \
-  GST_VIDEO_CAPS_RGB ";"                                             \
-  GST_VIDEO_CAPS_YUV ("{ I420 , NV12 , NV21 , YV12 , YUY2 ,"         \
-      " Y42B , Y444 , YUV9 , YVU9 , Y41B , Y800 , Y8 , GREY ,"       \
-      " Y16 , UYVY , YVYU , IYU1 , v308 , AYUV, A420}") ";"          \
-  "image/jpeg, "                                                     \
-  "width = " GST_VIDEO_SIZE_RANGE ", "                               \
-  "height = " GST_VIDEO_SIZE_RANGE ", "                              \
+#define GST_UVC_H264_SRC_VF_CAPS_STR                                    \
+  GST_VIDEO_CAPS_RGB ";"                                                \
+  GST_VIDEO_CAPS_RGB";"							\
+  GST_VIDEO_CAPS_BGR";"							\
+  GST_VIDEO_CAPS_RGBx";"						\
+  GST_VIDEO_CAPS_xRGB";"						\
+  GST_VIDEO_CAPS_BGRx";"						\
+  GST_VIDEO_CAPS_xBGR";"						\
+  GST_VIDEO_CAPS_RGBA";"						\
+  GST_VIDEO_CAPS_ARGB";"						\
+  GST_VIDEO_CAPS_BGRA";"						\
+  GST_VIDEO_CAPS_ABGR";"						\
+  GST_VIDEO_CAPS_RGB_16";"						\
+  GST_VIDEO_CAPS_RGB_15";"						\
+  "video/x-raw-rgb, bpp = (int)8, depth = (int)8, "                     \
+      "width = "GST_VIDEO_SIZE_RANGE" , "		                \
+      "height = " GST_VIDEO_SIZE_RANGE ", "                             \
+      "framerate = "GST_VIDEO_FPS_RANGE ";"                             \
+  GST_VIDEO_CAPS_GRAY8";"						\
+  GST_VIDEO_CAPS_GRAY16("BIG_ENDIAN")";"				\
+  GST_VIDEO_CAPS_GRAY16("LITTLE_ENDIAN")";"                             \
+  GST_VIDEO_CAPS_YUV ("{ I420 , NV12 , NV21 , YV12 , YUY2 ,"            \
+      " Y42B , Y444 , YUV9 , YVU9 , Y41B , Y800 , Y8 , GREY ,"          \
+      " Y16 , UYVY , YVYU , IYU1 , v308 , AYUV, A420}") ";"             \
+  "image/jpeg, "                                                        \
+  "width = " GST_VIDEO_SIZE_RANGE ", "                                  \
+  "height = " GST_VIDEO_SIZE_RANGE ", "                                 \
   "framerate = " GST_VIDEO_FPS_RANGE
+
 #define GST_UVC_H264_SRC_VID_CAPS_STR                                   \
   GST_UVC_H264_SRC_VF_CAPS_STR ";"                                      \
   "video/x-h264, "                                                      \
@@ -735,8 +756,12 @@ configure_h264 (GstUvcH264Src * self, gint fd)
   GST_DEBUG_OBJECT (self, "PROBE GET_DEF : ");
   print_probe_commit_t (self, &probe);
 
-  fill_probe_commit_t (self, &probe, 333333, 1920, 1080, 0x4240);
-  probe.bStreamMuxOption = 3;
+  fill_probe_commit_t (self, &probe, self->main_frame_interval,
+      self->main_width, self->main_height, 0x4240);
+  if (self->secondary_format != UVC_H264_SRC_FORMAT_NONE)
+    probe.bStreamMuxOption = 3;
+  else
+    probe.bStreamMuxOption = 0;
 
   if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_QUERY_SET_CUR,
           (guchar *) & probe)) {
@@ -757,74 +782,451 @@ configure_h264 (GstUvcH264Src * self, gint fd)
     GST_WARNING_OBJECT (self, "COMMIT SET_CUR error");
     return;
   }
+
+  if (self->secondary_format == UVC_H264_SRC_FORMAT_RAW) {
+    memset (&probe, 0, sizeof (probe));
+    probe.dwFrameInterval = self->secondary_frame_interval;
+    probe.wWidth = self->secondary_width;
+    probe.wHeight = self->secondary_height;
+    probe.bStreamMuxOption = 5;
+
+    if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_QUERY_SET_CUR,
+            (guchar *) & probe)) {
+      GST_WARNING_OBJECT (self, "PROBE SET_CUR error");
+      return;
+    }
+
+    if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_QUERY_GET_CUR,
+            (guchar *) & probe)) {
+      GST_WARNING_OBJECT (self, "PROBE GET_CUR error");
+      return;
+    }
+    GST_DEBUG_OBJECT (self, "PROBE SET_CUR : ");
+    print_probe_commit_t (self, &probe);
+
+    if (!xu_query (self, UVCX_VIDEO_CONFIG_COMMIT, UVC_QUERY_SET_CUR,
+            (guchar *) & probe)) {
+      GST_WARNING_OBJECT (self, "COMMIT SET_CUR error");
+      return;
+    }
+  }
 }
 
 static void
-v4l2src_pre_set_format (GstElement * v4l2src, gint fd, guint fourcc,
+v4l2src_prepare_format (GstElement * v4l2src, gint fd, guint fourcc,
     guint width, guint height, gpointer user_data)
 {
   GstUvcH264Src *self = GST_UVC_H264_SRC (user_data);
 
+  GST_DEBUG_OBJECT (self, "v4l2src prepare-format with FCC %" GST_FOURCC_FORMAT,
+      GST_FOURCC_ARGS (fourcc));
+
   self->v4l2_fd = fd;
-  if (fourcc == GST_MAKE_FOURCC ('M', 'J', 'P', 'G')) {
+  if (self->main_format == UVC_H264_SRC_FORMAT_H264)
     configure_h264 (self, fd);
-  }
 }
+
+static gboolean
+_extract_caps_info (GstStructure * structure, guint16 * width, guint16 * height,
+    guint32 * frame_interval)
+{
+  gint w, h, fps_n, fps_d;
+  gboolean ret = TRUE;
+
+  ret &= gst_structure_get_int (structure, "width", &w);
+  ret &= gst_structure_get_int (structure, "height", &h);
+  ret &= gst_structure_get_fraction (structure, "framerate", &fps_n, &fps_d);
+
+  if (ret) {
+    *width = w;
+    *height = h;
+    /* Interval is in 100ns */
+    *frame_interval = GST_TIME_AS_NSECONDS ((fps_d * GST_SECOND) / fps_n) / 100;
+  }
+
+  return ret;
+}
+
+/*
+ * Algorithm/code copied from v4l2src's negotiate vmethod
+ */
+static GstCaps *
+gst_uvc_h264_src_fixate_caps (GstUvcH264Src * self, GstPad * v4l_pad,
+    GstCaps * v4l_caps, GstCaps * peer_caps)
+{
+  GstCaps *caps = NULL;
+
+  /* nothing or anything is allowed, we're done */
+  if (v4l_caps == NULL || gst_caps_is_any (v4l_caps)) {
+    GST_DEBUG_OBJECT (self, "v4l caps are invalid. not fixating");
+    gst_caps_unref (peer_caps);
+    return NULL;
+  }
+
+  if (gst_caps_is_any (peer_caps)) {
+    /* peer have ANY caps, work with our own caps then */
+    caps = gst_caps_copy (v4l_caps);
+  } else {
+    GstCaps *icaps = NULL;
+    int i;
+
+    /* Prefer the first caps we are compatible with that the peer proposed */
+    for (i = 0; i < gst_caps_get_size (peer_caps); i++) {
+      /* get intersection */
+      GstCaps *ipcaps = gst_caps_copy_nth (peer_caps, i);
+
+      GST_DEBUG_OBJECT (self, "peer: %" GST_PTR_FORMAT, ipcaps);
+
+      icaps = gst_caps_intersect (v4l_caps, ipcaps);
+      gst_caps_unref (ipcaps);
+
+      if (!gst_caps_is_empty (icaps))
+        break;
+
+      gst_caps_unref (icaps);
+      icaps = NULL;
+    }
+
+    GST_DEBUG_OBJECT (self, "intersect: %" GST_PTR_FORMAT, icaps);
+
+    if (icaps) {
+      /* If there are multiple intersections pick the one with the smallest
+       * resolution strictly bigger then the first peer caps */
+      if (gst_caps_get_size (icaps) > 1) {
+        GstStructure *s = gst_caps_get_structure (peer_caps, 0);
+        int best = 0;
+        int twidth, theight;
+        int width = G_MAXINT, height = G_MAXINT;
+
+        if (gst_structure_get_int (s, "width", &twidth)
+            && gst_structure_get_int (s, "height", &theight)) {
+
+          /* Walk the structure backwards to get the first entry of the
+           * smallest resolution bigger (or equal to) the preferred resolution)
+           */
+          for (i = gst_caps_get_size (icaps) - 1; i >= 0; i--) {
+            GstStructure *is = gst_caps_get_structure (icaps, i);
+
+            int w, h;
+
+            if (gst_structure_get_int (is, "width", &w)
+                && gst_structure_get_int (is, "height", &h)) {
+              if (w >= twidth && w <= width && h >= theight && h <= height) {
+                width = w;
+                height = h;
+                best = i;
+              }
+            }
+          }
+        }
+
+        caps = gst_caps_copy_nth (icaps, best);
+        gst_caps_unref (icaps);
+      } else {
+        caps = icaps;
+      }
+    }
+  }
+
+  if (peer_caps)
+    gst_caps_unref (peer_caps);
+
+  if (caps) {
+    caps = gst_caps_make_writable (caps);
+    gst_caps_truncate (caps);
+
+    /* now fixate */
+    if (!gst_caps_is_empty (caps)) {
+      gst_pad_fixate_caps (v4l_pad, caps);
+      GST_DEBUG_OBJECT (self, "fixated to: %" GST_PTR_FORMAT, caps);
+    }
+
+    if (gst_caps_is_empty (caps) || gst_caps_is_any (caps)) {
+      gst_caps_unref (caps);
+      caps = NULL;
+    }
+  }
+  return caps;
+}
+
 
 static gboolean
 gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
 {
   GstUvcH264Src *self = GST_UVC_H264_SRC (bcamsrc);
   GstPad *vf_pad = NULL;
-  GstPad *h264_pad = NULL;
+  GstCaps *vf_caps = NULL;
+  GstStructure *vf_struct = NULL;
+  GstPad *vid_pad = NULL;
+  GstCaps *vid_caps = NULL;
+  GstStructure *vid_struct = NULL;
+  GstCaps *src_caps = NULL;
+  GstPad *v4l_pad = NULL;
+  GstCaps *v4l_caps = NULL;
+  enum
+  {
+    RAW_NONE, ENCODED_NONE, NONE_RAW, NONE_ENCODED,
+    H264_JPG, H264_RAW, H264_JPG2RAW
+  } type;
 
   GST_DEBUG_OBJECT (self, "Construct pipeline");
-
   if (self->v4l2_src == NULL) {
+    vf_caps = gst_pad_peer_get_caps (self->vfsrc);
+    vid_caps = gst_pad_peer_get_caps (self->vidsrc);
+
+    GST_DEBUG_OBJECT (self, "vfsrc caps : %" GST_PTR_FORMAT, vf_caps);
+    GST_DEBUG_OBJECT (self, "vidsrc caps : %" GST_PTR_FORMAT, vid_caps);
+
+    /* Can't do anything */
+    if (vid_caps == NULL && vf_caps == NULL)
+      return FALSE;
+
+    /* Create v4l2 source and set it up */
     self->v4l2_src = gst_element_factory_make ("v4l2src", NULL);
-    self->mjpg_demux = gst_element_factory_make ("uvch264_mjpgdemux", NULL);
-    self->jpeg_dec = gst_element_factory_make ("jpegdec", NULL);
-
-    if (!self->v4l2_src || !self->mjpg_demux || !self->jpeg_dec)
+    if (!self->v4l2_src || !gst_bin_add (GST_BIN (self), self->v4l2_src))
       goto error;
-
-    g_object_set (self->v4l2_src, "device", "/dev/video1", NULL);
-
-    gst_bin_add_many (GST_BIN (self), self->v4l2_src,
-        self->mjpg_demux, self->jpeg_dec, NULL);
     gst_object_ref (self->v4l2_src);
-    gst_object_ref (self->mjpg_demux);
-    gst_object_ref (self->jpeg_dec);
-
-    if (!gst_element_link_filtered (self->v4l2_src, self->mjpg_demux,
-            gst_caps_new_simple ("image/jpeg",
-                "width", G_TYPE_INT, 320, "height", G_TYPE_INT, 240, NULL)))
-      goto error_remove;
-    if (!gst_element_link_pads (self->mjpg_demux, "jpeg", self->jpeg_dec, NULL))
-      goto error_remove;
-
-    h264_pad = gst_element_get_static_pad (self->mjpg_demux, "h264");
-    vf_pad = gst_element_get_static_pad (self->jpeg_dec, "src");
-    if (!h264_pad || !vf_pad)
-      goto error_pads;
-
-    gst_ghost_pad_set_target (GST_GHOST_PAD (self->vidsrc), h264_pad);
-    gst_ghost_pad_set_target (GST_GHOST_PAD (self->vfsrc), vf_pad);
+    g_object_set (self->v4l2_src, "device", "/dev/video1", NULL);
     g_signal_connect (self->v4l2_src, "prepare-format",
-        (GCallback) v4l2src_pre_set_format, self);
+        (GCallback) v4l2src_prepare_format, self);
+    if (gst_element_set_state (self->v4l2_src, GST_STATE_READY) !=
+        GST_STATE_CHANGE_SUCCESS) {
+      GST_DEBUG_OBJECT (self, "Unable to set v4l2src to READY state");
+      goto error_remove;
+    }
+    v4l_pad = gst_element_get_static_pad (self->v4l2_src, "src");
+    v4l_caps = gst_pad_get_caps (v4l_pad);
+    GST_DEBUG_OBJECT (self, "v4l2src caps : %" GST_PTR_FORMAT, v4l_caps);
+    if (vf_caps) {
+      vf_caps = gst_uvc_h264_src_fixate_caps (self, v4l_pad, v4l_caps, vf_caps);
+      if (vf_caps) {
+        vf_struct = gst_caps_get_structure (vf_caps, 0);
+      } else {
+        GST_WARNING_OBJECT (self, "Could not negociate vfsrc caps format");
+        goto error_remove;
+      }
+    }
+    GST_DEBUG_OBJECT (self, "Fixated vfsrc caps : %" GST_PTR_FORMAT, vf_caps);
+    if (vid_caps) {
+      vid_caps =
+          gst_uvc_h264_src_fixate_caps (self, v4l_pad, v4l_caps, vid_caps);
+      if (vid_caps) {
+        vid_struct = gst_caps_get_structure (vid_caps, 0);
+      } else {
+        GST_WARNING_OBJECT (self, "Could not negociate vidsrc caps format");
+        goto error_remove;
+      }
+    }
+    GST_DEBUG_OBJECT (self, "Fixated vidsrc caps : %" GST_PTR_FORMAT, vid_caps);
+
+    gst_object_unref (v4l_pad);
+    gst_caps_unref (v4l_caps);
+
+    if (vf_caps && vid_caps) {
+      guint32 smallest_frame_interval;
+
+      if (!gst_structure_has_name (vid_struct, "video/x-h264")) {
+        /* TODO: Allow for vfsrc+vidsrc to be raw too and add videoscale */
+        goto error_remove;
+      }
+      if (!_extract_caps_info (vf_struct, &self->secondary_width,
+              &self->secondary_height, &self->secondary_frame_interval))
+        goto error_remove;
+      self->main_format = UVC_H264_SRC_FORMAT_H264;
+      if (!_extract_caps_info (vid_struct, &self->main_width,
+              &self->main_height, &self->main_frame_interval))
+        goto error_remove;
+      if (gst_structure_has_name (vf_struct, "image/jpeg")) {
+        type = H264_JPG;
+        self->secondary_format = UVC_H264_SRC_FORMAT_JPG;
+      } else {
+        if (self->secondary_width > 432 || self->secondary_height > 240) {
+          type = H264_JPG2RAW;
+          self->secondary_format = UVC_H264_SRC_FORMAT_JPG;
+        } else {
+          type = H264_RAW;
+          self->secondary_format = UVC_H264_SRC_FORMAT_RAW;
+        }
+      }
+      if (self->main_frame_interval < self->secondary_frame_interval)
+        smallest_frame_interval = self->main_frame_interval;
+      else
+        smallest_frame_interval = self->secondary_frame_interval;
+      /* Just to avoid a potential division by zero, set interval to 30 fps */
+      if (smallest_frame_interval == 0)
+        smallest_frame_interval = 33333333;
+
+      src_caps = gst_caps_new_simple ("image/jpeg",
+          "width", G_TYPE_INT, self->secondary_width,
+          "height", G_TYPE_INT, self->secondary_height,
+          "framerate", GST_TYPE_FRACTION,
+          (G_USEC_PER_SEC * 1000) / smallest_frame_interval, 100, NULL);
+    } else {
+      self->main_format = UVC_H264_SRC_FORMAT_NONE;
+      self->secondary_format = UVC_H264_SRC_FORMAT_NONE;
+      if (vid_struct && gst_structure_has_name (vid_struct, "video/x-h264")) {
+        self->main_format = UVC_H264_SRC_FORMAT_H264;
+        if (!_extract_caps_info (vid_struct, &self->main_width,
+                &self->main_height, &self->main_frame_interval))
+          goto error_remove;
+        type = ENCODED_NONE;
+      } else if (vid_struct &&
+          gst_structure_has_name (vid_struct, "image/jpeg")) {
+        type = ENCODED_NONE;
+      } else if (vf_struct && gst_structure_has_name (vf_struct, "image/jpeg")) {
+        type = NONE_ENCODED;
+      } else if (vid_struct) {
+        type = RAW_NONE;
+      } else if (vf_struct) {
+        type = NONE_RAW;
+      } else {
+        g_assert_not_reached ();
+      }
+    }
+
+    switch (type) {
+      case RAW_NONE:
+        GST_DEBUG_OBJECT (self, "Raw+None");
+        self->vid_colorspace = gst_element_factory_make ("ffmpegcolorspace",
+            NULL);
+        if (!self->vid_colorspace ||
+            !gst_bin_add (GST_BIN (self), self->vid_colorspace))
+          goto error_remove;
+        gst_object_ref (self->vid_colorspace);
+        if (!gst_element_link (self->v4l2_src, self->vid_colorspace))
+          goto error_remove_all;
+        vid_pad = gst_element_get_static_pad (self->vid_colorspace, "src");
+        break;
+      case NONE_RAW:
+        GST_DEBUG_OBJECT (self, "None+Raw");
+        self->vf_colorspace = gst_element_factory_make ("ffmpegcolorspace",
+            NULL);
+        if (!self->vf_colorspace ||
+            !gst_bin_add (GST_BIN (self), self->vf_colorspace))
+          goto error_remove;
+        gst_object_ref (self->vf_colorspace);
+        if (!gst_element_link (self->v4l2_src, self->vf_colorspace))
+          goto error_remove_all;
+        vf_pad = gst_element_get_static_pad (self->vf_colorspace, "src");
+        break;
+      case ENCODED_NONE:
+        GST_DEBUG_OBJECT (self, "Encoded+None");
+        vid_pad = gst_element_get_static_pad (self->v4l2_src, "src");
+        break;
+      case NONE_ENCODED:
+        GST_DEBUG_OBJECT (self, "None+Encoded");
+        vf_pad = gst_element_get_static_pad (self->v4l2_src, "src");
+        break;
+      case H264_JPG:
+        GST_DEBUG_OBJECT (self, "H264+JPG");
+        self->mjpg_demux = gst_element_factory_make ("uvch264_mjpgdemux", NULL);
+        if (!self->mjpg_demux ||
+            !gst_bin_add (GST_BIN (self), self->mjpg_demux))
+          goto error_remove;
+        gst_object_ref (self->mjpg_demux);
+        if (!gst_element_link_filtered (self->v4l2_src, self->mjpg_demux,
+                src_caps))
+          goto error_remove_all;
+        vid_pad = gst_element_get_static_pad (self->mjpg_demux, "h264");
+        vf_pad = gst_element_get_static_pad (self->mjpg_demux, "jpeg");
+        break;
+      case H264_RAW:
+        GST_DEBUG_OBJECT (self, "H264+Raw");
+        self->mjpg_demux = gst_element_factory_make ("uvch264_mjpgdemux", NULL);
+        self->vf_colorspace = gst_element_factory_make ("ffmpegcolorspace",
+            NULL);
+        if (!self->mjpg_demux || !self->vf_colorspace)
+          goto error_remove;
+        if (!gst_bin_add (GST_BIN (self), self->mjpg_demux))
+          goto error_remove;
+        gst_object_ref (self->mjpg_demux);
+        if (!gst_bin_add (GST_BIN (self), self->vf_colorspace)) {
+          gst_object_unref (self->vf_colorspace);
+          self->vf_colorspace = NULL;
+          goto error_remove_all;
+        }
+        gst_object_ref (self->vf_colorspace);
+        if (!gst_element_link_filtered (self->v4l2_src, self->mjpg_demux,
+                src_caps))
+          goto error_remove_all;
+        if (!gst_element_link_pads (self->mjpg_demux, "yuy2",
+                self->vf_colorspace, "sink"))
+          goto error_remove_all;
+        vid_pad = gst_element_get_static_pad (self->mjpg_demux, "h264");
+        vf_pad = gst_element_get_static_pad (self->vf_colorspace, "src");
+        break;
+      case H264_JPG2RAW:
+        GST_DEBUG_OBJECT (self, "H264+Raw(jpegdec)");
+        self->mjpg_demux = gst_element_factory_make ("uvch264_mjpgdemux", NULL);
+        self->jpeg_dec = gst_element_factory_make ("jpegdec", NULL);
+        self->vf_colorspace = gst_element_factory_make ("ffmpegcolorspace",
+            NULL);
+        if (!self->mjpg_demux || !self->jpeg_dec || !self->vf_colorspace)
+          goto error_remove;
+        if (!gst_bin_add (GST_BIN (self), self->mjpg_demux))
+          goto error_remove;
+        gst_object_ref (self->mjpg_demux);
+        if (!gst_bin_add (GST_BIN (self), self->jpeg_dec)) {
+          gst_object_unref (self->jpeg_dec);
+          self->jpeg_dec = NULL;
+          gst_object_unref (self->vf_colorspace);
+          self->vf_colorspace = NULL;
+          goto error_remove_all;
+        }
+        gst_object_ref (self->jpeg_dec);
+        if (!gst_bin_add (GST_BIN (self), self->vf_colorspace)) {
+          gst_object_unref (self->vf_colorspace);
+          self->vf_colorspace = NULL;
+          goto error_remove_all;
+        }
+        gst_object_ref (self->vf_colorspace);
+        if (!gst_element_link_filtered (self->v4l2_src, self->mjpg_demux,
+                src_caps))
+          goto error_remove_all;
+        if (!gst_element_link_pads (self->mjpg_demux, "jpeg", self->jpeg_dec,
+                "sink"))
+          goto error_remove_all;
+        if (!gst_element_link (self->jpeg_dec, self->vf_colorspace))
+          goto error_remove_all;
+        vid_pad = gst_element_get_static_pad (self->mjpg_demux, "h264");
+        vf_pad = gst_element_get_static_pad (self->vf_colorspace, "src");
+        break;
+    }
+
+
+    if (!gst_ghost_pad_set_target (GST_GHOST_PAD (self->vidsrc), vid_pad) ||
+        !gst_ghost_pad_set_target (GST_GHOST_PAD (self->vfsrc), vf_pad))
+      goto error_remove_all;
+    if (vid_pad)
+      gst_object_unref (vid_pad);
+    if (vf_pad)
+      gst_object_unref (vf_pad);
+    vid_pad = vf_pad = NULL;
   }
+
+  if (vf_caps)
+    gst_caps_unref (vf_caps);
+  if (vid_caps)
+    gst_caps_unref (vid_caps);
+  if (src_caps)
+    gst_caps_unref (src_caps);
 
   return TRUE;
 
-error_pads:
-  if (h264_pad)
-    gst_object_unref (h264_pad);
-  if (vf_pad)
-    gst_object_unref (vf_pad);
+error_remove_all:
+  if (self->mjpg_demux)
+    gst_bin_remove (GST_BIN (self), self->mjpg_demux);
+  if (self->jpeg_dec)
+    gst_bin_remove (GST_BIN (self), self->jpeg_dec);
+  if (self->vid_colorspace)
+    gst_bin_remove (GST_BIN (self), self->vid_colorspace);
+  if (self->vf_colorspace)
+    gst_bin_remove (GST_BIN (self), self->vf_colorspace);
 
 error_remove:
-  gst_bin_remove_many (GST_BIN (self), self->v4l2_src,
-      self->mjpg_demux, self->jpeg_dec, NULL);
+  gst_element_set_state (self->v4l2_src, GST_STATE_NULL);
+  gst_bin_remove (GST_BIN (self), self->v4l2_src);
+
 error:
   if (self->v4l2_src)
     gst_object_unref (self->v4l2_src);
@@ -833,10 +1235,28 @@ error:
   if (self->mjpg_demux)
     gst_object_unref (self->mjpg_demux);
   self->mjpg_demux = NULL;
-
   if (self->jpeg_dec)
     gst_object_unref (self->jpeg_dec);
   self->jpeg_dec = NULL;
+  if (self->vid_colorspace)
+    gst_object_unref (self->vid_colorspace);
+  self->vid_colorspace = NULL;
+  if (self->vf_colorspace)
+    gst_object_unref (self->vf_colorspace);
+  self->vf_colorspace = NULL;
+
+  if (src_caps)
+    gst_caps_unref (src_caps);
+
+  if (vf_caps)
+    gst_caps_unref (vf_caps);
+  if (vid_caps)
+    gst_caps_unref (vid_caps);
+
+  if (vid_pad)
+    gst_object_unref (vid_pad);
+  if (vf_pad)
+    gst_object_unref (vf_pad);
 
   return FALSE;
 }
