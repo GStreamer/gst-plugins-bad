@@ -106,6 +106,10 @@ struct _GstUvcH264Src
   /* When restarting the source */
   gboolean drop_newseg;
 
+  /* v4l2src proxied properties */
+  guint32 num_buffers;
+  gchar *device;
+
   /* Static controls */
   guint32 initial_bitrate;
   guint16 slice_units;

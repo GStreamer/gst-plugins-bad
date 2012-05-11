@@ -42,6 +42,10 @@
 enum
 {
   PROP_0,
+  /* v4l2src properties */
+  PROP_NUM_BUFFERS,
+  PROP_DEVICE,
+  PROP_DEVICE_NAME,
   /* Static controls */
   PROP_INITIAL_BITRATE,
   PROP_SLICE_UNITS,
@@ -74,6 +78,9 @@ enum
 /* Events: LTR, generate IDR */
 
 /* Default values */
+#define DEFAULT_NUM_BUFFERS -1
+#define DEFAULT_DEVICE "/dev/video0"
+#define DEFAULT_DEVICE_NAME NULL
 #define DEFAULT_INITIAL_BITRATE 3000000
 #define DEFAULT_SLICE_UNITS 4
 #define DEFAULT_SLICE_MODE UVC_H264_SLICEMODE_SLICEPERFRAME
@@ -232,6 +239,21 @@ gst_uvc_h264_src_class_init (GstUvcH264SrcClass * klass)
   /* TODO: Add device/device-name properties and the proprety probe interface */
 
   /* Properties */
+  g_object_class_install_property (gobject_class, PROP_NUM_BUFFERS,
+      g_param_spec_int ("num-buffers", "num-buffers",
+          "Number of buffers to output before sending EOS (-1 = unlimited)",
+          -1, G_MAXUINT, DEFAULT_NUM_BUFFERS,
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+  g_object_class_install_property (gobject_class, PROP_DEVICE,
+      g_param_spec_string ("device", "device",
+          "Device location",
+          DEFAULT_DEVICE, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+  g_object_class_install_property (gobject_class, PROP_DEVICE_NAME,
+      g_param_spec_string ("device-name", "Device name",
+          "Name of the device", DEFAULT_DEVICE_NAME,
+          G_PARAM_READABLE | G_PARAM_STATIC_STRINGS));
+
+  /* Static controls */
   g_object_class_install_property (gobject_class, PROP_INITIAL_BITRATE,
       g_param_spec_uint ("initial-bitrate", "Initial bitrate",
           "Initial bitrate in bits/second (static control)",
@@ -259,7 +281,7 @@ gst_uvc_h264_src_class_init (GstUvcH264SrcClass * klass)
           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
   g_object_class_install_property (gobject_class, PROP_STREAM_FORMAT,
       g_param_spec_enum ("stream-format", "Stream format",
-          "Stream format (static control)",
+          "Stream format, if not specified in caps (static control)",
           UVC_H264_STREAMFORMAT_TYPE, DEFAULT_STREAM_FORMAT,
           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
   g_object_class_install_property (gobject_class, PROP_ENTROPY,
@@ -378,6 +400,11 @@ gst_uvc_h264_src_init (GstUvcH264Src * self, GstUvcH264SrcClass * klass)
 
   self->v4l2_fd = -1;
   gst_base_camera_src_set_mode (GST_BASE_CAMERA_SRC (self), MODE_VIDEO);
+
+  /* v4l2src properties */
+  self->num_buffers = DEFAULT_NUM_BUFFERS;
+  self->device = g_strdup (DEFAULT_DEVICE);
+
   /* Static controls */
   self->initial_bitrate = DEFAULT_INITIAL_BITRATE;
   self->slice_units = DEFAULT_SLICE_UNITS;
@@ -424,6 +451,18 @@ gst_uvc_h264_src_set_property (GObject * object,
   GstUvcH264Src *self = GST_UVC_H264_SRC (object);
 
   switch (prop_id) {
+      /* v4l2 properties */
+    case PROP_NUM_BUFFERS:
+      self->num_buffers = g_value_get_int (value);
+      if (self->v4l2_src)
+        g_object_set (self->v4l2_src, "num-buffers", self->num_buffers, NULL);
+      break;
+    case PROP_DEVICE:
+      g_free (self->device);
+      self->device = g_value_dup_string (value);
+      if (self->v4l2_src)
+        g_object_set (self->v4l2_src, "device", self->device, NULL);
+      break;
       /* Static controls */
     case PROP_INITIAL_BITRATE:
       self->initial_bitrate = g_value_get_uint (value);
@@ -535,6 +574,21 @@ gst_uvc_h264_src_get_property (GObject * object,
 
 
   switch (prop_id) {
+      /* v4l2src properties */
+    case PROP_NUM_BUFFERS:
+      g_value_set_int (value, self->num_buffers);
+      break;
+    case PROP_DEVICE:
+      g_value_set_string (value, self->device);
+      break;
+    case PROP_DEVICE_NAME:
+    {
+      gchar *device_name = NULL;
+      if (self->v4l2_src)
+        g_object_get (self->v4l2_src, "device-name", &device_name, NULL);
+      g_value_take_string (value, device_name);
+    }
+      break;
       /* Static controls */
     case PROP_INITIAL_BITRATE:
       g_value_set_uint (value, probe.dwBitRate);
@@ -986,7 +1040,8 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
     if (!self->v4l2_src || !gst_bin_add (GST_BIN (self), self->v4l2_src))
       goto error;
     gst_object_ref (self->v4l2_src);
-    g_object_set (self->v4l2_src, "device", "/dev/video1", NULL);
+    g_object_set (self->v4l2_src,
+        "device", self->device, "num-buffers", self->num_buffers, NULL);
     g_signal_connect (self->v4l2_src, "prepare-format",
         (GCallback) v4l2src_prepare_format, self);
     if (gst_element_set_state (self->v4l2_src, GST_STATE_READY) !=
