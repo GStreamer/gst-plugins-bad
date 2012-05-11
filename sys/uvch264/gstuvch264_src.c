@@ -1063,7 +1063,7 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
       if (vf_caps) {
         vf_struct = gst_caps_get_structure (vf_caps, 0);
       } else {
-        GST_WARNING_OBJECT (self, "Could not negociate vfsrc caps format");
+        GST_WARNING_OBJECT (self, "Could not negotiate vfsrc caps format");
         goto error_remove;
       }
     }
@@ -1074,7 +1074,7 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
       if (vid_caps) {
         vid_struct = gst_caps_get_structure (vid_caps, 0);
       } else {
-        GST_WARNING_OBJECT (self, "Could not negociate vidsrc caps format");
+        GST_WARNING_OBJECT (self, "Could not negotiate vidsrc caps format");
         goto error_remove;
       }
     }
@@ -1139,9 +1139,10 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
         smallest_frame_interval = self->main_frame_interval;
       else
         smallest_frame_interval = self->secondary_frame_interval;
-      /* Just to avoid a potential division by zero, set interval to 30 fps */
+      /* Just to avoid a potential division by zero, set interval to
+         333333 (100ns unit == 30 fps) */
       if (smallest_frame_interval == 0)
-        smallest_frame_interval = 33333333;
+        smallest_frame_interval = 333333;
 
       src_caps = gst_caps_new_simple ("image/jpeg",
           "width", G_TYPE_INT, self->secondary_width,
