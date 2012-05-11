@@ -140,7 +140,7 @@ GST_BOILERPLATE (GstUvcH264Src, gst_uvc_h264_src,
   "framerate = " GST_VIDEO_FPS_RANGE ", "                               \
   "stream-format = (string) { byte-stream, avc }, "                     \
   "alignment = (string) { au }, "                                       \
-  "profile = (string) { constrained-baseline, baseline, high, main }"
+  "profile = (string) { high, main, baseline, constrained-baseline }"
 
 static GstStaticPadTemplate vfsrc_template =
 GST_STATIC_PAD_TEMPLATE (GST_BASE_CAMERA_SRC_VIEWFINDER_PAD_NAME,
