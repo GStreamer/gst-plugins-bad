@@ -131,6 +131,12 @@ typedef enum {
 
 GType uvc_h264_entropy_get_type (void);
 
+/* bProfile defines */
+#define UVC_H264_PROFILE_CONSTRAINED_BASELINE 0x4240
+#define UVC_H264_PROFILE_BASELINE 0x4200
+#define UVC_H264_PROFILE_MAIN 0x4D00
+#define UVC_H264_PROFILE_HIGH 0x6400
+
 /* bTimingstamp defines */
 
 #define UVC_H264_TIMESTAMP_SEI_DISABLE     (0x00)

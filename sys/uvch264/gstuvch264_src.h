@@ -116,7 +116,6 @@ struct _GstUvcH264Src
   UvcH264SliceMode slice_mode;
   guint16 iframe_period;
   UvcH264UsageType usage_type;
-  UvcH264StreamFormat stream_format;
   UvcH264Entropy entropy;
   gboolean enable_sei;
   guint8 num_reorder_frames;

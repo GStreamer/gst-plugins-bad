@@ -52,7 +52,6 @@ enum
   PROP_SLICE_MODE,
   PROP_IFRAME_PERIOD,
   PROP_USAGE_TYPE,
-  PROP_STREAM_FORMAT,
   PROP_ENTROPY,
   PROP_ENABLE_SEI,
   PROP_NUM_REORDER_FRAMES,
@@ -86,7 +85,6 @@ enum
 #define DEFAULT_SLICE_MODE UVC_H264_SLICEMODE_SLICEPERFRAME
 #define DEFAULT_IFRAME_PERIOD 10000
 #define DEFAULT_USAGE_TYPE UVC_H264_USAGETYPE_REALTIME
-#define DEFAULT_STREAM_FORMAT UVC_H264_STREAMFORMAT_ANNEXB
 #define DEFAULT_ENTROPY UVC_H264_ENTROPY_CAVLC
 #define DEFAULT_ENABLE_SEI FALSE
 #define DEFAULT_NUM_REORDER_FRAMES 0
@@ -279,11 +277,6 @@ gst_uvc_h264_src_class_init (GstUvcH264SrcClass * klass)
           "The usage type (static control)",
           UVC_H264_USAGETYPE_TYPE, DEFAULT_USAGE_TYPE,
           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
-  g_object_class_install_property (gobject_class, PROP_STREAM_FORMAT,
-      g_param_spec_enum ("stream-format", "Stream format",
-          "Stream format, if not specified in caps (static control)",
-          UVC_H264_STREAMFORMAT_TYPE, DEFAULT_STREAM_FORMAT,
-          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
   g_object_class_install_property (gobject_class, PROP_ENTROPY,
       g_param_spec_enum ("entropy", "Entropy",
           "Entropy (static control)",
@@ -401,6 +394,17 @@ gst_uvc_h264_src_init (GstUvcH264Src * self, GstUvcH264SrcClass * klass)
   self->v4l2_fd = -1;
   gst_base_camera_src_set_mode (GST_BASE_CAMERA_SRC (self), MODE_VIDEO);
 
+  self->main_format = UVC_H264_SRC_FORMAT_NONE;
+  self->main_width = 0;
+  self->main_height = 0;
+  self->main_frame_interval = 0;
+  self->main_stream_format = UVC_H264_STREAMFORMAT_ANNEXB;
+  self->main_profile = UVC_H264_PROFILE_CONSTRAINED_BASELINE;
+  self->secondary_format = UVC_H264_SRC_FORMAT_NONE;
+  self->secondary_width = 0;
+  self->secondary_height = 0;
+  self->secondary_frame_interval = 0;
+
   /* v4l2src properties */
   self->num_buffers = DEFAULT_NUM_BUFFERS;
   self->device = g_strdup (DEFAULT_DEVICE);
@@ -411,7 +415,6 @@ gst_uvc_h264_src_init (GstUvcH264Src * self, GstUvcH264SrcClass * klass)
   self->slice_mode = DEFAULT_SLICE_MODE;
   self->iframe_period = DEFAULT_IFRAME_PERIOD;
   self->usage_type = DEFAULT_USAGE_TYPE;
-  self->stream_format = DEFAULT_STREAM_FORMAT;
   self->entropy = DEFAULT_ENTROPY;
   self->enable_sei = DEFAULT_ENABLE_SEI;
   self->num_reorder_frames = DEFAULT_NUM_REORDER_FRAMES;
@@ -478,9 +481,6 @@ gst_uvc_h264_src_set_property (GObject * object,
       break;
     case PROP_USAGE_TYPE:
       self->usage_type = g_value_get_enum (value);
-      break;
-    case PROP_STREAM_FORMAT:
-      self->stream_format = g_value_get_enum (value);
       break;
     case PROP_ENTROPY:
       self->entropy = g_value_get_enum (value);
@@ -557,7 +557,6 @@ gst_uvc_h264_src_get_property (GObject * object,
     case PROP_SLICE_MODE:
     case PROP_IFRAME_PERIOD:
     case PROP_USAGE_TYPE:
-    case PROP_STREAM_FORMAT:
     case PROP_ENTROPY:
     case PROP_ENABLE_SEI:
     case PROP_NUM_REORDER_FRAMES:
@@ -604,9 +603,6 @@ gst_uvc_h264_src_get_property (GObject * object,
       break;
     case PROP_USAGE_TYPE:
       g_value_set_enum (value, probe.bUsageType);
-      break;
-    case PROP_STREAM_FORMAT:
-      g_value_set_enum (value, probe.bStreamFormat);
       break;
     case PROP_ENTROPY:
       g_value_set_enum (value, probe.bEntropyCABAC);
@@ -729,13 +725,17 @@ fill_probe_commit_t (GstUvcH264Src * self,
   probe->bRateControlMode = self->rate_control;
   if (self->fixed_framerate)
     probe->bRateControlMode |= UVC_H264_RATECONTROL_FIXED_FRM_FLG;
-  probe->bStreamFormat = self->stream_format;
+  probe->bStreamFormat = self->main_stream_format;
   probe->bEntropyCABAC = self->entropy;
   probe->bTimestamp = self->enable_sei ?
       UVC_H264_TIMESTAMP_SEI_ENABLE : UVC_H264_TIMESTAMP_SEI_DISABLE;
   probe->bNumOfReorderFrames = self->num_reorder_frames;
   probe->bPreviewFlipped = self->preview_flipped ?
       UVC_H264_PREFLIPPED_HORIZONTAL : UVC_H264_PREFLIPPED_DISABLE;
+  /* FIXME: if requesting baseline, this will return width = 0 and height=0
+     and it will generate 320x240 h264 buffers which can't be pushed */
+  probe->bmHints = UVC_H264_BMHINTS_RESOLUTION | UVC_H264_BMHINTS_PROFILE |
+      UVC_H264_BMHINTS_FRAME_INTERVAL;
 }
 
 static void
@@ -811,11 +811,14 @@ configure_h264 (GstUvcH264Src * self, gint fd)
   print_probe_commit_t (self, &probe);
 
   fill_probe_commit_t (self, &probe, self->main_frame_interval,
-      self->main_width, self->main_height, 0x4240);
+      self->main_width, self->main_height, self->main_profile);
   if (self->secondary_format != UVC_H264_SRC_FORMAT_NONE)
     probe.bStreamMuxOption = 3;
   else
     probe.bStreamMuxOption = 0;
+
+  GST_DEBUG_OBJECT (self, "PROBE SET_CUR : ");
+  print_probe_commit_t (self, &probe);
 
   if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_QUERY_SET_CUR,
           (guchar *) & probe)) {
@@ -828,9 +831,10 @@ configure_h264 (GstUvcH264Src * self, gint fd)
     GST_WARNING_OBJECT (self, "PROBE GET_CUR error");
     return;
   }
-  GST_DEBUG_OBJECT (self, "PROBE SET_CUR : ");
+  GST_DEBUG_OBJECT (self, "PROBE GET_CUR : ");
   print_probe_commit_t (self, &probe);
 
+  /* Must validate the settings accepted by the encoder */
   if (!xu_query (self, UVCX_VIDEO_CONFIG_COMMIT, UVC_QUERY_SET_CUR,
           (guchar *) & probe)) {
     GST_WARNING_OBJECT (self, "COMMIT SET_CUR error");
@@ -1017,6 +1021,8 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
   GstCaps *src_caps = NULL;
   GstPad *v4l_pad = NULL;
   GstCaps *v4l_caps = NULL;
+  const gchar *stream_format;
+  const gchar *profile;
   enum
   {
     RAW_NONE, ENCODED_NONE, NONE_RAW, NONE_ENCODED,
@@ -1091,6 +1097,32 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
       if (!_extract_caps_info (vid_struct, &self->main_width,
               &self->main_height, &self->main_frame_interval))
         goto error_remove;
+
+      self->main_stream_format = UVC_H264_STREAMFORMAT_ANNEXB;
+      stream_format = gst_structure_get_string (vid_struct, "stream-format");
+      if (stream_format) {
+        if (!strcmp (stream_format, "avc"))
+          self->main_stream_format = UVC_H264_STREAMFORMAT_ANNEXB;
+        else if (!strcmp (stream_format, "byte-stream"))
+          self->main_stream_format = UVC_H264_STREAMFORMAT_NAL;
+      }
+
+      /* TODO: set output caps from demuxer into the right ones
+       * (Logitech C920 doesn't do baseline itself, only constrained) */
+      self->main_profile = UVC_H264_PROFILE_CONSTRAINED_BASELINE;
+      profile = gst_structure_get_string (vid_struct, "profile");
+      if (profile) {
+        if (!strcmp (profile, "constrained-baseline")) {
+          self->main_profile = UVC_H264_PROFILE_CONSTRAINED_BASELINE;
+        } else if (!strcmp (profile, "baseline")) {
+          self->main_profile = UVC_H264_PROFILE_BASELINE;
+        } else if (!strcmp (profile, "main")) {
+          self->main_profile = UVC_H264_PROFILE_MAIN;
+        } else if (!strcmp (profile, "high")) {
+          self->main_profile = UVC_H264_PROFILE_HIGH;
+        }
+      }
+
       if (gst_structure_has_name (vf_struct, "image/jpeg")) {
         type = H264_JPG;
         self->secondary_format = UVC_H264_SRC_FORMAT_JPG;
@@ -1120,11 +1152,33 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
       self->main_format = UVC_H264_SRC_FORMAT_NONE;
       self->secondary_format = UVC_H264_SRC_FORMAT_NONE;
       if (vid_struct && gst_structure_has_name (vid_struct, "video/x-h264")) {
+        type = ENCODED_NONE;
         self->main_format = UVC_H264_SRC_FORMAT_H264;
         if (!_extract_caps_info (vid_struct, &self->main_width,
                 &self->main_height, &self->main_frame_interval))
           goto error_remove;
-        type = ENCODED_NONE;
+        self->main_stream_format = UVC_H264_STREAMFORMAT_ANNEXB;
+        stream_format = gst_structure_get_string (vid_struct, "stream-format");
+        if (stream_format) {
+          if (!strcmp (stream_format, "avc"))
+            self->main_stream_format = UVC_H264_STREAMFORMAT_ANNEXB;
+          else if (!strcmp (stream_format, "byte-stream"))
+            self->main_stream_format = UVC_H264_STREAMFORMAT_NAL;
+        }
+
+        self->main_profile = UVC_H264_PROFILE_CONSTRAINED_BASELINE;
+        profile = gst_structure_get_string (vid_struct, "profile");
+        if (profile) {
+          if (!strcmp (profile, "constrained-baseline")) {
+            self->main_profile = UVC_H264_PROFILE_CONSTRAINED_BASELINE;
+          } else if (!strcmp (profile, "baseline")) {
+            self->main_profile = UVC_H264_PROFILE_BASELINE;
+          } else if (!strcmp (profile, "main")) {
+            self->main_profile = UVC_H264_PROFILE_MAIN;
+          } else if (!strcmp (profile, "high")) {
+            self->main_profile = UVC_H264_PROFILE_HIGH;
+          }
+        }
       } else if (vid_struct &&
           gst_structure_has_name (vid_struct, "image/jpeg")) {
         type = ENCODED_NONE;
