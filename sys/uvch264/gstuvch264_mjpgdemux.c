@@ -404,6 +404,7 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
             gint fps_num = 1000000000 / aux_header.frame_interval;
             gint fps_den = 100;
 
+            /* TODO: intersect with pad template */
             GST_DEBUG ("peercaps : %" GST_PTR_FORMAT, peercaps);
             if (peercaps && !gst_caps_is_any (peercaps))
               s = gst_caps_get_structure (peercaps, 0);
@@ -414,6 +415,7 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
               GST_DEBUG ("Fixated struct : %" GST_PTR_FORMAT, s);
               gst_structure_get_fraction (s, "framerate", &fps_num, &fps_den);
             }
+            gst_caps_unref (peercaps);
 
             *width = aux_header.width;
             *height = aux_header.height;
@@ -424,8 +426,10 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
                 "width", G_TYPE_INT, aux_header.width,
                 "height", G_TYPE_INT, aux_header.height,
                 "framerate", GST_TYPE_FRACTION, fps_num, fps_den, NULL);
-            gst_pad_set_caps (aux_pad, *aux_caps);
-            gst_caps_unref (peercaps);
+            if (!gst_pad_set_caps (aux_pad, *aux_caps)) {
+              ret = GST_FLOW_NOT_NEGOTIATED;
+              goto done;
+            }
           }
 
           /* Create new auxiliary buffer list and adjust i/segment size */
