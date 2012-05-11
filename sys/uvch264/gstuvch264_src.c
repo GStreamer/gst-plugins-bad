@@ -175,7 +175,7 @@ static gboolean gst_uvc_h264_src_start_capture (GstBaseCameraSrc * camerasrc);
 static void gst_uvc_h264_src_stop_capture (GstBaseCameraSrc * camerasrc);
 static GstStateChangeReturn gst_uvc_h264_src_change_state (GstElement * element,
     GstStateChange trans);
-static void fill_probe_commit_t (GstUvcH264Src * self,
+static void fill_probe_commit (GstUvcH264Src * self,
     uvcx_video_config_probe_commit_t * probe, guint32 frame_interval,
     guint32 width, guint32 height, guint32 profile);
 static gboolean xu_query (GstUvcH264Src * self, guint selector, guint query,
@@ -561,7 +561,7 @@ gst_uvc_h264_src_get_property (GObject * object,
     case PROP_ENABLE_SEI:
     case PROP_NUM_REORDER_FRAMES:
     case PROP_PREVIEW_FLIPPED:
-      fill_probe_commit_t (self, &probe, 0, 0, 0, 0);
+      fill_probe_commit (self, &probe, 0, 0, 0, 0);
       if (self->v4l2_fd != -1) {
         xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_QUERY_GET_CUR,
             (guchar *) & probe);
@@ -709,7 +709,7 @@ xu_query (GstUvcH264Src * self, guint selector, guint query, guchar * data)
 }
 
 static void
-fill_probe_commit_t (GstUvcH264Src * self,
+fill_probe_commit (GstUvcH264Src * self,
     uvcx_video_config_probe_commit_t * probe, guint32 frame_interval,
     guint32 width, guint32 height, guint32 profile)
 {
@@ -739,7 +739,7 @@ fill_probe_commit_t (GstUvcH264Src * self,
 }
 
 static void
-print_probe_commit_t (GstUvcH264Src * self,
+print_probe_commit (GstUvcH264Src * self,
     uvcx_video_config_probe_commit_t * probe)
 {
   GST_DEBUG_OBJECT (self, "  Frame interval : %d *100ns",
@@ -792,7 +792,7 @@ configure_h264 (GstUvcH264Src * self, gint fd)
     return;
   }
   GST_DEBUG_OBJECT (self, "PROBE GET_MAX : ");
-  print_probe_commit_t (self, &probe);
+  print_probe_commit (self, &probe);
 
   if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_QUERY_GET_CUR,
           (guchar *) & probe)) {
@@ -800,7 +800,7 @@ configure_h264 (GstUvcH264Src * self, gint fd)
     return;
   }
   GST_DEBUG_OBJECT (self, "PROBE GET_CUR : ");
-  print_probe_commit_t (self, &probe);
+  print_probe_commit (self, &probe);
 
   if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_QUERY_GET_DEF,
           (guchar *) & probe)) {
@@ -808,9 +808,9 @@ configure_h264 (GstUvcH264Src * self, gint fd)
     return;
   }
   GST_DEBUG_OBJECT (self, "PROBE GET_DEF : ");
-  print_probe_commit_t (self, &probe);
+  print_probe_commit (self, &probe);
 
-  fill_probe_commit_t (self, &probe, self->main_frame_interval,
+  fill_probe_commit (self, &probe, self->main_frame_interval,
       self->main_width, self->main_height, self->main_profile);
   if (self->secondary_format != UVC_H264_SRC_FORMAT_NONE)
     probe.bStreamMuxOption = 3;
@@ -818,7 +818,7 @@ configure_h264 (GstUvcH264Src * self, gint fd)
     probe.bStreamMuxOption = 0;
 
   GST_DEBUG_OBJECT (self, "PROBE SET_CUR : ");
-  print_probe_commit_t (self, &probe);
+  print_probe_commit (self, &probe);
 
   if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_QUERY_SET_CUR,
           (guchar *) & probe)) {
@@ -832,7 +832,7 @@ configure_h264 (GstUvcH264Src * self, gint fd)
     return;
   }
   GST_DEBUG_OBJECT (self, "PROBE GET_CUR : ");
-  print_probe_commit_t (self, &probe);
+  print_probe_commit (self, &probe);
 
   /* Must validate the settings accepted by the encoder */
   if (!xu_query (self, UVCX_VIDEO_CONFIG_COMMIT, UVC_QUERY_SET_CUR,
@@ -860,7 +860,7 @@ configure_h264 (GstUvcH264Src * self, gint fd)
       return;
     }
     GST_DEBUG_OBJECT (self, "PROBE SET_CUR : ");
-    print_probe_commit_t (self, &probe);
+    print_probe_commit (self, &probe);
 
     if (!xu_query (self, UVCX_VIDEO_CONFIG_COMMIT, UVC_QUERY_SET_CUR,
             (guchar *) & probe)) {
