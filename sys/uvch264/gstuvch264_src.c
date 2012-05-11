@@ -256,56 +256,67 @@ gst_uvc_h264_src_class_init (GstUvcH264SrcClass * klass)
       g_param_spec_uint ("initial-bitrate", "Initial bitrate",
           "Initial bitrate in bits/second (static control)",
           0, G_MAXUINT, DEFAULT_INITIAL_BITRATE,
-          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
+          GST_PARAM_MUTABLE_READY));
   g_object_class_install_property (gobject_class, PROP_SLICE_UNITS,
       g_param_spec_uint ("slice-units", "Slice units",
           "Slice units (static control)",
           0, G_MAXUINT16, DEFAULT_SLICE_UNITS,
-          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
+          GST_PARAM_MUTABLE_READY));
   g_object_class_install_property (gobject_class, PROP_SLICE_MODE,
       g_param_spec_enum ("slice-mode", "Slice mode",
           "Defines the unit of the slice-units property (static control)",
           UVC_H264_SLICEMODE_TYPE,
-          DEFAULT_SLICE_MODE, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+          DEFAULT_SLICE_MODE, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
+          GST_PARAM_MUTABLE_READY));
   g_object_class_install_property (gobject_class, PROP_IFRAME_PERIOD,
       g_param_spec_uint ("iframe-period", "I Frame Period",
           "Time between IDR frames in milliseconds (static control)",
           0, G_MAXUINT16, DEFAULT_IFRAME_PERIOD,
-          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
+          GST_PARAM_MUTABLE_READY));
   g_object_class_install_property (gobject_class, PROP_USAGE_TYPE,
       g_param_spec_enum ("usage-type", "Usage type",
           "The usage type (static control)",
           UVC_H264_USAGETYPE_TYPE, DEFAULT_USAGE_TYPE,
-          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
+          GST_PARAM_MUTABLE_READY));
   g_object_class_install_property (gobject_class, PROP_ENTROPY,
       g_param_spec_enum ("entropy", "Entropy",
           "Entropy (static control)",
           UVC_H264_ENTROPY_TYPE, DEFAULT_ENTROPY,
-          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
+          GST_PARAM_MUTABLE_READY));
   g_object_class_install_property (gobject_class, PROP_ENABLE_SEI,
       g_param_spec_boolean ("enable-sei", "Enable SEI",
           "Enable SEI picture timing (static control)",
-          DEFAULT_ENABLE_SEI, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+          DEFAULT_ENABLE_SEI, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
+          GST_PARAM_MUTABLE_READY));
   g_object_class_install_property (gobject_class, PROP_NUM_REORDER_FRAMES,
       g_param_spec_uint ("num-reorder-frames", "Number of Reorder frames",
           "Number of B frames between the references frames (static control)",
           0, G_MAXUINT8, DEFAULT_NUM_REORDER_FRAMES,
-          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
+          GST_PARAM_MUTABLE_READY));
   g_object_class_install_property (gobject_class, PROP_PREVIEW_FLIPPED,
       g_param_spec_boolean ("preview-flipped", "Flip preview",
           "Horizontal flipped image for non H.264 streams (static control)",
-          DEFAULT_PREVIEW_FLIPPED, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+          DEFAULT_PREVIEW_FLIPPED, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
+          GST_PARAM_MUTABLE_READY));
 
   /* Dynamic controls */
   g_object_class_install_property (gobject_class, PROP_RATE_CONTROL,
       g_param_spec_enum ("rate-control", "Rate control",
           "Stream format (dynamic control)",
           UVC_H264_RATECONTROL_TYPE, DEFAULT_RATE_CONTROL,
-          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
+          GST_PARAM_MUTABLE_PLAYING));
   g_object_class_install_property (gobject_class, PROP_FIXED_FRAMERATE,
       g_param_spec_boolean ("fixed-framerate", "Fixed framerate",
           "Fixed framerate (dynamic control)",
-          DEFAULT_FIXED_FRAMERATE, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+          DEFAULT_FIXED_FRAMERATE, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
+          GST_PARAM_MUTABLE_PLAYING));
   g_object_class_install_property (gobject_class, PROP_MAX_MBPS,
       g_param_spec_uint ("max-mbps", "Max macroblocks/second",
           "The number of macroblocks per second for the maximum processing rate",
@@ -314,57 +325,68 @@ gst_uvc_h264_src_class_init (GstUvcH264SrcClass * klass)
       g_param_spec_uint ("level-idc", "Level IDC",
           "Level IDC (dynamic control)",
           0, G_MAXUINT8, DEFAULT_LEVEL_IDC,
-          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
+          GST_PARAM_MUTABLE_PLAYING));
   g_object_class_install_property (gobject_class, PROP_PEAK_BITRATE,
       g_param_spec_uint ("peak-bitrate", "Peak bitrate",
           "The peak bitrate in bits/second (dynamic control)",
           0, G_MAXUINT, DEFAULT_PEAK_BITRATE,
-          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
+          GST_PARAM_MUTABLE_PLAYING));
   g_object_class_install_property (gobject_class, PROP_AVERAGE_BITRATE,
       g_param_spec_uint ("average-bitrate", "Average bitrate",
           "The average bitrate in bits/second (dynamic control)",
           0, G_MAXUINT, DEFAULT_AVERAGE_BITRATE,
-          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
+          GST_PARAM_MUTABLE_PLAYING));
   g_object_class_install_property (gobject_class, PROP_MIN_IFRAME_QP,
       g_param_spec_int ("min-iframe-qp", "Minimum I frame QP",
           "The minimum Quantization step size for I frames (dynamic control)",
           -G_MAXINT8, G_MAXINT8, DEFAULT_MIN_QP,
-          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
+          GST_PARAM_MUTABLE_PLAYING));
   g_object_class_install_property (gobject_class, PROP_MAX_IFRAME_QP,
       g_param_spec_int ("max-iframe-qp", "Minimum I frame QP",
           "The minimum Quantization step size for I frames (dynamic control)",
           -G_MAXINT8, G_MAXINT8, DEFAULT_MAX_QP,
-          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
+          GST_PARAM_MUTABLE_PLAYING));
   g_object_class_install_property (gobject_class, PROP_MIN_PFRAME_QP,
       g_param_spec_int ("min-pframe-qp", "Minimum P frame QP",
           "The minimum Quantization step size for P frames (dynamic control)",
           -G_MAXINT8, G_MAXINT8, DEFAULT_MIN_QP,
-          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
+          GST_PARAM_MUTABLE_PLAYING));
   g_object_class_install_property (gobject_class, PROP_MAX_PFRAME_QP,
       g_param_spec_int ("max-pframe-qp", "Minimum P frame QP",
           "The minimum Quantization step size for P frames (dynamic control)",
           -G_MAXINT8, G_MAXINT8, DEFAULT_MAX_QP,
-          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
+          GST_PARAM_MUTABLE_PLAYING));
   g_object_class_install_property (gobject_class, PROP_MIN_BFRAME_QP,
       g_param_spec_int ("min-bframe-qp", "Minimum B frame QP",
           "The minimum Quantization step size for B frames (dynamic control)",
           -G_MAXINT8, G_MAXINT8, DEFAULT_MIN_QP,
-          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
+          GST_PARAM_MUTABLE_PLAYING));
   g_object_class_install_property (gobject_class, PROP_MAX_BFRAME_QP,
       g_param_spec_int ("max-bframe-qp", "Minimum B frame QP",
           "The minimum Quantization step size for B frames (dynamic control)",
           -G_MAXINT8, G_MAXINT8, DEFAULT_MAX_QP,
-          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
+          GST_PARAM_MUTABLE_PLAYING));
   g_object_class_install_property (gobject_class, PROP_MIN_QP,
       g_param_spec_int ("min-qp", "Minimum QP",
           "The minimum Quantization step size for all frames (dynamic control)",
           -G_MAXINT8, G_MAXINT8, DEFAULT_MIN_QP,
-          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
+          GST_PARAM_MUTABLE_PLAYING));
   g_object_class_install_property (gobject_class, PROP_MAX_QP,
       g_param_spec_int ("max-qp", "Minimum QP",
           "The minimum Quantization step size for all frames (dynamic control)",
           -G_MAXINT8, G_MAXINT8, DEFAULT_MAX_QP,
-          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
+          GST_PARAM_MUTABLE_PLAYING));
 }
 
 static void
