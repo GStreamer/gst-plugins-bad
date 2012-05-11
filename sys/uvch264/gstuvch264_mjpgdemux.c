@@ -405,7 +405,7 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
             gint fps_den = 100;
 
             GST_DEBUG ("peercaps : %" GST_PTR_FORMAT, peercaps);
-            if (peercaps)
+            if (peercaps && !gst_caps_is_any (peercaps))
               s = gst_caps_get_structure (peercaps, 0);
             if (s) {
               /* TODO: make sure it contains the right format/width/height */
