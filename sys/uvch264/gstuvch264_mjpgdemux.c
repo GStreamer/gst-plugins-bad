@@ -100,13 +100,10 @@ struct _GstUvcH264MjpgDemuxPrivate
   GstCaps *nv12_caps;
   guint16 h264_width;
   guint16 h264_height;
-  guint32 h264_frame_interval;
   guint16 yuy2_width;
   guint16 yuy2_height;
-  guint32 yuy2_frame_interval;
   guint16 nv12_width;
   guint16 nv12_height;
-  guint32 nv12_frame_interval;
 };
 
 typedef struct
@@ -227,9 +224,6 @@ gst_uvc_h264_mjpg_demux_init (GstUvcH264MjpgDemux * self,
   self->priv->h264_width = self->priv->h264_height = 0;
   self->priv->yuy2_width = self->priv->yuy2_height = 0;
   self->priv->nv12_width = self->priv->nv12_height = 0;
-  self->priv->h264_frame_interval = 0;
-  self->priv->yuy2_frame_interval = 0;
-  self->priv->nv12_frame_interval = 0;
 }
 
 static void
@@ -372,7 +366,6 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
         if (aux_size > 0) {
           guint16 *width = NULL;
           guint16 *height = NULL;
-          guint32 *frame_interval = NULL;
 
           /* Find the auxiliary stream's pad and caps */
           switch (aux_header.type) {
@@ -381,21 +374,18 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
               aux_caps = &self->priv->h264_caps;
               width = &self->priv->h264_width;
               height = &self->priv->h264_height;
-              frame_interval = &self->priv->h264_frame_interval;
               break;
             case GST_MAKE_FOURCC ('Y', 'U', 'Y', '2'):
               aux_pad = self->priv->yuy2_pad;
               aux_caps = &self->priv->yuy2_caps;
               width = &self->priv->yuy2_width;
               height = &self->priv->yuy2_height;
-              frame_interval = &self->priv->yuy2_frame_interval;
               break;
             case GST_MAKE_FOURCC ('N', 'V', '1', '2'):
               aux_pad = self->priv->nv12_pad;
               aux_caps = &self->priv->nv12_caps;
               width = &self->priv->nv12_width;
               height = &self->priv->nv12_height;
-              frame_interval = &self->priv->nv12_frame_interval;
               break;
             default:
               GST_ELEMENT_ERROR (self, STREAM, DEMUX,
@@ -408,18 +398,34 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
           if (ret != GST_FLOW_OK)
             goto done;
 
-          if (*width != aux_header.width ||
-              *height != aux_header.height ||
-              *frame_interval != aux_header.frame_interval) {
+          if (*width != aux_header.width || *height != aux_header.height) {
+            GstCaps *peercaps = gst_pad_peer_get_caps (aux_pad);
+            GstStructure *s = NULL;
+            gint fps_num = 1000000000 / aux_header.frame_interval;
+            gint fps_den = 100;
+
+            GST_DEBUG ("peercaps : %" GST_PTR_FORMAT, peercaps);
+            if (peercaps)
+              s = gst_caps_get_structure (peercaps, 0);
+            if (s) {
+              /* TODO: make sure it contains the right format/width/height */
+              gst_structure_fixate_field_nearest_fraction (s, "framerate",
+                  fps_num, fps_den);
+              GST_DEBUG ("Fixated struct : %" GST_PTR_FORMAT, s);
+              gst_structure_get_fraction (s, "framerate", &fps_num, &fps_den);
+            }
+
             *width = aux_header.width;
             *height = aux_header.height;
-            *frame_interval = aux_header.frame_interval;
             *aux_caps = gst_caps_make_writable (*aux_caps);
+            /* FIXME: fps must match the caps and be allowed and represent
+               our first buffer */
             gst_caps_set_simple (*aux_caps,
                 "width", G_TYPE_INT, aux_header.width,
                 "height", G_TYPE_INT, aux_header.height,
-                "framerate", GST_TYPE_FRACTION,
-                1000000000 / aux_header.frame_interval, 100, NULL);
+                "framerate", GST_TYPE_FRACTION, fps_num, fps_den, NULL);
+            gst_pad_set_caps (aux_pad, *aux_caps);
+            gst_caps_unref (peercaps);
           }
 
           /* Create new auxiliary buffer list and adjust i/segment size */
@@ -444,6 +450,8 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
         sub_buffer = gst_buffer_create_sub (buf, i, segment_size);
         /* TODO: Transform PTS into proper buffer timestamp */
         //GST_BUFFER_TIMESTAMP (aux_buffer) = aux_header.pts;
+        GST_BUFFER_DURATION (sub_buffer) =
+            aux_header.frame_interval * 100 * GST_NSECOND;
         gst_buffer_copy_metadata (sub_buffer, buf, GST_BUFFER_COPY_TIMESTAMPS);
         gst_buffer_set_caps (sub_buffer, *aux_caps);
         gst_buffer_list_iterator_add (aux_it, sub_buffer);
