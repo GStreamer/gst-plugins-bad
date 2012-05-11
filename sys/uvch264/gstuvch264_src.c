@@ -97,6 +97,9 @@ enum
 #define DEFAULT_MIN_QP 0        /* FIXME: check real default */
 #define DEFAULT_MAX_QP 0        /* FIXME: check real default */
 
+#define NSEC_PER_SEC (G_USEC_PER_SEC * 1000)
+
+
 GST_DEBUG_CATEGORY (uvc_h264_src_debug);
 #define GST_CAT_DEFAULT uvc_h264_src_debug
 
@@ -1154,20 +1157,18 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
           self->secondary_format = UVC_H264_SRC_FORMAT_RAW;
         }
       }
-      if (self->main_frame_interval < self->secondary_frame_interval)
-        smallest_frame_interval = self->main_frame_interval;
-      else
-        smallest_frame_interval = self->secondary_frame_interval;
-      /* Just to avoid a potential division by zero, set interval to
-         333333 (100ns unit == 30 fps) */
+      smallest_frame_interval = MIN (self->main_frame_interval,
+          self->secondary_frame_interval);
+      /* Just to avoid a potential division by zero, set interval to 30 fps */
       if (smallest_frame_interval == 0)
         smallest_frame_interval = 333333;
 
+      /* Frame interval is in 100ns units */
       src_caps = gst_caps_new_simple ("image/jpeg",
           "width", G_TYPE_INT, self->secondary_width,
           "height", G_TYPE_INT, self->secondary_height,
           "framerate", GST_TYPE_FRACTION,
-          (G_USEC_PER_SEC * 1000) / smallest_frame_interval, 100, NULL);
+          NSEC_PER_SEC / smallest_frame_interval, 100, NULL);
     } else {
       self->main_format = UVC_H264_SRC_FORMAT_NONE;
       self->secondary_format = UVC_H264_SRC_FORMAT_NONE;
