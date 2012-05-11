@@ -480,13 +480,13 @@ gst_uvc_h264_src_set_property (GObject * object,
     case PROP_NUM_BUFFERS:
       self->num_buffers = g_value_get_int (value);
       if (self->v4l2_src)
-        g_object_set (self->v4l2_src, "num-buffers", self->num_buffers, NULL);
+        g_object_set_property (G_OBJECT (self->v4l2_src), "num-buffers", value);
       break;
     case PROP_DEVICE:
       g_free (self->device);
       self->device = g_value_dup_string (value);
       if (self->v4l2_src)
-        g_object_set (self->v4l2_src, "device", self->device, NULL);
+        g_object_set_property (G_OBJECT (self->v4l2_src), "device", value);
       break;
       /* Static controls */
     case PROP_INITIAL_BITRATE:
@@ -593,7 +593,6 @@ gst_uvc_h264_src_get_property (GObject * object,
       break;
   }
 
-
   switch (prop_id) {
       /* v4l2src properties */
     case PROP_NUM_BUFFERS:
@@ -603,12 +602,10 @@ gst_uvc_h264_src_get_property (GObject * object,
       g_value_set_string (value, self->device);
       break;
     case PROP_DEVICE_NAME:
-    {
-      gchar *device_name = NULL;
       if (self->v4l2_src)
-        g_object_get (self->v4l2_src, "device-name", &device_name, NULL);
-      g_value_take_string (value, device_name);
-    }
+        g_object_get_property (G_OBJECT (self->v4l2_src), "device-name", value);
+      else
+        g_value_set_static_string (value, "");
       break;
       /* Static controls */
     case PROP_INITIAL_BITRATE:
