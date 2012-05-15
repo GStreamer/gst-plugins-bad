@@ -129,7 +129,7 @@ gst_fragment_init (GstFragment * fragment)
   priv->buffer_iterator = gst_buffer_list_iterate (priv->buffer_list);
   priv->accumulated_size = 0;
   gst_buffer_list_iterator_add_group (priv->buffer_iterator);
-  fragment->download_start_time = g_get_real_time ();
+  fragment->download_start_time = gst_util_get_timestamp ();
   fragment->start_time = 0;
   fragment->stop_time = 0;
   fragment->index = 0;

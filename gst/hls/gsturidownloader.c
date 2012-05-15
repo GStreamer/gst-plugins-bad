@@ -160,7 +160,8 @@ gst_uri_downloader_sink_event (GstPad * pad, GstEvent * event)
       if (downloader->priv->download != NULL) {
         /* signal we have fetched the URI */
         downloader->priv->download->completed = TRUE;
-        downloader->priv->download->download_stop_time = g_get_real_time ();
+        downloader->priv->download->download_stop_time =
+            gst_util_get_timestamp ();
         GST_OBJECT_UNLOCK (downloader);
         GST_DEBUG_OBJECT (downloader, "Signaling chain funtion");
         g_cond_signal (downloader->priv->cond);
