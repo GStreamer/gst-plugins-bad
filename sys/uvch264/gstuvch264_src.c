@@ -1,7 +1,7 @@
 /*
  * GStreamer
  *
- * Copyright (C) 201 Collabora Ltd.
+ * Copyright (C) 2012 Collabora Ltd.
  *   Author: Youness Alaoui <youness.alaoui@collabora.co.uk>
  *
  * This library is free software; you can redistribute it and/or
@@ -236,8 +236,6 @@ gst_uvc_h264_src_class_init (GstUvcH264SrcClass * klass)
   gstbasecamerasrc_class->set_mode = gst_uvc_h264_src_set_mode;
   gstbasecamerasrc_class->start_capture = gst_uvc_h264_src_start_capture;
   gstbasecamerasrc_class->stop_capture = gst_uvc_h264_src_stop_capture;
-
-  /* TODO: Add device/device-name properties and the proprety probe interface */
 
   /* Properties */
   g_object_class_install_property (gobject_class, PROP_NUM_BUFFERS,
@@ -1131,7 +1129,7 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
 
       /* TODO: set output caps from demuxer into the right ones
        * (Logitech C920 doesn't do baseline itself, only constrained) */
-      self->main_profile = UVC_H264_PROFILE_CONSTRAINED_BASELINE;
+      self->main_profile = UVC_H264_PROFILE_HIGH;
       profile = gst_structure_get_string (vid_struct, "profile");
       if (profile) {
         if (!strcmp (profile, "constrained-baseline")) {
