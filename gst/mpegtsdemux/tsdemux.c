@@ -1383,6 +1383,7 @@ gst_ts_demux_queue_data (GstTSDemux * demux, TSDemuxStream * stream,
       stream->state = PENDING_PACKET_HEADER;
       if (stream->pad) {
         GST_DEBUG ("Setting pad caps on buffer %p", buf);
+        buf = gst_buffer_make_metadata_writable (buf);
         gst_buffer_set_caps (buf, GST_PAD_CAPS (stream->pad));
       }
     }
