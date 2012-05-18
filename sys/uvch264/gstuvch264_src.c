@@ -310,13 +310,13 @@ gst_uvc_h264_src_class_init (GstUvcH264SrcClass * klass)
   /* Dynamic controls */
   g_object_class_install_property (gobject_class, PROP_RATE_CONTROL,
       g_param_spec_enum ("rate-control", "Rate control",
-          "Stream format (dynamic control)",
+          "Rate control mode (static & dynamic control)",
           UVC_H264_RATECONTROL_TYPE, DEFAULT_RATE_CONTROL,
           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
           GST_PARAM_MUTABLE_PLAYING));
   g_object_class_install_property (gobject_class, PROP_FIXED_FRAMERATE,
       g_param_spec_boolean ("fixed-framerate", "Fixed framerate",
-          "Fixed framerate (dynamic control)",
+          "Fixed framerate (static & dynamic control)",
           DEFAULT_FIXED_FRAMERATE, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
           GST_PARAM_MUTABLE_PLAYING));
   g_object_class_install_property (gobject_class, PROP_MAX_MBPS,
