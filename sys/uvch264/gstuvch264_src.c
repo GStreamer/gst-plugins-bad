@@ -34,6 +34,7 @@
 
 #include <gst/video/video.h>
 #include <linux/uvcvideo.h>
+#include <linux/usb/video.h>
 #include <sys/ioctl.h>
 #include <string.h>
 
@@ -586,7 +587,7 @@ gst_uvc_h264_src_get_property (GObject * object,
     case PROP_PREVIEW_FLIPPED:
       fill_probe_commit (self, &probe, 0, 0, 0, 0);
       if (self->v4l2_fd != -1) {
-        xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_QUERY_GET_CUR,
+        xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_GET_CUR,
             (guchar *) & probe);
       }
       break;
@@ -710,7 +711,7 @@ xu_query (GstUvcH264Src * self, guint selector, guint query, guchar * data)
   xu.unit = 12;                 /* TODO: find the right unit */
   xu.selector = selector;
 
-  xu.query = UVC_QUERY_GET_LEN;
+  xu.query = UVC_GET_LEN;
   xu.size = sizeof (len);
   xu.data = (unsigned char *) &len;
   if (-1 == ioctl (self->v4l2_fd, UVCIOC_CTRL_QUERY, &xu)) {
@@ -770,7 +771,7 @@ print_probe_commit (GstUvcH264Src * self,
       probe->wConfigurationIndex);
   GST_DEBUG_OBJECT (self, "  Width : %d", probe->wWidth);
   GST_DEBUG_OBJECT (self, "  Height : %d", probe->wHeight);
-  GST_DEBUG_OBJECT (self, "  Slice units : %X", probe->wSliceUnits);
+  GST_DEBUG_OBJECT (self, "  Slice units : %d", probe->wSliceUnits);
   GST_DEBUG_OBJECT (self, "  Slice mode : %X", probe->wSliceMode);
   GST_DEBUG_OBJECT (self, "  Profile : %X", probe->wProfile);
   GST_DEBUG_OBJECT (self, "  IFrame Period : %d ms", probe->wIFramePeriod);
@@ -806,7 +807,15 @@ configure_h264 (GstUvcH264Src * self, gint fd)
 {
   uvcx_video_config_probe_commit_t probe;
 
-  if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_QUERY_GET_MAX,
+  if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_GET_MIN,
+          (guchar *) & probe)) {
+    GST_WARNING_OBJECT (self, "PROBE GET_MIN error");
+    return;
+  }
+  GST_DEBUG_OBJECT (self, "PROBE GET_MIN : ");
+  print_probe_commit (self, &probe);
+
+  if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_GET_MAX,
           (guchar *) & probe)) {
     GST_WARNING_OBJECT (self, "PROBE GET_MAX error");
     return;
@@ -814,7 +823,7 @@ configure_h264 (GstUvcH264Src * self, gint fd)
   GST_DEBUG_OBJECT (self, "PROBE GET_MAX : ");
   print_probe_commit (self, &probe);
 
-  if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_QUERY_GET_CUR,
+  if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_GET_CUR,
           (guchar *) & probe)) {
     GST_WARNING_OBJECT (self, "PROBE GET_CUR error");
     return;
@@ -822,7 +831,7 @@ configure_h264 (GstUvcH264Src * self, gint fd)
   GST_DEBUG_OBJECT (self, "PROBE GET_CUR : ");
   print_probe_commit (self, &probe);
 
-  if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_QUERY_GET_DEF,
+  if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_GET_DEF,
           (guchar *) & probe)) {
     GST_WARNING_OBJECT (self, "PROBE GET_DEF error");
     return;
@@ -840,13 +849,13 @@ configure_h264 (GstUvcH264Src * self, gint fd)
   GST_DEBUG_OBJECT (self, "PROBE SET_CUR : ");
   print_probe_commit (self, &probe);
 
-  if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_QUERY_SET_CUR,
+  if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_SET_CUR,
           (guchar *) & probe)) {
     GST_WARNING_OBJECT (self, "PROBE SET_CUR error");
     return;
   }
 
-  if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_QUERY_GET_CUR,
+  if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_GET_CUR,
           (guchar *) & probe)) {
     GST_WARNING_OBJECT (self, "PROBE GET_CUR error");
     return;
@@ -855,7 +864,7 @@ configure_h264 (GstUvcH264Src * self, gint fd)
   print_probe_commit (self, &probe);
 
   /* Must validate the settings accepted by the encoder */
-  if (!xu_query (self, UVCX_VIDEO_CONFIG_COMMIT, UVC_QUERY_SET_CUR,
+  if (!xu_query (self, UVCX_VIDEO_CONFIG_COMMIT, UVC_SET_CUR,
           (guchar *) & probe)) {
     GST_WARNING_OBJECT (self, "COMMIT SET_CUR error");
     return;
@@ -868,21 +877,32 @@ configure_h264 (GstUvcH264Src * self, gint fd)
     probe.wHeight = self->secondary_height;
     probe.bStreamMuxOption = 5;
 
-    if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_QUERY_SET_CUR,
+    GST_DEBUG_OBJECT (self, "RAW PROBE SET_CUR : ");
+    print_probe_commit (self, &probe);
+
+    if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_SET_CUR,
             (guchar *) & probe)) {
       GST_WARNING_OBJECT (self, "PROBE SET_CUR error");
       return;
     }
 
-    if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_QUERY_GET_CUR,
+    if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_GET_MAX,
             (guchar *) & probe)) {
       GST_WARNING_OBJECT (self, "PROBE GET_CUR error");
       return;
     }
-    GST_DEBUG_OBJECT (self, "PROBE SET_CUR : ");
+    GST_DEBUG_OBJECT (self, "RAW PROBE GET_MAX : ");
     print_probe_commit (self, &probe);
 
-    if (!xu_query (self, UVCX_VIDEO_CONFIG_COMMIT, UVC_QUERY_SET_CUR,
+    if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_GET_CUR,
+            (guchar *) & probe)) {
+      GST_WARNING_OBJECT (self, "PROBE GET_CUR error");
+      return;
+    }
+    GST_DEBUG_OBJECT (self, "RAW PROBE GET_CUR : ");
+    print_probe_commit (self, &probe);
+
+    if (!xu_query (self, UVCX_VIDEO_CONFIG_COMMIT, UVC_SET_CUR,
             (guchar *) & probe)) {
       GST_WARNING_OBJECT (self, "COMMIT SET_CUR error");
       return;
