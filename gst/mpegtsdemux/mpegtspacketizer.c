@@ -103,6 +103,9 @@ struct _MpegTSPacketizerPrivate
   guint64 refoffset;
 
   guint nb_seen_offsets;
+
+  /* Last inputted timestamp */
+  GstClockTime last_in_time;
 };
 
 static void mpegts_packetizer_dispose (GObject * object);
@@ -158,7 +161,6 @@ mpegts_packetizer_stream_new (void)
   MpegTSPacketizerStream *stream;
 
   stream = (MpegTSPacketizerStream *) g_new0 (MpegTSPacketizerStream, 1);
-  stream->section_adapter = gst_adapter_new ();
   stream->continuity_counter = CONTINUITY_UNSET;
   stream->subtables = NULL;
   stream->section_table_id = TABLE_ID_UNSET;
@@ -166,23 +168,24 @@ mpegts_packetizer_stream_new (void)
 }
 
 static void
-mpegts_packetizer_stream_free (MpegTSPacketizerStream * stream)
+mpegts_packetizer_clear_section (MpegTSPacketizerStream * stream)
 {
-  gst_adapter_clear (stream->section_adapter);
-  g_object_unref (stream->section_adapter);
-  g_slist_foreach (stream->subtables, (GFunc) g_free, NULL);
-  g_slist_free (stream->subtables);
-  g_free (stream);
+  if (stream->section_data)
+    g_free (stream->section_data);
+  stream->section_data = NULL;
+  stream->continuity_counter = CONTINUITY_UNSET;
+  stream->section_length = 0;
+  stream->section_offset = 0;
+  stream->section_table_id = TABLE_ID_UNSET;
 }
 
 static void
-mpegts_packetizer_clear_section (MpegTSPacketizer2 * packetizer,
-    MpegTSPacketizerStream * stream)
+mpegts_packetizer_stream_free (MpegTSPacketizerStream * stream)
 {
-  gst_adapter_clear (stream->section_adapter);
-  stream->continuity_counter = CONTINUITY_UNSET;
-  stream->section_length = 0;
-  stream->section_table_id = TABLE_ID_UNSET;
+  mpegts_packetizer_clear_section (stream);
+  g_slist_foreach (stream->subtables, (GFunc) g_free, NULL);
+  g_slist_free (stream->subtables);
+  g_free (stream);
 }
 
 static void
@@ -219,6 +222,7 @@ mpegts_packetizer_init (MpegTSPacketizer2 * packetizer)
   packetizer->priv->last_pcr_ts = GST_CLOCK_TIME_NONE;
   packetizer->priv->nb_seen_offsets = 0;
   packetizer->priv->refoffset = -1;
+  packetizer->priv->last_in_time = GST_CLOCK_TIME_NONE;
 }
 
 static void
@@ -320,10 +324,8 @@ mpegts_packetizer_parse_adaptation_field_control (MpegTSPacketizer2 *
     GST_DEBUG ("pcr %" G_GUINT64_FORMAT " (%" GST_TIME_FORMAT ")",
         packet->pcr, GST_TIME_ARGS (PCRTIME_TO_GSTTIME (packet->pcr)));
 
-    if (packetizer->calculate_skew)
-      GST_BUFFER_TIMESTAMP (packet->buffer) =
-          calculate_skew (packetizer, packet->pcr,
-          GST_BUFFER_TIMESTAMP (packet->buffer));
+    if (GST_CLOCK_TIME_IS_VALID (packet->origts) && packetizer->calculate_skew)
+      packet->origts = calculate_skew (packetizer, packet->pcr, packet->origts);
     if (packetizer->calculate_offset)
       record_pcr (packetizer, packet->pcr, packet->offset);
   }
@@ -396,12 +398,23 @@ mpegts_packetizer_parse_section_header (MpegTSPacketizer2 * packetizer,
 
   section->complete = TRUE;
   /* get the section buffer, pass the ownership to the caller */
-  section->buffer = gst_adapter_take_buffer (stream->section_adapter,
-      3 + stream->section_length);
-  data = GST_BUFFER_DATA (section->buffer);
-  GST_BUFFER_OFFSET (section->buffer) = stream->offset;
+  data = section->data = stream->section_data;
+  stream->section_data = NULL;
+  section->offset = stream->offset;
 
-  section->table_id = *data++;
+  GST_MEMDUMP ("section header", data, stream->section_length);
+
+  /* table_id : 8 bits
+   * NOTE : Already parsed/stored in _push_section()
+   */
+  section->table_id = stream->section_table_id;
+  data += 1;
+
+  /* section_syntax_indicator :  1 bit
+   * private_indicator        :  1 bit
+   * RESERVED                 :  2 bit
+   * private_section_length   : 12 bit
+   */
   /* if table_id is 0 (pat) then ignore the subtable extension */
   if ((data[0] & 0x80) == 0 || section->table_id == 0)
     section->subtable_extension = 0;
@@ -420,12 +433,20 @@ mpegts_packetizer_parse_section_header (MpegTSPacketizer2 * packetizer,
     stream->subtables = g_slist_prepend (stream->subtables, subtable);
   }
 
-  section->section_length = GST_READ_UINT16_BE (data) & 0x0FFF;
+  /* private_section_length : 12 bit
+   * NOTE : Already parsed/stored in _push_section()
+   * NOTE : Same as private_section_length mentionned above
+   */
+  section->section_length = stream->section_length;
   data += 2;
 
+  /* transport_stream_id    : 16 bit */
   /* skip to the version byte */
   data += 2;
 
+  /* Reserved               :  2 bits
+   * version_number         :  5 bits
+   * current_next_indicator : 1 bit*/
   tmp = *data++;
   section->version_number = (tmp >> 1) & 0x1F;
   section->current_next_indicator = tmp & 0x01;
@@ -434,8 +455,7 @@ mpegts_packetizer_parse_section_header (MpegTSPacketizer2 * packetizer,
     goto not_applicable;
 
   /* CRC is at the end of the section */
-  crc_data =
-      GST_BUFFER_DATA (section->buffer) + GST_BUFFER_SIZE (section->buffer) - 4;
+  crc_data = section->data + section->section_length - 4;
   section->crc = GST_READ_UINT32_BE (crc_data);
 
   if (section->version_number == subtable->version_number &&
@@ -454,7 +474,7 @@ not_applicable:
       section->pid, section->table_id, section->subtable_extension,
       section->current_next_indicator, section->version_number, section->crc);
   section->complete = FALSE;
-  gst_buffer_unref (section->buffer);
+  g_free (section->data);
   return TRUE;
 }
 
@@ -517,11 +537,9 @@ mpegts_packetizer_parse_pat (MpegTSPacketizer2 * packetizer,
   GstStructure *entry = NULL;
   gchar *struct_name;
 
-  data = GST_BUFFER_DATA (section->buffer);
+  data = section->data;
 
-  section->table_id = *data++;
-  section->section_length = GST_READ_UINT16_BE (data) & 0x0FFF;
-  data += 2;
+  data += 3;
 
   transport_stream_id = GST_READ_UINT16_BE (data);
   data += 2;
@@ -537,7 +555,7 @@ mpegts_packetizer_parse_pat (MpegTSPacketizer2 * packetizer,
       QUARK_TRANSPORT_STREAM_ID, G_TYPE_UINT, transport_stream_id, NULL);
   g_value_init (&entries, GST_TYPE_LIST);
   /* stop at the CRC */
-  end = GST_BUFFER_DATA (section->buffer) + GST_BUFFER_SIZE (section->buffer);
+  end = section->data + section->section_length;
   while (data < end - 4) {
     program_number = GST_READ_UINT16_BE (data);
     data += 2;
@@ -591,18 +609,16 @@ mpegts_packetizer_parse_pmt (MpegTSPacketizer2 * packetizer,
   gchar *struct_name;
 
   /* fixed header + CRC == 16 */
-  if (GST_BUFFER_SIZE (section->buffer) < 16) {
+  if (section->section_length < 16) {
     GST_WARNING ("PID %d invalid PMT size %d",
         section->pid, section->section_length);
     goto error;
   }
 
-  data = GST_BUFFER_DATA (section->buffer);
-  end = data + GST_BUFFER_SIZE (section->buffer);
+  data = section->data;
+  end = data + section->section_length;
 
-  section->table_id = *data++;
-  section->section_length = GST_READ_UINT16_BE (data) & 0x0FFF;
-  data += 2;
+  data += 3;
 
   program_number = GST_READ_UINT16_BE (data);
   data += 2;
@@ -797,24 +813,16 @@ mpegts_packetizer_parse_nit (MpegTSPacketizer2 * packetizer,
 
   GST_DEBUG ("NIT");
   /* fixed header + CRC == 16 */
-  if (GST_BUFFER_SIZE (section->buffer) < 23) {
+  if (section->section_length < 23) {
     GST_WARNING ("PID %d invalid NIT size %d",
         section->pid, section->section_length);
     goto error;
   }
 
-  data = GST_BUFFER_DATA (section->buffer);
-  end = data + GST_BUFFER_SIZE (section->buffer);
+  data = section->data;
+  end = data + section->section_length;
 
-  section->table_id = *data++;
-  section->section_length = GST_READ_UINT16_BE (data) & 0x0FFF;
-  data += 2;
-
-  if (data + section->section_length != end) {
-    GST_WARNING ("PID %d invalid NIT section length %d expected %d",
-        section->pid, section->section_length, (gint) (end - data));
-    goto error;
-  }
+  data += 3;
 
   network_id = GST_READ_UINT16_BE (data);
   data += 2;
@@ -1393,8 +1401,7 @@ mpegts_packetizer_parse_nit (MpegTSPacketizer2 * packetizer,
 
   if (data != end - 4) {
     GST_WARNING ("PID %d invalid NIT parsed %d length %d",
-        section->pid, (gint) (data - GST_BUFFER_DATA (section->buffer)),
-        GST_BUFFER_SIZE (section->buffer));
+        section->pid, (gint) (data - section->data), section->section_length);
     goto error;
   }
 
@@ -1433,24 +1440,16 @@ mpegts_packetizer_parse_sdt (MpegTSPacketizer2 * packetizer,
 
   GST_DEBUG ("SDT");
   /* fixed header + CRC == 16 */
-  if (GST_BUFFER_SIZE (section->buffer) < 14) {
+  if (section->section_length < 14) {
     GST_WARNING ("PID %d invalid SDT size %d",
         section->pid, section->section_length);
     goto error;
   }
 
-  data = GST_BUFFER_DATA (section->buffer);
-  end = data + GST_BUFFER_SIZE (section->buffer);
+  data = section->data;
+  end = data + section->section_length;
 
-  section->table_id = *data++;
-  section->section_length = GST_READ_UINT16_BE (data) & 0x0FFF;
-  data += 2;
-
-  if (data + section->section_length != end) {
-    GST_WARNING ("PID %d invalid SDT section length %d expected %d",
-        section->pid, section->section_length, (gint) (end - data));
-    goto error;
-  }
+  data += 3;
 
   transport_stream_id = GST_READ_UINT16_BE (data);
   data += 2;
@@ -1476,7 +1475,7 @@ mpegts_packetizer_parse_sdt (MpegTSPacketizer2 * packetizer,
       original_network_id, QUARK_ACTUAL_TRANSPORT_STREAM, G_TYPE_BOOLEAN,
       section->table_id == 0x42, NULL);
 
-  sdt_info_length = section->section_length - 8;
+  sdt_info_length = section->section_length - 11;
   g_value_init (&services, GST_TYPE_LIST);
   /* read up to the CRC */
   while (sdt_info_length - 4 > 0) {
@@ -1598,8 +1597,7 @@ mpegts_packetizer_parse_sdt (MpegTSPacketizer2 * packetizer,
 
   if (data != end - 4) {
     GST_WARNING ("PID %d invalid SDT parsed %d length %d",
-        section->pid, (gint) (data - GST_BUFFER_DATA (section->buffer)),
-        GST_BUFFER_SIZE (section->buffer));
+        section->pid, (gint) (data - section->data), section->section_length);
     goto error;
   }
 
@@ -1639,24 +1637,16 @@ mpegts_packetizer_parse_eit (MpegTSPacketizer2 * packetizer,
   guint tmp;
 
   /* fixed header + CRC == 16 */
-  if (GST_BUFFER_SIZE (section->buffer) < 18) {
+  if (section->section_length < 18) {
     GST_WARNING ("PID %d invalid EIT size %d",
         section->pid, section->section_length);
     goto error;
   }
 
-  data = GST_BUFFER_DATA (section->buffer);
-  end = data + GST_BUFFER_SIZE (section->buffer);
+  data = section->data;
+  end = data + section->section_length;
 
-  section->table_id = *data++;
-  section->section_length = GST_READ_UINT16_BE (data) & 0x0FFF;
-  data += 2;
-
-  if (data + section->section_length != end) {
-    GST_WARNING ("PID %d invalid EIT section length %d expected %d",
-        section->pid, section->section_length, (gint) (end - data));
-    goto error;
-  }
+  data += 3;
 
   service_id = GST_READ_UINT16_BE (data);
   data += 2;
@@ -2093,8 +2083,7 @@ mpegts_packetizer_parse_eit (MpegTSPacketizer2 * packetizer,
 
   if (data != end - 4) {
     GST_WARNING ("PID %d invalid EIT parsed %d length %d",
-        section->pid, (gint) (data - GST_BUFFER_DATA (section->buffer)),
-        GST_BUFFER_SIZE (section->buffer));
+        section->pid, (gint) (data - section->data), section->section_length);
     goto error;
   }
 
@@ -2122,28 +2111,19 @@ mpegts_packetizer_parse_tdt (MpegTSPacketizer2 * packetizer,
   GstStructure *tdt = NULL;
   guint16 mjd;
   guint year, month, day, hour, minute, second;
-  guint8 *data, *end, *utc_ptr;
+  guint8 *data, *utc_ptr;
 
   GST_DEBUG ("TDT");
   /* length always 8 */
-  if (G_UNLIKELY (GST_BUFFER_SIZE (section->buffer) != 8)) {
+  if (section->section_length < 8) {
     GST_WARNING ("PID %d invalid TDT size %d",
         section->pid, section->section_length);
     goto error;
   }
 
-  data = GST_BUFFER_DATA (section->buffer);
-  end = data + GST_BUFFER_SIZE (section->buffer);
+  data = section->data;
 
-  section->table_id = *data++;
-  section->section_length = GST_READ_UINT16_BE (data) & 0x0FFF;
-  data += 2;
-
-  if (data + section->section_length != end) {
-    GST_WARNING ("PID %d invalid TDT section length %d expected %d",
-        section->pid, section->section_length, (gint) (end - data));
-    goto error;
-  }
+  data += 3;
 
   mjd = GST_READ_UINT16_BE (data);
   data += 2;
@@ -2207,6 +2187,7 @@ mpegts_packetizer_clear (MpegTSPacketizer2 * packetizer)
   gst_adapter_clear (packetizer->adapter);
   packetizer->offset = 0;
   packetizer->empty = TRUE;
+  packetizer->priv->last_in_time = GST_CLOCK_TIME_NONE;
 }
 
 void
@@ -2216,8 +2197,7 @@ mpegts_packetizer_flush (MpegTSPacketizer2 * packetizer)
     int i;
     for (i = 0; i < 8192; i++) {
       if (packetizer->streams[i]) {
-        gst_adapter_flush (packetizer->streams[i]->section_adapter,
-            packetizer->streams[i]->section_adapter->size);
+        mpegts_packetizer_clear_section (packetizer->streams[i]);
       }
     }
   }
@@ -2225,6 +2205,7 @@ mpegts_packetizer_flush (MpegTSPacketizer2 * packetizer)
 
   packetizer->offset = 0;
   packetizer->empty = TRUE;
+  packetizer->priv->last_in_time = GST_CLOCK_TIME_NONE;
 }
 
 void
@@ -2260,6 +2241,9 @@ mpegts_packetizer_push (MpegTSPacketizer2 * packetizer, GstBuffer * buffer)
   GST_DEBUG ("Pushing %u byte from offset %" G_GUINT64_FORMAT,
       GST_BUFFER_SIZE (buffer), GST_BUFFER_OFFSET (buffer));
   gst_adapter_push (packetizer->adapter, buffer);
+  /* If buffer timestamp is valid, store it */
+  if (GST_CLOCK_TIME_IS_VALID (GST_BUFFER_TIMESTAMP (buffer)))
+    packetizer->priv->last_in_time = GST_BUFFER_TIMESTAMP (buffer);
 }
 
 static gboolean
@@ -2351,48 +2335,42 @@ mpegts_packetizer_next_packet (MpegTSPacketizer2 * packetizer,
 {
   guint avail;
 
-  packet->buffer = NULL;
-
   if (G_UNLIKELY (!packetizer->know_packet_size)) {
     if (!mpegts_try_discover_packet_size (packetizer))
       return PACKET_NEED_MORE;
   }
 
   while ((avail = packetizer->adapter->size) >= packetizer->packet_size) {
-    packet->buffer = gst_adapter_take_buffer (packetizer->adapter,
+    packet->data_start =
+        (guint8 *) gst_adapter_peek (packetizer->adapter,
         packetizer->packet_size);
 
     /* M2TS packets don't start with the sync byte, all other variants do */
-    if (packetizer->packet_size == MPEGTS_M2TS_PACKETSIZE) {
-      packet->data_start = GST_BUFFER_DATA (packet->buffer) + 4;
-    } else {
-      packet->data_start = GST_BUFFER_DATA (packet->buffer);
-    }
+    if (packetizer->packet_size == MPEGTS_M2TS_PACKETSIZE)
+      packet->data_start += 4;
+
     /* ALL mpeg-ts variants contain 188 bytes of data. Those with bigger packet
      * sizes contain either extra data (timesync, FEC, ..) either before or after
      * the data */
     packet->data_end = packet->data_start + 188;
-    GST_BUFFER_OFFSET (packet->buffer) = packet->offset = packetizer->offset;
+    packet->offset = packetizer->offset;
     GST_DEBUG ("offset %" G_GUINT64_FORMAT, packet->offset);
     packetizer->offset += packetizer->packet_size;
-    GST_MEMDUMP ("buffer", GST_BUFFER_DATA (packet->buffer), 16);
+    GST_MEMDUMP ("buffer", packet->data_start, 16);
     GST_MEMDUMP ("data_start", packet->data_start, 16);
-    GST_BUFFER_TIMESTAMP (packet->buffer) =
-        gst_adapter_prev_timestamp (packetizer->adapter, NULL);
+    packet->origts = packetizer->priv->last_in_time;
 
     /* Check sync byte */
     if (G_UNLIKELY (packet->data_start[0] != 0x47)) {
       guint i;
-      GstBuffer *tmpbuf;
 
       GST_LOG ("Lost sync %d", packetizer->packet_size);
       /* Find the 0x47 in the buffer */
       for (i = 0; i < packetizer->packet_size; i++)
-        if (GST_BUFFER_DATA (packet->buffer)[i] == 0x47)
+        if (packet->data_start[i] == 0x47)
           break;
       if (G_UNLIKELY (i == packetizer->packet_size)) {
         GST_ERROR ("REALLY lost the sync");
-        gst_buffer_unref (packet->buffer);
         goto done;
       }
 
@@ -2404,15 +2382,7 @@ mpegts_packetizer_next_packet (MpegTSPacketizer2 * packetizer,
       }
 
       /* Pop out the remaining data... */
-      GST_BUFFER_DATA (packet->buffer) += i;
-      GST_BUFFER_SIZE (packet->buffer) -= i;
-      GST_BUFFER_OFFSET (packet->buffer) += i;
-      tmpbuf =
-          gst_adapter_take_buffer (packetizer->adapter,
-          packetizer->adapter->size);
-      /* ... and push everything back in */
-      gst_adapter_push (packetizer->adapter, packet->buffer);
-      gst_adapter_push (packetizer->adapter, tmpbuf);
+      gst_adapter_flush (packetizer->adapter, i);
       continue;
     }
 
@@ -2430,9 +2400,8 @@ mpegts_packetizer_process_next_packet (MpegTSPacketizer2 * packetizer)
   MpegTSPacketizerPacketReturn ret;
 
   ret = mpegts_packetizer_next_packet (packetizer, &packet);
-  if (packet.buffer)
-    gst_buffer_unref (packet.buffer);
-
+  if (ret != PACKET_NEED_MORE)
+    gst_adapter_flush (packetizer->adapter, packetizer->packet_size);
   return ret;
 }
 
@@ -2441,6 +2410,7 @@ mpegts_packetizer_clear_packet (MpegTSPacketizer2 * packetizer,
     MpegTSPacketizerPacket * packet)
 {
   memset (packet, 0, sizeof (MpegTSPacketizerPacket));
+  gst_adapter_flush (packetizer->adapter, packetizer->packet_size);
 }
 
 gboolean
@@ -2452,8 +2422,7 @@ mpegts_packetizer_push_section (MpegTSPacketizer2 * packetizer,
   guint8 pointer, table_id;
   guint16 subtable_extension;
   guint section_length;
-  GstBuffer *sub_buf;
-  guint8 *data;
+  guint8 *data, *data_start;
 
   data = packet->data;
   section->pid = packet->pid;
@@ -2468,20 +2437,24 @@ mpegts_packetizer_push_section (MpegTSPacketizer2 * packetizer,
 
     data += pointer;
   }
+
+  GST_MEMDUMP ("section data", packet->data, 32);
+
   /* TDT and TOT sections (see ETSI EN 300 468 5.2.5)
    *  these sections do not extend to several packets so we don't need to use the
    *  sections filter. */
   if (packet->pid == 0x14) {
+    section->offset = packet->offset;
     table_id = data[0];
-    section->section_length = GST_READ_UINT24_BE (data) & 0x000FFF;
-    if (data - GST_BUFFER_DATA (packet->buffer) + section->section_length + 3 >
-        GST_BUFFER_SIZE (packet->buffer)) {
+    section->section_length = (GST_READ_UINT24_BE (data) & 0x000FFF) + 3;
+
+    if (data + section->section_length > packet->data_end) {
       GST_WARNING ("PID %dd PSI section length extends past the end "
           "of the buffer", packet->pid);
       goto out;
     }
-    section->buffer = gst_buffer_create_sub (packet->buffer,
-        data - GST_BUFFER_DATA (packet->buffer), section->section_length + 3);
+    /* FIXME : We could actually avoid any copy altogether if it gets parsed straight away */
+    section->data = g_memdup (data, section->section_length);
     section->table_id = table_id;
     section->complete = TRUE;
     res = TRUE;
@@ -2490,10 +2463,7 @@ mpegts_packetizer_push_section (MpegTSPacketizer2 * packetizer,
     goto out;
   }
 
-  /* create a sub buffer from the start of the section (table_id and
-   * section_length included) to the end */
-  sub_buf = gst_buffer_create_sub (packet->buffer,
-      data - GST_BUFFER_DATA (packet->buffer), packet->data_end - data);
+  data_start = data;
 
   stream = packetizer->streams[packet->pid];
   if (stream == NULL) {
@@ -2512,16 +2482,15 @@ mpegts_packetizer_push_section (MpegTSPacketizer2 * packetizer,
     GST_DEBUG ("pid: %d table_id %d sub_table_extension %d",
         packet->pid, table_id, subtable_extension);
 
-    section_length = GST_READ_UINT16_BE (data) & 0x0FFF;
+    section_length = (GST_READ_UINT16_BE (data) & 0x0FFF) + 3;
 
     if (stream->continuity_counter != CONTINUITY_UNSET) {
       GST_DEBUG
           ("PID %d table_id %d sub_table_extension %d payload_unit_start_indicator set but section "
-          "not complete (last_continuity: %d continuity: %d sec len %d buffer %d avail %d",
+          "not complete (last_continuity: %d continuity: %d sec len %d",
           packet->pid, table_id, subtable_extension, stream->continuity_counter,
-          packet->continuity_counter, section_length, GST_BUFFER_SIZE (sub_buf),
-          stream->section_adapter->size);
-      mpegts_packetizer_clear_section (packetizer, stream);
+          packet->continuity_counter, section_length);
+      mpegts_packetizer_clear_section (stream);
     } else {
       GST_DEBUG
           ("pusi set and new stream section is %d long and data we have is: %d",
@@ -2529,9 +2498,14 @@ mpegts_packetizer_push_section (MpegTSPacketizer2 * packetizer,
     }
     stream->continuity_counter = packet->continuity_counter;
     stream->section_length = section_length;
+
+    /* Create enough room to store chunks of sections, including FF padding */
+    stream->section_data = g_malloc (section_length + 188);
+    memcpy (stream->section_data, data_start, packet->data_end - data_start);
+    stream->section_offset = packet->data_end - data_start;
+
     stream->section_table_id = table_id;
     stream->offset = packet->offset;
-    gst_adapter_push (stream->section_adapter, sub_buf);
 
     res = TRUE;
   } else if (stream->continuity_counter != CONTINUITY_UNSET &&
@@ -2539,7 +2513,12 @@ mpegts_packetizer_push_section (MpegTSPacketizer2 * packetizer,
           (stream->continuity_counter == MAX_CONTINUITY &&
               packet->continuity_counter == 0))) {
     stream->continuity_counter = packet->continuity_counter;
-    gst_adapter_push (stream->section_adapter, sub_buf);
+
+    memcpy (stream->section_data + stream->section_offset, data_start,
+        packet->data_end - data_start);
+    stream->section_offset += packet->data_end - data_start;
+    GST_DEBUG ("Appending data (need %d, have %d)", stream->section_length,
+        stream->section_offset);
 
     res = TRUE;
   } else {
@@ -2549,8 +2528,7 @@ mpegts_packetizer_push_section (MpegTSPacketizer2 * packetizer,
       GST_DEBUG ("PID %d section discontinuity "
           "(last_continuity: %d continuity: %d", packet->pid,
           stream->continuity_counter, packet->continuity_counter);
-    mpegts_packetizer_clear_section (packetizer, stream);
-    gst_buffer_unref (sub_buf);
+    mpegts_packetizer_clear_section (stream);
   }
 
   if (res) {
@@ -2559,12 +2537,12 @@ mpegts_packetizer_push_section (MpegTSPacketizer2 * packetizer,
 
     /* >= as sections can be padded and padding is not included in
      * section_length */
-    if (stream->section_adapter->size >= stream->section_length + 3) {
+    if (stream->section_offset >= stream->section_length) {
       res = mpegts_packetizer_parse_section_header (packetizer,
           stream, section);
 
       /* flush stuffing bytes */
-      mpegts_packetizer_clear_section (packetizer, stream);
+      mpegts_packetizer_clear_section (stream);
     } else {
       GST_DEBUG ("section not complete");
       /* section not complete yet */
@@ -2577,7 +2555,9 @@ mpegts_packetizer_push_section (MpegTSPacketizer2 * packetizer,
 
 out:
   packet->data = data;
+
   GST_DEBUG ("result: %d complete: %d", res, section->complete);
+
   return res;
 }
 
