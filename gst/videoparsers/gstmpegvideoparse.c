@@ -542,7 +542,6 @@ end:
   if (fsize > 0) {
     *framesize = fsize;
     ret = TRUE;
-    mpvparse->last_sc = -1;
   } else if (GST_BASE_PARSE_DRAINING (parse)) {
     *framesize = GST_BUFFER_SIZE (buf);
     ret = TRUE;
