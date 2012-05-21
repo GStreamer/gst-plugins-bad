@@ -54,9 +54,6 @@
 
 #define TABLE_ID_UNSET 0xFF
 
-/* Size of the pendingbuffers array. */
-#define TS_MAX_PENDING_BUFFERS  256
-
 #define PCR_WRAP_SIZE_128KBPS (((gint64)1490)*(1024*1024))
 /* small PCR for wrap detection */
 #define PCR_SMALL 17775000
@@ -122,21 +119,16 @@ struct _TSDemuxStream
 
   /* Output data */
   PendingPacketState state;
-  /* Pending buffers array. */
-  /* These buffers are stored in this array until the PES header (if needed)
-   * is succesfully parsed. */
-  GstBuffer *pendingbuffers[TS_MAX_PENDING_BUFFERS];
-  guint8 nbpending;
+
+  /* Data to push (allocated) */
+  guint8 *data;
 
   /* Size of data to push (if known) */
   guint expected_size;
+
   /* Size of currently queued data */
   guint current_size;
-
-  /* Current data to be pushed out */
-  GstBufferList *current;
-  GstBufferListIterator *currentit;
-  GList *currentlist;
+  guint allocated_size;
 
   /* Current PTS/DTS for this stream */
   GstClockTime pts;
@@ -1042,37 +1034,17 @@ activate_pad_for_stream (GstTSDemux * tsdemux, TSDemuxStream * stream)
 static void
 gst_ts_demux_stream_flush (TSDemuxStream * stream)
 {
-  gint i;
-
   stream->pts = GST_CLOCK_TIME_NONE;
 
   GST_DEBUG ("flushing stream %p", stream);
 
-  for (i = 0; i < stream->nbpending; i++)
-    gst_buffer_unref (stream->pendingbuffers[i]);
-  memset (stream->pendingbuffers, 0, TS_MAX_PENDING_BUFFERS);
-  stream->nbpending = 0;
-
-  if (stream->current) {
-    gst_buffer_list_unref (stream->current);
-    stream->current = NULL;
-  }
-
-  if (stream->currentit) {
-    gst_buffer_list_iterator_free (stream->currentit);
-    stream->currentit = NULL;
-  }
-
-  if (stream->currentlist) {
-    g_list_foreach (stream->currentlist, (GFunc) gst_buffer_unref, NULL);
-    g_list_free (stream->currentlist);
-    stream->currentlist = NULL;
-  }
-
+  if (stream->data)
+    g_free (stream->data);
+  stream->data = NULL;
   stream->state = PENDING_PACKET_EMPTY;
   stream->expected_size = 0;
+  stream->allocated_size = 0;
   stream->current_size = 0;
-  stream->current = NULL;
   stream->need_newsegment = TRUE;
   stream->pts = GST_CLOCK_TIME_NONE;
   stream->dts = GST_CLOCK_TIME_NONE;
@@ -1268,21 +1240,14 @@ gst_ts_demux_record_dts (GstTSDemux * demux, TSDemuxStream * stream,
   }
 }
 
-static GstFlowReturn
-gst_ts_demux_parse_pes_header (GstTSDemux * demux, TSDemuxStream * stream)
+static void
+gst_ts_demux_parse_pes_header (GstTSDemux * demux, TSDemuxStream * stream,
+    guint8 * data, guint32 length, guint64 bufferoffset)
 {
   MpegTSBase *base = (MpegTSBase *) demux;
   PESHeader header;
-  GstFlowReturn res = GST_FLOW_OK;
   gint offset = 0;
-  guint8 *data;
-  guint32 length;
-  guint64 bufferoffset;
   PESParsingResult parseres;
-
-  data = GST_BUFFER_DATA (stream->pendingbuffers[0]);
-  length = GST_BUFFER_SIZE (stream->pendingbuffers[0]);
-  bufferoffset = GST_BUFFER_OFFSET (stream->pendingbuffers[0]);
 
   GST_MEMDUMP ("Header buffer", data, MIN (length, 32));
 
@@ -1306,54 +1271,32 @@ gst_ts_demux_parse_pes_header (GstTSDemux * demux, TSDemuxStream * stream)
         GST_TIME_ARGS (stream->pts),
         GST_TIME_ARGS (MPEGTIME_TO_GSTTIME (header.DTS)));
 
-    {
-      MpegTSPacketizer2 *packetizer = base->packetizer;
-
-      GST_BUFFER_TIMESTAMP (stream->pendingbuffers[0]) =
-          mpegts_packetizer_pts_to_ts (packetizer, stream->pts);
-    }
-    GST_DEBUG ("buf %" GST_TIME_FORMAT,
-        GST_TIME_ARGS (GST_BUFFER_TIMESTAMP (stream->pendingbuffers[0])));
   }
 
   /* Remove PES headers */
-  GST_DEBUG ("Moving data forward  by %d bytes (packet_size:%d, have:%d)",
-      header.header_size, header.packet_length,
-      GST_BUFFER_SIZE (stream->pendingbuffers[0]));
+  GST_DEBUG ("Moving data forward by %d bytes (packet_size:%d, have:%d)",
+      header.header_size, header.packet_length, length);
   stream->expected_size = header.packet_length;
-  GST_BUFFER_DATA (stream->pendingbuffers[0]) += header.header_size;
-  GST_BUFFER_SIZE (stream->pendingbuffers[0]) -= header.header_size;
+  data += header.header_size;
+  length -= header.header_size;
 
-  /* FIXME : responsible for switching to PENDING_PACKET_BUFFER and
-   * creating the bufferlist */
-  if (1) {
-    /* Append to the buffer list */
-    if (G_UNLIKELY (stream->current == NULL)) {
-      guint8 i;
+  /* Create the output buffer */
+  if (stream->expected_size)
+    stream->allocated_size = stream->expected_size;
+  else
+    stream->allocated_size = 8192;
+  g_assert (stream->data == NULL);
+  stream->data = g_malloc (stream->allocated_size);
+  memcpy (stream->data, data, length);
+  stream->current_size = length;
 
-      /* Create a new bufferlist */
-      stream->current = gst_buffer_list_new ();
-      stream->currentit = gst_buffer_list_iterate (stream->current);
-      stream->currentlist = NULL;
-      gst_buffer_list_iterator_add_group (stream->currentit);
+  stream->state = PENDING_PACKET_BUFFER;
 
-      GST_DEBUG_OBJECT (base, "starting new bufferlist %p", stream->current);
-
-      /* Push pending buffers into the list */
-      for (i = stream->nbpending; i; i--)
-        stream->currentlist =
-            g_list_prepend (stream->currentlist, stream->pendingbuffers[i - 1]);
-      memset (stream->pendingbuffers, 0, TS_MAX_PENDING_BUFFERS);
-      stream->nbpending = 0;
-    }
-    stream->state = PENDING_PACKET_BUFFER;
-  }
-
-  return res;
+  return;
 
 discont:
   stream->state = PENDING_PACKET_DISCONT;
-  return res;
+  return;
 }
 
  /* ONLY CALL THIS:
@@ -1364,15 +1307,13 @@ static inline void
 gst_ts_demux_queue_data (GstTSDemux * demux, TSDemuxStream * stream,
     MpegTSPacketizerPacket * packet)
 {
-  GstBuffer *buf;
+  guint8 *data;
+  guint size;
 
   GST_DEBUG ("state:%d", stream->state);
 
-  buf = packet->buffer;
-  /* HACK : Instead of creating a new buffer, we just modify the data/size
-   * of the buffer to point to the payload */
-  GST_BUFFER_DATA (buf) = packet->payload;
-  GST_BUFFER_SIZE (buf) = packet->data_end - packet->payload;
+  size = packet->data_end - packet->payload;
+  data = packet->payload;
 
   if (stream->state == PENDING_PACKET_EMPTY) {
     if (G_UNLIKELY (!packet->payload_unit_start_indicator)) {
@@ -1381,44 +1322,37 @@ gst_ts_demux_queue_data (GstTSDemux * demux, TSDemuxStream * stream,
     } else {
       GST_LOG ("EMPTY=>HEADER");
       stream->state = PENDING_PACKET_HEADER;
-      if (stream->pad) {
-        GST_DEBUG ("Setting pad caps on buffer %p", buf);
-        buf = gst_buffer_make_metadata_writable (buf);
-        gst_buffer_set_caps (buf, GST_PAD_CAPS (stream->pad));
-      }
     }
   }
 
   switch (stream->state) {
     case PENDING_PACKET_HEADER:
     {
-      GST_LOG ("HEADER: %p appending data to array", buf);
-      /* Append to the array */
-      stream->pendingbuffers[stream->nbpending++] = buf;
-      stream->current_size += GST_BUFFER_SIZE (buf);
+      GST_LOG ("HEADER: Parsing PES header");
 
       /* parse the header */
-      gst_ts_demux_parse_pes_header (demux, stream);
-
-      if (G_UNLIKELY (stream->state == PENDING_PACKET_DISCONT)) {
-        stream->pendingbuffers[--stream->nbpending] = NULL;
-        stream->current_size -= GST_BUFFER_SIZE (buf);
-        GST_LOG ("Error parsing PES header -> DISCONT: dropping buffer");
-        gst_buffer_unref (packet->buffer);
-      }
+      gst_ts_demux_parse_pes_header (demux, stream, data, size, packet->offset);
       break;
     }
     case PENDING_PACKET_BUFFER:
     {
-      GST_LOG ("BUFFER: %p appending data to bufferlist", buf);
-      stream->currentlist = g_list_prepend (stream->currentlist, buf);
-      stream->current_size += GST_BUFFER_SIZE (buf);
+      GST_LOG ("BUFFER: appending data");
+      if (G_UNLIKELY (stream->current_size + size > stream->allocated_size)) {
+        GST_LOG ("resizing buffer");
+        stream->allocated_size = stream->allocated_size * 2;
+        stream->data = g_realloc (stream->data, stream->allocated_size);
+      }
+      memcpy (stream->data + stream->current_size, data, size);
+      stream->current_size += size;
       break;
     }
     case PENDING_PACKET_DISCONT:
     {
-      GST_LOG ("DISCONT: %p dropping buffer", buf);
-      gst_buffer_unref (packet->buffer);
+      GST_LOG ("DISCONT: not storing/pushing");
+      if (G_UNLIKELY (stream->data)) {
+        g_free (stream->data);
+        stream->data = NULL;
+      }
       break;
     }
     default:
@@ -1526,15 +1460,15 @@ gst_ts_demux_push_pending_data (GstTSDemux * demux, TSDemuxStream * stream)
   GstFlowReturn res = GST_FLOW_OK;
   MpegTSBaseStream *bs = (MpegTSBaseStream *) stream;
   /* MpegTSBase *base = (MpegTSBase*) demux; */
-  GstBuffer *firstbuffer = NULL;
+  GstBuffer *buffer = NULL;
   MpegTSPacketizer2 *packetizer = MPEG_TS_BASE_PACKETIZER (demux);
 
   GST_DEBUG_OBJECT (stream->pad,
       "stream:%p, pid:0x%04x stream_type:%d state:%d", stream, bs->pid,
       bs->stream_type, stream->state);
 
-  if (G_UNLIKELY (stream->current == NULL)) {
-    GST_LOG ("stream->current == NULL");
+  if (G_UNLIKELY (stream->data == NULL)) {
+    GST_LOG ("stream->data == NULL");
     goto beach;
   }
 
@@ -1552,37 +1486,30 @@ gst_ts_demux_push_pending_data (GstTSDemux * demux, TSDemuxStream * stream)
     activate_pad_for_stream (demux, stream);
 
   if (G_UNLIKELY (stream->pad == NULL)) {
-    g_list_foreach (stream->currentlist, (GFunc) gst_buffer_unref, NULL);
-    g_list_free (stream->currentlist);
-    gst_buffer_list_iterator_free (stream->currentit);
-    gst_buffer_list_unref (stream->current);
+    g_free (stream->data);
     goto beach;
   }
 
   if (G_UNLIKELY (stream->need_newsegment))
     calculate_and_push_newsegment (demux, stream);
 
-  /* We have a confirmed buffer, let's push it out */
-  GST_LOG_OBJECT (stream->pad, "Putting pending data into GstBufferList");
-  stream->currentlist = g_list_reverse (stream->currentlist);
-  gst_buffer_list_iterator_add_list (stream->currentit, stream->currentlist);
-  stream->currentlist = NULL;
-  gst_buffer_list_iterator_free (stream->currentit);
-
-  firstbuffer = gst_buffer_list_get (stream->current, 0, 0);
+  buffer = gst_buffer_new ();
+  GST_BUFFER_DATA (buffer) = stream->data;
+  GST_BUFFER_MALLOCDATA (buffer) = stream->data;
+  GST_BUFFER_SIZE (buffer) = stream->current_size;
+  gst_buffer_set_caps (buffer, GST_PAD_CAPS (stream->pad));
 
   GST_DEBUG_OBJECT (stream->pad, "stream->pts %" GST_TIME_FORMAT,
       GST_TIME_ARGS (stream->pts));
-  if (GST_CLOCK_TIME_IS_VALID (stream->pts)
-      && !GST_CLOCK_TIME_IS_VALID (GST_BUFFER_TIMESTAMP (firstbuffer)))
-    GST_BUFFER_TIMESTAMP (firstbuffer) =
+  if (GST_CLOCK_TIME_IS_VALID (stream->pts))
+    GST_BUFFER_TIMESTAMP (buffer) =
         mpegts_packetizer_pts_to_ts (packetizer, stream->pts);
 
   GST_DEBUG_OBJECT (stream->pad,
-      "Pushing buffer list with timestamp: %" GST_TIME_FORMAT,
-      GST_TIME_ARGS (GST_BUFFER_TIMESTAMP (firstbuffer)));
+      "Pushing buffer with timestamp: %" GST_TIME_FORMAT,
+      GST_TIME_ARGS (GST_BUFFER_TIMESTAMP (buffer)));
 
-  res = gst_pad_push_list (stream->pad, stream->current);
+  res = gst_pad_push (stream->pad, buffer);
   GST_DEBUG_OBJECT (stream->pad, "Returned %s", gst_flow_get_name (res));
   res = tsdemux_combine_flows (demux, stream, res);
   GST_DEBUG_OBJECT (stream->pad, "combined %s", gst_flow_get_name (res));
@@ -1591,11 +1518,7 @@ beach:
   /* Reset everything */
   GST_LOG ("Resetting to EMPTY, returning %s", gst_flow_get_name (res));
   stream->state = PENDING_PACKET_EMPTY;
-  memset (stream->pendingbuffers, 0, TS_MAX_PENDING_BUFFERS);
-  stream->nbpending = 0;
-  stream->current = NULL;
-  stream->currentit = NULL;
-  stream->currentlist = NULL;
+  stream->data = NULL;
   stream->expected_size = 0;
   stream->current_size = 0;
 
@@ -1608,16 +1531,14 @@ gst_ts_demux_handle_packet (GstTSDemux * demux, TSDemuxStream * stream,
 {
   GstFlowReturn res = GST_FLOW_OK;
 
-  GST_DEBUG ("buffer:%p %p, data:%p", packet->buffer,
-      GST_BUFFER_DATA (packet->buffer), packet->data);
+  GST_DEBUG ("data:%p", packet->data);
   GST_LOG ("pid 0x%04x pusi:%d, afc:%d, cont:%d, payload:%p", packet->pid,
       packet->payload_unit_start_indicator, packet->adaptation_field_control,
       packet->continuity_counter, packet->payload);
 
   if (section) {
     GST_DEBUG ("section complete:%d, buffer size %d",
-        section->complete, GST_BUFFER_SIZE (section->buffer));
-    gst_buffer_unref (packet->buffer);
+        section->complete, section->section_length);
     return res;
   }
 
@@ -1628,11 +1549,9 @@ gst_ts_demux_handle_packet (GstTSDemux * demux, TSDemuxStream * stream,
 
   if (packet->adaptation_field_control & 0x2) {
     if (packet->afc_flags & MPEGTS_AFC_PCR_FLAG)
-      gst_ts_demux_record_pcr (demux, stream, packet->pcr,
-          GST_BUFFER_OFFSET (packet->buffer));
+      gst_ts_demux_record_pcr (demux, stream, packet->pcr, packet->offset);
     if (packet->afc_flags & MPEGTS_AFC_OPCR_FLAG)
-      gst_ts_demux_record_opcr (demux, stream, packet->opcr,
-          GST_BUFFER_OFFSET (packet->buffer));
+      gst_ts_demux_record_opcr (demux, stream, packet->opcr, packet->offset);
   }
 
   if (packet->payload && (res == GST_FLOW_OK || res == GST_FLOW_NOT_LINKED)
@@ -1643,8 +1562,7 @@ gst_ts_demux_handle_packet (GstTSDemux * demux, TSDemuxStream * stream,
     /* Finally check if the data we queued completes a packet */
     if (stream->expected_size && stream->current_size == stream->expected_size)
       res = gst_ts_demux_push_pending_data (demux, stream);
-  } else
-    gst_buffer_unref (packet->buffer);
+  }
 
   return res;
 }
@@ -1670,11 +1588,7 @@ gst_ts_demux_push (MpegTSBase * base, MpegTSPacketizerPacket * packet,
 
     if (stream) {
       res = gst_ts_demux_handle_packet (demux, stream, packet, section);
-    } else if (packet->buffer)
-      gst_buffer_unref (packet->buffer);
-  } else {
-    if (packet->buffer)
-      gst_buffer_unref (packet->buffer);
+    }
   }
   return res;
 }
