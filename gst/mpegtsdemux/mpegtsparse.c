@@ -27,6 +27,7 @@
 #endif
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "mpegtsbase.h"
 #include "mpegtsparse.h"
@@ -565,7 +566,9 @@ mpegts_parse_push (MpegTSBase * base, MpegTSPacketizerPacket * packet,
     mpegts_parse_sync_program_pads (parse);
 
   pid = packet->pid;
-  buffer = gst_buffer_make_metadata_writable (packet->buffer);
+  buffer = gst_buffer_new_and_alloc (packet->data_end - packet->data_start);
+  memcpy (GST_BUFFER_DATA (buffer), packet->data_start,
+      packet->data_end - packet->data_start);
   /* we have the same caps on all the src pads */
   gst_buffer_set_caps (buffer, base->packetizer->caps);
 
@@ -640,7 +643,6 @@ mpegts_parse_push (MpegTSBase * base, MpegTSPacketizerPacket * packet,
   }
 
   gst_buffer_unref (buffer);
-  packet->buffer = NULL;
 
   return ret;
 }
