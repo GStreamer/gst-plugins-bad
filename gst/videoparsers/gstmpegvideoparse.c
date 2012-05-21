@@ -575,13 +575,14 @@ end:
   } else if (GST_BASE_PARSE_DRAINING (parse)) {
     *framesize = GST_BUFFER_SIZE (buf);
     ret = TRUE;
-    GST_LOG_OBJECT (mpvparse, "no more data, assuming frame size", *framesize);
+    GST_LOG_OBJECT (mpvparse, "no more data, assuming frame size %d",
+        *framesize);
   } else {
     /* need some more data */
     /* request best next available */
     *framesize = G_MAXUINT;
     ret = FALSE;
-    GST_LOG_OBJECT (mpvparse, "obtaining more data", *framesize);
+    GST_LOG_OBJECT (mpvparse, "obtaining more data");
   }
 
   g_list_foreach (mpvparse->typeoffsize, (GFunc) g_free, NULL);
