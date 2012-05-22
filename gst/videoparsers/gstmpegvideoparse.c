@@ -185,6 +185,8 @@ gst_mpegv_parse_reset_frame (GstMpegvParse * mpvparse)
   mpvparse->seq_offset = -1;
   mpvparse->pic_offset = -1;
   mpvparse->frame_repeat_count = 0;
+  memset (mpvparse->ext_offsets, 0, sizeof (mpvparse->ext_offsets));
+  mpvparse->ext_count = 0;
 }
 
 static void
@@ -231,7 +233,6 @@ static gboolean
 gst_mpegv_parse_process_config (GstMpegvParse * mpvparse, GstBuffer * buf,
     guint size)
 {
-  GList *tmp;
   guint8 *data = GST_BUFFER_DATA (buf);
   guint8 *data_with_prefix;
 
@@ -256,7 +257,7 @@ gst_mpegv_parse_process_config (GstMpegvParse * mpvparse, GstBuffer * buf,
     return TRUE;
 
   if (gst_mpeg_video_parse_sequence_header (&mpvparse->sequencehdr, data,
-          GST_BUFFER_SIZE (buf) - mpvparse->seq_offset, 0)) {
+          size - mpvparse->seq_offset, 0)) {
     if (mpvparse->fps_num == 0 || mpvparse->fps_den == 0) {
       mpvparse->fps_num = mpvparse->sequencehdr.fps_n;
       mpvparse->fps_den = mpvparse->sequencehdr.fps_d;
@@ -272,25 +273,19 @@ gst_mpegv_parse_process_config (GstMpegvParse * mpvparse, GstBuffer * buf,
 
   /* Set mpeg version, and parse sequence extension */
   if (mpvparse->mpeg_version <= 0) {
-    GstMpegVideoTypeOffsetSize *tpoffsz;
+    gint i, offset;
 
     mpvparse->mpeg_version = 1;
-    for (tmp = mpvparse->typeoffsize; tmp; tmp = tmp->next) {
-      tpoffsz = tmp->data;
-
-      if (tpoffsz->type == GST_MPEG_VIDEO_PACKET_EXTENSION) {
-        mpvparse->mpeg_version = 2;
-
-        if (gst_mpeg_video_parse_sequence_extension (&mpvparse->sequenceext,
-                GST_BUFFER_DATA (buf), GST_BUFFER_SIZE (buf),
-                tpoffsz->offset)) {
-          mpvparse->fps_num =
-              mpvparse->sequencehdr.fps_n * (mpvparse->sequenceext.fps_n_ext +
-              1);
-          mpvparse->fps_den =
-              mpvparse->sequencehdr.fps_d * (mpvparse->sequenceext.fps_d_ext +
-              1);
-        }
+    for (i = 0; i < mpvparse->ext_count; ++i) {
+      offset = mpvparse->ext_offsets[i];
+      mpvparse->mpeg_version = 2;
+      if (offset < size &&
+          gst_mpeg_video_parse_sequence_extension (&mpvparse->sequenceext,
+              data, size, offset)) {
+        mpvparse->fps_num =
+            mpvparse->sequencehdr.fps_n * (mpvparse->sequenceext.fps_n_ext + 1);
+        mpvparse->fps_den =
+            mpvparse->sequencehdr.fps_d * (mpvparse->sequenceext.fps_d_ext + 1);
       }
     }
   }
@@ -430,7 +425,9 @@ gst_mpegv_parse_process_sc (GstMpegvParse * mpvparse,
     case GST_MPEG_VIDEO_PACKET_EXTENSION:
       GST_LOG_OBJECT (mpvparse, "startcode is VIDEO PACKET EXTENSION");
       parse_picture_extension (mpvparse, buf, off);
-      packet = FALSE;
+      if (mpvparse->ext_count < G_N_ELEMENTS (mpvparse->ext_offsets))
+        mpvparse->ext_offsets[mpvparse->ext_count++] = off;
+      /* fall-through */
     default:
       packet = FALSE;
       break;
@@ -439,6 +436,8 @@ gst_mpegv_parse_process_sc (GstMpegvParse * mpvparse,
   /* set size to avoid processing config again */
   if (mpvparse->seq_offset >= 0 && off != mpvparse->seq_offset &&
       !mpvparse->seq_size && packet) {
+    /* should always be at start */
+    g_assert (mpvparse->seq_offset <= 4);
     gst_mpegv_parse_process_config (mpvparse, buf, off - mpvparse->seq_offset);
     mpvparse->seq_size = off - mpvparse->seq_offset;
   }
@@ -476,7 +475,6 @@ update_frame_parsing_status (GstMpegvParse * mpvparse,
   }
 }
 
-
 static gboolean
 gst_mpegv_parse_check_valid_frame (GstBaseParse * parse,
     GstBaseParseFrame * frame, guint * framesize, gint * skipsize)
@@ -484,111 +482,97 @@ gst_mpegv_parse_check_valid_frame (GstBaseParse * parse,
   GstMpegvParse *mpvparse = GST_MPEGVIDEO_PARSE (parse);
   GstBuffer *buf = frame->buffer;
   gboolean ret = FALSE;
-  GList *tmp;
-  gint off = 0, fsize = -1;
-  GstMpegVideoTypeOffsetSize *codoffsz;
+  gint off = 0;
+  GstMpegVideoPacket packet;
+  guint8 *data;
+  gint size;
 
   update_frame_parsing_status (mpvparse, frame);
 
-  if (mpvparse->last_sc >= 0)
+  data = GST_BUFFER_DATA (buf);
+  size = GST_BUFFER_SIZE (buf);
+
+retry:
+  /* at least start code and subsequent byte */
+  if (G_UNLIKELY (size < 5 + off))
+    goto exit;
+
+  /* if already found a previous start code, e.g. start of frame, go for next */
+  if (mpvparse->last_sc >= 0) {
     off = mpvparse->last_sc;
-
-  GST_LOG_OBJECT (mpvparse, "parsing at offset %d", off);
-
-  mpvparse->typeoffsize =
-      gst_mpeg_video_parse (GST_BUFFER_DATA (buf), GST_BUFFER_SIZE (buf), off);
-
-  /* No sc found */
-  if (mpvparse->typeoffsize == NULL) {
-    GST_LOG_OBJECT (mpvparse, "no start code");
-    *skipsize = GST_BUFFER_SIZE (buf) - 3;
-    goto end;
+    goto next;
   }
 
-  codoffsz = mpvparse->typeoffsize->data;
-  /* if initial start code not at start, arrange to make it so */
-  if (mpvparse->last_sc < 0) {
-    /* check for sane start code */
-    for (tmp = mpvparse->typeoffsize; tmp; tmp = g_list_next (tmp)) {
-      codoffsz = tmp->data;
-
-      g_assert (codoffsz->offset >= 4);
-      off = codoffsz->offset - 4;
-      GST_LOG_OBJECT (mpvparse, "checking for valid start code at %d", off);
-      /* hard-code to 4 to force initial check */
-      if (gst_mpegv_parse_process_sc (mpvparse, buf, 4, codoffsz->type)) {
-        if (off > 0) {
-          GST_LOG_OBJECT (mpvparse, "skipping to start code at offset %d", off);
-          gst_mpegv_parse_reset_frame (mpvparse);
-          *skipsize = off;
-          goto end;
-        }
-        /* got starting start code where we want it now */
-        GST_LOG_OBJECT (mpvparse, "got valid start code");
-        mpvparse->last_sc = 0;
-        break;
-      }
-      /* avoid hard-code hack bite */
-      gst_mpegv_parse_reset_frame (mpvparse);
-    }
+  if (!gst_mpeg_video_parse (&packet, data, size, off)) {
+    /* didn't find anything that looks like a sync word, skip */
+    GST_LOG_OBJECT (mpvparse, "no start code found");
+    *skipsize = size - 3;
+    goto exit;
   }
 
-  if (mpvparse->last_sc < 0) {
-    GST_LOG_OBJECT (mpvparse, "no valid start code");
-    *skipsize = GST_BUFFER_SIZE (buf) - 3;
-    goto end;
+  off = packet.offset - 4;
+  GST_LOG_OBJECT (mpvparse, "possible sync at buffer offset %d", off);
+
+  /* possible frame header, but not at offset 0? skip bytes before sync */
+  if (G_UNLIKELY (off > 0)) {
+    *skipsize = off;
+    goto exit;
   }
 
+  /* note: initial start code is assumed at offset 0 by subsequent code */
+
+  /* examine start code, see if it looks like an initial start code */
+  if (gst_mpegv_parse_process_sc (mpvparse, buf, 4, packet.type)) {
+    /* found sc */
+    GST_LOG_OBJECT (mpvparse, "valid start code found");
+    mpvparse->last_sc = 0;
+  } else {
+    off++;
+    gst_mpegv_parse_reset_frame (mpvparse);
+    GST_LOG_OBJECT (mpvparse, "invalid start code");
+    goto retry;
+  }
+
+next:
   /* start is fine as of now */
   *skipsize = 0;
-
-  /* initial packet processed above */
-  for (tmp = mpvparse->typeoffsize; tmp; tmp = g_list_next (tmp)) {
-    codoffsz = tmp->data;
-
-    GST_LOG_OBJECT (mpvparse, "next start code at %d", codoffsz->offset);
-
-    if (codoffsz->offset > 4)
-      ret = gst_mpegv_parse_process_sc (mpvparse, buf, codoffsz->offset,
-          codoffsz->type);
-    else
-      ret = FALSE;
-
-    if (ret) {
-      *skipsize = 0;
-      fsize = codoffsz->offset - 4;
-      break;
-    }
-
-    /* start here next time around */
-    mpvparse->last_sc = codoffsz->offset - 4;
-  }
-
-end:
-  if (fsize > 0) {
-    *framesize = fsize;
-    ret = TRUE;
-    GST_LOG_OBJECT (mpvparse, "found frame of size %d", fsize);
-  } else if (mpvparse->last_sc < 0) {
-    ret = FALSE;
-    GST_LOG_OBJECT (mpvparse, "skipping %d", *skipsize);
-  } else if (GST_BASE_PARSE_DRAINING (parse)) {
-    *framesize = GST_BUFFER_SIZE (buf);
-    ret = TRUE;
-    GST_LOG_OBJECT (mpvparse, "no more data, assuming frame size %d",
-        *framesize);
+  /* position a bit further than last sc */
+  off++;
+  /* so now we have start code at start of data; locate next start code */
+  if (!gst_mpeg_video_parse (&packet, data, size, off)) {
+    off = -1;
   } else {
-    /* need some more data */
-    /* request best next available */
-    *framesize = G_MAXUINT;
-    ret = FALSE;
-    GST_LOG_OBJECT (mpvparse, "obtaining more data");
+    g_assert (packet.offset >= 4);
+    off = packet.offset - 4;
   }
 
-  g_list_foreach (mpvparse->typeoffsize, (GFunc) g_free, NULL);
-  g_list_free (mpvparse->typeoffsize);
-  mpvparse->typeoffsize = NULL;
+  GST_LOG_OBJECT (mpvparse, "next start code at %d", off);
+  if (off < 0) {
+    /* if draining, take all */
+    if (GST_BASE_PARSE_DRAINING (parse)) {
+      GST_LOG_OBJECT (mpvparse, "draining, accepting all data");
+      off = size;
+      ret = TRUE;
+    } else {
+      GST_LOG_OBJECT (mpvparse, "need more data");
+      /* resume scan where we left it */
+      /* need - 4 since off is incremented later on */
+      mpvparse->last_sc = size - 4;
+      /* request best next available */
+      off = G_MAXUINT;
+      goto exit;
+    }
+  } else {
+    /* decide whether this startcode ends a frame */
+    ret = gst_mpegv_parse_process_sc (mpvparse, buf, off + 4, packet.type);
+  }
 
+  if (!ret)
+    goto next;
+
+exit:
+
+  *framesize = off;
   return ret;
 }
 
