@@ -136,5 +136,7 @@ gst_rtp_opus_pay_handle_buffer (GstBaseRTPPayload * basepayload,
   gst_rtp_buffer_set_marker (outbuf, FALSE);
   GST_BUFFER_TIMESTAMP (outbuf) = timestamp;
 
+  gst_buffer_unref (buffer);
+
   return gst_basertppayload_push (basepayload, outbuf);
 }
