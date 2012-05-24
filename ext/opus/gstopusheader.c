@@ -219,11 +219,14 @@ gst_opus_header_is_id_header (GstBuffer * buf)
 {
   gsize size = GST_BUFFER_SIZE (buf);
   const guint8 *data = GST_BUFFER_DATA (buf);
-  guint8 channels, channel_mapping_family, n_streams, n_stereo_streams;
+  guint8 version, channels, channel_mapping_family, n_streams, n_stereo_streams;
 
   if (size < 19)
     return FALSE;
   if (!gst_opus_header_is_header (buf, "OpusHead", 8))
+    return FALSE;
+  version = data[8];
+  if (version >= 0x0f)          /* major version >=0 is what we grok */
     return FALSE;
   channels = data[9];
   if (channels == 0)
