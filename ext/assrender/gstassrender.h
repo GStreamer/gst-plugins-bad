@@ -55,17 +55,21 @@ struct _GstAssRender
   gboolean enable, embeddedfonts;
 
   /* <private> */
+  GMutex *lock;
+  GCond *cond;
+
   GstSegment video_segment;
+  gboolean video_flushing;
+  gboolean video_eos;
 
   GstVideoFormat format;
   gint width, height;
   gint fps_n, fps_d;
   GstAssRenderBlitFunction blit;
 
-  GMutex *subtitle_mutex;
-  GCond *subtitle_cond;
   GstBuffer *subtitle_pending;
   gboolean subtitle_flushing;
+  gboolean subtitle_eos;
   GstSegment subtitle_segment;
 
   GMutex *ass_mutex;
