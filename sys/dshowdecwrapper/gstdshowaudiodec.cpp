@@ -58,7 +58,7 @@ GST_DEBUG_CATEGORY_STATIC (dshowaudiodec_debug);
 GST_BOILERPLATE (GstDshowAudioDec, gst_dshowaudiodec, GstElement,
     GST_TYPE_ELEMENT);
 
-static void gst_dshowaudiodec_dispose (GObject * object);
+static void gst_dshowaudiodec_finalize (GObject * object);
 static GstStateChangeReturn gst_dshowaudiodec_change_state
     (GstElement * element, GstStateChange transition);
 
@@ -349,9 +349,6 @@ gst_dshowaudiodec_base_init (gpointer klass)
   /* register */
   gst_element_class_add_pad_template (element_class, src);
   gst_element_class_add_pad_template (element_class, sink);
-
-  gst_object_unref (src);
-  gst_object_unref (sink);
 }
 
 static void
@@ -360,7 +357,7 @@ gst_dshowaudiodec_class_init (GstDshowAudioDecClass * klass)
   GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
   GstElementClass *gstelement_class = GST_ELEMENT_CLASS (klass);
 
-  gobject_class->dispose = GST_DEBUG_FUNCPTR (gst_dshowaudiodec_dispose);
+  gobject_class->finalize = gst_dshowaudiodec_finalize;
 
   gstelement_class->change_state =
       GST_DEBUG_FUNCPTR (gst_dshowaudiodec_change_state);
@@ -464,7 +461,7 @@ gst_dshowaudiodec_init (GstDshowAudioDec * adec,
 }
 
 static void
-gst_dshowaudiodec_dispose (GObject * object)
+gst_dshowaudiodec_finalize (GObject * object)
 {
   GstDshowAudioDec *adec = (GstDshowAudioDec *) (object);
 
@@ -492,7 +489,7 @@ gst_dshowaudiodec_dispose (GObject * object)
   g_cond_free (adec->com_uninitialize);
   g_cond_free (adec->com_uninitialized);
 
-  G_OBJECT_CLASS (parent_class)->dispose (object);
+  G_OBJECT_CLASS (parent_class)->finalize (object);
 }
 
 

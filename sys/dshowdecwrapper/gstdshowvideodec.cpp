@@ -59,7 +59,7 @@ GST_DEBUG_CATEGORY_STATIC (dshowvideodec_debug);
 GST_BOILERPLATE (GstDshowVideoDec, gst_dshowvideodec, GstElement,
     GST_TYPE_ELEMENT);
 
-static void gst_dshowvideodec_dispose (GObject * object);
+static void gst_dshowvideodec_finalize (GObject * object);
 static GstStateChangeReturn gst_dshowvideodec_change_state
     (GstElement * element, GstStateChange transition);
 
@@ -401,9 +401,6 @@ gst_dshowvideodec_base_init (gpointer klass)
 
   gst_element_class_add_pad_template (element_class, src);
   gst_element_class_add_pad_template (element_class, sink);
-
-  gst_object_unref (src);
-  gst_object_unref (sink);
 }
 
 static void
@@ -412,7 +409,7 @@ gst_dshowvideodec_class_init (GstDshowVideoDecClass * klass)
   GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
   GstElementClass *gstelement_class = GST_ELEMENT_CLASS (klass);
 
-  gobject_class->dispose = GST_DEBUG_FUNCPTR (gst_dshowvideodec_dispose);
+  gobject_class->finalize = gst_dshowvideodec_finalize;
 
   gstelement_class->change_state =
       GST_DEBUG_FUNCPTR (gst_dshowvideodec_change_state);
@@ -512,7 +509,7 @@ gst_dshowvideodec_init (GstDshowVideoDec * vdec,
 }
 
 static void
-gst_dshowvideodec_dispose (GObject * object)
+gst_dshowvideodec_finalize (GObject * object)
 {
   GstDshowVideoDec *vdec = (GstDshowVideoDec *) (object);
 
@@ -535,7 +532,7 @@ gst_dshowvideodec_dispose (GObject * object)
   g_cond_free (vdec->com_uninitialize);
   g_cond_free (vdec->com_uninitialized);
 
-  G_OBJECT_CLASS (parent_class)->dispose (object);
+  G_OBJECT_CLASS (parent_class)->finalize (object);
 }
 
 static GstStateChangeReturn
