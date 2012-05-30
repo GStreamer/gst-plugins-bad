@@ -303,7 +303,7 @@ dnl define an ERROR_OBJCFLAGS Makefile variable
 AG_GST_SET_ERROR_OBJCFLAGS($FATAL_WARNINGS, [
     -Wmissing-declarations -Wredundant-decls
     -Wwrite-strings -Wformat-nonliteral -Wformat-security
-    -Winit-self -Wmissing-include-dirs -Wno-multichar $NO_WARNINGS])
+    -Winit-self -Wmissing-include-dirs -Wno-multichar])
 
 dnl define correct level for debugging messages
 AG_GST_SET_LEVEL_DEFAULT($GST_GIT)
