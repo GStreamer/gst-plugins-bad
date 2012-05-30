@@ -2155,8 +2155,8 @@ gst_d3dvideosink_initialize_d3d_device (GstD3DVideoSink * sink)
   sink->d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
   sink->d3dpp.BackBufferCount = 1;
   //sink->d3dpp.BackBufferFormat = d3dformat;
-  sink->d3dpp.BackBufferWidth = sink->width;
-  sink->d3dpp.BackBufferHeight = sink->height;
+  sink->d3dpp.BackBufferWidth = GST_VIDEO_SINK_WIDTH(sink);
+  sink->d3dpp.BackBufferHeight = GST_VIDEO_SINK_HEIGHT(sink);
   sink->d3dpp.MultiSampleType = D3DMULTISAMPLE_NONE;
   sink->d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_ONE;
 
