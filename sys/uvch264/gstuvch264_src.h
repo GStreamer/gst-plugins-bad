@@ -53,8 +53,7 @@ enum GstVideoRecordingStatus {
 };
 
 enum  {
-  QP_ALL_FRAMES = 0,
-  QP_I_FRAME,
+  QP_I_FRAME = 0,
   QP_P_FRAME,
   QP_B_FRAME,
   QP_FRAMES

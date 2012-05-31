@@ -64,8 +64,6 @@ enum
   PROP_LEVEL_IDC,
   PROP_PEAK_BITRATE,
   PROP_AVERAGE_BITRATE,
-  PROP_MIN_QP,
-  PROP_MAX_QP,
   PROP_MIN_IFRAME_QP,
   PROP_MAX_IFRAME_QP,
   PROP_MIN_PFRAME_QP,
@@ -377,18 +375,6 @@ gst_uvc_h264_src_class_init (GstUvcH264SrcClass * klass)
           -G_MAXINT8, G_MAXINT8, DEFAULT_MAX_QP,
           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
           GST_PARAM_MUTABLE_PLAYING));
-  g_object_class_install_property (gobject_class, PROP_MIN_QP,
-      g_param_spec_int ("min-qp", "Minimum QP",
-          "The minimum Quantization step size for all frames (dynamic control)",
-          -G_MAXINT8, G_MAXINT8, DEFAULT_MIN_QP,
-          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
-          GST_PARAM_MUTABLE_PLAYING));
-  g_object_class_install_property (gobject_class, PROP_MAX_QP,
-      g_param_spec_int ("max-qp", "Minimum QP",
-          "The minimum Quantization step size for all frames (dynamic control)",
-          -G_MAXINT8, G_MAXINT8, DEFAULT_MAX_QP,
-          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
-          GST_PARAM_MUTABLE_PLAYING));
 }
 
 static void
@@ -450,8 +436,6 @@ gst_uvc_h264_src_init (GstUvcH264Src * self, GstUvcH264SrcClass * klass)
   self->level_idc = DEFAULT_LEVEL_IDC;
   self->peak_bitrate = DEFAULT_PEAK_BITRATE;
   self->average_bitrate = DEFAULT_AVERAGE_BITRATE;
-  self->min_qp[QP_ALL_FRAMES] = DEFAULT_MIN_QP;
-  self->max_qp[QP_ALL_FRAMES] = DEFAULT_MAX_QP;
   self->min_qp[QP_I_FRAME] = DEFAULT_MIN_QP;
   self->max_qp[QP_I_FRAME] = DEFAULT_MAX_QP;
   self->min_qp[QP_P_FRAME] = DEFAULT_MIN_QP;
@@ -533,16 +517,6 @@ gst_uvc_h264_src_set_property (GObject * object,
       break;
     case PROP_AVERAGE_BITRATE:
       self->average_bitrate = g_value_get_uint (value);
-      break;
-    case PROP_MIN_QP:
-      self->min_qp[QP_ALL_FRAMES] = g_value_get_int (value);
-      self->min_qp[QP_I_FRAME] = self->min_qp[QP_P_FRAME] =
-          self->min_qp[QP_B_FRAME] = self->min_qp[QP_ALL_FRAMES];
-      break;
-    case PROP_MAX_QP:
-      self->max_qp[QP_ALL_FRAMES] = g_value_get_int (value);
-      self->max_qp[QP_I_FRAME] = self->max_qp[QP_P_FRAME] =
-          self->max_qp[QP_B_FRAME] = self->max_qp[QP_ALL_FRAMES];
       break;
     case PROP_MIN_IFRAME_QP:
       self->min_qp[QP_I_FRAME] = g_value_get_int (value);
@@ -657,12 +631,6 @@ gst_uvc_h264_src_get_property (GObject * object,
       break;
     case PROP_AVERAGE_BITRATE:
       g_value_set_uint (value, self->average_bitrate);
-      break;
-    case PROP_MIN_QP:
-      g_value_set_int (value, self->min_qp[QP_ALL_FRAMES]);
-      break;
-    case PROP_MAX_QP:
-      g_value_set_int (value, self->max_qp[QP_ALL_FRAMES]);
       break;
     case PROP_MIN_IFRAME_QP:
       g_value_set_int (value, self->min_qp[QP_I_FRAME]);
