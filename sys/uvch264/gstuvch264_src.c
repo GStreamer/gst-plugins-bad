@@ -707,6 +707,16 @@ xu_query (GstUvcH264Src * self, guint selector, guint query, guchar * data)
 {
   struct uvc_xu_control_query xu;
   __u16 len;
+  int fd = self->v4l2_fd;
+
+
+  if (fd == -1 && self->v4l2_src)
+    g_object_get (self->v4l2_src, "device-fd", &fd, NULL);
+
+  if (fd == -1) {
+    GST_WARNING_OBJECT (self, "Can't query XU with fd = -1");
+    return FALSE;
+  }
 
   xu.unit = 12;                 /* TODO: find the right unit */
   xu.selector = selector;
@@ -714,7 +724,7 @@ xu_query (GstUvcH264Src * self, guint selector, guint query, guchar * data)
   xu.query = UVC_GET_LEN;
   xu.size = sizeof (len);
   xu.data = (unsigned char *) &len;
-  if (-1 == ioctl (self->v4l2_fd, UVCIOC_CTRL_QUERY, &xu)) {
+  if (-1 == ioctl (fd, UVCIOC_CTRL_QUERY, &xu)) {
     GST_WARNING_OBJECT (self, "PROBE GET_LEN error");
     return FALSE;
   }
@@ -722,7 +732,7 @@ xu_query (GstUvcH264Src * self, guint selector, guint query, guchar * data)
   xu.query = query;
   xu.size = len;
   xu.data = data;
-  if (-1 == ioctl (self->v4l2_fd, UVCIOC_CTRL_QUERY, &xu)) {
+  if (-1 == ioctl (fd, UVCIOC_CTRL_QUERY, &xu)) {
     return FALSE;
   }
 
