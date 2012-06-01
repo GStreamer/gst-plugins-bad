@@ -582,6 +582,7 @@ gst_uvc_h264_src_get_property (GObject * object,
     case PROP_PREVIEW_FLIPPED:
       fill_probe_commit (self, &probe, 0, 0, 0, 0);
       if (self->v4l2_fd != -1) {
+        /* TODO: if muxing with yuy2, find a way to switch the GET_CUR to h264 */
         xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_GET_CUR,
             (guchar *) & probe);
       }
@@ -1121,6 +1122,7 @@ v4l2src_prepare_format (GstElement * v4l2src, gint fd, guint fourcc,
   GST_DEBUG_OBJECT (self, "v4l2src prepare-format with FCC %" GST_FOURCC_FORMAT,
       GST_FOURCC_ARGS (fourcc));
 
+  /* TODO: configure dynamic controls */
   self->v4l2_fd = fd;
   if (self->main_format == UVC_H264_SRC_FORMAT_H264)
     configure_h264 (self, fd);
@@ -1300,6 +1302,8 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
     v4l_pad = gst_element_get_static_pad (self->v4l2_src, "src");
     v4l_caps = gst_pad_get_caps (v4l_pad);
     GST_DEBUG_OBJECT (self, "v4l2src caps : %" GST_PTR_FORMAT, v4l_caps);
+    /* TODO: fixate should not depend on the format, if v4l2src isn't compiled
+       with libv4l support, then a format I420 caps would fail to intersect */
     if (vf_caps) {
       vf_caps = gst_uvc_h264_src_fixate_caps (self, v4l_pad, v4l_caps, vf_caps);
       if (vf_caps) {
