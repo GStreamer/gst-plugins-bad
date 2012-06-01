@@ -183,6 +183,16 @@ static void fill_probe_commit (GstUvcH264Src * self,
 static gboolean xu_query (GstUvcH264Src * self, guint selector, guint query,
     guchar * data);
 
+static void set_rate_control (GstUvcH264Src * self, gboolean flag);
+static void set_level_idc (GstUvcH264Src * self);
+static void set_bitrate (GstUvcH264Src * self, gboolean peak);
+static void set_qp (GstUvcH264Src * self, gint type, gboolean min_qp);
+static void update_rate_control (GstUvcH264Src * self);
+static guint32 update_level_idc_and_get_max_mbps (GstUvcH264Src * self);
+static void update_bitrate (GstUvcH264Src * self);
+static void update_qp (GstUvcH264Src * self, gint type);
+
+
 static void
 gst_uvc_h264_src_base_init (gpointer g_class)
 {
@@ -454,7 +464,6 @@ gst_uvc_h264_src_dispose (GObject * object)
   G_OBJECT_CLASS (parent_class)->dispose (object);
 }
 
-
 static void
 gst_uvc_h264_src_set_property (GObject * object,
     guint prop_id, const GValue * value, GParamSpec * pspec)
@@ -502,39 +511,51 @@ gst_uvc_h264_src_set_property (GObject * object,
     case PROP_PREVIEW_FLIPPED:
       self->preview_flipped = g_value_get_boolean (value);
       break;
+
       /* Dynamic controls */
     case PROP_RATE_CONTROL:
       self->rate_control = g_value_get_enum (value);
+      set_rate_control (self, FALSE);
       break;
     case PROP_FIXED_FRAMERATE:
       self->fixed_framerate = g_value_get_boolean (value);
+      set_rate_control (self, TRUE);
       break;
     case PROP_LEVEL_IDC:
       self->level_idc = g_value_get_uint (value);
+      set_level_idc (self);
       break;
     case PROP_PEAK_BITRATE:
       self->peak_bitrate = g_value_get_uint (value);
+      set_bitrate (self, TRUE);
       break;
     case PROP_AVERAGE_BITRATE:
       self->average_bitrate = g_value_get_uint (value);
+      set_bitrate (self, FALSE);
       break;
     case PROP_MIN_IFRAME_QP:
       self->min_qp[QP_I_FRAME] = g_value_get_int (value);
+      set_qp (self, QP_I_FRAME, TRUE);
       break;
     case PROP_MAX_IFRAME_QP:
       self->max_qp[QP_I_FRAME] = g_value_get_int (value);
+      set_qp (self, QP_I_FRAME, FALSE);
       break;
     case PROP_MIN_PFRAME_QP:
       self->min_qp[QP_P_FRAME] = g_value_get_int (value);
+      set_qp (self, QP_P_FRAME, TRUE);
       break;
     case PROP_MAX_PFRAME_QP:
       self->max_qp[QP_P_FRAME] = g_value_get_int (value);
+      set_qp (self, QP_P_FRAME, FALSE);
       break;
     case PROP_MIN_BFRAME_QP:
       self->min_qp[QP_B_FRAME] = g_value_get_int (value);
+      set_qp (self, QP_B_FRAME, TRUE);
       break;
     case PROP_MAX_BFRAME_QP:
       self->max_qp[QP_B_FRAME] = g_value_get_int (value);
+      set_qp (self, QP_B_FRAME, FALSE);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (self, prop_id, pspec);
@@ -615,45 +636,248 @@ gst_uvc_h264_src_get_property (GObject * object,
       break;
       /* Dynamic controls */
     case PROP_RATE_CONTROL:
+      update_rate_control (self);
       g_value_set_enum (value, self->rate_control);
       break;
     case PROP_FIXED_FRAMERATE:
+      update_rate_control (self);
       g_value_set_boolean (value, self->fixed_framerate);
       break;
     case PROP_MAX_MBPS:
-      g_value_set_uint (value, 0);
+      g_value_set_uint (value, update_level_idc_and_get_max_mbps (self));
       break;
     case PROP_LEVEL_IDC:
+      update_level_idc_and_get_max_mbps (self);
       g_value_set_uint (value, self->level_idc);
       break;
     case PROP_PEAK_BITRATE:
+      update_bitrate (self);
       g_value_set_uint (value, self->peak_bitrate);
       break;
     case PROP_AVERAGE_BITRATE:
+      update_bitrate (self);
       g_value_set_uint (value, self->average_bitrate);
       break;
     case PROP_MIN_IFRAME_QP:
+      update_qp (self, QP_I_FRAME);
       g_value_set_int (value, self->min_qp[QP_I_FRAME]);
       break;
     case PROP_MAX_IFRAME_QP:
+      update_qp (self, QP_I_FRAME);
       g_value_set_int (value, self->max_qp[QP_I_FRAME]);
       break;
     case PROP_MIN_PFRAME_QP:
+      update_qp (self, QP_P_FRAME);
       g_value_set_int (value, self->min_qp[QP_P_FRAME]);
       break;
     case PROP_MAX_PFRAME_QP:
+      update_qp (self, QP_P_FRAME);
       g_value_set_int (value, self->max_qp[QP_P_FRAME]);
       break;
     case PROP_MIN_BFRAME_QP:
+      update_qp (self, QP_B_FRAME);
       g_value_set_int (value, self->min_qp[QP_B_FRAME]);
       break;
     case PROP_MAX_BFRAME_QP:
+      update_qp (self, QP_B_FRAME);
       g_value_set_int (value, self->max_qp[QP_B_FRAME]);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (self, prop_id, pspec);
       break;
   }
+}
+
+/* Set dynamic controls */
+static void
+set_rate_control (GstUvcH264Src * self, gboolean flag)
+{
+  uvcx_rate_control_mode_t req;
+
+  if (!xu_query (self, UVCX_RATE_CONTROL_MODE, UVC_GET_CUR, (guchar *) & req)) {
+    GST_WARNING_OBJECT (self, " RATE_CONTROL GET_CUR error");
+    return;
+  }
+
+  if (flag) {
+    if (self->fixed_framerate)
+      req.bRateControlMode |= UVC_H264_RATECONTROL_FIXED_FRM_FLG;
+    else
+      req.bRateControlMode &= ~UVC_H264_RATECONTROL_FIXED_FRM_FLG;
+  } else {
+    gboolean fixed_framerate = (req.bRateControlMode &
+        UVC_H264_RATECONTROL_FIXED_FRM_FLG) != 0;
+
+    req.bRateControlMode = self->rate_control;
+    if (fixed_framerate)
+      req.bRateControlMode |= UVC_H264_RATECONTROL_FIXED_FRM_FLG;
+  }
+
+  if (!xu_query (self, UVCX_RATE_CONTROL_MODE, UVC_SET_CUR, (guchar *) & req)) {
+    GST_WARNING_OBJECT (self, " RATE_CONTROL SET_CUR error");
+    return;
+  }
+}
+
+static void
+set_level_idc (GstUvcH264Src * self)
+{
+  uvcx_video_advance_config_t req;
+
+  if (!xu_query (self, UVCX_VIDEO_ADVANCE_CONFIG, UVC_GET_CUR,
+          (guchar *) & req)) {
+    GST_WARNING_OBJECT (self, " VIDEO_ADVANCE_CONFIG GET_CUR error");
+    return;
+  }
+
+  req.blevel_idc = self->level_idc;
+  if (!xu_query (self, UVCX_VIDEO_ADVANCE_CONFIG, UVC_SET_CUR,
+          (guchar *) & req)) {
+    GST_WARNING_OBJECT (self, " VIDEO_ADVANCE_CONFIG SET_CUR error");
+    return;
+  }
+}
+
+static void
+set_bitrate (GstUvcH264Src * self, gboolean peak)
+{
+  uvcx_bitrate_layers_t req;
+
+  if (!xu_query (self, UVCX_BITRATE_LAYERS, UVC_GET_CUR, (guchar *) & req)) {
+    GST_WARNING_OBJECT (self, " BITRATE_LAYERS GET_CUR error");
+    return;
+  }
+
+  if (peak)
+    req.dwPeakBitrate = self->peak_bitrate;
+  else
+    req.dwAverageBitrate = self->average_bitrate;
+  if (!xu_query (self, UVCX_BITRATE_LAYERS, UVC_SET_CUR, (guchar *) & req)) {
+    GST_WARNING_OBJECT (self, " BITRATE_LAYERS SET_CUR error");
+    return;
+  }
+}
+
+static void
+set_qp (GstUvcH264Src * self, gint type, gboolean min_qp)
+{
+  uvcx_qp_steps_layers_t req;
+
+  req.wLayerID = 0;
+  switch (type) {
+    case QP_I_FRAME:
+      req.bFrameType = UVC_H264_QP_STEPS_I_FRAME_TYPE;
+      break;
+    case QP_P_FRAME:
+      req.bFrameType = UVC_H264_QP_STEPS_P_FRAME_TYPE;
+      break;
+    case QP_B_FRAME:
+      req.bFrameType = UVC_H264_QP_STEPS_B_FRAME_TYPE;
+      break;
+    default:
+      return;
+  }
+  req.bMinQp = 0;
+  req.bMaxQp = 0;
+  if (!xu_query (self, UVCX_QP_STEPS_LAYERS, UVC_SET_CUR, (guchar *) & req)) {
+    GST_WARNING_OBJECT (self, " QP_STEPS_LAYERS SET_CUR error");
+    return;
+  }
+
+  if (!xu_query (self, UVCX_QP_STEPS_LAYERS, UVC_GET_CUR, (guchar *) & req)) {
+    GST_WARNING_OBJECT (self, " QP_STEPS_LAYERS GET_CUR error");
+    return;
+  }
+
+  if (min_qp)
+    req.bMinQp = self->min_qp[type];
+  else
+    req.bMaxQp = self->max_qp[type];
+  if (!xu_query (self, UVCX_QP_STEPS_LAYERS, UVC_SET_CUR, (guchar *) & req)) {
+    GST_WARNING_OBJECT (self, " QP_STEPS_LAYERS SET_CUR error");
+    return;
+  }
+}
+
+/* Get Dynamic controls */
+
+static void
+update_rate_control (GstUvcH264Src * self)
+{
+  uvcx_rate_control_mode_t req;
+
+  if (!xu_query (self, UVCX_RATE_CONTROL_MODE, UVC_GET_CUR, (guchar *) & req)) {
+    GST_WARNING_OBJECT (self, " RATE_CONTROL GET_CUR error");
+    return;
+  }
+  self->rate_control = (req.bRateControlMode &
+      ~UVC_H264_RATECONTROL_FIXED_FRM_FLG);
+  self->fixed_framerate = ((req.bRateControlMode &
+          UVC_H264_RATECONTROL_FIXED_FRM_FLG) != 0);
+}
+
+
+static guint32
+update_level_idc_and_get_max_mbps (GstUvcH264Src * self)
+{
+  uvcx_video_advance_config_t req;
+
+  if (!xu_query (self, UVCX_VIDEO_ADVANCE_CONFIG, UVC_GET_CUR,
+          (guchar *) & req)) {
+    GST_WARNING_OBJECT (self, " VIDEO_ADVANCE_CONFIG GET_CUR error");
+    return 0;
+  }
+
+  self->level_idc = req.blevel_idc;
+  return req.dwMb_max;
+}
+
+static void
+update_bitrate (GstUvcH264Src * self)
+{
+  uvcx_bitrate_layers_t req;
+
+  if (!xu_query (self, UVCX_BITRATE_LAYERS, UVC_GET_CUR, (guchar *) & req)) {
+    GST_WARNING_OBJECT (self, " BITRATE_LAYERS GET_CUR error");
+    return;
+  }
+  self->peak_bitrate = req.dwPeakBitrate;
+  self->average_bitrate = req.dwAverageBitrate;
+}
+
+static void
+update_qp (GstUvcH264Src * self, gint type)
+{
+  uvcx_qp_steps_layers_t req;
+
+  req.wLayerID = 0;
+  switch (type) {
+    case QP_I_FRAME:
+      req.bFrameType = UVC_H264_QP_STEPS_I_FRAME_TYPE;
+      break;
+    case QP_P_FRAME:
+      req.bFrameType = UVC_H264_QP_STEPS_P_FRAME_TYPE;
+      break;
+    case QP_B_FRAME:
+      req.bFrameType = UVC_H264_QP_STEPS_B_FRAME_TYPE;
+      break;
+    default:
+      return;
+  }
+  req.bMinQp = 0;
+  req.bMaxQp = 0;
+  if (!xu_query (self, UVCX_QP_STEPS_LAYERS, UVC_SET_CUR, (guchar *) & req)) {
+    GST_WARNING_OBJECT (self, " QP_STEPS_LAYERS SET_CUR error");
+    return;
+  }
+
+  if (!xu_query (self, UVCX_QP_STEPS_LAYERS, UVC_GET_CUR, (guchar *) & req)) {
+    GST_WARNING_OBJECT (self, " QP_STEPS_LAYERS GET_CUR error");
+    return;
+  }
+
+  self->min_qp[type] = req.bMinQp;
+  self->max_qp[type] = req.bMaxQp;
 }
 
 static gboolean
