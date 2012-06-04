@@ -39,6 +39,7 @@
 #include <string.h>
 
 #include "gstuvch264_src.h"
+#include "gstuvch264-marshal.h"
 
 enum
 {
@@ -74,6 +75,17 @@ enum
 /* In caps : frame interval (fps), width, height, profile, mux */
 /* Ignored: temporal, spatial, SNR, MVC views, version, reset */
 /* Events: LTR, generate IDR */
+
+enum
+{
+  /* action signals */
+  SIGNAL_GET_ENUM_SETTING,
+  SIGNAL_GET_BOOLEAN_SETTING,
+  SIGNAL_GET_INT_SETTING,
+  LAST_SIGNAL
+};
+
+static guint _signals[LAST_SIGNAL];
 
 /* Default values */
 #define DEFAULT_NUM_BUFFERS -1
@@ -192,6 +204,12 @@ static guint32 update_level_idc_and_get_max_mbps (GstUvcH264Src * self);
 static void update_bitrate (GstUvcH264Src * self);
 static void update_qp (GstUvcH264Src * self, gint type);
 
+static gboolean gst_uvc_h264_src_get_enum_setting (GstUvcH264Src * self,
+    gchar * property, gint * mask, gint * default_value);
+static gboolean gst_uvc_h264_src_get_boolean_setting (GstUvcH264Src * self,
+    gchar * property, gboolean * changeable, gboolean * def);
+static gboolean gst_uvc_h264_src_get_int_setting (GstUvcH264Src * self,
+    gchar * property, gint * min, gint * def, gint * max);
 
 static void
 gst_uvc_h264_src_base_init (gpointer g_class)
@@ -385,6 +403,30 @@ gst_uvc_h264_src_class_init (GstUvcH264SrcClass * klass)
           -G_MAXINT8, G_MAXINT8, DEFAULT_MAX_QP,
           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
           GST_PARAM_MUTABLE_PLAYING));
+
+  _signals[SIGNAL_GET_ENUM_SETTING] =
+      g_signal_new_class_handler ("get-enum-setting",
+      G_TYPE_FROM_CLASS (klass),
+      G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
+      G_CALLBACK (gst_uvc_h264_src_get_enum_setting),
+      NULL, NULL, __gst_uvc_h264_marshal_BOOLEAN__STRING_POINTER_POINTER,
+      G_TYPE_BOOLEAN, 3, G_TYPE_STRING, G_TYPE_POINTER, G_TYPE_POINTER, 0);
+  _signals[SIGNAL_GET_BOOLEAN_SETTING] =
+      g_signal_new_class_handler ("get-boolean-setting",
+      G_TYPE_FROM_CLASS (klass),
+      G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
+      G_CALLBACK (gst_uvc_h264_src_get_boolean_setting), NULL, NULL,
+      __gst_uvc_h264_marshal_BOOLEAN__STRING_POINTER_POINTER,
+      G_TYPE_BOOLEAN, 3, G_TYPE_STRING, G_TYPE_POINTER, G_TYPE_POINTER, 0);
+  _signals[SIGNAL_GET_INT_SETTING] =
+      g_signal_new_class_handler ("get-int-setting",
+      G_TYPE_FROM_CLASS (klass),
+      G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
+      G_CALLBACK (gst_uvc_h264_src_get_int_setting), NULL, NULL,
+      __gst_uvc_h264_marshal_BOOLEAN__STRING_POINTER_POINTER_POINTER,
+      G_TYPE_BOOLEAN, 4, G_TYPE_STRING, G_TYPE_POINTER, G_TYPE_POINTER,
+      G_TYPE_POINTER, 0);
+
 }
 
 static void
@@ -879,6 +921,253 @@ update_qp (GstUvcH264Src * self, gint type)
 
   self->min_qp[type] = req.bMinQp;
   self->max_qp[type] = req.bMaxQp;
+}
+
+#define STORE_MIN_DEF_MAX(type)                         \
+  *(type *)min = *((type *) (min_p + offset));          \
+  *(type *)def = *((type *) (def_p + offset));          \
+  *(type *)max = *((type *) (max_p + offset));
+
+static gboolean
+probe_setting (GstUvcH264Src * self, uvcx_control_selector_t selector,
+    guint offset, gint size, gpointer min, gpointer def, gpointer max)
+{
+  guchar *min_p, *def_p, *max_p;
+  gboolean ret = FALSE;
+  __u16 len;
+
+  if (!xu_query (self, selector, UVC_GET_LEN, (guchar *) & len)) {
+    GST_WARNING_OBJECT (self, "probe_setting GET_LEN error");
+    return FALSE;
+  }
+  min_p = g_malloc0 (len);
+  def_p = g_malloc0 (len);
+  max_p = g_malloc0 (len);
+
+  if (!xu_query (self, selector, UVC_GET_MIN, min_p)) {
+    GST_WARNING_OBJECT (self, "probe_setting GET_MIN error");
+    goto end;
+  }
+  if (!xu_query (self, selector, UVC_GET_DEF, def_p)) {
+    GST_WARNING_OBJECT (self, "probe_setting GET_DEF error");
+    goto end;
+  }
+  if (!xu_query (self, selector, UVC_GET_MAX, max_p)) {
+    GST_WARNING_OBJECT (self, "probe_setting GET_MAX error");
+    goto end;
+  }
+
+  switch (size) {
+    case -1:
+      STORE_MIN_DEF_MAX (gint8);
+      ret = TRUE;
+      break;
+    case 1:
+      STORE_MIN_DEF_MAX (guint8);
+      ret = TRUE;
+      break;
+    case -2:
+      STORE_MIN_DEF_MAX (gint16);
+      ret = TRUE;
+      break;
+    case 2:
+      STORE_MIN_DEF_MAX (guint16);
+      ret = TRUE;
+      break;
+    case -4:
+      STORE_MIN_DEF_MAX (gint32);
+      ret = TRUE;
+      break;
+    case 4:
+      STORE_MIN_DEF_MAX (guint32);
+      ret = TRUE;
+      break;
+    default:
+      break;
+  }
+
+end:
+  g_free (min_p);
+  g_free (def_p);
+  g_free (max_p);
+
+  return ret;
+}
+
+static gboolean
+gst_uvc_h264_src_get_enum_setting (GstUvcH264Src * self, gchar * property,
+    gint * mask, gint * default_value)
+{
+  if (g_strcmp0 (property, "slice-mode") == 0) {
+    /* TODO */
+    *mask = (1 << UVC_H264_SLICEMODE_IGNORED) |
+        (1 << UVC_H264_SLICEMODE_SLICEPERFRAME);
+    *default_value = UVC_H264_SLICEMODE_SLICEPERFRAME;
+    return TRUE;
+  } else if (g_strcmp0 (property, "usage-type") == 0) {
+    /* TODO */
+    *mask = (1 << UVC_H264_USAGETYPE_REALTIME) |
+        (1 << UVC_H264_USAGETYPE_BROADCAST) | (1 << UVC_H264_USAGETYPE_STORAGE);
+    *default_value = UVC_H264_USAGETYPE_REALTIME;
+    return TRUE;
+  } else if (g_strcmp0 (property, "entropy") == 0) {
+    /* TODO */
+    *mask = (1 << UVC_H264_ENTROPY_CAVLC) | (1 << UVC_H264_ENTROPY_CABAC);
+    *default_value = UVC_H264_ENTROPY_CAVLC;
+    return TRUE;
+  } else if (g_strcmp0 (property, "rate-control") == 0) {
+    /* TODO */
+    *mask = (1 << UVC_H264_RATECONTROL_CBR) | (1 << UVC_H264_RATECONTROL_VBR) |
+        (1 << UVC_H264_RATECONTROL_CONST_QP);
+    *default_value = UVC_H264_RATECONTROL_CBR;
+    return TRUE;
+  } else {
+    return FALSE;
+  }
+}
+
+static gboolean
+gst_uvc_h264_src_get_boolean_setting (GstUvcH264Src * self, gchar * property,
+    gboolean * changeable, gboolean * default_value)
+{
+  guint8 min, def, max;
+  gboolean ret = FALSE;
+
+  if (g_strcmp0 (property, "enable-sei") == 0) {
+    ret = probe_setting (self, UVCX_VIDEO_CONFIG_PROBE,
+        offsetof (uvcx_video_config_probe_commit_t, bTimestamp), 1,
+        &min, &def, &max);
+    *changeable = (min != max);
+    *default_value = (def != 0);
+  } else if (g_strcmp0 (property, "preview-flipped") == 0) {
+    ret = probe_setting (self, UVCX_VIDEO_CONFIG_PROBE,
+        offsetof (uvcx_video_config_probe_commit_t, bPreviewFlipped), 1,
+        &min, &def, &max);
+    *changeable = (min != max);
+    *default_value = (def != 0);
+  } else if (g_strcmp0 (property, "fixed-framerate") == 0) {
+    ret = probe_setting (self, UVCX_VIDEO_CONFIG_PROBE,
+        offsetof (uvcx_video_config_probe_commit_t, bRateControlMode), 1,
+        &min, &def, &max);
+    *changeable = ((max & UVC_H264_RATECONTROL_FIXED_FRM_FLG) != 0);
+    *default_value = ((def & UVC_H264_RATECONTROL_FIXED_FRM_FLG) != 0);
+  }
+
+  return ret;
+}
+
+static gboolean
+gst_uvc_h264_src_get_int_setting (GstUvcH264Src * self, gchar * property,
+    gint * min, gint * def, gint * max)
+{
+  guint32 min32, def32, max32;
+  guint16 min16, def16, max16;
+  guint8 min8, def8, max8;
+  gint8 smin8, sdef8, smax8;
+  gboolean ret = FALSE;
+
+  GST_DEBUG_OBJECT (self, "Probing int property %s", property);
+  if (g_strcmp0 (property, "initial-bitrate") == 0) {
+    ret = probe_setting (self, UVCX_VIDEO_CONFIG_PROBE,
+        offsetof (uvcx_video_config_probe_commit_t, dwBitRate), 4,
+        &min32, &def32, &max32);
+    *min = min32;
+    *def = def32;
+    *max = max32;
+  } else if (g_strcmp0 (property, "slice-units") == 0) {
+    ret = probe_setting (self, UVCX_VIDEO_CONFIG_PROBE,
+        offsetof (uvcx_video_config_probe_commit_t, wSliceUnits), 2,
+        &min16, &def16, &max16);
+    *min = min16;
+    *def = def16;
+    *max = max16;
+  } else if (g_strcmp0 (property, "iframe-period") == 0) {
+    ret = probe_setting (self, UVCX_VIDEO_CONFIG_PROBE,
+        offsetof (uvcx_video_config_probe_commit_t, wIFramePeriod), 2,
+        &min16, &def16, &max16);
+    *min = min16;
+    *def = def16;
+    *max = max16;
+  } else if (g_strcmp0 (property, "num-reorder-frames") == 0) {
+    ret = probe_setting (self, UVCX_VIDEO_CONFIG_PROBE,
+        offsetof (uvcx_video_config_probe_commit_t, bNumOfReorderFrames), 1,
+        &min8, &def8, &max8);
+    *min = min8;
+    *def = def8;
+    *max = max8;
+  } else if (g_strcmp0 (property, "level-idc") == 0) {
+    ret = probe_setting (self, UVCX_VIDEO_ADVANCE_CONFIG,
+        offsetof (uvcx_video_advance_config_t, blevel_idc), 1,
+        &min8, &def8, &max8);
+    *min = min8;
+    *def = def8;
+    *max = max8;
+  } else if (g_strcmp0 (property, "max-mbps") == 0) {
+    ret = probe_setting (self, UVCX_VIDEO_ADVANCE_CONFIG,
+        offsetof (uvcx_video_advance_config_t, dwMb_max), 4,
+        &min32, &def32, &max32);
+    *min = min32;
+    *def = def32;
+    *max = max32;
+  } else if (g_strcmp0 (property, "peak-bitrate") == 0) {
+    ret = probe_setting (self, UVCX_BITRATE_LAYERS,
+        offsetof (uvcx_bitrate_layers_t, dwPeakBitrate), 4,
+        &min32, &def32, &max32);
+    *min = min32;
+    *def = def32;
+    *max = max32;
+  } else if (g_strcmp0 (property, "average-bitrate") == 0) {
+    ret = probe_setting (self, UVCX_BITRATE_LAYERS,
+        offsetof (uvcx_bitrate_layers_t, dwAverageBitrate), 4,
+        &min32, &def32, &max32);
+    *min = min32;
+    *def = def32;
+    *max = max32;
+  } else if (g_strcmp0 (property, "min-iframe-qp") == 0) {
+    update_qp (self, QP_I_FRAME);
+    ret = probe_setting (self, UVCX_QP_STEPS_LAYERS,
+        offsetof (uvcx_qp_steps_layers_t, bMinQp), 1, &smin8, &sdef8, &smax8);
+    *min = smin8;
+    *def = sdef8;
+    *max = smax8;
+  } else if (g_strcmp0 (property, "max-iframe-qp") == 0) {
+    update_qp (self, QP_I_FRAME);
+    ret = probe_setting (self, UVCX_QP_STEPS_LAYERS,
+        offsetof (uvcx_qp_steps_layers_t, bMaxQp), 1, &smin8, &sdef8, &smax8);
+    *min = smin8;
+    *def = sdef8;
+    *max = smax8;
+  } else if (g_strcmp0 (property, "min-pframe-qp") == 0) {
+    update_qp (self, QP_P_FRAME);
+    ret = probe_setting (self, UVCX_QP_STEPS_LAYERS,
+        offsetof (uvcx_qp_steps_layers_t, bMinQp), 1, &smin8, &sdef8, &smax8);
+    *min = smin8;
+    *def = sdef8;
+    *max = smax8;
+  } else if (g_strcmp0 (property, "max-pframe-qp") == 0) {
+    update_qp (self, QP_P_FRAME);
+    ret = probe_setting (self, UVCX_QP_STEPS_LAYERS,
+        offsetof (uvcx_qp_steps_layers_t, bMaxQp), 1, &smin8, &sdef8, &smax8);
+    *min = smin8;
+    *def = sdef8;
+    *max = smax8;
+  } else if (g_strcmp0 (property, "min-bframe-qp") == 0) {
+    update_qp (self, QP_B_FRAME);
+    ret = probe_setting (self, UVCX_QP_STEPS_LAYERS,
+        offsetof (uvcx_qp_steps_layers_t, bMinQp), 1, &smin8, &sdef8, &smax8);
+    *min = smin8;
+    *def = sdef8;
+    *max = smax8;
+  } else if (g_strcmp0 (property, "max-bframe-qp") == 0) {
+    update_qp (self, QP_B_FRAME);
+    ret = probe_setting (self, UVCX_QP_STEPS_LAYERS,
+        offsetof (uvcx_qp_steps_layers_t, bMaxQp), 1, &smin8, &sdef8, &smax8);
+    *min = smin8;
+    *def = sdef8;
+    *max = smax8;
+  }
+
+  return ret;
 }
 
 static gboolean
