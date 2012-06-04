@@ -207,7 +207,7 @@ static void set_qp (GstUvcH264Src * self, gint type, gboolean min_qp);
 static void update_rate_control (GstUvcH264Src * self);
 static guint32 update_level_idc_and_get_max_mbps (GstUvcH264Src * self);
 static void update_bitrate (GstUvcH264Src * self);
-static void update_qp (GstUvcH264Src * self, gint type);
+static gboolean update_qp (GstUvcH264Src * self, gint type);
 
 static gboolean gst_uvc_h264_src_get_enum_setting (GstUvcH264Src * self,
     gchar * property, gint * mask, gint * default_value);
@@ -919,39 +919,48 @@ update_bitrate (GstUvcH264Src * self)
   self->average_bitrate = req.dwAverageBitrate;
 }
 
-static void
+static gboolean
 update_qp (GstUvcH264Src * self, gint type)
 {
   uvcx_qp_steps_layers_t req;
+  guint8 frame_type;
 
   req.wLayerID = 0;
   switch (type) {
     case QP_I_FRAME:
-      req.bFrameType = UVC_H264_QP_STEPS_I_FRAME_TYPE;
+      frame_type = UVC_H264_QP_STEPS_I_FRAME_TYPE;
       break;
     case QP_P_FRAME:
-      req.bFrameType = UVC_H264_QP_STEPS_P_FRAME_TYPE;
+      frame_type = UVC_H264_QP_STEPS_P_FRAME_TYPE;
       break;
     case QP_B_FRAME:
-      req.bFrameType = UVC_H264_QP_STEPS_B_FRAME_TYPE;
+      frame_type = UVC_H264_QP_STEPS_B_FRAME_TYPE;
       break;
     default:
-      return;
+      return FALSE;
   }
+  req.bFrameType = frame_type;
   req.bMinQp = 0;
   req.bMaxQp = 0;
   if (!xu_query (self, UVCX_QP_STEPS_LAYERS, UVC_SET_CUR, (guchar *) & req)) {
     GST_WARNING_OBJECT (self, " QP_STEPS_LAYERS SET_CUR error");
-    return;
+    return FALSE;
   }
 
   if (!xu_query (self, UVCX_QP_STEPS_LAYERS, UVC_GET_CUR, (guchar *) & req)) {
     GST_WARNING_OBJECT (self, " QP_STEPS_LAYERS GET_CUR error");
-    return;
+    return FALSE;
   }
 
-  self->min_qp[type] = req.bMinQp;
-  self->max_qp[type] = req.bMaxQp;
+  if (req.bFrameType == frame_type) {
+    self->min_qp[type] = req.bMinQp;
+    self->max_qp[type] = req.bMaxQp;
+    return TRUE;
+  } else {
+    self->min_qp[type] = 0xFF;
+    self->max_qp[type] = 0xFF;
+    return FALSE;
+  }
 }
 
 #define STORE_MIN_DEF_MAX(type)                         \
@@ -1155,44 +1164,44 @@ gst_uvc_h264_src_get_int_setting (GstUvcH264Src * self, gchar * property,
     *def = def32;
     *max = max32;
   } else if (g_strcmp0 (property, "min-iframe-qp") == 0) {
-    update_qp (self, QP_I_FRAME);
-    ret = probe_setting (self, UVCX_QP_STEPS_LAYERS,
-        offsetof (uvcx_qp_steps_layers_t, bMinQp), 1, &smin8, &sdef8, &smax8);
+    if (update_qp (self, QP_I_FRAME))
+      ret = probe_setting (self, UVCX_QP_STEPS_LAYERS,
+          offsetof (uvcx_qp_steps_layers_t, bMinQp), 1, &smin8, &sdef8, &smax8);
     *min = smin8;
     *def = sdef8;
     *max = smax8;
   } else if (g_strcmp0 (property, "max-iframe-qp") == 0) {
-    update_qp (self, QP_I_FRAME);
-    ret = probe_setting (self, UVCX_QP_STEPS_LAYERS,
-        offsetof (uvcx_qp_steps_layers_t, bMaxQp), 1, &smin8, &sdef8, &smax8);
+    if (update_qp (self, QP_I_FRAME))
+      ret = probe_setting (self, UVCX_QP_STEPS_LAYERS,
+          offsetof (uvcx_qp_steps_layers_t, bMaxQp), 1, &smin8, &sdef8, &smax8);
     *min = smin8;
     *def = sdef8;
     *max = smax8;
   } else if (g_strcmp0 (property, "min-pframe-qp") == 0) {
-    update_qp (self, QP_P_FRAME);
-    ret = probe_setting (self, UVCX_QP_STEPS_LAYERS,
-        offsetof (uvcx_qp_steps_layers_t, bMinQp), 1, &smin8, &sdef8, &smax8);
+    if (update_qp (self, QP_P_FRAME))
+      ret = probe_setting (self, UVCX_QP_STEPS_LAYERS,
+          offsetof (uvcx_qp_steps_layers_t, bMinQp), 1, &smin8, &sdef8, &smax8);
     *min = smin8;
     *def = sdef8;
     *max = smax8;
   } else if (g_strcmp0 (property, "max-pframe-qp") == 0) {
-    update_qp (self, QP_P_FRAME);
-    ret = probe_setting (self, UVCX_QP_STEPS_LAYERS,
-        offsetof (uvcx_qp_steps_layers_t, bMaxQp), 1, &smin8, &sdef8, &smax8);
+    if (update_qp (self, QP_P_FRAME))
+      ret = probe_setting (self, UVCX_QP_STEPS_LAYERS,
+          offsetof (uvcx_qp_steps_layers_t, bMaxQp), 1, &smin8, &sdef8, &smax8);
     *min = smin8;
     *def = sdef8;
     *max = smax8;
   } else if (g_strcmp0 (property, "min-bframe-qp") == 0) {
-    update_qp (self, QP_B_FRAME);
-    ret = probe_setting (self, UVCX_QP_STEPS_LAYERS,
-        offsetof (uvcx_qp_steps_layers_t, bMinQp), 1, &smin8, &sdef8, &smax8);
+    if (update_qp (self, QP_B_FRAME))
+      ret = probe_setting (self, UVCX_QP_STEPS_LAYERS,
+          offsetof (uvcx_qp_steps_layers_t, bMinQp), 1, &smin8, &sdef8, &smax8);
     *min = smin8;
     *def = sdef8;
     *max = smax8;
   } else if (g_strcmp0 (property, "max-bframe-qp") == 0) {
-    update_qp (self, QP_B_FRAME);
-    ret = probe_setting (self, UVCX_QP_STEPS_LAYERS,
-        offsetof (uvcx_qp_steps_layers_t, bMaxQp), 1, &smin8, &sdef8, &smax8);
+    if (update_qp (self, QP_B_FRAME))
+      ret = probe_setting (self, UVCX_QP_STEPS_LAYERS,
+          offsetof (uvcx_qp_steps_layers_t, bMaxQp), 1, &smin8, &sdef8, &smax8);
     *min = smin8;
     *def = sdef8;
     *max = smax8;
