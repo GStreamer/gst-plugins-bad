@@ -155,13 +155,14 @@ static GstFlowReturn mpegtsmux_collect_packet (MpegTsMux * mux,
 static void mpegtsdemux_prepare_srcpad (MpegTsMux * mux);
 static GstFlowReturn mpegtsmux_collected (GstCollectPads2 * pads,
     MpegTsMux * mux);
+static gboolean mpegtsmux_sink_event (GstCollectPads2 * pads,
+    GstCollectData2 * data, GstEvent * event, gpointer user_data);
 static GstPad *mpegtsmux_request_new_pad (GstElement * element,
     GstPadTemplate * templ, const gchar * name);
 static void mpegtsmux_release_pad (GstElement * element, GstPad * pad);
 static GstStateChangeReturn mpegtsmux_change_state (GstElement * element,
     GstStateChange transition);
 static void mpegtsdemux_set_header_on_caps (MpegTsMux * mux);
-static gboolean mpegtsmux_sink_event (GstPad * pad, GstEvent * event);
 static gboolean mpegtsmux_src_event (GstPad * pad, GstEvent * event);
 
 GST_BOILERPLATE (MpegTsMux, mpegtsmux, GstElement, GST_TYPE_ELEMENT);
@@ -233,6 +234,9 @@ mpegtsmux_init (MpegTsMux * mux, MpegTsMuxClass * g_class)
   mux->collect = gst_collect_pads2_new ();
   gst_collect_pads2_set_function (mux->collect,
       (GstCollectPads2Function) GST_DEBUG_FUNCPTR (mpegtsmux_collected), mux);
+  gst_collect_pads2_set_event_function (mux->collect,
+      (GstCollectPads2EventFunction) GST_DEBUG_FUNCPTR (mpegtsmux_sink_event),
+      mux);
 
   mux->tsmux = tsmux_new ();
   tsmux_set_write_func (mux->tsmux, new_packet_cb, mux);
@@ -670,14 +674,14 @@ mpegtsmux_choose_best_stream (MpegTsMux * mux)
 #define COLLECT_DATA_PAD(collect_data) (((GstCollectData2 *)(collect_data))->pad)
 
 static gboolean
-mpegtsmux_sink_event (GstPad * pad, GstEvent * event)
+mpegtsmux_sink_event (GstCollectPads2 * pads, GstCollectData2 * data,
+    GstEvent * event, gpointer user_data)
 {
-  MpegTsMux *mux = GST_MPEG_TSMUX (gst_pad_get_parent (pad));
-  MpegTsPadData *ts_data;
-  gboolean res = TRUE;
-  gboolean forward = TRUE;
+  MpegTsMux *mux = GST_MPEG_TSMUX (user_data);
+  gboolean res = FALSE;
+  GstPad *pad;
 
-  ts_data = (MpegTsPadData *) gst_pad_get_element_private (pad);
+  pad = data->pad;
 
   switch (GST_EVENT_TYPE (event)) {
     case GST_EVENT_CUSTOM_DOWNSTREAM:
@@ -689,7 +693,7 @@ mpegtsmux_sink_event (GstPad * pad, GstEvent * event)
       if (!gst_video_event_is_force_key_unit (event))
         goto out;
 
-      forward = FALSE;
+      res = TRUE;
 
       gst_video_event_parse_downstream_force_key_unit (event,
           &timestamp, &stream_time, &running_time, &all_headers, &count);
@@ -716,12 +720,9 @@ mpegtsmux_sink_event (GstPad * pad, GstEvent * event)
   }
 
 out:
-  if (forward)
-    res = ts_data->eventfunc (pad, event);
-  else
+  if (res)
     gst_event_unref (event);
 
-  gst_object_unref (mux);
   return res;
 }
 
@@ -1001,9 +1002,6 @@ mpegtsmux_request_new_pad (GstElement * element,
       sizeof (MpegTsPadData));
   if (pad_data == NULL)
     goto pad_failure;
-
-  pad_data->eventfunc = pad->eventfunc;
-  gst_pad_set_event_function (pad, mpegtsmux_sink_event);
 
   pad_data->pid = pid;
   pad_data->last_ts = GST_CLOCK_TIME_NONE;

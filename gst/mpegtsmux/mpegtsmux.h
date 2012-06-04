@@ -164,7 +164,6 @@ struct MpegTsPadData {
 
   gint prog_id; /* The program id to which it is attached to (not program pid) */ 
   TsMuxProgram *prog; /* The program to which this stream belongs to */
-  GstPadEventFunction eventfunc;
 };
 
 GType mpegtsmux_get_type (void);
