@@ -1,8 +1,13 @@
 /*
  * GStreamer
  *
- * Copyright (C) 2012 Collabora Ltd.
+ * Copyright (C) 2012 Cisco Systems, Inc.
  *   Author: Youness Alaoui <youness.alaoui@collabora.co.uk>
+ *
+ * The gst_uvc_h264_src_fixate_caps function was  copied largely
+ * from v4l2src which has the following copyrights :
+ * Copyright (C) 2001-2002 Ronald Bultje <rbultje@ronald.bitfreak.net>
+ *               2006 Edgard Lima <edgard.lima@indt.org.br>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public

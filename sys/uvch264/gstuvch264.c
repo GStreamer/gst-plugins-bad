@@ -2,8 +2,8 @@
  *
  * uvch264: a plugin for handling UVC compliant H264 encoding cameras
  *
- * Copyright (C) <2012> Collabora Ltd.
- *   Author : Youness Alaoui <youness.alaoui@collabora.co.uk>
+ * Copyright (C) 2012 Cisco Systems, Inc.
+ *   Author: Youness Alaoui <youness.alaoui@collabora.co.uk>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

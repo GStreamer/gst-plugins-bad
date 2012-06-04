@@ -1,7 +1,7 @@
 /*
  * GStreamer
  *
- * Copyright (C) 201 Collabora Ltd.
+ * Copyright (C) 2012 Cisco Systems, Inc.
  *   Author: Youness Alaoui <youness.alaoui@collabora.co.uk>
  *
  * This library is free software; you can redistribute it and/or
