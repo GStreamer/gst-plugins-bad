@@ -105,6 +105,9 @@ struct _GstUvcH264Src
   /* When restarting the source */
   gboolean drop_newseg;
 
+  gchar *colorspace_name;
+  gchar *jpeg_decoder_name;
+
   /* v4l2src proxied properties */
   guint32 num_buffers;
   gchar *device;

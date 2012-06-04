@@ -44,6 +44,9 @@
 enum
 {
   PROP_0,
+  /* uvch264_src properties */
+  PROP_COLORSPACE_NAME,
+  PROP_JPEG_DECODER_NAME,
   /* v4l2src properties */
   PROP_NUM_BUFFERS,
   PROP_DEVICE,
@@ -88,6 +91,8 @@ enum
 static guint _signals[LAST_SIGNAL];
 
 /* Default values */
+#define DEFAULT_COLORSPACE_NAME "ffmpegcolorspace"
+#define DEFAULT_JPEG_DECODER_NAME "jpegdec"
 #define DEFAULT_NUM_BUFFERS -1
 #define DEFAULT_DEVICE "/dev/video0"
 #define DEFAULT_DEVICE_NAME NULL
@@ -265,6 +270,18 @@ gst_uvc_h264_src_class_init (GstUvcH264SrcClass * klass)
   gstbasecamerasrc_class->stop_capture = gst_uvc_h264_src_stop_capture;
 
   /* Properties */
+  g_object_class_install_property (gobject_class, PROP_COLORSPACE_NAME,
+      g_param_spec_string ("colorspace-name", "colorspace element name",
+          "The name of the colorspace element",
+          DEFAULT_COLORSPACE_NAME, G_PARAM_CONSTRUCT | G_PARAM_READWRITE |
+          GST_PARAM_MUTABLE_READY | G_PARAM_STATIC_STRINGS));
+  g_object_class_install_property (gobject_class, PROP_JPEG_DECODER_NAME,
+      g_param_spec_string ("jpeg-decoder-name", "jpeg decoder element name",
+          "The name of the jpeg decoder element",
+          DEFAULT_JPEG_DECODER_NAME, G_PARAM_CONSTRUCT | G_PARAM_READWRITE |
+          GST_PARAM_MUTABLE_READY | G_PARAM_STATIC_STRINGS));
+
+  /* v4l2src proxied properties */
   g_object_class_install_property (gobject_class, PROP_NUM_BUFFERS,
       g_param_spec_int ("num-buffers", "num-buffers",
           "Number of buffers to output before sending EOS (-1 = unlimited)",
@@ -513,6 +530,14 @@ gst_uvc_h264_src_set_property (GObject * object,
   GstUvcH264Src *self = GST_UVC_H264_SRC (object);
 
   switch (prop_id) {
+    case PROP_COLORSPACE_NAME:
+      g_free (self->colorspace_name);
+      self->colorspace_name = g_value_dup_string (value);
+      break;
+    case PROP_JPEG_DECODER_NAME:
+      g_free (self->jpeg_decoder_name);
+      self->jpeg_decoder_name = g_value_dup_string (value);
+      break;
       /* v4l2 properties */
     case PROP_NUM_BUFFERS:
       self->num_buffers = g_value_get_int (value);
@@ -634,6 +659,12 @@ gst_uvc_h264_src_get_property (GObject * object,
   }
 
   switch (prop_id) {
+    case PROP_COLORSPACE_NAME:
+      g_value_set_string (value, self->colorspace_name);
+      break;
+    case PROP_JPEG_DECODER_NAME:
+      g_value_set_string (value, self->jpeg_decoder_name);
+      break;
       /* v4l2src properties */
     case PROP_NUM_BUFFERS:
       g_value_set_int (value, self->num_buffers);
@@ -1734,7 +1765,7 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
     switch (type) {
       case RAW_NONE:
         GST_DEBUG_OBJECT (self, "Raw+None");
-        self->vid_colorspace = gst_element_factory_make ("ffmpegcolorspace",
+        self->vid_colorspace = gst_element_factory_make (self->colorspace_name,
             NULL);
         if (!self->vid_colorspace ||
             !gst_bin_add (GST_BIN (self), self->vid_colorspace))
@@ -1746,7 +1777,7 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
         break;
       case NONE_RAW:
         GST_DEBUG_OBJECT (self, "None+Raw");
-        self->vf_colorspace = gst_element_factory_make ("ffmpegcolorspace",
+        self->vf_colorspace = gst_element_factory_make (self->colorspace_name,
             NULL);
         if (!self->vf_colorspace ||
             !gst_bin_add (GST_BIN (self), self->vf_colorspace))
@@ -1780,7 +1811,7 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
       case H264_RAW:
         GST_DEBUG_OBJECT (self, "H264+Raw");
         self->mjpg_demux = gst_element_factory_make ("uvch264_mjpgdemux", NULL);
-        self->vf_colorspace = gst_element_factory_make ("ffmpegcolorspace",
+        self->vf_colorspace = gst_element_factory_make (self->colorspace_name,
             NULL);
         if (!self->mjpg_demux || !self->vf_colorspace)
           goto error_remove;
@@ -1805,8 +1836,9 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
       case H264_JPG2RAW:
         GST_DEBUG_OBJECT (self, "H264+Raw(jpegdec)");
         self->mjpg_demux = gst_element_factory_make ("uvch264_mjpgdemux", NULL);
-        self->jpeg_dec = gst_element_factory_make ("jpegdec", NULL);
-        self->vf_colorspace = gst_element_factory_make ("ffmpegcolorspace",
+        self->jpeg_dec = gst_element_factory_make (self->jpeg_decoder_name,
+            NULL);
+        self->vf_colorspace = gst_element_factory_make (self->colorspace_name,
             NULL);
         if (!self->mjpg_demux || !self->jpeg_dec || !self->vf_colorspace)
           goto error_remove;
