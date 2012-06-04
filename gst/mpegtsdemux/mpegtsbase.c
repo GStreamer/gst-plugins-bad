@@ -1464,7 +1464,6 @@ mpegts_base_chain (GstPad * pad, GstBuffer * buf)
       if (G_LIKELY (section.complete)) {
         /* section complete */
         based = mpegts_base_handle_psi (base, &section);
-        g_free (section.data);
 
         if (G_UNLIKELY (!based)) {
           /* bad PSI table */
