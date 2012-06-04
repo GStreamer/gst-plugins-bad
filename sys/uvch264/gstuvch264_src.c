@@ -922,11 +922,15 @@ xu_query (GstUvcH264Src * self, guint selector, guint query, guchar * data)
     return FALSE;
   }
 
-  xu.query = query;
-  xu.size = len;
-  xu.data = data;
-  if (-1 == ioctl (fd, UVCIOC_CTRL_QUERY, &xu)) {
-    return FALSE;
+  if (query == UVC_GET_LEN) {
+    *((__u16 *) data) = len;
+  } else {
+    xu.query = query;
+    xu.size = len;
+    xu.data = data;
+    if (-1 == ioctl (fd, UVCIOC_CTRL_QUERY, &xu)) {
+      return FALSE;
+    }
   }
 
   return TRUE;
