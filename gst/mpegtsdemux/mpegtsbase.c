@@ -1206,6 +1206,7 @@ mpegts_base_handle_psi (MpegTSBase * base, MpegTSPacketizerSection * section)
     case 0x6E:
     case 0x6F:
       /* EIT, schedule */
+      /* FIXME : Can take up to 50% of total mpeg-ts demuxing cpu usage ! */
       structure = mpegts_packetizer_parse_eit (base->packetizer, section);
       if (G_LIKELY (structure))
         mpegts_base_apply_eit (base, section->pid, structure);
@@ -1453,6 +1454,10 @@ mpegts_base_chain (GstPad * pad, GstBuffer * buf)
       goto next;
     }
 
+    /* FIXME : Handle the case where we have multiple sections in one
+     * packet ! 
+     * See bug #677443
+     */
     /* base PSI data */
     if (packet.payload != NULL && mpegts_base_is_psi (base, &packet)) {
       MpegTSPacketizerSection section;
