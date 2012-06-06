@@ -79,6 +79,8 @@ enum
   PROP_MAX_PFRAME_QP,
   PROP_MIN_BFRAME_QP,
   PROP_MAX_BFRAME_QP,
+  PROP_LTR_BUFFER_SIZE,
+  PROP_LTR_ENCODER_CONTROL,
 };
 /* In caps : frame interval (fps), width, height, profile, mux */
 /* Ignored: temporal, spatial, SNR, MVC views, version, reset */
@@ -117,6 +119,8 @@ static guint _signals[LAST_SIGNAL];
 #define DEFAULT_AVERAGE_BITRATE DEFAULT_INITIAL_BITRATE
 #define DEFAULT_MIN_QP 0        /* FIXME: check real default */
 #define DEFAULT_MAX_QP 0        /* FIXME: check real default */
+#define DEFAULT_LTR_BUFFER_SIZE 0
+#define DEFAULT_LTR_ENCODER_CONTROL 0
 
 #define NSEC_PER_SEC (G_USEC_PER_SEC * 1000)
 
@@ -209,10 +213,12 @@ static void set_rate_control (GstUvcH264Src * self, gboolean flag);
 static void set_level_idc (GstUvcH264Src * self);
 static void set_bitrate (GstUvcH264Src * self, gboolean peak);
 static void set_qp (GstUvcH264Src * self, gint type, gboolean min_qp);
+static void set_ltr (GstUvcH264Src * self, gboolean buffer_size);
 static void update_rate_control (GstUvcH264Src * self);
 static guint32 update_level_idc_and_get_max_mbps (GstUvcH264Src * self);
 static void update_bitrate (GstUvcH264Src * self);
 static gboolean update_qp (GstUvcH264Src * self, gint type);
+static void update_ltr (GstUvcH264Src * self);
 
 static gboolean gst_uvc_h264_src_get_enum_setting (GstUvcH264Src * self,
     gchar * property, gint * mask, gint * default_value);
@@ -425,6 +431,18 @@ gst_uvc_h264_src_class_init (GstUvcH264SrcClass * klass)
           -G_MAXINT8, G_MAXINT8, DEFAULT_MAX_QP,
           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
           GST_PARAM_MUTABLE_PLAYING));
+  g_object_class_install_property (gobject_class, PROP_LTR_BUFFER_SIZE,
+      g_param_spec_int ("ltr-buffer-size", "LTR Buffer size",
+          "Total number of Long-Term Reference frames (dynamic control)",
+          0, G_MAXUINT8, DEFAULT_LTR_BUFFER_SIZE,
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
+          GST_PARAM_MUTABLE_PLAYING));
+  g_object_class_install_property (gobject_class, PROP_LTR_ENCODER_CONTROL,
+      g_param_spec_int ("ltr-encoder-control", "LTR frames controled by device",
+          "Number of LTR frames the device can control (dynamic control)",
+          0, G_MAXUINT8, DEFAULT_LTR_ENCODER_CONTROL,
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
+          GST_PARAM_MUTABLE_PLAYING));
 
   _signals[SIGNAL_GET_ENUM_SETTING] =
       g_signal_new_class_handler ("get-enum-setting",
@@ -516,6 +534,8 @@ gst_uvc_h264_src_init (GstUvcH264Src * self, GstUvcH264SrcClass * klass)
   self->max_qp[QP_P_FRAME] = DEFAULT_MAX_QP;
   self->min_qp[QP_B_FRAME] = DEFAULT_MIN_QP;
   self->max_qp[QP_B_FRAME] = DEFAULT_MAX_QP;
+  self->ltr_buffer_size = DEFAULT_LTR_BUFFER_SIZE;
+  self->ltr_encoder_control = DEFAULT_LTR_ENCODER_CONTROL;
 }
 
 static void
@@ -628,6 +648,14 @@ gst_uvc_h264_src_set_property (GObject * object,
     case PROP_MAX_BFRAME_QP:
       self->max_qp[QP_B_FRAME] = g_value_get_int (value);
       set_qp (self, QP_B_FRAME, FALSE);
+      break;
+    case PROP_LTR_BUFFER_SIZE:
+      self->ltr_buffer_size = g_value_get_int (value);
+      set_ltr (self, TRUE);
+      break;
+    case PROP_LTR_ENCODER_CONTROL:
+      self->ltr_encoder_control = g_value_get_int (value);
+      set_ltr (self, FALSE);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (self, prop_id, pspec);
@@ -761,6 +789,14 @@ gst_uvc_h264_src_get_property (GObject * object,
       update_qp (self, QP_B_FRAME);
       g_value_set_int (value, self->max_qp[QP_B_FRAME]);
       break;
+    case PROP_LTR_BUFFER_SIZE:
+      update_ltr (self);
+      g_value_set_int (value, self->ltr_buffer_size);
+      break;
+    case PROP_LTR_ENCODER_CONTROL:
+      update_ltr (self);
+      g_value_set_int (value, self->ltr_encoder_control);
+      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (self, prop_id, pspec);
       break;
@@ -878,6 +914,28 @@ set_qp (GstUvcH264Src * self, gint type, gboolean min_qp)
   }
 }
 
+static void
+set_ltr (GstUvcH264Src * self, gboolean buffer_size)
+{
+  uvcx_ltr_buffer_size_control_t req;
+
+  if (!xu_query (self, UVCX_LTR_BUFFER_SIZE_CONTROL, UVC_GET_CUR,
+          (guchar *) & req)) {
+    GST_WARNING_OBJECT (self, " LTR_BUFFER_SIZE GET_CUR error");
+    return;
+  }
+
+  if (buffer_size)
+    req.bLTRBufferSize = self->ltr_buffer_size;
+  else
+    req.bLTREncoderControl = self->ltr_encoder_control;
+  if (!xu_query (self, UVCX_LTR_BUFFER_SIZE_CONTROL, UVC_SET_CUR,
+          (guchar *) & req)) {
+    GST_WARNING_OBJECT (self, "LTR_BUFFER_SIZE  SET_CUR error");
+    return;
+  }
+}
+
 /* Get Dynamic controls */
 
 static void
@@ -966,6 +1024,21 @@ update_qp (GstUvcH264Src * self, gint type)
     self->max_qp[type] = 0xFF;
     return FALSE;
   }
+}
+
+static void
+update_ltr (GstUvcH264Src * self)
+{
+  uvcx_ltr_buffer_size_control_t req;
+
+  if (!xu_query (self, UVCX_LTR_BUFFER_SIZE_CONTROL, UVC_GET_CUR,
+          (guchar *) & req)) {
+    GST_WARNING_OBJECT (self, " LTR_BUFFER_SIZE GET_CUR error");
+    return;
+  }
+
+  self->ltr_buffer_size = req.bLTRBufferSize;
+  self->ltr_encoder_control = req.bLTREncoderControl;
 }
 
 #define STORE_MIN_DEF_MAX(type)                         \
@@ -1275,6 +1348,20 @@ gst_uvc_h264_src_get_int_setting (GstUvcH264Src * self, gchar * property,
     *min = smin8;
     *def = sdef8;
     *max = smax8;
+  } else if (g_strcmp0 (property, "ltr-buffer-size") == 0) {
+    ret = probe_setting (self, UVCX_LTR_BUFFER_SIZE_CONTROL,
+        offsetof (uvcx_ltr_buffer_size_control_t, bLTRBufferSize), 1,
+        &min8, &def8, &max8);
+    *min = min8;
+    *def = def8;
+    *max = max8;
+  } else if (g_strcmp0 (property, "ltr-encoder-control") == 0) {
+    ret = probe_setting (self, UVCX_LTR_BUFFER_SIZE_CONTROL,
+        offsetof (uvcx_ltr_buffer_size_control_t, bLTREncoderControl), 1,
+        &min8, &def8, &max8);
+    *min = min8;
+    *def = def8;
+    *max = max8;
   }
 
   return ret;

@@ -131,6 +131,8 @@ struct _GstUvcH264Src
   guint32 average_bitrate;
   gint8 min_qp[QP_FRAMES];
   gint8 max_qp[QP_FRAMES];
+  guint8 ltr_buffer_size;
+  guint8 ltr_encoder_control;
 };
 
 
