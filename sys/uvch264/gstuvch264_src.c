@@ -203,6 +203,9 @@ static gboolean gst_uvc_h264_src_start_capture (GstBaseCameraSrc * camerasrc);
 static void gst_uvc_h264_src_stop_capture (GstBaseCameraSrc * camerasrc);
 static GstStateChangeReturn gst_uvc_h264_src_change_state (GstElement * element,
     GstStateChange trans);
+static gboolean gst_uvc_h264_src_buffer_probe (GstPad * pad,
+    GstBuffer * buffer, gpointer user_data);
+
 static void fill_probe_commit (GstUvcH264Src * self,
     uvcx_video_config_probe_commit_t * probe, guint32 frame_interval,
     guint32 width, guint32 height, guint32 profile);
@@ -486,6 +489,8 @@ gst_uvc_h264_src_init (GstUvcH264Src * self, GstUvcH264SrcClass * klass)
       gst_ghost_pad_new_no_target (GST_BASE_CAMERA_SRC_VIDEO_PAD_NAME,
       GST_PAD_SRC);
   gst_element_add_pad (GST_ELEMENT (self), self->vidsrc);
+  gst_pad_add_buffer_probe (self->vidsrc,
+      (GCallback) gst_uvc_h264_src_buffer_probe, self);
 
   self->srcpad_event_func = GST_PAD_EVENTFUNC (self->vfsrc);
 
@@ -1368,6 +1373,41 @@ gst_uvc_h264_src_get_int_setting (GstUvcH264Src * self, gchar * property,
 }
 
 static gboolean
+gst_uvc_h264_src_buffer_probe (GstPad * pad, GstBuffer * buffer,
+    gpointer user_data)
+{
+  GstUvcH264Src *self = GST_UVC_H264_SRC (user_data);
+
+  if (self->key_unit_event) {
+    GstClockTime ts, running_time, stream_time;
+    gboolean all_headers;
+    guint count;
+    GstEvent *downstream;
+
+    gst_video_event_parse_upstream_force_key_unit (self->key_unit_event,
+        &ts, &all_headers, &count);
+    if (!GST_CLOCK_TIME_IS_VALID (ts)) {
+      ts = GST_BUFFER_TIMESTAMP (buffer);
+    }
+    running_time = gst_segment_to_running_time (&self->segment,
+        GST_FORMAT_TIME, ts);
+
+    stream_time = gst_segment_to_stream_time (&self->segment,
+        GST_FORMAT_TIME, ts);
+
+    GST_DEBUG_OBJECT (self, "Sending downstream force-key-unit : %d - %d ts=%"
+        GST_TIME_FORMAT " running time =%" GST_TIME_FORMAT " stream=%"
+        GST_TIME_FORMAT, all_headers, count, GST_TIME_ARGS (ts),
+        GST_TIME_ARGS (running_time), GST_TIME_ARGS (stream_time));
+    downstream = gst_video_event_new_downstream_force_key_unit (ts,
+        running_time, stream_time, all_headers, count);
+    gst_pad_push_event (self->vidsrc, downstream);
+    gst_event_replace (&self->key_unit_event, NULL);
+  }
+  return TRUE;
+}
+
+static gboolean
 gst_uvc_h264_src_event (GstPad * pad, GstEvent * event)
 {
   GstUvcH264Src *self = GST_UVC_H264_SRC (GST_PAD_PARENT (pad));
@@ -1376,8 +1416,62 @@ gst_uvc_h264_src_event (GstPad * pad, GstEvent * event)
   structure = gst_event_get_structure (event);
   if (structure && gst_structure_has_name (structure, "renegotiate")) {
     GST_DEBUG_OBJECT (self, "Received renegotiate on %s", GST_PAD_NAME (pad));
+    //self->drop_newseg = TRUE;
   }
 
+  /* TODO: override GstElementClass.send_event method */
+  if (pad == self->vidsrc && self->main_format == UVC_H264_SRC_FORMAT_H264) {
+    switch (GST_EVENT_TYPE (event)) {
+      case GST_EVENT_CUSTOM_UPSTREAM:
+        if (gst_video_event_is_force_key_unit (event)) {
+          uvcx_picture_type_control_t req = { 0, 0 };
+          GstClockTime ts;
+          gboolean all_headers;
+          guint count;
+
+          gst_video_event_parse_upstream_force_key_unit (event,
+              &ts, &all_headers, &count);
+          GST_INFO_OBJECT (self, "Received upstream force-key-unit : %d - %d %"
+              GST_TIME_FORMAT, all_headers, count, GST_TIME_ARGS (ts));
+          /* TODO: wait until 'ts' time is reached */
+          if (all_headers)
+            req.wPicType = UVC_H264_PICTYPE_IDR_WITH_PPS_SPS;
+          else
+            req.wPicType = UVC_H264_PICTYPE_IDR;
+
+          if (!xu_query (self, UVCX_PICTURE_TYPE_CONTROL, UVC_SET_CUR,
+                  (guchar *) & req)) {
+            GST_WARNING_OBJECT (self, " PICTURE_TYPE_CONTROL SET_CUR error");
+          } else {
+            gst_event_replace (&self->key_unit_event, event);
+            gst_event_unref (event);
+
+            return TRUE;
+          }
+        }
+        break;
+      case GST_EVENT_NEWSEGMENT:
+        if (self->drop_newseg) {
+          self->drop_newseg = FALSE;
+        } else {
+          gboolean update;
+          gdouble rate, applied_rate;
+          GstFormat format;
+          gint64 start, stop, position;
+
+          gst_event_parse_new_segment_full (event, &update, &rate,
+              &applied_rate, &format, &start, &stop, &position);
+          gst_segment_set_newsegment (&self->segment, update, rate, format,
+              start, stop, position);
+        }
+        break;
+      case GST_EVENT_FLUSH_STOP:
+        gst_segment_init (&self->segment, GST_FORMAT_UNDEFINED);
+        break;
+      default:
+        break;
+    }
+  }
   return self->srcpad_event_func (pad, event);
 }
 
@@ -2143,6 +2237,7 @@ gst_uvc_h264_src_change_state (GstElement * element, GstStateChange trans)
   switch (trans) {
     case GST_STATE_CHANGE_NULL_TO_READY:
       /*  TODO: Check for H264 XU */
+      gst_segment_init (&self->segment, GST_FORMAT_UNDEFINED);
       break;
     default:
       break;

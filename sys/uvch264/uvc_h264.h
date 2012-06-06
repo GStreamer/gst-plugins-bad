@@ -142,6 +142,12 @@ GType uvc_h264_entropy_get_type (void);
 #define UVC_H264_PREFLIPPED_DISABLE        (0x00)
 #define UVC_H264_PREFLIPPED_HORIZONTAL     (0x01)
 
+/* wPicType defines */
+#define UVC_H264_PICTYPE_I_FRAME              (0x00)
+#define UVC_H264_PICTYPE_IDR                  (0x01)
+#define UVC_H264_PICTYPE_IDR_WITH_PPS_SPS     (0x02)
+
+
 /* wLayerID Macro */
 
 /*                              wLayerID

@@ -25,6 +25,7 @@ nodist_libgstuvch264_la_SOURCES = $(built_sources)
 libgstuvch264_la_CFLAGS =   $(GST_PLUGINS_BAD_CFLAGS) \
 			    $(GST_PLUGINS_BASE_CFLAGS) \
 	  		    $(GST_BASE_CFLAGS) \
+			    $(GST_VIDEO_CFLAGS) \
 			    $(GST_CFLAGS) \
 			    -DGST_USE_UNSTABLE_API
 
@@ -34,6 +35,7 @@ libgstuvch264_la_LIBTOOLFLAGS = --tag=disable-static
 libgstuvch264_la_LIBADD =   $(GST_PLUGINS_BASE_LIBS) \
 			    $(GST_BASE_LIBS) \
 			    $(GST_PLUGINS_BASE_LIBS) \
+			    $(GST_VIDEO_LIBS) \
 			    $(GST_LIBS) \
 			    $(top_builddir)/gst-libs/gst/basecamerabinsrc/libgstbasecamerabinsrc-$(GST_MAJORMINOR).la
 

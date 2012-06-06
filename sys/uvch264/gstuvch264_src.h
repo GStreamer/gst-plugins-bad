@@ -99,6 +99,8 @@ struct _GstUvcH264Src
   int v4l2_fd;
 
   GstPadEventFunction srcpad_event_func;
+  GstEvent *key_unit_event;
+  GstSegment segment;
 
   gboolean auto_start;
 
