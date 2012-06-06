@@ -1040,35 +1040,100 @@ end:
 }
 
 static gboolean
+test_enum_setting (GstUvcH264Src * self, guint offset, guint size,
+    guint16 value)
+{
+  uvcx_video_config_probe_commit_t req;
+  guchar *req_p = (guchar *) & req;
+
+
+  if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_GET_DEF, req_p)) {
+    GST_WARNING_OBJECT (self, " GET_DEF error");
+    return FALSE;
+  }
+
+  if (size == 1)
+    *((guint8 *) (req_p + offset)) = (guint8) value;
+  else
+    *((guint16 *) (req_p + offset)) = value;
+
+  if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_SET_CUR, req_p)) {
+    GST_WARNING_OBJECT (self, " SET_CUR error");
+    return FALSE;
+  }
+
+  if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_GET_CUR, req_p)) {
+    GST_WARNING_OBJECT (self, " GET_CUR error");
+    return FALSE;
+  }
+
+  if (size == 1)
+    return *((guint8 *) (req_p + offset)) == (guint8) value;
+  else
+    return *((guint16 *) (req_p + offset)) == value;
+}
+
+static gboolean
 gst_uvc_h264_src_get_enum_setting (GstUvcH264Src * self, gchar * property,
     gint * mask, gint * default_value)
 {
+  guint8 min, def, max;
+  guint8 en;
+  gboolean ret = FALSE;
+
   if (g_strcmp0 (property, "slice-mode") == 0) {
-    /* TODO */
-    *mask = (1 << UVC_H264_SLICEMODE_IGNORED) |
-        (1 << UVC_H264_SLICEMODE_SLICEPERFRAME);
-    *default_value = UVC_H264_SLICEMODE_SLICEPERFRAME;
-    return TRUE;
+    guint16 min16, def16, max16;
+    guint16 en16;
+
+    ret = probe_setting (self, UVCX_VIDEO_CONFIG_PROBE,
+        offsetof (uvcx_video_config_probe_commit_t, wSliceMode), 2,
+        &min16, &def16, &max16);
+    if (ret) {
+      *default_value = def16;
+      *mask = 0;
+      for (en16 = min16; en16 <= max16; en16++) {
+        if (test_enum_setting (self, offsetof (uvcx_video_config_probe_commit_t,
+                    wSliceMode), 2, en16))
+          *mask |= (1 << en16);
+      }
+    }
   } else if (g_strcmp0 (property, "usage-type") == 0) {
-    /* TODO */
-    *mask = (1 << UVC_H264_USAGETYPE_REALTIME) |
-        (1 << UVC_H264_USAGETYPE_BROADCAST) | (1 << UVC_H264_USAGETYPE_STORAGE);
-    *default_value = UVC_H264_USAGETYPE_REALTIME;
-    return TRUE;
+    ret = probe_setting (self, UVCX_VIDEO_CONFIG_PROBE,
+        offsetof (uvcx_video_config_probe_commit_t, bUsageType), 1,
+        &min, &def, &max);
+    if (ret) {
+      *default_value = def;
+      *mask = 0;
+      for (en = min; en <= max; en++) {
+        if (test_enum_setting (self, offsetof (uvcx_video_config_probe_commit_t,
+                    bUsageType), 1, en))
+          *mask |= (1 << en);
+      }
+    }
   } else if (g_strcmp0 (property, "entropy") == 0) {
-    /* TODO */
-    *mask = (1 << UVC_H264_ENTROPY_CAVLC) | (1 << UVC_H264_ENTROPY_CABAC);
-    *default_value = UVC_H264_ENTROPY_CAVLC;
-    return TRUE;
+    ret = probe_setting (self, UVCX_VIDEO_CONFIG_PROBE,
+        offsetof (uvcx_video_config_probe_commit_t, bEntropyCABAC), 1,
+        &min, &def, &max);
+    if (ret) {
+      *mask = (1 << min) | (1 << max);
+      *default_value = def;
+    }
   } else if (g_strcmp0 (property, "rate-control") == 0) {
-    /* TODO */
-    *mask = (1 << UVC_H264_RATECONTROL_CBR) | (1 << UVC_H264_RATECONTROL_VBR) |
-        (1 << UVC_H264_RATECONTROL_CONST_QP);
-    *default_value = UVC_H264_RATECONTROL_CBR;
-    return TRUE;
-  } else {
-    return FALSE;
+    ret = probe_setting (self, UVCX_VIDEO_CONFIG_PROBE,
+        offsetof (uvcx_video_config_probe_commit_t, bRateControlMode), 1,
+        &min, &def, &max);
+    if (ret) {
+      *default_value = def;
+      *mask = 0;
+      for (en = min; en <= max; en++) {
+        if (test_enum_setting (self, offsetof (uvcx_video_config_probe_commit_t,
+                    bRateControlMode), 1, en))
+          *mask |= (1 << en);
+      }
+    }
   }
+
+  return ret;
 }
 
 static gboolean
