@@ -2251,6 +2251,7 @@ gst_uvc_h264_src_change_state (GstElement * element, GstStateChange trans)
   switch (trans) {
     case GST_STATE_CHANGE_PAUSED_TO_READY:
       self->drop_newseg = FALSE;
+      self->v4l2_fd = -1;
       break;
     default:
       break;
