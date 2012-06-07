@@ -212,11 +212,11 @@ static void fill_probe_commit (GstUvcH264Src * self,
 static gboolean xu_query (GstUvcH264Src * self, guint selector, guint query,
     guchar * data);
 
-static void set_rate_control (GstUvcH264Src * self, gboolean flag);
+static void set_rate_control (GstUvcH264Src * self);
 static void set_level_idc (GstUvcH264Src * self);
-static void set_bitrate (GstUvcH264Src * self, gboolean peak);
-static void set_qp (GstUvcH264Src * self, gint type, gboolean min_qp);
-static void set_ltr (GstUvcH264Src * self, gboolean buffer_size);
+static void set_bitrate (GstUvcH264Src * self);
+static void set_qp (GstUvcH264Src * self, gint type);
+static void set_ltr (GstUvcH264Src * self);
 static void update_rate_control (GstUvcH264Src * self);
 static guint32 update_level_idc_and_get_max_mbps (GstUvcH264Src * self);
 static void update_bitrate (GstUvcH264Src * self);
@@ -612,55 +612,68 @@ gst_uvc_h264_src_set_property (GObject * object,
       /* Dynamic controls */
     case PROP_RATE_CONTROL:
       self->rate_control = g_value_get_enum (value);
-      set_rate_control (self, FALSE);
+      set_rate_control (self);
+      update_rate_control (self);
       break;
     case PROP_FIXED_FRAMERATE:
       self->fixed_framerate = g_value_get_boolean (value);
-      set_rate_control (self, TRUE);
+      set_rate_control (self);
+      update_rate_control (self);
       break;
     case PROP_LEVEL_IDC:
       self->level_idc = g_value_get_uint (value);
       set_level_idc (self);
+      update_level_idc_and_get_max_mbps (self);
       break;
     case PROP_PEAK_BITRATE:
       self->peak_bitrate = g_value_get_uint (value);
-      set_bitrate (self, TRUE);
+      set_bitrate (self);
+      update_bitrate (self);
       break;
     case PROP_AVERAGE_BITRATE:
       self->average_bitrate = g_value_get_uint (value);
-      set_bitrate (self, FALSE);
+      set_bitrate (self);
+      update_bitrate (self);
       break;
     case PROP_MIN_IFRAME_QP:
       self->min_qp[QP_I_FRAME] = g_value_get_int (value);
-      set_qp (self, QP_I_FRAME, TRUE);
+      set_qp (self, QP_I_FRAME);
+      update_qp (self, QP_I_FRAME);
       break;
     case PROP_MAX_IFRAME_QP:
       self->max_qp[QP_I_FRAME] = g_value_get_int (value);
-      set_qp (self, QP_I_FRAME, FALSE);
+      set_qp (self, QP_I_FRAME);
+      update_qp (self, QP_I_FRAME);
       break;
     case PROP_MIN_PFRAME_QP:
       self->min_qp[QP_P_FRAME] = g_value_get_int (value);
-      set_qp (self, QP_P_FRAME, TRUE);
+      set_qp (self, QP_P_FRAME);
+      update_qp (self, QP_P_FRAME);
       break;
     case PROP_MAX_PFRAME_QP:
       self->max_qp[QP_P_FRAME] = g_value_get_int (value);
-      set_qp (self, QP_P_FRAME, FALSE);
+      set_qp (self, QP_P_FRAME);
+      update_qp (self, QP_P_FRAME);
       break;
     case PROP_MIN_BFRAME_QP:
       self->min_qp[QP_B_FRAME] = g_value_get_int (value);
-      set_qp (self, QP_B_FRAME, TRUE);
+      set_qp (self, QP_B_FRAME);
+      update_qp (self, QP_B_FRAME);
       break;
     case PROP_MAX_BFRAME_QP:
       self->max_qp[QP_B_FRAME] = g_value_get_int (value);
-      set_qp (self, QP_B_FRAME, FALSE);
+      set_qp (self, QP_B_FRAME);
+      update_qp (self, QP_B_FRAME);
       break;
     case PROP_LTR_BUFFER_SIZE:
       self->ltr_buffer_size = g_value_get_int (value);
-      set_ltr (self, TRUE);
+      set_ltr (self);
+      update_ltr (self);
       break;
     case PROP_LTR_ENCODER_CONTROL:
       self->ltr_encoder_control = g_value_get_int (value);
-      set_ltr (self, FALSE);
+      set_ltr (self);
+      update_ltr (self);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (self, prop_id, pspec);
@@ -810,7 +823,7 @@ gst_uvc_h264_src_get_property (GObject * object,
 
 /* Set dynamic controls */
 static void
-set_rate_control (GstUvcH264Src * self, gboolean flag)
+set_rate_control (GstUvcH264Src * self)
 {
   uvcx_rate_control_mode_t req;
 
@@ -819,19 +832,9 @@ set_rate_control (GstUvcH264Src * self, gboolean flag)
     return;
   }
 
-  if (flag) {
-    if (self->fixed_framerate)
-      req.bRateControlMode |= UVC_H264_RATECONTROL_FIXED_FRM_FLG;
-    else
-      req.bRateControlMode &= ~UVC_H264_RATECONTROL_FIXED_FRM_FLG;
-  } else {
-    gboolean fixed_framerate = (req.bRateControlMode &
-        UVC_H264_RATECONTROL_FIXED_FRM_FLG) != 0;
-
-    req.bRateControlMode = self->rate_control;
-    if (fixed_framerate)
-      req.bRateControlMode |= UVC_H264_RATECONTROL_FIXED_FRM_FLG;
-  }
+  req.bRateControlMode = self->rate_control;
+  if (self->fixed_framerate)
+    req.bRateControlMode |= UVC_H264_RATECONTROL_FIXED_FRM_FLG;
 
   if (!xu_query (self, UVCX_RATE_CONTROL_MODE, UVC_SET_CUR, (guchar *) & req)) {
     GST_WARNING_OBJECT (self, " RATE_CONTROL SET_CUR error");
@@ -859,7 +862,7 @@ set_level_idc (GstUvcH264Src * self)
 }
 
 static void
-set_bitrate (GstUvcH264Src * self, gboolean peak)
+set_bitrate (GstUvcH264Src * self)
 {
   uvcx_bitrate_layers_t req;
 
@@ -868,10 +871,8 @@ set_bitrate (GstUvcH264Src * self, gboolean peak)
     return;
   }
 
-  if (peak)
-    req.dwPeakBitrate = self->peak_bitrate;
-  else
-    req.dwAverageBitrate = self->average_bitrate;
+  req.dwPeakBitrate = self->peak_bitrate;
+  req.dwAverageBitrate = self->average_bitrate;
   if (!xu_query (self, UVCX_BITRATE_LAYERS, UVC_SET_CUR, (guchar *) & req)) {
     GST_WARNING_OBJECT (self, " BITRATE_LAYERS SET_CUR error");
     return;
@@ -879,7 +880,7 @@ set_bitrate (GstUvcH264Src * self, gboolean peak)
 }
 
 static void
-set_qp (GstUvcH264Src * self, gint type, gboolean min_qp)
+set_qp (GstUvcH264Src * self, gint type)
 {
   uvcx_qp_steps_layers_t req;
 
@@ -909,10 +910,8 @@ set_qp (GstUvcH264Src * self, gint type, gboolean min_qp)
     return;
   }
 
-  if (min_qp)
-    req.bMinQp = self->min_qp[type];
-  else
-    req.bMaxQp = self->max_qp[type];
+  req.bMinQp = self->min_qp[type];
+  req.bMaxQp = self->max_qp[type];
   if (!xu_query (self, UVCX_QP_STEPS_LAYERS, UVC_SET_CUR, (guchar *) & req)) {
     GST_WARNING_OBJECT (self, " QP_STEPS_LAYERS SET_CUR error");
     return;
@@ -920,7 +919,7 @@ set_qp (GstUvcH264Src * self, gint type, gboolean min_qp)
 }
 
 static void
-set_ltr (GstUvcH264Src * self, gboolean buffer_size)
+set_ltr (GstUvcH264Src * self)
 {
   uvcx_ltr_buffer_size_control_t req;
 
@@ -930,10 +929,8 @@ set_ltr (GstUvcH264Src * self, gboolean buffer_size)
     return;
   }
 
-  if (buffer_size)
-    req.bLTRBufferSize = self->ltr_buffer_size;
-  else
-    req.bLTREncoderControl = self->ltr_encoder_control;
+  req.bLTRBufferSize = self->ltr_buffer_size;
+  req.bLTREncoderControl = self->ltr_encoder_control;
   if (!xu_query (self, UVCX_LTR_BUFFER_SIZE_CONTROL, UVC_SET_CUR,
           (guchar *) & req)) {
     GST_WARNING_OBJECT (self, "LTR_BUFFER_SIZE  SET_CUR error");
@@ -952,10 +949,19 @@ update_rate_control (GstUvcH264Src * self)
     GST_WARNING_OBJECT (self, " RATE_CONTROL GET_CUR error");
     return;
   }
-  self->rate_control = (req.bRateControlMode &
-      ~UVC_H264_RATECONTROL_FIXED_FRM_FLG);
-  self->fixed_framerate = ((req.bRateControlMode &
-          UVC_H264_RATECONTROL_FIXED_FRM_FLG) != 0);
+
+  if (self->rate_control != (req.bRateControlMode &
+          ~UVC_H264_RATECONTROL_FIXED_FRM_FLG)) {
+    self->rate_control = (req.bRateControlMode &
+        ~UVC_H264_RATECONTROL_FIXED_FRM_FLG);
+    g_object_notify (G_OBJECT (self), "rate-control");
+  }
+  if (self->fixed_framerate != ((req.bRateControlMode &
+              UVC_H264_RATECONTROL_FIXED_FRM_FLG) != 0)) {
+    self->fixed_framerate = ((req.bRateControlMode &
+            UVC_H264_RATECONTROL_FIXED_FRM_FLG) != 0);
+    g_object_notify (G_OBJECT (self), "fixed-framerate");
+  }
 }
 
 
@@ -970,7 +976,10 @@ update_level_idc_and_get_max_mbps (GstUvcH264Src * self)
     return 0;
   }
 
-  self->level_idc = req.blevel_idc;
+  if (self->level_idc != req.blevel_idc) {
+    self->level_idc = req.blevel_idc;
+    g_object_notify (G_OBJECT (self), "level-idc");
+  }
   return req.dwMb_max;
 }
 
@@ -983,8 +992,14 @@ update_bitrate (GstUvcH264Src * self)
     GST_WARNING_OBJECT (self, " BITRATE_LAYERS GET_CUR error");
     return;
   }
-  self->peak_bitrate = req.dwPeakBitrate;
-  self->average_bitrate = req.dwAverageBitrate;
+  if (self->peak_bitrate != req.dwPeakBitrate) {
+    self->peak_bitrate = req.dwPeakBitrate;
+    g_object_notify (G_OBJECT (self), "peak-bitrate");
+  }
+  if (self->average_bitrate != req.dwAverageBitrate) {
+    self->average_bitrate = req.dwAverageBitrate;
+    g_object_notify (G_OBJECT (self), "average-bitrate");
+  }
 }
 
 static gboolean
@@ -1021,8 +1036,38 @@ update_qp (GstUvcH264Src * self, gint type)
   }
 
   if (req.bFrameType == frame_type) {
-    self->min_qp[type] = req.bMinQp;
-    self->max_qp[type] = req.bMaxQp;
+    if (self->min_qp[type] != req.bMinQp) {
+      self->min_qp[type] = req.bMinQp;
+      switch (type) {
+        case QP_I_FRAME:
+          g_object_notify (G_OBJECT (self), "min-iframe-qp");
+          break;
+        case QP_P_FRAME:
+          g_object_notify (G_OBJECT (self), "min-pframe-qp");
+          break;
+        case QP_B_FRAME:
+          g_object_notify (G_OBJECT (self), "min-bframe-qp");
+          break;
+        default:
+          break;
+      }
+    }
+    if (self->max_qp[type] != req.bMaxQp) {
+      self->max_qp[type] = req.bMaxQp;
+      switch (type) {
+        case QP_I_FRAME:
+          g_object_notify (G_OBJECT (self), "max-iframe-qp");
+          break;
+        case QP_P_FRAME:
+          g_object_notify (G_OBJECT (self), "max-pframe-qp");
+          break;
+        case QP_B_FRAME:
+          g_object_notify (G_OBJECT (self), "max-bframe-qp");
+          break;
+        default:
+          break;
+      }
+    }
     return TRUE;
   } else {
     self->min_qp[type] = 0xFF;
@@ -1042,8 +1087,14 @@ update_ltr (GstUvcH264Src * self)
     return;
   }
 
-  self->ltr_buffer_size = req.bLTRBufferSize;
-  self->ltr_encoder_control = req.bLTREncoderControl;
+  if (self->ltr_buffer_size != req.bLTRBufferSize) {
+    self->ltr_buffer_size = req.bLTRBufferSize;
+    g_object_notify (G_OBJECT (self), "ltr-buffer-size");
+  }
+  if (self->ltr_encoder_control != req.bLTREncoderControl) {
+    self->ltr_encoder_control = req.bLTREncoderControl;
+    g_object_notify (G_OBJECT (self), "ltr-encoder-control");
+  }
 }
 
 #define STORE_MIN_DEF_MAX(type)                         \
