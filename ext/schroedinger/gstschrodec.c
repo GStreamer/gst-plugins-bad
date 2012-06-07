@@ -186,7 +186,7 @@ gst_schro_dec_sink_convert (GstPad * pad,
 {
   gboolean res = FALSE;
   GstSchroDec *dec;
-  GstVideoCodecState *state;
+  GstVideoCodecState *state = NULL;
 
   if (src_format == *dest_format) {
     *dest_value = src_value;
@@ -213,6 +213,8 @@ gst_schro_dec_sink_convert (GstPad * pad,
   res = TRUE;
 
 beach:
+  if (state)
+    gst_video_codec_state_unref (state);
   gst_object_unref (dec);
 
   return res;
@@ -304,7 +306,7 @@ parse_sequence_header (GstSchroDec * schro_dec, guint8 * data, int size)
 {
   SchroVideoFormat video_format;
   int ret;
-  GstVideoCodecState *state;
+  GstVideoCodecState *state = NULL;
   int bit_depth;
   GstVideoFormat fmt = GST_VIDEO_FORMAT_UNKNOWN;
 
@@ -365,6 +367,8 @@ parse_sequence_header (GstSchroDec * schro_dec, guint8 * data, int size)
       state->info.par_d);
 
 beach:
+  if (state)
+    gst_video_codec_state_unref (state);
   gst_schrodec_send_tags (schro_dec);
 }
 
