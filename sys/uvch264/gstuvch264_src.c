@@ -1757,10 +1757,28 @@ v4l2src_prepare_format (GstElement * v4l2src, gint fd, guint fourcc,
   GST_DEBUG_OBJECT (self, "v4l2src prepare-format with FCC %" GST_FOURCC_FORMAT,
       GST_FOURCC_ARGS (fourcc));
 
-  /* TODO: configure dynamic controls */
   self->v4l2_fd = fd;
-  if (self->main_format == UVC_H264_SRC_FORMAT_H264)
+  if (self->main_format == UVC_H264_SRC_FORMAT_H264) {
+    /* TODO: update static controls and g_object_notify those that changed */
     configure_h264 (self, fd);
+
+    /* TODO: update dynamic controls on READY state */
+    /* Configure dynamic controls */
+    set_rate_control (self);
+    update_rate_control (self);
+    set_level_idc (self);
+    update_level_idc_and_get_max_mbps (self);
+    set_bitrate (self);
+    update_bitrate (self);
+    set_qp (self, QP_I_FRAME);
+    update_qp (self, QP_I_FRAME);
+    set_qp (self, QP_P_FRAME);
+    update_qp (self, QP_P_FRAME);
+    set_qp (self, QP_B_FRAME);
+    update_qp (self, QP_B_FRAME);
+    set_ltr (self);
+    update_ltr (self);
+  }
 }
 
 static gboolean
