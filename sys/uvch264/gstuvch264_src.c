@@ -1462,10 +1462,10 @@ static gboolean
 gst_uvc_h264_src_event (GstPad * pad, GstEvent * event)
 {
   GstUvcH264Src *self = GST_UVC_H264_SRC (GST_PAD_PARENT (pad));
-  const GstStructure *structure;
+  const GstStructure *s = NULL;
 
-  structure = gst_event_get_structure (event);
-  if (structure && gst_structure_has_name (structure, "renegotiate")) {
+  s = gst_event_get_structure (event);
+  if (s && gst_structure_has_name (s, "renegotiate")) {
     GST_DEBUG_OBJECT (self, "Received renegotiate on %s", GST_PAD_NAME (pad));
     //self->drop_newseg = TRUE;
   }
@@ -1498,6 +1498,23 @@ gst_uvc_h264_src_event (GstPad * pad, GstEvent * event)
             gst_event_unref (event);
 
             return TRUE;
+          }
+        } else if (s &&
+            gst_structure_has_name (s, "uvc_h264_ltr_picture_control")) {
+          guint put_at, encode_using;
+
+          if (gst_structure_get_uint (s, "put-at", &put_at) &&
+              gst_structure_get_uint (s, "encode-using", &encode_using)) {
+            uvcx_ltr_picture_control req = { 0, put_at, encode_using };
+
+            if (!xu_query (self, UVCX_LTR_PICTURE_CONTROL, UVC_SET_CUR,
+                    (guchar *) & req)) {
+              GST_WARNING_OBJECT (self, " LTR PICTURE_CONTROL SET_CUR error");
+            } else {
+              gst_event_unref (event);
+
+              return TRUE;
+            }
           }
         }
         break;
