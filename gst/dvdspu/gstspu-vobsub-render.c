@@ -384,8 +384,7 @@ gstspu_vobsub_clear_comp_buffers (SpuState * state)
 }
 
 static void
-gstspu_vobsub_draw_highlight (SpuState * state,
-    GstBuffer * buf, SpuRect *rect)
+gstspu_vobsub_draw_highlight (SpuState * state, GstBuffer * buf, SpuRect * rect)
 {
   guint8 *cur;
   gint16 pos;
@@ -584,11 +583,12 @@ gstspu_vobsub_render (GstDVDSpu * dvdspu, GstBuffer * buf)
   }
 
   /* for debugging purposes, draw a faint rectangle at the edges of the disp_rect */
-  if (FALSE) {
+  if ((dvdspu_debug_flags & GST_DVD_SPU_DEBUG_RENDER_RECTANGLE) != 0) {
     gstspu_vobsub_draw_highlight (state, buf, &state->vobsub.disp_rect);
   }
   /* For debugging purposes, draw a faint rectangle around the highlight rect */
-  if (FALSE && state->vobsub.hl_rect.top != -1) {
+  if ((dvdspu_debug_flags & GST_DVD_SPU_DEBUG_HIGHLIGHT_RECTANGLE) != 0
+      && state->vobsub.hl_rect.top != -1) {
     gstspu_vobsub_draw_highlight (state, buf, &state->vobsub.hl_rect);
   }
 }
