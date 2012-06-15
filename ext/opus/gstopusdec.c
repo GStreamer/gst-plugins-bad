@@ -2,6 +2,7 @@
  * Copyright (C) 2004 Wim Taymans <wim@fluendo.com>
  * Copyright (C) 2006 Tim-Philipp Müller <tim centricular net>
  * Copyright (C) 2008 Sebastian Dröge <sebastian.droege@collabora.co.uk>
+ * Copyright (C) 2011-2012 Vincent Penquerc'h <vincent.penquerch@collabora.co.uk>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -109,7 +110,7 @@ gst_opus_dec_base_init (gpointer g_class)
   gst_element_class_set_details_simple (element_class, "Opus audio decoder",
       "Codec/Decoder/Audio",
       "decode opus streams to audio",
-      "Sebastian Dröge <sebastian.droege@collabora.co.uk>");
+      "Vincent Penquerc'h <vincent.penquerch@collabora.co.uk>");
 }
 
 static void

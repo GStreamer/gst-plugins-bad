@@ -211,7 +211,7 @@ gst_opus_enc_base_init (gpointer g_class)
   gst_element_class_set_details_simple (element_class, "Opus audio encoder",
       "Codec/Encoder/Audio",
       "Encodes audio in Opus format",
-      "Sebastian Dröge <sebastian.droege@collabora.co.uk>");
+      "Vincent Penquerc'h <vincent.penquerch@collabora.co.uk>");
 }
 
 static void
