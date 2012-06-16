@@ -162,8 +162,12 @@ static gboolean new_packet_m2ts (MpegTsMux * mux, GstBuffer * buf,
     gint64 new_pcr);
 
 static void mpegtsdemux_prepare_srcpad (MpegTsMux * mux);
+GstFlowReturn mpegtsmux_clip_inc_running_time (GstCollectPads2 * pads,
+    GstCollectData2 * cdata, GstBuffer * buf, GstBuffer ** outbuf,
+    gpointer user_data);
 static GstFlowReturn mpegtsmux_collected (GstCollectPads2 * pads,
-    MpegTsMux * mux);
+    GstCollectData2 * data, GstBuffer * buf, MpegTsMux * mux);
+
 static gboolean mpegtsmux_sink_event (GstCollectPads2 * pads,
     GstCollectData2 * data, GstEvent * event, gpointer user_data);
 static GstPad *mpegtsmux_request_new_pad (GstElement * element,
@@ -262,11 +266,15 @@ mpegtsmux_init (MpegTsMux * mux, MpegTsMuxClass * g_class)
   gst_element_add_pad (GST_ELEMENT (mux), mux->srcpad);
 
   mux->collect = gst_collect_pads2_new ();
-  gst_collect_pads2_set_function (mux->collect,
-      (GstCollectPads2Function) GST_DEBUG_FUNCPTR (mpegtsmux_collected), mux);
+  gst_collect_pads2_set_buffer_function (mux->collect,
+      (GstCollectPads2BufferFunction) GST_DEBUG_FUNCPTR (mpegtsmux_collected),
+      mux);
   gst_collect_pads2_set_event_function (mux->collect,
       (GstCollectPads2EventFunction) GST_DEBUG_FUNCPTR (mpegtsmux_sink_event),
       mux);
+  gst_collect_pads2_set_clip_function (mux->collect,
+      (GstCollectPads2ClipFunction)
+      GST_DEBUG_FUNCPTR (mpegtsmux_clip_inc_running_time), mux);
 
   mux->adapter = gst_adapter_new ();
   mux->out_adapter = gst_adapter_new ();
@@ -287,9 +295,7 @@ mpegtsmux_pad_reset (MpegTsPadData * pad_data)
 {
   pad_data->pid = 0;
   pad_data->last_ts = GST_CLOCK_TIME_NONE;
-  pad_data->cur_ts = GST_CLOCK_TIME_NONE;
   pad_data->prog_id = -1;
-  pad_data->eos = FALSE;
   pad_data->element_index_writer_id = -1;
 
   if (pad_data->free_func)
@@ -736,82 +742,6 @@ no_stream:
   }
 }
 
-static MpegTsPadData *
-mpegtsmux_choose_best_stream (MpegTsMux * mux)
-{
-  MpegTsPadData *best = NULL;
-  GSList *walk;
-
-  for (walk = mux->collect->data; walk != NULL; walk = g_slist_next (walk)) {
-    GstCollectData2 *c_data = (GstCollectData2 *) walk->data;
-    MpegTsPadData *ts_data = (MpegTsPadData *) walk->data;
-
-    if (ts_data->eos == FALSE) {
-      if (ts_data->queued_buf == NULL) {
-        GstBuffer *buf;
-
-        ts_data->queued_buf = buf =
-            gst_collect_pads2_pop (mux->collect, c_data);
-
-        if (buf != NULL) {
-          if (ts_data->prepare_func) {
-            buf = ts_data->prepare_func (buf, ts_data, mux);
-            if (buf) {          /* Take the prepared buffer instead */
-              gst_buffer_unref (ts_data->queued_buf);
-              ts_data->queued_buf = buf;
-            } else {            /* If data preparation returned NULL, use unprepared one */
-              buf = ts_data->queued_buf;
-            }
-          }
-          if (GST_BUFFER_TIMESTAMP (buf) != GST_CLOCK_TIME_NONE) {
-            /* Ignore timestamps that go backward for now. FIXME: Handle all
-             * incoming PTS */
-            if (ts_data->last_ts == GST_CLOCK_TIME_NONE ||
-                ts_data->last_ts < GST_BUFFER_TIMESTAMP (buf)) {
-              ts_data->cur_ts = ts_data->last_ts =
-                  gst_segment_to_running_time (&c_data->segment,
-                  GST_FORMAT_TIME, GST_BUFFER_TIMESTAMP (buf));
-            } else {
-              GST_DEBUG_OBJECT (mux, "Ignoring PTS that has gone backward");
-            }
-          } else
-            ts_data->cur_ts = GST_CLOCK_TIME_NONE;
-
-          GST_DEBUG_OBJECT (mux, "Pulled buffer with ts %" GST_TIME_FORMAT
-              " (uncorrected ts %" GST_TIME_FORMAT " %" G_GUINT64_FORMAT
-              ") for PID 0x%04x",
-              GST_TIME_ARGS (ts_data->cur_ts),
-              GST_TIME_ARGS (GST_BUFFER_TIMESTAMP (buf)),
-              GST_BUFFER_TIMESTAMP (buf), ts_data->pid);
-
-          /* Choose a stream we've never seen a timestamp for to ensure
-           * we push enough buffers from it to reach a timestamp */
-          if (ts_data->last_ts == GST_CLOCK_TIME_NONE) {
-            best = ts_data;
-          }
-        } else {
-          ts_data->eos = TRUE;
-          continue;
-        }
-      }
-
-      /* If we don't yet have a best pad, take this one, otherwise take
-       * whichever has the oldest timestamp */
-      if (best != NULL) {
-        if (ts_data->last_ts != GST_CLOCK_TIME_NONE &&
-            best->last_ts != GST_CLOCK_TIME_NONE &&
-            ts_data->last_ts < best->last_ts) {
-          best = ts_data;
-        }
-      } else {
-        best = ts_data;
-      }
-    }
-  }
-
-  return best;
-}
-
 #define COLLECT_DATA_PAD(collect_data) (((GstCollectData2 *)(collect_data))->pad)
 
 static gboolean
@@ -992,11 +922,60 @@ out:
   return event;
 }
 
+GstFlowReturn
+mpegtsmux_clip_inc_running_time (GstCollectPads2 * pads,
+    GstCollectData2 * cdata, GstBuffer * buf, GstBuffer ** outbuf,
+    gpointer user_data)
+{
+  MpegTsPadData *pad_data = (MpegTsPadData *) cdata;
+  GstClockTime time;
+
+  *outbuf = buf;
+  time = GST_BUFFER_TIMESTAMP (buf);
+
+  /* invalid left alone and passed */
+  if (G_LIKELY (GST_CLOCK_TIME_IS_VALID (time))) {
+    time = gst_segment_to_running_time (&cdata->segment, GST_FORMAT_TIME, time);
+    if (G_UNLIKELY (!GST_CLOCK_TIME_IS_VALID (time))) {
+      GST_DEBUG_OBJECT (cdata->pad, "clipping buffer on pad outside segment");
+      gst_buffer_unref (buf);
+      *outbuf = NULL;
+    } else {
+      GST_LOG_OBJECT (cdata->pad, "buffer ts %" GST_TIME_FORMAT " -> %"
+          GST_TIME_FORMAT " running time",
+          GST_TIME_ARGS (GST_BUFFER_TIMESTAMP (buf)), GST_TIME_ARGS (time));
+      if (GST_CLOCK_TIME_IS_VALID (pad_data->last_ts) &&
+          time < pad_data->last_ts) {
+        /* FIXME DTS/PTS mess again;
+         * probably needs a whole lot more subtle handling (cf qtmux) */
+        GST_DEBUG_OBJECT (cdata->pad, "ignoring PTS going backward");
+        time = pad_data->last_ts;
+      } else {
+        pad_data->last_ts = time;
+      }
+      *outbuf = gst_buffer_make_metadata_writable (buf);
+      GST_BUFFER_TIMESTAMP (*outbuf) = time;
+    }
+  }
+
+  buf = *outbuf;
+  if (pad_data->prepare_func) {
+    MpegTsMux *mux = (MpegTsMux *) user_data;
+
+    buf = pad_data->prepare_func (buf, pad_data, mux);
+    if (buf)
+      gst_buffer_replace (outbuf, buf);
+  }
+
+  return GST_FLOW_OK;
+}
+
 static GstFlowReturn
-mpegtsmux_collected (GstCollectPads2 * pads, MpegTsMux * mux)
+mpegtsmux_collected (GstCollectPads2 * pads, GstCollectData2 * data,
+    GstBuffer * buf, MpegTsMux * mux)
 {
   GstFlowReturn ret = GST_FLOW_OK;
-  MpegTsPadData *best = NULL;
+  MpegTsPadData *best = (MpegTsPadData *) data;
 
   GST_DEBUG_OBJECT (mux, "Pads collected");
 
@@ -1010,11 +989,8 @@ mpegtsmux_collected (GstCollectPads2 * pads, MpegTsMux * mux)
     mux->first = FALSE;
   }
 
-  best = mpegtsmux_choose_best_stream (mux);
-
   if (best != NULL) {
     TsMuxProgram *prog = best->prog;
-    GstBuffer *buf = best->queued_buf;
     gint64 pts = -1;
     gboolean delta = TRUE;
 
@@ -1072,10 +1048,11 @@ mpegtsmux_collected (GstCollectPads2 * pads, MpegTsMux * mux)
     GST_DEBUG_OBJECT (COLLECT_DATA_PAD (best),
         "Chose stream for output (PID: 0x%04x)", best->pid);
 
-    if (GST_CLOCK_TIME_IS_VALID (best->cur_ts)) {
-      pts = GSTTIME_TO_MPEGTIME (best->cur_ts);
+    if (GST_CLOCK_TIME_IS_VALID (GST_BUFFER_TIMESTAMP (buf)) &&
+        GST_CLOCK_TIME_IS_VALID (best->last_ts)) {
+      pts = GSTTIME_TO_MPEGTIME (best->last_ts);
       GST_DEBUG_OBJECT (mux, "Buffer has TS %" GST_TIME_FORMAT " pts %"
-          G_GINT64_FORMAT, GST_TIME_ARGS (best->cur_ts), pts);
+          G_GINT64_FORMAT, GST_TIME_ARGS (best->last_ts), pts);
     }
 
     if (best->stream->is_video_stream) {
