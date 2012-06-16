@@ -527,7 +527,7 @@ mpegtsmux_create_stream (MpegTsMux * mux, MpegTsPadData * ts_data)
     goto not_negotiated;
 
   GST_DEBUG_OBJECT (pad, "Creating stream with PID 0x%04x for caps %"
-      GST_PTR_FORMAT, caps);
+      GST_PTR_FORMAT, ts_data->pid, caps);
 
   s = gst_caps_get_structure (caps, 0);
   g_return_val_if_fail (s != NULL, FALSE);
