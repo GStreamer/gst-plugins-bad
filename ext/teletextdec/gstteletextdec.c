@@ -197,8 +197,7 @@ gst_teletextdec_base_init (gpointer klass)
       "Andoni Morales Alastruey <ylatuya@gmail.com>");
 
   gst_element_class_add_static_pad_template (element_class, &src_template);
-  gst_element_class_add_static_pad_template (element_class,
-      &sink_template);
+  gst_element_class_add_static_pad_template (element_class, &sink_template);
 }
 
 /* initialize the gstteletext's class */
@@ -287,6 +286,8 @@ gst_teletextdec_init (GstTeletextDec * teletext, GstTeletextDecClass * klass)
 
   teletext->frame = g_new0 (GstTeletextFrame, 1);
   teletext->frame->sliced_begin = g_new (vbi_sliced, MAX_SLICES);
+  teletext->frame->current_slice = teletext->frame->sliced_begin;
+  teletext->frame->sliced_end = teletext->frame->sliced_begin + MAX_SLICES;
 
   teletext->last_ts = 0;
 
