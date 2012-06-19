@@ -1259,13 +1259,23 @@ gst_uvc_h264_src_get_enum_setting (GstUvcH264Src * self, gchar * property,
         offsetof (uvcx_video_config_probe_commit_t, bRateControlMode), 1,
         &min, &def, &max);
     if (ret) {
+      uvcx_rate_control_mode_t cur;
+
       *default_value = def;
       *mask = 0;
+
+      xu_query (self, UVCX_RATE_CONTROL_MODE, UVC_GET_CUR, (guchar *) & cur);
+
       for (en = min; en <= max; en++) {
-        if (test_enum_setting (self, offsetof (uvcx_video_config_probe_commit_t,
-                    bRateControlMode), 1, en))
+        uvcx_rate_control_mode_t req = { 0, en };
+
+        if (xu_query (self, UVCX_RATE_CONTROL_MODE, UVC_SET_CUR,
+                (guchar *) & req) &&
+            xu_query (self, UVCX_RATE_CONTROL_MODE, UVC_GET_CUR,
+                (guchar *) & req) && req.bRateControlMode == en)
           *mask |= (1 << en);
       }
+      xu_query (self, UVCX_RATE_CONTROL_MODE, UVC_SET_CUR, (guchar *) & cur);
     }
   }
 
