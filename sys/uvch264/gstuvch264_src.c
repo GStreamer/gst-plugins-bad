@@ -205,6 +205,8 @@ static GstStateChangeReturn gst_uvc_h264_src_change_state (GstElement * element,
     GstStateChange trans);
 static gboolean gst_uvc_h264_src_buffer_probe (GstPad * pad,
     GstBuffer * buffer, gpointer user_data);
+static gboolean gst_uvc_h264_src_event_probe (GstPad * pad,
+    GstEvent * event, gpointer user_data);
 
 static void fill_probe_commit (GstUvcH264Src * self,
     uvcx_video_config_probe_commit_t * probe, guint32 frame_interval,
@@ -491,6 +493,10 @@ gst_uvc_h264_src_init (GstUvcH264Src * self, GstUvcH264SrcClass * klass)
   gst_element_add_pad (GST_ELEMENT (self), self->vidsrc);
   gst_pad_add_buffer_probe (self->vidsrc,
       (GCallback) gst_uvc_h264_src_buffer_probe, self);
+  gst_pad_add_event_probe (self->vfsrc,
+      (GCallback) gst_uvc_h264_src_event_probe, self);
+  gst_pad_add_event_probe (self->vidsrc,
+      (GCallback) gst_uvc_h264_src_event_probe, self);
 
   self->srcpad_event_func = GST_PAD_EVENTFUNC (self->vfsrc);
 
@@ -1441,6 +1447,32 @@ gst_uvc_h264_src_get_int_setting (GstUvcH264Src * self, gchar * property,
 }
 
 static gboolean
+gst_uvc_h264_src_event_probe (GstPad * pad, GstEvent * event,
+    gpointer user_data)
+{
+  GstUvcH264Src *self = GST_UVC_H264_SRC (user_data);
+  gboolean ret = TRUE;
+
+  switch (GST_EVENT_TYPE (event)) {
+    case GST_EVENT_EOS:
+      if (self->reconfiguring)
+        ret = FALSE;
+      break;
+    case GST_EVENT_NEWSEGMENT:
+      ret = !self->reconfiguring;
+      if (self->drop_newseg) {
+        self->drop_newseg--;
+        ret = FALSE;
+      }
+      break;
+    default:
+      break;
+  }
+
+  return ret;
+}
+
+static gboolean
 gst_uvc_h264_src_buffer_probe (GstPad * pad, GstBuffer * buffer,
     gpointer user_data)
 {
@@ -1483,15 +1515,11 @@ gst_uvc_h264_src_event (GstPad * pad, GstEvent * event)
   const GstStructure *s = NULL;
 
   s = gst_event_get_structure (event);
-  if (s && gst_structure_has_name (s, "renegotiate")) {
-    GST_DEBUG_OBJECT (self, "Received renegotiate on %s", GST_PAD_NAME (pad));
-    //self->drop_newseg = TRUE;
-  }
 
   /* TODO: override GstElementClass.send_event method */
-  if (pad == self->vidsrc && self->main_format == UVC_H264_SRC_FORMAT_H264) {
-    switch (GST_EVENT_TYPE (event)) {
-      case GST_EVENT_CUSTOM_UPSTREAM:
+  switch (GST_EVENT_TYPE (event)) {
+    case GST_EVENT_CUSTOM_UPSTREAM:
+      if (pad == self->vidsrc && self->main_format == UVC_H264_SRC_FORMAT_H264) {
         if (gst_video_event_is_force_key_unit (event)) {
           uvcx_picture_type_control_t req = { 0, 0 };
           GstClockTime ts;
@@ -1535,29 +1563,41 @@ gst_uvc_h264_src_event (GstPad * pad, GstEvent * event)
             }
           }
         }
-        break;
-      case GST_EVENT_NEWSEGMENT:
-        if (self->drop_newseg) {
-          self->drop_newseg = FALSE;
-        } else {
-          gboolean update;
-          gdouble rate, applied_rate;
-          GstFormat format;
-          gint64 start, stop, position;
-
-          gst_event_parse_new_segment_full (event, &update, &rate,
-              &applied_rate, &format, &start, &stop, &position);
-          gst_segment_set_newsegment (&self->segment, update, rate, format,
-              start, stop, position);
+      } else if (s && gst_structure_has_name (s, "renegotiate")) {
+        GST_DEBUG_OBJECT (self, "Received renegotiate on %s",
+            GST_PAD_NAME (pad));
+        /* Do not reconstruct pipeline if we receive the event on both pads */
+        if (GST_STATE (self) >= GST_STATE_READY && self->drop_newseg == 0) {
+          /* TODO: diff the caps */
+          self->drop_newseg = 1;
+          if (!gst_uvc_h264_src_construct_pipeline (GST_BASE_CAMERA_SRC (self)))
+            self->drop_newseg = 0;
+          else if (self->secondary_format != UVC_H264_SRC_FORMAT_NONE)
+            self->drop_newseg++;
         }
-        break;
-      case GST_EVENT_FLUSH_STOP:
+      }
+      break;
+    case GST_EVENT_NEWSEGMENT:
+      if (self->drop_newseg == 0 && pad == self->vidsrc) {
+        gboolean update;
+        gdouble rate, applied_rate;
+        GstFormat format;
+        gint64 start, stop, position;
+
+        gst_event_parse_new_segment_full (event, &update, &rate,
+            &applied_rate, &format, &start, &stop, &position);
+        gst_segment_set_newsegment (&self->segment, update, rate, format,
+            start, stop, position);
+      }
+      break;
+    case GST_EVENT_FLUSH_STOP:
+      if (pad == self->vidsrc)
         gst_segment_init (&self->segment, GST_FORMAT_UNDEFINED);
-        break;
-      default:
-        break;
-    }
+      break;
+    default:
+      break;
   }
+
   return self->srcpad_event_func (pad, event);
 }
 
@@ -1943,6 +1983,68 @@ gst_uvc_h264_src_fixate_caps (GstUvcH264Src * self, GstPad * v4l_pad,
   return caps;
 }
 
+static void
+gst_uvc_h264_src_destroy_pipeline (GstUvcH264Src * self, gboolean v4l2src)
+{
+  GstIterator *iter = NULL;
+  gboolean done;
+
+  if (v4l2src && self->v4l2_src) {
+    gst_bin_remove (GST_BIN (self), self->v4l2_src);
+    gst_element_set_state (self->v4l2_src, GST_STATE_NULL);
+    gst_object_unref (self->v4l2_src);
+    self->v4l2_src = NULL;
+  }
+  if (self->mjpg_demux) {
+    gst_bin_remove (GST_BIN (self), self->mjpg_demux);
+    gst_element_set_state (self->mjpg_demux, GST_STATE_NULL);
+    gst_object_unref (self->mjpg_demux);
+    self->mjpg_demux = NULL;
+  }
+  if (self->jpeg_dec) {
+    gst_bin_remove (GST_BIN (self), self->jpeg_dec);
+    gst_element_set_state (self->jpeg_dec, GST_STATE_NULL);
+    gst_object_unref (self->jpeg_dec);
+    self->jpeg_dec = NULL;
+  }
+  if (self->vid_colorspace) {
+    gst_bin_remove (GST_BIN (self), self->vid_colorspace);
+    gst_element_set_state (self->vid_colorspace, GST_STATE_NULL);
+    gst_object_unref (self->vid_colorspace);
+    self->vid_colorspace = NULL;
+  }
+  if (self->vf_colorspace) {
+    gst_bin_remove (GST_BIN (self), self->vf_colorspace);
+    gst_element_set_state (self->vf_colorspace, GST_STATE_NULL);
+    gst_object_unref (self->vf_colorspace);
+    self->vf_colorspace = NULL;
+  }
+  iter = gst_bin_iterate_elements (GST_BIN (self));
+  done = FALSE;
+  while (!done) {
+    GstElement *item = NULL;
+
+    switch (gst_iterator_next (iter, (gpointer *) & item)) {
+      case GST_ITERATOR_OK:
+        if (item != self->v4l2_src) {
+          gst_bin_remove (GST_BIN (self), item);
+          gst_element_set_state (item, GST_STATE_NULL);
+        }
+        gst_object_unref (item);
+        break;
+      case GST_ITERATOR_RESYNC:
+        gst_iterator_resync (iter);
+        break;
+      case GST_ITERATOR_ERROR:
+        done = TRUE;
+        break;
+      case GST_ITERATOR_DONE:
+        done = TRUE;
+        break;
+    }
+  }
+  gst_iterator_free (iter);
+}
 
 static gboolean
 gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
@@ -1967,76 +2069,149 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
   } type;
 
   GST_DEBUG_OBJECT (self, "Construct pipeline");
+  self->reconfiguring = TRUE;
   if (self->v4l2_src == NULL) {
-    vf_caps = gst_pad_peer_get_caps (self->vfsrc);
-    vid_caps = gst_pad_peer_get_caps (self->vidsrc);
-
-    GST_DEBUG_OBJECT (self, "vfsrc caps : %" GST_PTR_FORMAT, vf_caps);
-    GST_DEBUG_OBJECT (self, "vidsrc caps : %" GST_PTR_FORMAT, vid_caps);
-
-    /* Can't do anything */
-    if (vid_caps == NULL && vf_caps == NULL)
-      return FALSE;
-
     /* Create v4l2 source and set it up */
     self->v4l2_src = gst_element_factory_make ("v4l2src", NULL);
     if (!self->v4l2_src || !gst_bin_add (GST_BIN (self), self->v4l2_src))
       goto error;
     gst_object_ref (self->v4l2_src);
-    g_object_set (self->v4l2_src,
-        "device", self->device, "num-buffers", self->num_buffers, NULL);
     g_signal_connect (self->v4l2_src, "prepare-format",
         (GCallback) v4l2src_prepare_format, self);
-    if (gst_element_set_state (self->v4l2_src, GST_STATE_READY) !=
-        GST_STATE_CHANGE_SUCCESS) {
-      GST_DEBUG_OBJECT (self, "Unable to set v4l2src to READY state");
+    g_object_set (self->v4l2_src,
+        "device", self->device, "num-buffers", self->num_buffers, NULL);
+  }
+  /* HACK ALERT: We have to bring it to NULL state when renegotiating until
+   * bug 670257 is fixed : https://bugzilla.gnome.org/show_bug.cgi?id=670257
+   */
+  gst_element_set_state (self->v4l2_src, GST_STATE_NULL);
+  if (gst_element_set_state (self->v4l2_src, GST_STATE_READY) !=
+      GST_STATE_CHANGE_SUCCESS) {
+    GST_DEBUG_OBJECT (self, "Unable to set v4l2src to READY state");
+    goto error_remove;
+  }
+  if (self->v4l2_fd != -1) {
+    uvcx_encoder_reset req = { 0 };
+
+    if (!xu_query (self, UVCX_ENCODER_RESET, UVC_SET_CUR, (guchar *) & req))
+      GST_WARNING_OBJECT (self, " UVCX_ENCODER_RESET SET_CUR error");
+  }
+  gst_uvc_h264_src_destroy_pipeline (self, FALSE);
+
+  vf_caps = gst_pad_peer_get_caps (self->vfsrc);
+  vid_caps = gst_pad_peer_get_caps (self->vidsrc);
+
+  GST_DEBUG_OBJECT (self, "vfsrc caps : %" GST_PTR_FORMAT, vf_caps);
+  GST_DEBUG_OBJECT (self, "vidsrc caps : %" GST_PTR_FORMAT, vid_caps);
+
+  /* Can't do anything */
+  /* TODO: allow to go to READY state without being linked */
+  if (vid_caps == NULL && vf_caps == NULL)
+    return FALSE;
+
+  v4l_pad = gst_element_get_static_pad (self->v4l2_src, "src");
+  v4l_caps = gst_pad_get_caps (v4l_pad);
+  GST_DEBUG_OBJECT (self, "v4l2src caps : %" GST_PTR_FORMAT, v4l_caps);
+  /* TODO: fixate should not depend on the format, if v4l2src isn't compiled
+     with libv4l support, then a format I420 caps would fail to intersect */
+  if (vf_caps) {
+    vf_caps = gst_uvc_h264_src_fixate_caps (self, v4l_pad, v4l_caps, vf_caps);
+    if (vf_caps) {
+      vf_struct = gst_caps_get_structure (vf_caps, 0);
+    } else {
+      GST_WARNING_OBJECT (self, "Could not negotiate vfsrc caps format");
       goto error_remove;
     }
-    v4l_pad = gst_element_get_static_pad (self->v4l2_src, "src");
-    v4l_caps = gst_pad_get_caps (v4l_pad);
-    GST_DEBUG_OBJECT (self, "v4l2src caps : %" GST_PTR_FORMAT, v4l_caps);
-    /* TODO: fixate should not depend on the format, if v4l2src isn't compiled
-       with libv4l support, then a format I420 caps would fail to intersect */
-    if (vf_caps) {
-      vf_caps = gst_uvc_h264_src_fixate_caps (self, v4l_pad, v4l_caps, vf_caps);
-      if (vf_caps) {
-        vf_struct = gst_caps_get_structure (vf_caps, 0);
-      } else {
-        GST_WARNING_OBJECT (self, "Could not negotiate vfsrc caps format");
-        goto error_remove;
-      }
-    }
-    GST_DEBUG_OBJECT (self, "Fixated vfsrc caps : %" GST_PTR_FORMAT, vf_caps);
+  }
+  GST_DEBUG_OBJECT (self, "Fixated vfsrc caps : %" GST_PTR_FORMAT, vf_caps);
+  if (vid_caps) {
+    vid_caps = gst_uvc_h264_src_fixate_caps (self, v4l_pad, v4l_caps, vid_caps);
     if (vid_caps) {
-      vid_caps =
-          gst_uvc_h264_src_fixate_caps (self, v4l_pad, v4l_caps, vid_caps);
-      if (vid_caps) {
-        vid_struct = gst_caps_get_structure (vid_caps, 0);
-      } else {
-        GST_WARNING_OBJECT (self, "Could not negotiate vidsrc caps format");
-        goto error_remove;
+      vid_struct = gst_caps_get_structure (vid_caps, 0);
+    } else {
+      GST_WARNING_OBJECT (self, "Could not negotiate vidsrc caps format");
+      goto error_remove;
+    }
+  }
+  GST_DEBUG_OBJECT (self, "Fixated vidsrc caps : %" GST_PTR_FORMAT, vid_caps);
+
+  gst_object_unref (v4l_pad);
+  gst_caps_unref (v4l_caps);
+
+  if (vf_caps && vid_caps) {
+    guint32 smallest_frame_interval;
+
+    if (!gst_structure_has_name (vid_struct, "video/x-h264")) {
+      /* TODO: Allow for vfsrc+vidsrc to be raw too and add videoscale */
+      goto error_remove;
+    }
+    if (!_extract_caps_info (vf_struct, &self->secondary_width,
+            &self->secondary_height, &self->secondary_frame_interval))
+      goto error_remove;
+    self->main_format = UVC_H264_SRC_FORMAT_H264;
+    if (!_extract_caps_info (vid_struct, &self->main_width,
+            &self->main_height, &self->main_frame_interval))
+      goto error_remove;
+
+    self->main_stream_format = UVC_H264_STREAMFORMAT_ANNEXB;
+    stream_format = gst_structure_get_string (vid_struct, "stream-format");
+    if (stream_format) {
+      if (!strcmp (stream_format, "avc"))
+        self->main_stream_format = UVC_H264_STREAMFORMAT_ANNEXB;
+      else if (!strcmp (stream_format, "byte-stream"))
+        self->main_stream_format = UVC_H264_STREAMFORMAT_NAL;
+    }
+
+    /* TODO: set output caps from demuxer into the right ones
+     * (Logitech C920 doesn't do baseline itself, only constrained) */
+    self->main_profile = UVC_H264_PROFILE_HIGH;
+    profile = gst_structure_get_string (vid_struct, "profile");
+    if (profile) {
+      if (!strcmp (profile, "constrained-baseline")) {
+        self->main_profile = UVC_H264_PROFILE_CONSTRAINED_BASELINE;
+      } else if (!strcmp (profile, "baseline")) {
+        self->main_profile = UVC_H264_PROFILE_BASELINE;
+      } else if (!strcmp (profile, "main")) {
+        self->main_profile = UVC_H264_PROFILE_MAIN;
+      } else if (!strcmp (profile, "high")) {
+        self->main_profile = UVC_H264_PROFILE_HIGH;
       }
     }
-    GST_DEBUG_OBJECT (self, "Fixated vidsrc caps : %" GST_PTR_FORMAT, vid_caps);
 
-    gst_object_unref (v4l_pad);
-    gst_caps_unref (v4l_caps);
-
-    if (vf_caps && vid_caps) {
-      guint32 smallest_frame_interval;
-
-      if (!gst_structure_has_name (vid_struct, "video/x-h264")) {
-        /* TODO: Allow for vfsrc+vidsrc to be raw too and add videoscale */
-        goto error_remove;
+    if (gst_structure_has_name (vf_struct, "image/jpeg")) {
+      type = H264_JPG;
+      self->secondary_format = UVC_H264_SRC_FORMAT_JPG;
+    } else {
+      if (self->secondary_width > 432 || self->secondary_height > 240) {
+        type = H264_JPG2RAW;
+        self->secondary_format = UVC_H264_SRC_FORMAT_JPG;
+      } else {
+        type = H264_RAW;
+        self->secondary_format = UVC_H264_SRC_FORMAT_RAW;
       }
-      if (!_extract_caps_info (vf_struct, &self->secondary_width,
-              &self->secondary_height, &self->secondary_frame_interval))
-        goto error_remove;
+    }
+    smallest_frame_interval = MIN (self->main_frame_interval,
+        self->secondary_frame_interval);
+    /* Just to avoid a potential division by zero, set interval to 30 fps */
+    if (smallest_frame_interval == 0)
+      smallest_frame_interval = 333333;
+
+    /* Frame interval is in 100ns units */
+    /* TODO: changing width/height screws everything up */
+    src_caps = gst_caps_new_simple ("image/jpeg",
+        "width", G_TYPE_INT, self->secondary_width,
+        "height", G_TYPE_INT, self->secondary_height,
+        "framerate", GST_TYPE_FRACTION,
+        NSEC_PER_SEC / smallest_frame_interval, 100, NULL);
+  } else {
+    self->main_format = UVC_H264_SRC_FORMAT_NONE;
+    self->secondary_format = UVC_H264_SRC_FORMAT_NONE;
+    if (vid_struct && gst_structure_has_name (vid_struct, "video/x-h264")) {
+      type = ENCODED_NONE;
       self->main_format = UVC_H264_SRC_FORMAT_H264;
       if (!_extract_caps_info (vid_struct, &self->main_width,
               &self->main_height, &self->main_frame_interval))
         goto error_remove;
-
       self->main_stream_format = UVC_H264_STREAMFORMAT_ANNEXB;
       stream_format = gst_structure_get_string (vid_struct, "stream-format");
       if (stream_format) {
@@ -2046,8 +2221,6 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
           self->main_stream_format = UVC_H264_STREAMFORMAT_NAL;
       }
 
-      /* TODO: set output caps from demuxer into the right ones
-       * (Logitech C920 doesn't do baseline itself, only constrained) */
       self->main_profile = UVC_H264_PROFILE_HIGH;
       profile = gst_structure_get_string (vid_struct, "profile");
       if (profile) {
@@ -2061,196 +2234,135 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
           self->main_profile = UVC_H264_PROFILE_HIGH;
         }
       }
-
-      if (gst_structure_has_name (vf_struct, "image/jpeg")) {
-        type = H264_JPG;
-        self->secondary_format = UVC_H264_SRC_FORMAT_JPG;
-      } else {
-        if (self->secondary_width > 432 || self->secondary_height > 240) {
-          type = H264_JPG2RAW;
-          self->secondary_format = UVC_H264_SRC_FORMAT_JPG;
-        } else {
-          type = H264_RAW;
-          self->secondary_format = UVC_H264_SRC_FORMAT_RAW;
-        }
-      }
-      smallest_frame_interval = MIN (self->main_frame_interval,
-          self->secondary_frame_interval);
-      /* Just to avoid a potential division by zero, set interval to 30 fps */
-      if (smallest_frame_interval == 0)
-        smallest_frame_interval = 333333;
-
-      /* Frame interval is in 100ns units */
-      src_caps = gst_caps_new_simple ("image/jpeg",
-          "width", G_TYPE_INT, self->secondary_width,
-          "height", G_TYPE_INT, self->secondary_height,
-          "framerate", GST_TYPE_FRACTION,
-          NSEC_PER_SEC / smallest_frame_interval, 100, NULL);
+    } else if (vid_struct && gst_structure_has_name (vid_struct, "image/jpeg")) {
+      type = ENCODED_NONE;
+    } else if (vf_struct && gst_structure_has_name (vf_struct, "image/jpeg")) {
+      type = NONE_ENCODED;
+    } else if (vid_struct) {
+      type = RAW_NONE;
+    } else if (vf_struct) {
+      type = NONE_RAW;
     } else {
-      self->main_format = UVC_H264_SRC_FORMAT_NONE;
-      self->secondary_format = UVC_H264_SRC_FORMAT_NONE;
-      if (vid_struct && gst_structure_has_name (vid_struct, "video/x-h264")) {
-        type = ENCODED_NONE;
-        self->main_format = UVC_H264_SRC_FORMAT_H264;
-        if (!_extract_caps_info (vid_struct, &self->main_width,
-                &self->main_height, &self->main_frame_interval))
-          goto error_remove;
-        self->main_stream_format = UVC_H264_STREAMFORMAT_ANNEXB;
-        stream_format = gst_structure_get_string (vid_struct, "stream-format");
-        if (stream_format) {
-          if (!strcmp (stream_format, "avc"))
-            self->main_stream_format = UVC_H264_STREAMFORMAT_ANNEXB;
-          else if (!strcmp (stream_format, "byte-stream"))
-            self->main_stream_format = UVC_H264_STREAMFORMAT_NAL;
-        }
-
-        self->main_profile = UVC_H264_PROFILE_CONSTRAINED_BASELINE;
-        profile = gst_structure_get_string (vid_struct, "profile");
-        if (profile) {
-          if (!strcmp (profile, "constrained-baseline")) {
-            self->main_profile = UVC_H264_PROFILE_CONSTRAINED_BASELINE;
-          } else if (!strcmp (profile, "baseline")) {
-            self->main_profile = UVC_H264_PROFILE_BASELINE;
-          } else if (!strcmp (profile, "main")) {
-            self->main_profile = UVC_H264_PROFILE_MAIN;
-          } else if (!strcmp (profile, "high")) {
-            self->main_profile = UVC_H264_PROFILE_HIGH;
-          }
-        }
-      } else if (vid_struct &&
-          gst_structure_has_name (vid_struct, "image/jpeg")) {
-        type = ENCODED_NONE;
-      } else if (vf_struct && gst_structure_has_name (vf_struct, "image/jpeg")) {
-        type = NONE_ENCODED;
-      } else if (vid_struct) {
-        type = RAW_NONE;
-      } else if (vf_struct) {
-        type = NONE_RAW;
-      } else {
-        g_assert_not_reached ();
-      }
+      g_assert_not_reached ();
     }
-
-    switch (type) {
-      case RAW_NONE:
-        GST_DEBUG_OBJECT (self, "Raw+None");
-        self->vid_colorspace = gst_element_factory_make (self->colorspace_name,
-            NULL);
-        if (!self->vid_colorspace ||
-            !gst_bin_add (GST_BIN (self), self->vid_colorspace))
-          goto error_remove;
-        gst_object_ref (self->vid_colorspace);
-        if (!gst_element_link (self->v4l2_src, self->vid_colorspace))
-          goto error_remove_all;
-        vid_pad = gst_element_get_static_pad (self->vid_colorspace, "src");
-        break;
-      case NONE_RAW:
-        GST_DEBUG_OBJECT (self, "None+Raw");
-        self->vf_colorspace = gst_element_factory_make (self->colorspace_name,
-            NULL);
-        if (!self->vf_colorspace ||
-            !gst_bin_add (GST_BIN (self), self->vf_colorspace))
-          goto error_remove;
-        gst_object_ref (self->vf_colorspace);
-        if (!gst_element_link (self->v4l2_src, self->vf_colorspace))
-          goto error_remove_all;
-        vf_pad = gst_element_get_static_pad (self->vf_colorspace, "src");
-        break;
-      case ENCODED_NONE:
-        GST_DEBUG_OBJECT (self, "Encoded+None");
-        vid_pad = gst_element_get_static_pad (self->v4l2_src, "src");
-        break;
-      case NONE_ENCODED:
-        GST_DEBUG_OBJECT (self, "None+Encoded");
-        vf_pad = gst_element_get_static_pad (self->v4l2_src, "src");
-        break;
-      case H264_JPG:
-        GST_DEBUG_OBJECT (self, "H264+JPG");
-        self->mjpg_demux = gst_element_factory_make ("uvch264_mjpgdemux", NULL);
-        if (!self->mjpg_demux ||
-            !gst_bin_add (GST_BIN (self), self->mjpg_demux))
-          goto error_remove;
-        gst_object_ref (self->mjpg_demux);
-        if (!gst_element_link_filtered (self->v4l2_src, self->mjpg_demux,
-                src_caps))
-          goto error_remove_all;
-        vid_pad = gst_element_get_static_pad (self->mjpg_demux, "h264");
-        vf_pad = gst_element_get_static_pad (self->mjpg_demux, "jpeg");
-        break;
-      case H264_RAW:
-        GST_DEBUG_OBJECT (self, "H264+Raw");
-        self->mjpg_demux = gst_element_factory_make ("uvch264_mjpgdemux", NULL);
-        self->vf_colorspace = gst_element_factory_make (self->colorspace_name,
-            NULL);
-        if (!self->mjpg_demux || !self->vf_colorspace)
-          goto error_remove;
-        if (!gst_bin_add (GST_BIN (self), self->mjpg_demux))
-          goto error_remove;
-        gst_object_ref (self->mjpg_demux);
-        if (!gst_bin_add (GST_BIN (self), self->vf_colorspace)) {
-          gst_object_unref (self->vf_colorspace);
-          self->vf_colorspace = NULL;
-          goto error_remove_all;
-        }
-        gst_object_ref (self->vf_colorspace);
-        if (!gst_element_link_filtered (self->v4l2_src, self->mjpg_demux,
-                src_caps))
-          goto error_remove_all;
-        if (!gst_element_link_pads (self->mjpg_demux, "yuy2",
-                self->vf_colorspace, "sink"))
-          goto error_remove_all;
-        vid_pad = gst_element_get_static_pad (self->mjpg_demux, "h264");
-        vf_pad = gst_element_get_static_pad (self->vf_colorspace, "src");
-        break;
-      case H264_JPG2RAW:
-        GST_DEBUG_OBJECT (self, "H264+Raw(jpegdec)");
-        self->mjpg_demux = gst_element_factory_make ("uvch264_mjpgdemux", NULL);
-        self->jpeg_dec = gst_element_factory_make (self->jpeg_decoder_name,
-            NULL);
-        self->vf_colorspace = gst_element_factory_make (self->colorspace_name,
-            NULL);
-        if (!self->mjpg_demux || !self->jpeg_dec || !self->vf_colorspace)
-          goto error_remove;
-        if (!gst_bin_add (GST_BIN (self), self->mjpg_demux))
-          goto error_remove;
-        gst_object_ref (self->mjpg_demux);
-        if (!gst_bin_add (GST_BIN (self), self->jpeg_dec)) {
-          gst_object_unref (self->jpeg_dec);
-          self->jpeg_dec = NULL;
-          gst_object_unref (self->vf_colorspace);
-          self->vf_colorspace = NULL;
-          goto error_remove_all;
-        }
-        gst_object_ref (self->jpeg_dec);
-        if (!gst_bin_add (GST_BIN (self), self->vf_colorspace)) {
-          gst_object_unref (self->vf_colorspace);
-          self->vf_colorspace = NULL;
-          goto error_remove_all;
-        }
-        gst_object_ref (self->vf_colorspace);
-        if (!gst_element_link_filtered (self->v4l2_src, self->mjpg_demux,
-                src_caps))
-          goto error_remove_all;
-        if (!gst_element_link_pads (self->mjpg_demux, "jpeg", self->jpeg_dec,
-                "sink"))
-          goto error_remove_all;
-        if (!gst_element_link (self->jpeg_dec, self->vf_colorspace))
-          goto error_remove_all;
-        vid_pad = gst_element_get_static_pad (self->mjpg_demux, "h264");
-        vf_pad = gst_element_get_static_pad (self->vf_colorspace, "src");
-        break;
-    }
-
-
-    if (!gst_ghost_pad_set_target (GST_GHOST_PAD (self->vidsrc), vid_pad) ||
-        !gst_ghost_pad_set_target (GST_GHOST_PAD (self->vfsrc), vf_pad))
-      goto error_remove_all;
-    if (vid_pad)
-      gst_object_unref (vid_pad);
-    if (vf_pad)
-      gst_object_unref (vf_pad);
-    vid_pad = vf_pad = NULL;
   }
+
+  switch (type) {
+    case RAW_NONE:
+      GST_DEBUG_OBJECT (self, "Raw+None");
+      self->vid_colorspace = gst_element_factory_make (self->colorspace_name,
+          NULL);
+      if (!self->vid_colorspace ||
+          !gst_bin_add (GST_BIN (self), self->vid_colorspace))
+        goto error_remove;
+      gst_object_ref (self->vid_colorspace);
+      if (!gst_element_link (self->v4l2_src, self->vid_colorspace))
+        goto error_remove_all;
+      vid_pad = gst_element_get_static_pad (self->vid_colorspace, "src");
+      break;
+    case NONE_RAW:
+      GST_DEBUG_OBJECT (self, "None+Raw");
+      self->vf_colorspace = gst_element_factory_make (self->colorspace_name,
+          NULL);
+      if (!self->vf_colorspace ||
+          !gst_bin_add (GST_BIN (self), self->vf_colorspace))
+        goto error_remove;
+      gst_object_ref (self->vf_colorspace);
+      if (!gst_element_link (self->v4l2_src, self->vf_colorspace))
+        goto error_remove_all;
+      vf_pad = gst_element_get_static_pad (self->vf_colorspace, "src");
+      break;
+    case ENCODED_NONE:
+      GST_DEBUG_OBJECT (self, "Encoded+None");
+      vid_pad = gst_element_get_static_pad (self->v4l2_src, "src");
+      break;
+    case NONE_ENCODED:
+      GST_DEBUG_OBJECT (self, "None+Encoded");
+      vf_pad = gst_element_get_static_pad (self->v4l2_src, "src");
+      break;
+    case H264_JPG:
+      GST_DEBUG_OBJECT (self, "H264+JPG");
+      self->mjpg_demux = gst_element_factory_make ("uvch264_mjpgdemux", NULL);
+      if (!self->mjpg_demux || !gst_bin_add (GST_BIN (self), self->mjpg_demux))
+        goto error_remove;
+      gst_object_ref (self->mjpg_demux);
+      if (!gst_element_link_filtered (self->v4l2_src, self->mjpg_demux,
+              src_caps))
+        goto error_remove_all;
+      vid_pad = gst_element_get_static_pad (self->mjpg_demux, "h264");
+      vf_pad = gst_element_get_static_pad (self->mjpg_demux, "jpeg");
+      break;
+    case H264_RAW:
+      GST_DEBUG_OBJECT (self, "H264+Raw");
+      self->mjpg_demux = gst_element_factory_make ("uvch264_mjpgdemux", NULL);
+      self->vf_colorspace = gst_element_factory_make (self->colorspace_name,
+          NULL);
+      if (!self->mjpg_demux || !self->vf_colorspace)
+        goto error_remove;
+      if (!gst_bin_add (GST_BIN (self), self->mjpg_demux))
+        goto error_remove;
+      gst_object_ref (self->mjpg_demux);
+      if (!gst_bin_add (GST_BIN (self), self->vf_colorspace)) {
+        gst_object_unref (self->vf_colorspace);
+        self->vf_colorspace = NULL;
+        goto error_remove_all;
+      }
+      gst_object_ref (self->vf_colorspace);
+      if (!gst_element_link_filtered (self->v4l2_src, self->mjpg_demux,
+              src_caps))
+        goto error_remove_all;
+      if (!gst_element_link_pads (self->mjpg_demux, "yuy2",
+              self->vf_colorspace, "sink"))
+        goto error_remove_all;
+      vid_pad = gst_element_get_static_pad (self->mjpg_demux, "h264");
+      vf_pad = gst_element_get_static_pad (self->vf_colorspace, "src");
+      break;
+    case H264_JPG2RAW:
+      GST_DEBUG_OBJECT (self, "H264+Raw(jpegdec)");
+      self->mjpg_demux = gst_element_factory_make ("uvch264_mjpgdemux", NULL);
+      self->jpeg_dec = gst_element_factory_make (self->jpeg_decoder_name, NULL);
+      self->vf_colorspace = gst_element_factory_make (self->colorspace_name,
+          NULL);
+      if (!self->mjpg_demux || !self->jpeg_dec || !self->vf_colorspace)
+        goto error_remove;
+      if (!gst_bin_add (GST_BIN (self), self->mjpg_demux))
+        goto error_remove;
+      gst_object_ref (self->mjpg_demux);
+      if (!gst_bin_add (GST_BIN (self), self->jpeg_dec)) {
+        gst_object_unref (self->jpeg_dec);
+        self->jpeg_dec = NULL;
+        gst_object_unref (self->vf_colorspace);
+        self->vf_colorspace = NULL;
+        goto error_remove_all;
+      }
+      gst_object_ref (self->jpeg_dec);
+      if (!gst_bin_add (GST_BIN (self), self->vf_colorspace)) {
+        gst_object_unref (self->vf_colorspace);
+        self->vf_colorspace = NULL;
+        goto error_remove_all;
+      }
+      gst_object_ref (self->vf_colorspace);
+      if (!gst_element_link_filtered (self->v4l2_src, self->mjpg_demux,
+              src_caps))
+        goto error_remove_all;
+      if (!gst_element_link_pads (self->mjpg_demux, "jpeg", self->jpeg_dec,
+              "sink"))
+        goto error_remove_all;
+      if (!gst_element_link (self->jpeg_dec, self->vf_colorspace))
+        goto error_remove_all;
+      vid_pad = gst_element_get_static_pad (self->mjpg_demux, "h264");
+      vf_pad = gst_element_get_static_pad (self->vf_colorspace, "src");
+      break;
+  }
+
+  if (!gst_ghost_pad_set_target (GST_GHOST_PAD (self->vidsrc), vid_pad) ||
+      !gst_ghost_pad_set_target (GST_GHOST_PAD (self->vfsrc), vf_pad))
+    goto error_remove_all;
+  if (vid_pad)
+    gst_object_unref (vid_pad);
+  if (vf_pad)
+    gst_object_unref (vf_pad);
+  vid_pad = vf_pad = NULL;
 
   if (vf_caps)
     gst_caps_unref (vf_caps);
@@ -2258,19 +2370,27 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
     gst_caps_unref (vid_caps);
   if (src_caps)
     gst_caps_unref (src_caps);
+  vf_caps = vid_caps = src_caps = NULL;
 
+  if (self->vid_colorspace &&
+      !gst_element_sync_state_with_parent (self->vid_colorspace))
+    goto error_remove_all;
+  if (self->vf_colorspace &&
+      !gst_element_sync_state_with_parent (self->vf_colorspace))
+    goto error_remove_all;
+  if (self->jpeg_dec && !gst_element_sync_state_with_parent (self->jpeg_dec))
+    goto error_remove_all;
+  if (self->mjpg_demux &&
+      !gst_element_sync_state_with_parent (self->mjpg_demux))
+    goto error_remove_all;
+  if (self->v4l2_src && !gst_element_sync_state_with_parent (self->v4l2_src))
+    goto error_remove_all;
+
+  self->reconfiguring = FALSE;
   return TRUE;
 
 error_remove_all:
-  if (self->mjpg_demux)
-    gst_bin_remove (GST_BIN (self), self->mjpg_demux);
-  if (self->jpeg_dec)
-    gst_bin_remove (GST_BIN (self), self->jpeg_dec);
-  if (self->vid_colorspace)
-    gst_bin_remove (GST_BIN (self), self->vid_colorspace);
-  if (self->vf_colorspace)
-    gst_bin_remove (GST_BIN (self), self->vf_colorspace);
-
+  gst_uvc_h264_src_destroy_pipeline (self, FALSE);
 error_remove:
   gst_element_set_state (self->v4l2_src, GST_STATE_NULL);
   gst_bin_remove (GST_BIN (self), self->v4l2_src);
@@ -2306,6 +2426,7 @@ error:
   if (vf_pad)
     gst_object_unref (vf_pad);
 
+  self->reconfiguring = FALSE;
   return FALSE;
 }
 
@@ -2348,6 +2469,11 @@ gst_uvc_h264_src_change_state (GstElement * element, GstStateChange trans)
       /*  TODO: Check for H264 XU */
       gst_segment_init (&self->segment, GST_FORMAT_UNDEFINED);
       break;
+    case GST_STATE_CHANGE_READY_TO_PAUSED:
+    case GST_STATE_CHANGE_PAUSED_TO_PLAYING:
+      if (!self->v4l2_src)
+        gst_uvc_h264_src_construct_pipeline (GST_BASE_CAMERA_SRC (self));
+      break;
     default:
       break;
   }
@@ -2359,8 +2485,11 @@ gst_uvc_h264_src_change_state (GstElement * element, GstStateChange trans)
 
   switch (trans) {
     case GST_STATE_CHANGE_PAUSED_TO_READY:
-      self->drop_newseg = FALSE;
+      self->drop_newseg = 0;
       self->v4l2_fd = -1;
+      break;
+    case GST_STATE_CHANGE_READY_TO_NULL:
+      gst_uvc_h264_src_destroy_pipeline (self, TRUE);
       break;
     default:
       break;
