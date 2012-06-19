@@ -990,7 +990,6 @@ dvb_base_bin_uri_set_uri (GstURIHandler * handler, const gchar * uri)
 {
   gboolean ret;
   gchar *protocol;
-  DvbBaseBin *dvbbasebin = GST_DVB_BASE_BIN (handler);
 
   protocol = gst_uri_get_protocol (uri);
 
@@ -1000,7 +999,7 @@ dvb_base_bin_uri_set_uri (GstURIHandler * handler, const gchar * uri)
     gchar *location = gst_uri_get_location (uri);
 
     if (location != NULL) {
-      ret = set_properties_for_channel (G_OBJECT (dvbbasebin), location);
+      ret = set_properties_for_channel (GST_ELEMENT (handler), location);
       g_free (location);
     } else
       ret = FALSE;
