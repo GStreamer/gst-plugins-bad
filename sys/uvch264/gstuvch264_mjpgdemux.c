@@ -415,7 +415,8 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
               GST_DEBUG ("Fixated struct : %" GST_PTR_FORMAT, s);
               gst_structure_get_fraction (s, "framerate", &fps_num, &fps_den);
             }
-            gst_caps_unref (peercaps);
+            if (peercaps)
+              gst_caps_unref (peercaps);
 
             *width = aux_header.width;
             *height = aux_header.height;
