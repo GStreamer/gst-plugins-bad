@@ -1172,14 +1172,16 @@ static gboolean
 test_enum_setting (GstUvcH264Src * self, guint offset, guint size,
     guint16 value)
 {
+  uvcx_video_config_probe_commit_t cur;
   uvcx_video_config_probe_commit_t req;
   guchar *req_p = (guchar *) & req;
 
-
-  if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_GET_DEF, req_p)) {
-    GST_WARNING_OBJECT (self, " GET_DEF error");
+  if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_GET_CUR, (guchar *) & cur)) {
+    GST_WARNING_OBJECT (self, " GET_CUR error");
     return FALSE;
   }
+
+  req = cur;
 
   if (size == 1)
     *((guint8 *) (req_p + offset)) = (guint8) value;
@@ -1193,6 +1195,11 @@ test_enum_setting (GstUvcH264Src * self, guint offset, guint size,
 
   if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_GET_CUR, req_p)) {
     GST_WARNING_OBJECT (self, " GET_CUR error");
+    return FALSE;
+  }
+
+  if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_SET_CUR, (guchar *) & cur)) {
+    GST_WARNING_OBJECT (self, " SET_CUR error");
     return FALSE;
   }
 
