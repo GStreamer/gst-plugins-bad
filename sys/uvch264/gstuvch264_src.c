@@ -1863,6 +1863,10 @@ gst_uvc_h264_src_fixate_caps (GstUvcH264Src * self, GstPad * v4l_pad,
     for (i = 0; i < gst_caps_get_size (peer_caps); i++) {
       /* get intersection */
       GstCaps *ipcaps = gst_caps_copy_nth (peer_caps, i);
+      GstStructure *s = gst_caps_get_structure (ipcaps, 0);
+
+      /* Remove the format setting */
+      gst_structure_remove_field (s, "format");
 
       GST_DEBUG_OBJECT (self, "peer: %" GST_PTR_FORMAT, ipcaps);
 
@@ -1954,6 +1958,7 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
   GstCaps *v4l_caps = NULL;
   const gchar *stream_format;
   const gchar *profile;
+
   enum
   {
     RAW_NONE, ENCODED_NONE, NONE_RAW, NONE_ENCODED,
