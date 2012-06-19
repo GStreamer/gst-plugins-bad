@@ -690,7 +690,7 @@ dnl *** UVC H264 ***
 translit(dnm, m, l) AM_CONDITIONAL(USE_UVCH264, true)
 AG_GST_CHECK_FEATURE(UVCH264, [UVC H264], uvch264, [
   AC_CHECK_HEADER(linux/uvcvideo.h, HAVE_UVCH264=yes, HAVE_UVCH264=no)
-  AG_GST_PKG_CHECK_MODULES(GST_VIDEO, gstreamer-video-0.10)
+  AG_GST_PKG_CHECK_MODULES(GST_VIDEO, gstreamer-video-0.10 >= 0.10.36)
 ])
 
 

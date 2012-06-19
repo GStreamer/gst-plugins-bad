@@ -1452,25 +1452,26 @@ gst_uvc_h264_src_buffer_probe (GstPad * pad, GstBuffer * buffer,
     guint count;
     GstEvent *downstream;
 
-    gst_video_event_parse_upstream_force_key_unit (self->key_unit_event,
-        &ts, &all_headers, &count);
-    if (!GST_CLOCK_TIME_IS_VALID (ts)) {
-      ts = GST_BUFFER_TIMESTAMP (buffer);
+    if (gst_video_event_parse_upstream_force_key_unit (self->key_unit_event,
+            &ts, &all_headers, &count)) {
+      if (!GST_CLOCK_TIME_IS_VALID (ts)) {
+        ts = GST_BUFFER_TIMESTAMP (buffer);
+      }
+      running_time = gst_segment_to_running_time (&self->segment,
+          GST_FORMAT_TIME, ts);
+
+      stream_time = gst_segment_to_stream_time (&self->segment,
+          GST_FORMAT_TIME, ts);
+
+      GST_DEBUG_OBJECT (self, "Sending downstream force-key-unit : %d - %d ts=%"
+          GST_TIME_FORMAT " running time =%" GST_TIME_FORMAT " stream=%"
+          GST_TIME_FORMAT, all_headers, count, GST_TIME_ARGS (ts),
+          GST_TIME_ARGS (running_time), GST_TIME_ARGS (stream_time));
+      downstream = gst_video_event_new_downstream_force_key_unit (ts,
+          running_time, stream_time, all_headers, count);
+      gst_pad_push_event (self->vidsrc, downstream);
+      gst_event_replace (&self->key_unit_event, NULL);
     }
-    running_time = gst_segment_to_running_time (&self->segment,
-        GST_FORMAT_TIME, ts);
-
-    stream_time = gst_segment_to_stream_time (&self->segment,
-        GST_FORMAT_TIME, ts);
-
-    GST_DEBUG_OBJECT (self, "Sending downstream force-key-unit : %d - %d ts=%"
-        GST_TIME_FORMAT " running time =%" GST_TIME_FORMAT " stream=%"
-        GST_TIME_FORMAT, all_headers, count, GST_TIME_ARGS (ts),
-        GST_TIME_ARGS (running_time), GST_TIME_ARGS (stream_time));
-    downstream = gst_video_event_new_downstream_force_key_unit (ts,
-        running_time, stream_time, all_headers, count);
-    gst_pad_push_event (self->vidsrc, downstream);
-    gst_event_replace (&self->key_unit_event, NULL);
   }
   return TRUE;
 }
@@ -1495,26 +1496,26 @@ gst_uvc_h264_src_event (GstPad * pad, GstEvent * event)
           uvcx_picture_type_control_t req = { 0, 0 };
           GstClockTime ts;
           gboolean all_headers;
-          guint count;
 
-          gst_video_event_parse_upstream_force_key_unit (event,
-              &ts, &all_headers, &count);
-          GST_INFO_OBJECT (self, "Received upstream force-key-unit : %d - %d %"
-              GST_TIME_FORMAT, all_headers, count, GST_TIME_ARGS (ts));
-          /* TODO: wait until 'ts' time is reached */
-          if (all_headers)
-            req.wPicType = UVC_H264_PICTYPE_IDR_WITH_PPS_SPS;
-          else
-            req.wPicType = UVC_H264_PICTYPE_IDR;
+          if (gst_video_event_parse_upstream_force_key_unit (event,
+                  &ts, &all_headers, NULL)) {
+            GST_INFO_OBJECT (self, "Received upstream force-key-unit : %d %"
+                GST_TIME_FORMAT, all_headers, GST_TIME_ARGS (ts));
+            /* TODO: wait until 'ts' time is reached */
+            if (all_headers)
+              req.wPicType = UVC_H264_PICTYPE_IDR_WITH_PPS_SPS;
+            else
+              req.wPicType = UVC_H264_PICTYPE_IDR;
 
-          if (!xu_query (self, UVCX_PICTURE_TYPE_CONTROL, UVC_SET_CUR,
-                  (guchar *) & req)) {
-            GST_WARNING_OBJECT (self, " PICTURE_TYPE_CONTROL SET_CUR error");
-          } else {
-            gst_event_replace (&self->key_unit_event, event);
-            gst_event_unref (event);
+            if (!xu_query (self, UVCX_PICTURE_TYPE_CONTROL, UVC_SET_CUR,
+                    (guchar *) & req)) {
+              GST_WARNING_OBJECT (self, " PICTURE_TYPE_CONTROL SET_CUR error");
+            } else {
+              gst_event_replace (&self->key_unit_event, event);
+              gst_event_unref (event);
 
-            return TRUE;
+              return TRUE;
+            }
           }
         } else if (s &&
             gst_structure_has_name (s, "uvc_h264_ltr_picture_control")) {
