@@ -2084,6 +2084,8 @@ static gboolean
 gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
 {
   GstUvcH264Src *self = GST_UVC_H264_SRC (bcamsrc);
+  GstIterator *iter = NULL;
+  gboolean iter_done = FALSE;
   GstPad *vf_pad = NULL;
   GstCaps *vf_caps = NULL;
   GstStructure *vf_struct = NULL;
@@ -2413,19 +2415,33 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
     gst_caps_unref (src_caps);
   vf_caps = vid_caps = src_caps = NULL;
 
-  if (self->vid_colorspace &&
-      !gst_element_sync_state_with_parent (self->vid_colorspace))
-    goto error_remove_all;
-  if (self->vf_colorspace &&
-      !gst_element_sync_state_with_parent (self->vf_colorspace))
-    goto error_remove_all;
-  if (self->jpeg_dec && !gst_element_sync_state_with_parent (self->jpeg_dec))
-    goto error_remove_all;
-  if (self->mjpg_demux &&
-      !gst_element_sync_state_with_parent (self->mjpg_demux))
-    goto error_remove_all;
-  if (self->v4l2_src && !gst_element_sync_state_with_parent (self->v4l2_src))
-    goto error_remove_all;
+  /* Sync all children states with bin's state */
+  iter = gst_bin_iterate_elements (GST_BIN (self));
+  iter_done = FALSE;
+  while (!iter_done) {
+    GstElement *item = NULL;
+
+    switch (gst_iterator_next (iter, (gpointer *) & item)) {
+      case GST_ITERATOR_OK:
+        if (!gst_element_sync_state_with_parent (item)) {
+          gst_object_unref (item);
+          gst_iterator_free (iter);
+          goto error_remove_all;
+        }
+        gst_object_unref (item);
+        break;
+      case GST_ITERATOR_RESYNC:
+        gst_iterator_resync (iter);
+        break;
+      case GST_ITERATOR_ERROR:
+        iter_done = TRUE;
+        break;
+      case GST_ITERATOR_DONE:
+        iter_done = TRUE;
+        break;
+    }
+  }
+  gst_iterator_free (iter);
 
   self->reconfiguring = FALSE;
   return TRUE;
