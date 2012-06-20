@@ -2070,7 +2070,7 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
   enum
   {
     RAW_NONE, ENCODED_NONE, NONE_RAW, NONE_ENCODED,
-    H264_JPG, H264_RAW, H264_JPG2RAW
+    H264_JPG, H264_RAW, H264_JPG2RAW, NONE_NONE
   } type;
 
   GST_DEBUG_OBJECT (self, "Construct pipeline");
@@ -2113,11 +2113,6 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
     gst_caps_unref (vid_caps);
     vid_caps = NULL;
   }
-
-  /* Can't do anything */
-  /* TODO: allow to go to READY state without being linked */
-  if (vid_caps == NULL && vf_caps == NULL)
-    return FALSE;
 
   v4l_pad = gst_element_get_static_pad (self->v4l2_src, "src");
   v4l_caps = gst_pad_get_caps (v4l_pad);
@@ -2213,7 +2208,7 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
         "height", G_TYPE_INT, self->secondary_height,
         "framerate", GST_TYPE_FRACTION,
         NSEC_PER_SEC / smallest_frame_interval, 100, NULL);
-  } else {
+  } else if (vf_caps || vid_caps) {
     self->main_format = UVC_H264_SRC_FORMAT_NONE;
     self->secondary_format = UVC_H264_SRC_FORMAT_NONE;
     if (vid_struct && gst_structure_has_name (vid_struct, "video/x-h264")) {
@@ -2255,9 +2250,15 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
     } else {
       g_assert_not_reached ();
     }
+  } else {
+    type = NONE_NONE;
   }
 
   switch (type) {
+    case NONE_NONE:
+      GST_DEBUG_OBJECT (self, "None+None");
+      vf_pad = gst_element_get_static_pad (self->v4l2_src, "src");
+      break;
     case RAW_NONE:
       GST_DEBUG_OBJECT (self, "Raw+None");
       self->vid_colorspace = gst_element_factory_make (self->colorspace_name,
