@@ -1459,16 +1459,14 @@ gst_uvc_h264_src_event_probe (GstPad * pad, GstEvent * event,
 
   switch (GST_EVENT_TYPE (event)) {
     case GST_EVENT_EOS:
-      if (self->reconfiguring)
-        ret = FALSE;
+      ret = !self->reconfiguring;
       break;
     case GST_EVENT_NEWSEGMENT:
       if (pad == self->vidsrc) {
-        ret = self->vid_newseg;
+        ret = !self->vid_newseg;
         self->vid_newseg = TRUE;
-      }
-      if (pad == self->vfsrc) {
-        ret = self->vf_newseg;
+      } else if (pad == self->vfsrc) {
+        ret = !self->vf_newseg;
         self->vf_newseg = TRUE;
       }
       break;
