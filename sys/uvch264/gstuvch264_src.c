@@ -2101,7 +2101,8 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
   enum
   {
     RAW_NONE, ENCODED_NONE, NONE_RAW, NONE_ENCODED,
-    H264_JPG, H264_RAW, H264_JPG2RAW, NONE_NONE
+    H264_JPG, H264_RAW, H264_JPG2RAW, NONE_NONE,
+    RAW_RAW, ENCODED_ENCODED,
   } type;
 
   GST_DEBUG_OBJECT (self, "Construct pipeline");
@@ -2117,7 +2118,7 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
     g_object_set (self->v4l2_src,
         "device", self->device, "num-buffers", self->num_buffers, NULL);
   }
-  /* HACK ALERT: We have to bring it to NULL state when renegotiating until
+  /* HACK FIXME: We have to bring it to NULL state when renegotiating until
    * bug 670257 is fixed : https://bugzilla.gnome.org/show_bug.cgi?id=670257
    */
   gst_element_set_state (self->v4l2_src, GST_STATE_NULL);
@@ -2149,8 +2150,6 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
   v4l_pad = gst_element_get_static_pad (self->v4l2_src, "src");
   v4l_caps = gst_pad_get_caps (v4l_pad);
   GST_DEBUG_OBJECT (self, "v4l2src caps : %" GST_PTR_FORMAT, v4l_caps);
-  /* TODO: fixate should not depend on the format, if v4l2src isn't compiled
-     with libv4l support, then a format I420 caps would fail to intersect */
   if (vf_caps) {
     vf_caps = gst_uvc_h264_src_fixate_caps (self, v4l_pad, v4l_caps, vf_caps);
     if (vf_caps) {
@@ -2175,13 +2174,21 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
   gst_object_unref (v4l_pad);
   gst_caps_unref (v4l_caps);
 
-  if (vf_caps && vid_caps) {
-    guint32 smallest_frame_interval;
-
-    if (!gst_structure_has_name (vid_struct, "video/x-h264")) {
-      /* TODO: Allow for vfsrc+vidsrc to be raw too and add videoscale */
+  if (vf_caps && vid_caps &&
+      !gst_structure_has_name (vid_struct, "video/x-h264")) {
+    /* Allow for vfsrc+vidsrc to both be raw or jpeg */
+    if (gst_structure_has_name (vid_struct, "image/jpeg") &&
+        gst_structure_has_name (vf_struct, "image/jpeg")) {
+      type = ENCODED_ENCODED;
+    } else if (!gst_structure_has_name (vid_struct, "image/jpeg") &&
+        !gst_structure_has_name (vf_struct, "image/jpeg")) {
+      type = RAW_RAW;
+    } else {
       goto error_remove;
     }
+  } else if (vf_caps && vid_caps) {
+    guint32 smallest_frame_interval;
+
     if (!_extract_caps_info (vf_struct, &self->secondary_width,
             &self->secondary_height, &self->secondary_frame_interval))
       goto error_remove;
@@ -2396,6 +2403,60 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
       vid_pad = gst_element_get_static_pad (self->mjpg_demux, "h264");
       vf_pad = gst_element_get_static_pad (self->vf_colorspace, "src");
       break;
+    case RAW_RAW:
+    {
+      GstElement *tee = NULL;
+
+      GST_DEBUG_OBJECT (self, "Raw+Raw");
+      tee = gst_element_factory_make ("tee", NULL);
+      if (!tee || !gst_bin_add (GST_BIN (self), tee)) {
+        if (tee)
+          gst_object_unref (tee);
+        goto error_remove;
+      }
+      self->vf_colorspace = gst_element_factory_make (self->colorspace_name,
+          NULL);
+      self->vid_colorspace = gst_element_factory_make (self->colorspace_name,
+          NULL);
+      if (!self->vf_colorspace || !self->vid_colorspace)
+        goto error_remove;
+      if (!gst_bin_add (GST_BIN (self), self->vf_colorspace))
+        goto error_remove;
+      gst_object_ref (self->vf_colorspace);
+      if (!gst_bin_add (GST_BIN (self), self->vid_colorspace)) {
+        gst_object_unref (self->vid_colorspace);
+        self->vid_colorspace = NULL;
+        goto error_remove_all;
+      }
+      gst_object_ref (self->vid_colorspace);
+      if (!gst_element_link (self->v4l2_src, tee))
+        goto error_remove_all;
+      if (!gst_element_link (tee, self->vf_colorspace))
+        goto error_remove_all;
+      if (!gst_element_link (tee, self->vid_colorspace))
+        goto error_remove_all;
+      vf_pad = gst_element_get_static_pad (self->vf_colorspace, "src");
+      vid_pad = gst_element_get_static_pad (self->vid_colorspace, "src");
+    }
+      break;
+    case ENCODED_ENCODED:
+    {
+      GstElement *tee = NULL;
+
+      GST_DEBUG_OBJECT (self, "Encoded+Encoded");
+      tee = gst_element_factory_make ("tee", NULL);
+      if (!tee || !gst_bin_add (GST_BIN (self), tee)) {
+        if (tee)
+          gst_object_unref (tee);
+        goto error_remove;
+      }
+      /* TODO: For some reason this link fails */
+      if (!gst_element_link (self->v4l2_src, tee))
+        goto error_remove_all;
+      vf_pad = gst_element_get_request_pad (tee, "src%d");
+      vid_pad = gst_element_get_request_pad (tee, "src%d");
+    }
+      break;
   }
 
   if (!gst_ghost_pad_set_target (GST_GHOST_PAD (self->vidsrc), vid_pad) ||
@@ -2510,6 +2571,7 @@ gst_uvc_h264_src_start_capture (GstBaseCameraSrc * camerasrc)
     if (GST_STATE (self) >= GST_STATE_READY) {
       ret = gst_uvc_h264_src_construct_pipeline (GST_BASE_CAMERA_SRC (self));
       if (!ret) {
+        GST_DEBUG_OBJECT (self, "Could not start capture");
         self->started = FALSE;
         gst_uvc_h264_src_construct_pipeline (GST_BASE_CAMERA_SRC (self));
       }
