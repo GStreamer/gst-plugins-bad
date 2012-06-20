@@ -1882,6 +1882,7 @@ gst_uvc_h264_src_fixate_caps (GstUvcH264Src * self, GstPad * v4l_pad,
 {
   GstCaps *caps = NULL;
 
+  /* TODO: need to use uvc probe (no commit) to fixate h264 caps */
   /* nothing or anything is allowed, we're done */
   if (v4l_caps == NULL || gst_caps_is_any (v4l_caps)) {
     GST_DEBUG_OBJECT (self, "v4l caps are invalid. not fixating");
@@ -1903,6 +1904,7 @@ gst_uvc_h264_src_fixate_caps (GstUvcH264Src * self, GstPad * v4l_pad,
       GstStructure *s = gst_caps_get_structure (ipcaps, 0);
 
       /* Remove the format setting */
+      /* TODO: Need to actually transform raw through colorspace */
       gst_structure_remove_field (s, "format");
 
       GST_DEBUG_OBJECT (self, "peer: %" GST_PTR_FORMAT, ipcaps);
