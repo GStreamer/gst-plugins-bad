@@ -106,7 +106,8 @@ struct _GstUvcH264Src
 
   /* When restarting the source */
   gboolean reconfiguring;
-  guint drop_newseg;
+  gboolean vid_newseg;
+  gboolean vf_newseg;
 
   gchar *colorspace_name;
   gchar *jpeg_decoder_name;

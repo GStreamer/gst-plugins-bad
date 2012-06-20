@@ -504,6 +504,8 @@ gst_uvc_h264_src_init (GstUvcH264Src * self, GstUvcH264SrcClass * klass)
   gst_pad_set_event_function (self->vidsrc, gst_uvc_h264_src_event);
   gst_pad_set_event_function (self->vfsrc, gst_uvc_h264_src_event);
 
+  self->vid_newseg = FALSE;
+  self->vf_newseg = FALSE;
   self->v4l2_fd = -1;
   gst_base_camera_src_set_mode (GST_BASE_CAMERA_SRC (self), MODE_VIDEO);
 
@@ -1459,10 +1461,13 @@ gst_uvc_h264_src_event_probe (GstPad * pad, GstEvent * event,
         ret = FALSE;
       break;
     case GST_EVENT_NEWSEGMENT:
-      ret = !self->reconfiguring;
-      if (self->drop_newseg) {
-        self->drop_newseg--;
-        ret = FALSE;
+      if (pad == self->vidsrc) {
+        ret = self->vid_newseg;
+        self->vid_newseg = TRUE;
+      }
+      if (pad == self->vfsrc) {
+        ret = self->vf_newseg;
+        self->vf_newseg = TRUE;
       }
       break;
     default:
@@ -1567,18 +1572,14 @@ gst_uvc_h264_src_event (GstPad * pad, GstEvent * event)
         GST_DEBUG_OBJECT (self, "Received renegotiate on %s",
             GST_PAD_NAME (pad));
         /* Do not reconstruct pipeline if we receive the event on both pads */
-        if (GST_STATE (self) >= GST_STATE_READY && self->drop_newseg == 0) {
+        if (GST_STATE (self) >= GST_STATE_READY) {
           /* TODO: diff the caps */
-          self->drop_newseg = 1;
-          if (!gst_uvc_h264_src_construct_pipeline (GST_BASE_CAMERA_SRC (self)))
-            self->drop_newseg = 0;
-          else if (self->secondary_format != UVC_H264_SRC_FORMAT_NONE)
-            self->drop_newseg++;
+          gst_uvc_h264_src_construct_pipeline (GST_BASE_CAMERA_SRC (self));
         }
       }
       break;
     case GST_EVENT_NEWSEGMENT:
-      if (self->drop_newseg == 0 && pad == self->vidsrc) {
+      if (!self->vid_newseg && pad == self->vidsrc) {
         gboolean update;
         gdouble rate, applied_rate;
         GstFormat format;
@@ -1591,8 +1592,12 @@ gst_uvc_h264_src_event (GstPad * pad, GstEvent * event)
       }
       break;
     case GST_EVENT_FLUSH_STOP:
-      if (pad == self->vidsrc)
+      if (pad == self->vidsrc) {
         gst_segment_init (&self->segment, GST_FORMAT_UNDEFINED);
+        self->vid_newseg = FALSE;
+      }
+      if (pad == self->vfsrc)
+        self->vf_newseg = FALSE;
       break;
     default:
       break;
@@ -2485,7 +2490,8 @@ gst_uvc_h264_src_change_state (GstElement * element, GstStateChange trans)
 
   switch (trans) {
     case GST_STATE_CHANGE_PAUSED_TO_READY:
-      self->drop_newseg = 0;
+      self->vid_newseg = FALSE;
+      self->vf_newseg = FALSE;
       self->v4l2_fd = -1;
       break;
     case GST_STATE_CHANGE_READY_TO_NULL:
