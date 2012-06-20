@@ -2108,6 +2108,11 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
 
   GST_DEBUG_OBJECT (self, "vfsrc caps : %" GST_PTR_FORMAT, vf_caps);
   GST_DEBUG_OBJECT (self, "vidsrc caps : %" GST_PTR_FORMAT, vid_caps);
+  if (!self->started) {
+    GST_DEBUG_OBJECT (self, "video not started. Ignoring vidsrc caps");
+    gst_caps_unref (vid_caps);
+    vid_caps = NULL;
+  }
 
   /* Can't do anything */
   /* TODO: allow to go to READY state without being linked */
@@ -2449,10 +2454,22 @@ static gboolean
 gst_uvc_h264_src_start_capture (GstBaseCameraSrc * camerasrc)
 {
   GstUvcH264Src *self = GST_UVC_H264_SRC (camerasrc);
+  gboolean ret = TRUE;
 
   GST_DEBUG_OBJECT (self, "start capture");
 
-  return TRUE;
+  if (!self->started) {
+    self->started = TRUE;
+    if (GST_STATE (self) >= GST_STATE_READY) {
+      ret = gst_uvc_h264_src_construct_pipeline (GST_BASE_CAMERA_SRC (self));
+      if (!ret) {
+        self->started = FALSE;
+        gst_uvc_h264_src_construct_pipeline (GST_BASE_CAMERA_SRC (self));
+      }
+    }
+  }
+
+  return ret;
 }
 
 static void
@@ -2461,6 +2478,13 @@ gst_uvc_h264_src_stop_capture (GstBaseCameraSrc * camerasrc)
   GstUvcH264Src *self = GST_UVC_H264_SRC (camerasrc);
 
   GST_DEBUG_OBJECT (self, "stop capture");
+
+  if (self->started) {
+    self->started = FALSE;
+    if (GST_STATE (self) >= GST_STATE_READY)
+      gst_uvc_h264_src_construct_pipeline (GST_BASE_CAMERA_SRC (self));
+    gst_base_camera_src_finish_capture (camerasrc);
+  }
 }
 
 static GstStateChangeReturn

@@ -102,7 +102,7 @@ struct _GstUvcH264Src
   GstEvent *key_unit_event;
   GstSegment segment;
 
-  gboolean auto_start;
+  gboolean started;
 
   /* When restarting the source */
   gboolean reconfiguring;
