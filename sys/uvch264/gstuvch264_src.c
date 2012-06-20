@@ -711,7 +711,6 @@ gst_uvc_h264_src_get_property (GObject * object,
     case PROP_PREVIEW_FLIPPED:
       fill_probe_commit (self, &probe, 0, 0, 0, 0);
       if (self->v4l2_fd != -1) {
-        /* TODO: if muxing with yuy2, find a way to switch the GET_CUR to h264 */
         xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_GET_CUR,
             (guchar *) & probe);
       }
@@ -1754,6 +1753,50 @@ configure_h264 (GstUvcH264Src * self, gint fd)
 {
   uvcx_video_config_probe_commit_t probe;
 
+  /* Set the secondary format first, so the last SET_CUR will be for the
+   * H264 format. This way, we can still get the static control values with
+   * a GET_CUR. Otherwise all static properties will return 0 because that's
+   * what the GET_CUR of the raw format returns.
+   */
+  if (self->secondary_format == UVC_H264_SRC_FORMAT_RAW) {
+    memset (&probe, 0, sizeof (probe));
+    probe.dwFrameInterval = self->secondary_frame_interval;
+    probe.wWidth = self->secondary_width;
+    probe.wHeight = self->secondary_height;
+    probe.bStreamMuxOption = 5;
+
+    GST_DEBUG_OBJECT (self, "RAW PROBE SET_CUR : ");
+    print_probe_commit (self, &probe);
+
+    if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_SET_CUR,
+            (guchar *) & probe)) {
+      GST_WARNING_OBJECT (self, "PROBE SET_CUR error");
+      return;
+    }
+
+    if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_GET_MAX,
+            (guchar *) & probe)) {
+      GST_WARNING_OBJECT (self, "PROBE GET_CUR error");
+      return;
+    }
+    GST_DEBUG_OBJECT (self, "RAW PROBE GET_MAX : ");
+    print_probe_commit (self, &probe);
+
+    if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_GET_CUR,
+            (guchar *) & probe)) {
+      GST_WARNING_OBJECT (self, "PROBE GET_CUR error");
+      return;
+    }
+    GST_DEBUG_OBJECT (self, "RAW PROBE GET_CUR : ");
+    print_probe_commit (self, &probe);
+
+    if (!xu_query (self, UVCX_VIDEO_CONFIG_COMMIT, UVC_SET_CUR,
+            (guchar *) & probe)) {
+      GST_WARNING_OBJECT (self, "COMMIT SET_CUR error");
+      return;
+    }
+  }
+
   if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_GET_MIN,
           (guchar *) & probe)) {
     GST_WARNING_OBJECT (self, "PROBE GET_MIN error");
@@ -1815,45 +1858,6 @@ configure_h264 (GstUvcH264Src * self, gint fd)
           (guchar *) & probe)) {
     GST_WARNING_OBJECT (self, "COMMIT SET_CUR error");
     return;
-  }
-
-  if (self->secondary_format == UVC_H264_SRC_FORMAT_RAW) {
-    memset (&probe, 0, sizeof (probe));
-    probe.dwFrameInterval = self->secondary_frame_interval;
-    probe.wWidth = self->secondary_width;
-    probe.wHeight = self->secondary_height;
-    probe.bStreamMuxOption = 5;
-
-    GST_DEBUG_OBJECT (self, "RAW PROBE SET_CUR : ");
-    print_probe_commit (self, &probe);
-
-    if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_SET_CUR,
-            (guchar *) & probe)) {
-      GST_WARNING_OBJECT (self, "PROBE SET_CUR error");
-      return;
-    }
-
-    if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_GET_MAX,
-            (guchar *) & probe)) {
-      GST_WARNING_OBJECT (self, "PROBE GET_CUR error");
-      return;
-    }
-    GST_DEBUG_OBJECT (self, "RAW PROBE GET_MAX : ");
-    print_probe_commit (self, &probe);
-
-    if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_GET_CUR,
-            (guchar *) & probe)) {
-      GST_WARNING_OBJECT (self, "PROBE GET_CUR error");
-      return;
-    }
-    GST_DEBUG_OBJECT (self, "RAW PROBE GET_CUR : ");
-    print_probe_commit (self, &probe);
-
-    if (!xu_query (self, UVCX_VIDEO_CONFIG_COMMIT, UVC_SET_CUR,
-            (guchar *) & probe)) {
-      GST_WARNING_OBJECT (self, "COMMIT SET_CUR error");
-      return;
-    }
   }
 }
 
