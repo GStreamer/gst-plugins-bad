@@ -2112,7 +2112,8 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
   GST_DEBUG_OBJECT (self, "vidsrc caps : %" GST_PTR_FORMAT, vid_caps);
   if (!self->started) {
     GST_DEBUG_OBJECT (self, "video not started. Ignoring vidsrc caps");
-    gst_caps_unref (vid_caps);
+    if (vid_caps)
+      gst_caps_unref (vid_caps);
     vid_caps = NULL;
   }
 
