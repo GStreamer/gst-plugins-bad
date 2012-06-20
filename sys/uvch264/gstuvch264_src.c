@@ -195,6 +195,8 @@ static void gst_uvc_h264_src_set_property (GObject * object,
 static void gst_uvc_h264_src_get_property (GObject * object,
     guint prop_id, GValue * value, GParamSpec * pspec);
 static gboolean gst_uvc_h264_src_event (GstPad * pad, GstEvent * event);
+static gboolean gst_uvc_h264_src_send_event (GstElement * element,
+    GstEvent * event);
 static gboolean gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc *
     bcamsrc);
 static gboolean gst_uvc_h264_src_set_mode (GstBaseCameraSrc * bcamsrc,
@@ -278,6 +280,7 @@ gst_uvc_h264_src_class_init (GstUvcH264SrcClass * klass)
   gobject_class->get_property = gst_uvc_h264_src_get_property;
 
   gstelement_class->change_state = gst_uvc_h264_src_change_state;
+  gstelement_class->send_event = gst_uvc_h264_src_send_event;
 
   gstbasecamerasrc_class->construct_pipeline =
       gst_uvc_h264_src_construct_pipeline;
@@ -1514,14 +1517,11 @@ gst_uvc_h264_src_buffer_probe (GstPad * pad, GstBuffer * buffer,
 }
 
 static gboolean
-gst_uvc_h264_src_event (GstPad * pad, GstEvent * event)
+gst_uvc_h264_src_parse_event (GstUvcH264Src * self, GstPad * pad,
+    GstEvent * event)
 {
-  GstUvcH264Src *self = GST_UVC_H264_SRC (GST_PAD_PARENT (pad));
-  const GstStructure *s = NULL;
+  const GstStructure *s = gst_event_get_structure (event);
 
-  s = gst_event_get_structure (event);
-
-  /* TODO: override GstElementClass.send_event method */
   switch (GST_EVENT_TYPE (event)) {
     case GST_EVENT_CUSTOM_UPSTREAM:
       if (pad == self->vidsrc && self->main_format == UVC_H264_SRC_FORMAT_H264) {
@@ -1567,6 +1567,7 @@ gst_uvc_h264_src_event (GstPad * pad, GstEvent * event)
               return TRUE;
             }
           }
+          return TRUE;
         }
       }
       if (s && gst_structure_has_name (s, "renegotiate")) {
@@ -1578,8 +1579,33 @@ gst_uvc_h264_src_event (GstPad * pad, GstEvent * event)
           /* TODO: diff the caps */
           gst_uvc_h264_src_construct_pipeline (GST_BASE_CAMERA_SRC (self));
         }
+        return TRUE;
       }
       break;
+    default:
+      break;
+  }
+
+  return FALSE;
+}
+
+static gboolean
+gst_uvc_h264_src_send_event (GstElement * element, GstEvent * event)
+{
+  GstUvcH264Src *self = GST_UVC_H264_SRC (element);
+
+  if (gst_uvc_h264_src_parse_event (self, self->vidsrc, event))
+    return TRUE;
+
+  return GST_ELEMENT_CLASS (parent_class)->send_event (element, event);
+}
+
+static gboolean
+gst_uvc_h264_src_event (GstPad * pad, GstEvent * event)
+{
+  GstUvcH264Src *self = GST_UVC_H264_SRC (GST_PAD_PARENT (pad));
+
+  switch (GST_EVENT_TYPE (event)) {
     case GST_EVENT_NEWSEGMENT:
       if (!self->vid_newseg && pad == self->vidsrc) {
         gboolean update;
@@ -1602,9 +1628,10 @@ gst_uvc_h264_src_event (GstPad * pad, GstEvent * event)
         self->vf_newseg = FALSE;
       break;
     default:
+      if (gst_uvc_h264_src_parse_event (self, pad, event))
+        return TRUE;
       break;
   }
-
   return self->srcpad_event_func (pad, event);
 }
 
