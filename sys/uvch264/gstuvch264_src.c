@@ -2082,10 +2082,6 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
     g_object_set (self->v4l2_src,
         "device", self->device, "num-buffers", self->num_buffers, NULL);
   }
-  /* HACK FIXME: We have to bring it to NULL state when renegotiating until
-   * bug 670257 is fixed : https://bugzilla.gnome.org/show_bug.cgi?id=670257
-   */
-  gst_element_set_state (self->v4l2_src, GST_STATE_NULL);
   if (gst_element_set_state (self->v4l2_src, GST_STATE_READY) !=
       GST_STATE_CHANGE_SUCCESS) {
     GST_DEBUG_OBJECT (self, "Unable to set v4l2src to READY state");
