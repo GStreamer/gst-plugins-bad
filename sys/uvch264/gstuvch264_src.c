@@ -209,6 +209,8 @@ static gboolean gst_uvc_h264_src_buffer_probe (GstPad * pad,
     GstBuffer * buffer, gpointer user_data);
 static gboolean gst_uvc_h264_src_event_probe (GstPad * pad,
     GstEvent * event, gpointer user_data);
+static void gst_uvc_h264_src_pad_linking_cb (GstPad * pad,
+    GstPad * peer, gpointer user_data);
 
 static void fill_probe_commit (GstUvcH264Src * self,
     uvcx_video_config_probe_commit_t * probe, guint32 frame_interval,
@@ -506,6 +508,15 @@ gst_uvc_h264_src_init (GstUvcH264Src * self, GstUvcH264SrcClass * klass)
   gst_pad_set_event_function (self->imgsrc, gst_uvc_h264_src_event);
   gst_pad_set_event_function (self->vidsrc, gst_uvc_h264_src_event);
   gst_pad_set_event_function (self->vfsrc, gst_uvc_h264_src_event);
+
+  g_signal_connect (self->vidsrc, "linked",
+      (GCallback) gst_uvc_h264_src_pad_linking_cb, self);
+  g_signal_connect (self->vidsrc, "unlinked",
+      (GCallback) gst_uvc_h264_src_pad_linking_cb, self);
+  g_signal_connect (self->vfsrc, "linked",
+      (GCallback) gst_uvc_h264_src_pad_linking_cb, self);
+  g_signal_connect (self->vfsrc, "unlinked",
+      (GCallback) gst_uvc_h264_src_pad_linking_cb, self);
 
   self->vid_newseg = FALSE;
   self->vf_newseg = FALSE;
@@ -2555,6 +2566,19 @@ gst_uvc_h264_src_stop_capture (GstBaseCameraSrc * camerasrc)
     gst_base_camera_src_finish_capture (camerasrc);
   }
 }
+
+static void
+gst_uvc_h264_src_pad_linking_cb (GstPad * pad,
+    GstPad * peer, gpointer user_data)
+{
+  GstUvcH264Src *self = GST_UVC_H264_SRC (user_data);
+  gchar *pad_name = gst_pad_get_name (pad);
+
+  GST_DEBUG_OBJECT (self, "Pad %s was (un)linked. Renegotiating", pad_name);
+  g_free (pad_name);
+  gst_uvc_h264_src_construct_pipeline (GST_BASE_CAMERA_SRC (self));
+}
+
 
 static GstStateChangeReturn
 gst_uvc_h264_src_change_state (GstElement * element, GstStateChange trans)
