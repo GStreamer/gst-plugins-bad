@@ -2150,9 +2150,13 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
     /* Allow for vfsrc+vidsrc to both be raw or jpeg */
     if (gst_structure_has_name (vid_struct, "image/jpeg") &&
         gst_structure_has_name (vf_struct, "image/jpeg")) {
+      self->main_format = UVC_H264_SRC_FORMAT_JPG;
+      self->secondary_format = UVC_H264_SRC_FORMAT_JPG;
       type = ENCODED_ENCODED;
     } else if (!gst_structure_has_name (vid_struct, "image/jpeg") &&
         !gst_structure_has_name (vf_struct, "image/jpeg")) {
+      self->main_format = UVC_H264_SRC_FORMAT_RAW;
+      self->secondary_format = UVC_H264_SRC_FORMAT_RAW;
       type = RAW_RAW;
     } else {
       goto error_remove;
@@ -2251,17 +2255,23 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
       }
     } else if (vid_struct && gst_structure_has_name (vid_struct, "image/jpeg")) {
       type = ENCODED_NONE;
+      self->main_format = UVC_H264_SRC_FORMAT_JPG;
     } else if (vf_struct && gst_structure_has_name (vf_struct, "image/jpeg")) {
       type = NONE_ENCODED;
+      self->secondary_format = UVC_H264_SRC_FORMAT_JPG;
     } else if (vid_struct) {
       type = RAW_NONE;
+      self->main_format = UVC_H264_SRC_FORMAT_RAW;
     } else if (vf_struct) {
       type = NONE_RAW;
+      self->secondary_format = UVC_H264_SRC_FORMAT_RAW;
     } else {
       g_assert_not_reached ();
     }
   } else {
     type = NONE_NONE;
+    self->main_format = UVC_H264_SRC_FORMAT_NONE;
+    self->secondary_format = UVC_H264_SRC_FORMAT_NONE;
   }
 
   switch (type) {
