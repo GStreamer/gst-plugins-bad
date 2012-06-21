@@ -306,7 +306,7 @@ gst_uvc_h264_src_class_init (GstUvcH264SrcClass * klass)
   g_object_class_install_property (gobject_class, PROP_NUM_BUFFERS,
       g_param_spec_int ("num-buffers", "num-buffers",
           "Number of buffers to output before sending EOS (-1 = unlimited)",
-          -1, G_MAXUINT, DEFAULT_NUM_BUFFERS,
+          -1, G_MAXINT, DEFAULT_NUM_BUFFERS,
           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
   g_object_class_install_property (gobject_class, PROP_DEVICE,
       g_param_spec_string ("device", "device",
