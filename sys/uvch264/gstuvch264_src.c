@@ -2106,6 +2106,10 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
   }
   gst_uvc_h264_src_destroy_pipeline (self, FALSE);
 
+  /* Potentially unlink v4l2src to the ghost pads */
+  gst_ghost_pad_set_target (GST_GHOST_PAD (self->vidsrc), NULL);
+  gst_ghost_pad_set_target (GST_GHOST_PAD (self->vfsrc), NULL);
+
   vf_caps = gst_pad_peer_get_caps (self->vfsrc);
   vid_caps = gst_pad_peer_get_caps (self->vidsrc);
 
