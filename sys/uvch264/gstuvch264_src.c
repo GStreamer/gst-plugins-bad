@@ -46,6 +46,20 @@
 #include "gstuvch264_src.h"
 #include "gstuvch264-marshal.h"
 
+#ifndef UVCIOC_XU_GUID_INFO
+/* Define the needed structure if <linux/uvcvideo.h> is too old.
+ * This might fail though if the kernel itself does not support it.
+ */
+struct uvc_xu_guid_info
+{
+  __u8 guid[16];
+  __u8 name[64];
+  __u8 unit;
+};
+#define UVCIOC_XU_GUID_INFO	_IOWR('u', 0x22, struct uvc_xu_guid_info)
+#endif
+
+
 enum
 {
   PROP_0,
@@ -212,6 +226,9 @@ static gboolean gst_uvc_h264_src_event_probe (GstPad * pad,
 static void gst_uvc_h264_src_pad_linking_cb (GstPad * pad,
     GstPad * peer, gpointer user_data);
 
+
+static void v4l2src_prepare_format (GstElement * v4l2src, gint fd, guint fourcc,
+    guint width, guint height, gpointer user_data);
 static void fill_probe_commit (GstUvcH264Src * self,
     uvcx_video_config_probe_commit_t * probe, guint32 frame_interval,
     guint32 width, guint32 height, guint32 profile);
@@ -1643,6 +1660,31 @@ gst_uvc_h264_src_event (GstPad * pad, GstEvent * event)
   return self->srcpad_event_func (pad, event);
 }
 
+static guint8
+xu_get_id (GstUvcH264Src * self)
+{
+  struct uvc_xu_guid_info xu;
+  static const __u8 guid[16] = GUID_UVCX_H264_XU;
+  int fd = self->v4l2_fd;
+
+  if (fd == -1 && self->v4l2_src)
+    g_object_get (self->v4l2_src, "device-fd", &fd, NULL);
+
+  if (fd == -1) {
+    GST_WARNING_OBJECT (self, "Can't query XU with fd = -1");
+    return FALSE;
+  }
+
+  memcpy (xu.guid, guid, 16);
+
+  if (-1 == ioctl (fd, UVCIOC_XU_GUID_INFO, &xu)) {
+    GST_WARNING_OBJECT (self, "GUID_INFO error");
+    return 0;
+  }
+
+  return xu.unit;
+}
+
 static gboolean
 xu_query (GstUvcH264Src * self, guint selector, guint query, guchar * data)
 {
@@ -1659,7 +1701,7 @@ xu_query (GstUvcH264Src * self, guint selector, guint query, guchar * data)
     return FALSE;
   }
 
-  xu.unit = 12;                 /* TODO: find the right unit */
+  xu.unit = self->h264_unit_id;
   xu.selector = selector;
 
   xu.query = UVC_GET_LEN;
@@ -2056,6 +2098,59 @@ gst_uvc_h264_src_destroy_pipeline (GstUvcH264Src * self, gboolean v4l2src)
 }
 
 static gboolean
+ensure_v4l2src (GstUvcH264Src * self)
+{
+  gchar *device = NULL;
+
+  if (self->v4l2_src == NULL) {
+    /* Create v4l2 source and set it up */
+    self->v4l2_src = gst_element_factory_make ("v4l2src", NULL);
+    if (!self->v4l2_src || !gst_bin_add (GST_BIN (self), self->v4l2_src))
+      goto error;
+    gst_object_ref (self->v4l2_src);
+    g_signal_connect (self->v4l2_src, "prepare-format",
+        (GCallback) v4l2src_prepare_format, self);
+  }
+
+  g_object_get (self->v4l2_src, "device", &device, NULL);
+  g_object_set (self->v4l2_src,
+      "device", self->device, "num-buffers", self->num_buffers, NULL);
+
+  /* Set to NULL if the device changed */
+  if (!g_strcmp0 (device, self->device))
+    gst_element_set_state (self->v4l2_src, GST_STATE_NULL);
+  g_free (device);
+
+  if (gst_element_set_state (self->v4l2_src, GST_STATE_READY) !=
+      GST_STATE_CHANGE_SUCCESS) {
+    GST_DEBUG_OBJECT (self, "Unable to set v4l2src to READY state");
+    goto error_remove;
+  }
+
+  /* Set/Update the unit id after we go to READY */
+  self->h264_unit_id = xu_get_id (self);
+
+  if (self->h264_unit_id == 0) {
+    GST_ELEMENT_ERROR (self, RESOURCE, SETTINGS,
+        ("Device is not a valid UVC H264 camera"), (NULL));
+    goto error_remove;
+  }
+
+  return TRUE;
+
+error_remove:
+  gst_element_set_state (self->v4l2_src, GST_STATE_NULL);
+  gst_bin_remove (GST_BIN (self), self->v4l2_src);
+
+error:
+  if (self->v4l2_src)
+    gst_object_unref (self->v4l2_src);
+  self->v4l2_src = NULL;
+
+  return FALSE;
+}
+
+static gboolean
 gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
 {
   GstUvcH264Src *self = GST_UVC_H264_SRC (bcamsrc);
@@ -2082,22 +2177,10 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
 
   GST_DEBUG_OBJECT (self, "Construct pipeline");
   self->reconfiguring = TRUE;
-  if (self->v4l2_src == NULL) {
-    /* Create v4l2 source and set it up */
-    self->v4l2_src = gst_element_factory_make ("v4l2src", NULL);
-    if (!self->v4l2_src || !gst_bin_add (GST_BIN (self), self->v4l2_src))
-      goto error;
-    gst_object_ref (self->v4l2_src);
-    g_signal_connect (self->v4l2_src, "prepare-format",
-        (GCallback) v4l2src_prepare_format, self);
-    g_object_set (self->v4l2_src,
-        "device", self->device, "num-buffers", self->num_buffers, NULL);
-  }
-  if (gst_element_set_state (self->v4l2_src, GST_STATE_READY) !=
-      GST_STATE_CHANGE_SUCCESS) {
-    GST_DEBUG_OBJECT (self, "Unable to set v4l2src to READY state");
-    goto error_remove;
-  }
+
+  if (!ensure_v4l2src (self))
+    goto error;
+
   if (self->v4l2_fd != -1) {
     uvcx_encoder_reset req = { 0 };
 
@@ -2618,7 +2701,10 @@ gst_uvc_h264_src_change_state (GstElement * element, GstStateChange trans)
 
   switch (trans) {
     case GST_STATE_CHANGE_NULL_TO_READY:
-      /*  TODO: Check for H264 XU */
+      if (!ensure_v4l2src (self)) {
+        ret = GST_STATE_CHANGE_FAILURE;
+        goto end;
+      }
       gst_segment_init (&self->segment, GST_FORMAT_UNDEFINED);
       break;
     case GST_STATE_CHANGE_READY_TO_PAUSED:

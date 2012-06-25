@@ -97,6 +97,7 @@ struct _GstUvcH264Src
   guint32 secondary_frame_interval;
 
   int v4l2_fd;
+  guint8 h264_unit_id;
 
   GstPadEventFunction srcpad_event_func;
   GstEvent *key_unit_event;
