@@ -2605,7 +2605,8 @@ gst_uvc_h264_src_pad_linking_cb (GstPad * pad,
 
   GST_DEBUG_OBJECT (self, "Pad %s was (un)linked. Renegotiating", pad_name);
   g_free (pad_name);
-  gst_uvc_h264_src_construct_pipeline (GST_BASE_CAMERA_SRC (self));
+  if (GST_STATE (self) >= GST_STATE_READY)
+    gst_uvc_h264_src_construct_pipeline (GST_BASE_CAMERA_SRC (self));
 }
 
 
