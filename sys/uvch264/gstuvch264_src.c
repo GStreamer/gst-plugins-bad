@@ -2461,7 +2461,22 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
     gst_caps_unref (src_caps);
   vf_caps = vid_caps = src_caps = NULL;
 
-  /* Sync all children states with bin's state */
+  /* Sync children states, in sink to source order */
+  if (self->vid_colorspace &&
+      !gst_element_sync_state_with_parent (self->vid_colorspace))
+    goto error_remove_all;
+  if (self->vf_colorspace &&
+      !gst_element_sync_state_with_parent (self->vf_colorspace))
+    goto error_remove_all;
+  if (self->jpeg_dec && !gst_element_sync_state_with_parent (self->jpeg_dec))
+    goto error_remove_all;
+  if (self->mjpg_demux &&
+      !gst_element_sync_state_with_parent (self->mjpg_demux))
+    goto error_remove_all;
+  if (self->v4l2_src && !gst_element_sync_state_with_parent (self->v4l2_src))
+    goto error_remove_all;
+
+  /* Sync any remaining children states with bin's state */
   iter = gst_bin_iterate_elements (GST_BIN (self));
   iter_done = FALSE;
   while (!iter_done) {
