@@ -332,7 +332,7 @@ mpegts_packetizer_parse_adaptation_field_control (MpegTSPacketizer2 *
   /* PCR */
   if (afcflags & MPEGTS_AFC_PCR_FLAG) {
     packet->pcr = mpegts_packetizer_compute_pcr (data);
-    *data += 6;
+    data += 6;
     GST_DEBUG ("pcr %" G_GUINT64_FORMAT " (%" GST_TIME_FORMAT ")",
         packet->pcr, GST_TIME_ARGS (PCRTIME_TO_GSTTIME (packet->pcr)));
 
@@ -345,7 +345,6 @@ mpegts_packetizer_parse_adaptation_field_control (MpegTSPacketizer2 *
   /* OPCR */
   if (afcflags & MPEGTS_AFC_OPCR_FLAG) {
     packet->opcr = mpegts_packetizer_compute_pcr (data);
-    /* *data += 6; */
     GST_DEBUG ("opcr %" G_GUINT64_FORMAT " (%" GST_TIME_FORMAT ")",
         packet->pcr, GST_TIME_ARGS (PCRTIME_TO_GSTTIME (packet->pcr)));
   }
