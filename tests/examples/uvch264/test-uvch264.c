@@ -598,8 +598,13 @@ main (int argc, char *argv[])
       case ENUM:
         properties[i].src = self.src;
         properties[i].builder = gtk_builder_new ();
+#if !GTK_CHECK_VERSION (2, 24, 0)
+        gtk_builder_add_from_file (properties[i].builder,
+            "enum_property_gtk2.glade", NULL);
+#else
         gtk_builder_add_from_file (properties[i].builder, ENUM_PROPERTY_GLADE,
             NULL);
+#endif
         gtk_builder_connect_signals (properties[i].builder, &properties[i]);
         gtk_box_pack_start (PROPERTY_TO_VBOX,
             GET_PROP_WIDGET (GTK_WIDGET, "enum-property"), TRUE, TRUE, 2);
@@ -651,8 +656,10 @@ main (int argc, char *argv[])
 
 end:
   g_object_unref (G_OBJECT (self.builder));
-  for (i = 0; i < G_N_ELEMENTS (properties); i++)
-    g_object_unref (G_OBJECT (properties[i].builder));
+  for (i = 0; i < G_N_ELEMENTS (properties); i++) {
+    if (properties[i].builder)
+      g_object_unref (G_OBJECT (properties[i].builder));
+  }
   gst_element_set_state (self.bin, GST_STATE_NULL);
   gst_object_unref (self.src);
   gst_object_unref (self.identity);
