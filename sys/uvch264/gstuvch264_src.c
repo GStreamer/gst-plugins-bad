@@ -46,17 +46,16 @@
 #include "gstuvch264_src.h"
 #include "gstuvch264-marshal.h"
 
-#ifndef UVCIOC_XU_GUID_INFO
+#ifndef UVCIOC_XU_FIND_UNIT
 /* Define the needed structure if <linux/uvcvideo.h> is too old.
  * This might fail though if the kernel itself does not support it.
  */
-struct uvc_xu_guid_info
+struct uvc_xu_find_unit
 {
   __u8 guid[16];
-  __u8 name[64];
   __u8 unit;
 };
-#define UVCIOC_XU_GUID_INFO	_IOWR('u', 0x22, struct uvc_xu_guid_info)
+#define UVCIOC_XU_FIND_UNIT	_IOWR('u', 0x22, struct uvc_xu_find_unit)
 #endif
 
 
@@ -1663,7 +1662,7 @@ gst_uvc_h264_src_event (GstPad * pad, GstEvent * event)
 static guint8
 xu_get_id (GstUvcH264Src * self)
 {
-  struct uvc_xu_guid_info xu;
+  struct uvc_xu_find_unit xu;
   static const __u8 guid[16] = GUID_UVCX_H264_XU;
   int fd = self->v4l2_fd;
 
@@ -1676,9 +1675,10 @@ xu_get_id (GstUvcH264Src * self)
   }
 
   memcpy (xu.guid, guid, 16);
+  xu.unit = 0;
 
-  if (-1 == ioctl (fd, UVCIOC_XU_GUID_INFO, &xu)) {
-    GST_WARNING_OBJECT (self, "GUID_INFO error");
+  if (-1 == ioctl (fd, UVCIOC_XU_FIND_UNIT, &xu)) {
+    GST_WARNING_OBJECT (self, "FIND_UNIT error");
     return 0;
   }
 
