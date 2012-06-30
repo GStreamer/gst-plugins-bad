@@ -1851,6 +1851,30 @@ configure_h264 (GstUvcH264Src * self, gint fd)
       return;
     }
   }
+  /* Print MIN/MAX/DEF probe values for debugging purposes */
+  if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_GET_MIN,
+          (guchar *) & probe)) {
+    GST_WARNING_OBJECT (self, "PROBE GET_CUR error");
+    return;
+  }
+  GST_DEBUG_OBJECT (self, "PROBE GET_MIN : ");
+  print_probe_commit (self, &probe);
+
+  if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_GET_MAX,
+          (guchar *) & probe)) {
+    GST_WARNING_OBJECT (self, "PROBE GET_CUR error");
+    return;
+  }
+  GST_DEBUG_OBJECT (self, "PROBE GET_MAX : ");
+  print_probe_commit (self, &probe);
+
+  if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_GET_DEF,
+          (guchar *) & probe)) {
+    GST_WARNING_OBJECT (self, "PROBE GET_CUR error");
+    return;
+  }
+  GST_DEBUG_OBJECT (self, "PROBE GET_DEF : ");
+  print_probe_commit (self, &probe);
 
   fill_probe_commit (self, &probe, self->main_frame_interval,
       self->main_width, self->main_height, self->main_profile);
