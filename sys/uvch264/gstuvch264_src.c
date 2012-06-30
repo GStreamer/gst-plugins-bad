@@ -767,7 +767,7 @@ gst_uvc_h264_src_get_property (GObject * object,
     case PROP_PREVIEW_FLIPPED:
     case PROP_LEAKY_BUCKET_SIZE:
       fill_probe_commit (self, &probe, 0, 0, 0, 0);
-      if (self->v4l2_fd != -1) {
+      if (GST_STATE (self) >= GST_STATE_PAUSED) {
         xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_GET_CUR,
             (guchar *) & probe);
       }
