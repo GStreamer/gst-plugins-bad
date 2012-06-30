@@ -530,9 +530,9 @@ main (int argc, char *argv[])
 
   self.bin = gst_parse_launch ("uvch264_src name=src src.vidsrc ! queue ! "
       "capsfilter name=vid_cf ! identity name=identity ! ffdec_h264 ! "
-      "xvimagesink name=h264_sink async=false sync=false "
+      "xvimagesink name=h264_sink async=false "
       "src.vfsrc ! queue ! capsfilter name=vf_cf ! "
-      "xvimagesink name=preview_sink async=false sync=false", NULL);
+      "xvimagesink name=preview_sink async=false", NULL);
 
   if (!self.bin)
     return -1;
