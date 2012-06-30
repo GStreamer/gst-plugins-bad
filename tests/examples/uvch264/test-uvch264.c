@@ -50,6 +50,8 @@ Prop properties[] = {
   {NULL, NULL, BOOL, "enable-sei", FALSE, FALSE},
   {NULL, NULL, INT, "num-reorder-frames", FALSE, FALSE},
   {NULL, NULL, BOOL, "preview-flipped", FALSE, FALSE},
+  {NULL, NULL, INT, "leaky-bucket-size", FALSE, FALSE},
+  {NULL, NULL, INT, "num-clock-samples", FALSE, TRUE},
   {NULL, NULL, ENUM, "rate-control", FALSE, TRUE},
   {NULL, NULL, BOOL, "fixed-framerate", FALSE, TRUE},
   {NULL, NULL, INT, "max-mbps", TRUE, TRUE},
