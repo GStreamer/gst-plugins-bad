@@ -1529,6 +1529,7 @@ gst_uvc_h264_src_buffer_probe (GstPad * pad, GstBuffer * buffer,
 {
   GstUvcH264Src *self = GST_UVC_H264_SRC (user_data);
 
+  /* TODO: Check the NALU type and make sure it is a keyframe */
   if (self->key_unit_event) {
     GstClockTime ts, running_time, stream_time;
     gboolean all_headers;
@@ -1595,6 +1596,7 @@ gst_uvc_h264_src_parse_event (GstUvcH264Src * self, GstPad * pad,
           }
         } else if (s &&
             gst_structure_has_name (s, "uvc_h264_ltr_picture_control")) {
+          /* TODO: Use - instead of _ for the event name */
           guint put_at, encode_using;
 
           if (gst_structure_get_uint (s, "put-at", &put_at) &&
