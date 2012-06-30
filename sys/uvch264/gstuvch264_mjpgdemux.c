@@ -35,8 +35,35 @@
 #endif
 
 #include <string.h>
+#include <linux/uvcvideo.h>
+#include <linux/usb/video.h>
+#include <sys/ioctl.h>
+
+#ifndef UVCIOC_GET_LAST_SCR
+#include <time.h>
+
+struct uvc_last_scr_sample
+{
+  __u32 dev_frequency;
+  __u32 dev_stc;
+  __u16 dev_sof;
+  struct timespec host_ts;
+  __u16 host_sof;
+};
+
+#define UVCIOC_GET_LAST_SCR	_IOR('u', 0x23, struct uvc_last_scr_sample)
+#endif
 
 #include "gstuvch264_mjpgdemux.h"
+
+enum
+{
+  PROP_0,
+  PROP_DEVICE_FD,
+  PROP_NUM_CLOCK_SAMPLES
+};
+
+#define DEFAULT_NUM_CLOCK_SAMPLES 32
 
 static GstStaticPadTemplate mjpgsink_pad_template =
 GST_STATIC_PAD_TEMPLATE ("sink",
@@ -88,8 +115,21 @@ GST_STATIC_PAD_TEMPLATE ("nv12",
 GST_DEBUG_CATEGORY_STATIC (uvc_h264_mjpg_demux_debug);
 #define GST_CAT_DEFAULT uvc_h264_mjpg_demux_debug
 
+typedef struct
+{
+  guint32 dev_stc;
+  guint32 dev_sof;
+  GstClockTime host_ts;
+  guint32 host_sof;
+} GstUvcH264ClockSample;
+
 struct _GstUvcH264MjpgDemuxPrivate
 {
+  int device_fd;
+  int num_clock_samples;
+  GstUvcH264ClockSample *clock_samples;
+  int last_sample;
+  int num_samples;
   GstPad *sink_pad;
   GstPad *jpeg_pad;
   GstPad *h264_pad;
@@ -118,6 +158,10 @@ typedef struct
   guint32 pts;
 } __attribute__ ((packed)) AuxiliaryStreamHeader;
 
+static void gst_uvc_h264_mjpg_demux_set_property (GObject * object,
+    guint prop_id, const GValue * value, GParamSpec * pspec);
+static void gst_uvc_h264_mjpg_demux_get_property (GObject * object,
+    guint prop_id, GValue * value, GParamSpec * pspec);
 static void gst_uvc_h264_mjpg_demux_dispose (GObject * object);
 static GstFlowReturn gst_uvc_h264_mjpg_demux_chain (GstPad * pad,
     GstBuffer * buffer);
@@ -170,7 +214,22 @@ gst_uvc_h264_mjpg_demux_class_init (GstUvcH264MjpgDemuxClass * klass)
 
   g_type_class_add_private (gobject_class, sizeof (GstUvcH264MjpgDemuxPrivate));
 
+  gobject_class->set_property = gst_uvc_h264_mjpg_demux_set_property;
+  gobject_class->get_property = gst_uvc_h264_mjpg_demux_get_property;
   gobject_class->dispose = gst_uvc_h264_mjpg_demux_dispose;
+
+
+  g_object_class_install_property (gobject_class, PROP_DEVICE_FD,
+      g_param_spec_int ("device-fd", "device-fd",
+          "File descriptor of the v4l2 device",
+          -1, G_MAXINT, -1, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+
+  g_object_class_install_property (gobject_class, PROP_NUM_CLOCK_SAMPLES,
+      g_param_spec_int ("num-clock-samples", "num-clock-samples",
+          "Number of clock samples to gather for the PTS synchronization"
+          " (-1 = unlimited)",
+          0, G_MAXINT, DEFAULT_NUM_CLOCK_SAMPLES,
+          G_PARAM_READWRITE | G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS));
 }
 
 static void
@@ -179,6 +238,9 @@ gst_uvc_h264_mjpg_demux_init (GstUvcH264MjpgDemux * self,
 {
   self->priv = G_TYPE_INSTANCE_GET_PRIVATE (self, GST_TYPE_UVC_H264_MJPG_DEMUX,
       GstUvcH264MjpgDemuxPrivate);
+
+
+  self->priv->device_fd = -1;
 
   /* create the sink and src pads */
   self->priv->sink_pad =
@@ -240,9 +302,73 @@ gst_uvc_h264_mjpg_demux_dispose (GObject * object)
   if (self->priv->nv12_caps)
     gst_caps_unref (self->priv->nv12_caps);
   self->priv->nv12_caps = NULL;
+  if (self->priv->clock_samples)
+    g_free (self->priv->clock_samples);
+  self->priv->clock_samples = NULL;
 
   G_OBJECT_CLASS (parent_class)->dispose (object);
 }
+
+static void
+gst_uvc_h264_mjpg_demux_set_property (GObject * object,
+    guint prop_id, const GValue * value, GParamSpec * pspec)
+{
+  GstUvcH264MjpgDemux *self = GST_UVC_H264_MJPG_DEMUX (object);
+
+  switch (prop_id) {
+    case PROP_DEVICE_FD:
+      self->priv->device_fd = g_value_get_int (value);
+      break;
+    case PROP_NUM_CLOCK_SAMPLES:
+      self->priv->num_clock_samples = g_value_get_int (value);
+      if (self->priv->clock_samples) {
+        if (self->priv->num_clock_samples) {
+          self->priv->clock_samples = g_realloc_n (self->priv->clock_samples,
+              self->priv->num_clock_samples, sizeof (GstUvcH264ClockSample));
+          if (self->priv->num_samples > self->priv->num_clock_samples) {
+            self->priv->num_samples = self->priv->num_clock_samples;
+            if (self->priv->last_sample >= self->priv->num_samples)
+              self->priv->last_sample = self->priv->num_samples - 1;
+          }
+        } else {
+          g_free (self->priv->clock_samples);
+          self->priv->clock_samples = NULL;
+          self->priv->last_sample = -1;
+          self->priv->num_samples = 0;
+        }
+      }
+      if (self->priv->num_clock_samples > 0) {
+        self->priv->clock_samples = g_malloc0_n (self->priv->num_clock_samples,
+            sizeof (GstUvcH264ClockSample));
+        self->priv->last_sample = -1;
+        self->priv->num_samples = 0;
+      }
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (self, prop_id, pspec);
+      break;
+  }
+}
+
+static void
+gst_uvc_h264_mjpg_demux_get_property (GObject * object,
+    guint prop_id, GValue * value, GParamSpec * pspec)
+{
+  GstUvcH264MjpgDemux *self = GST_UVC_H264_MJPG_DEMUX (object);
+
+  switch (prop_id) {
+    case PROP_DEVICE_FD:
+      g_value_set_int (value, self->priv->device_fd);
+      break;
+    case PROP_NUM_CLOCK_SAMPLES:
+      g_value_set_int (value, self->priv->num_clock_samples);
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (self, prop_id, pspec);
+      break;
+  }
+}
+
 
 static gboolean
 gst_uvc_h264_mjpg_demux_sink_setcaps (GstPad * pad, GstCaps * caps)
@@ -268,6 +394,111 @@ gst_uvc_h264_mjpg_demux_getcaps (GstPad * pad)
     result = gst_caps_copy (gst_pad_get_pad_template_caps (pad));
 
   return result;
+}
+
+static gboolean
+_pts_to_timestamp (GstUvcH264MjpgDemux * self, GstBuffer * buf, guint32 pts)
+{
+  GstUvcH264MjpgDemuxPrivate *priv = self->priv;
+  GstUvcH264ClockSample *current_sample = NULL;
+  GstUvcH264ClockSample *oldest_sample = NULL;
+  guint32 next_sample;
+  struct uvc_last_scr_sample sample;
+  guint64 sof, delta_stc, mean, x1, x2, y1, y2;
+  guint32 dev_sof;
+  GstClockTime ts;
+  GstClockTime base_time = gst_element_get_base_time (GST_ELEMENT (self));
+
+  if (priv->clock_samples == NULL)
+    return FALSE;
+
+  if (-1 == ioctl (priv->device_fd, UVCIOC_GET_LAST_SCR, &sample)) {
+    //GST_WARNING_OBJECT (self, " GET_LAST_SCR error");
+    return FALSE;
+  }
+
+  dev_sof = (guint32) (sample.dev_sof + 2048) << 16;
+  if (priv->num_samples > 0 &&
+      priv->clock_samples[priv->last_sample].dev_sof == dev_sof) {
+    current_sample = &priv->clock_samples[priv->last_sample];
+  } else {
+    next_sample = (priv->last_sample + 1) % priv->num_clock_samples;
+    current_sample = &priv->clock_samples[next_sample];
+    current_sample->dev_stc = sample.dev_stc;
+    current_sample->dev_sof = dev_sof;
+    current_sample->host_ts = sample.host_ts.tv_sec * GST_SECOND +
+        sample.host_ts.tv_nsec * GST_NSECOND;
+    current_sample->host_sof = (guint32) (sample.host_sof + 2048) << 16;
+
+    priv->num_samples++;
+    priv->last_sample = next_sample;
+
+    /* Debug printing */
+    GST_DEBUG_OBJECT (self, "device frequency: %u", sample.dev_frequency);
+    GST_DEBUG_OBJECT (self, "dev_sof: %u", sample.dev_sof);
+    GST_DEBUG_OBJECT (self, "dev_stc: %u", sample.dev_stc);
+    GST_DEBUG_OBJECT (self, "host_ts: %lu -- %" GST_TIME_FORMAT,
+        current_sample->host_ts, GST_TIME_ARGS (current_sample->host_ts));
+    GST_DEBUG_OBJECT (self, "host_sof: %u", sample.host_sof);
+    GST_DEBUG_OBJECT (self, "PTS: %u", pts);
+    GST_DEBUG_OBJECT (self, "Diff: %u - %f\n", sample.dev_stc - pts,
+        (gdouble) (sample.dev_stc - pts) / sample.dev_frequency);
+  }
+
+  if (priv->num_samples < priv->num_clock_samples)
+    return FALSE;
+
+  next_sample = (priv->last_sample + 1) % priv->num_clock_samples;
+  oldest_sample = &priv->clock_samples[next_sample];
+
+  /* This algorithm was taken from the uvcvideo kernel driver
+   * TODO: Check if the algorithm itself (code is almost identical)
+   * can cause licensing issues.
+   */
+  /* PTS to SOF conversion */
+  delta_stc = pts - (1 << 31);
+  x1 = oldest_sample->dev_stc - delta_stc;
+  x2 = current_sample->dev_stc - delta_stc;
+  y1 = oldest_sample->dev_sof;
+  y2 = current_sample->dev_sof;
+  /* Fix rollover */
+  if (y2 < y1)
+    y2 += 2048 << 16;
+
+  /* Avoid division by zero */
+  if (x1 == x2)
+    return FALSE;
+  sof = ((y2 - y1) * (1 << 31) + y1 * x2 - y2 * x1) / (x2 - x1);
+
+  /* SOF to host clock conversion */
+  x1 = oldest_sample->host_sof;
+  x2 = current_sample->host_sof;
+  if (x2 < x1)
+    x2 += 2048 << 16;
+  y1 = GST_SECOND;
+  y2 = (current_sample->host_ts - oldest_sample->host_ts) + GST_SECOND;
+
+  mean = (x1 + x2) / 2;
+  if (mean - (1024 << 16) > sof)
+    sof += 2048 << 16;
+  else if (sof > mean + (1024 << 16))
+    sof -= 2048 << 16;
+
+  /* Avoid division by zero */
+  if (x1 == x2)
+    return FALSE;
+  ts = ((y2 - y1) * sof + y1 * x2 - y2 * x1) / (x2 - x1);
+  ts = oldest_sample->host_ts - GST_SECOND + ts;
+  ts -= base_time;
+
+  GST_DEBUG_OBJECT (self, "buffer timestamp: %lu -- %" GST_TIME_FORMAT,
+      GST_BUFFER_TIMESTAMP (buf), GST_TIME_ARGS (GST_BUFFER_TIMESTAMP (buf)));
+  GST_DEBUG_OBJECT (self, "converted PTS: %lu -- %" GST_TIME_FORMAT,
+      ts, GST_TIME_ARGS (ts));
+
+  GST_BUFFER_TIMESTAMP (buf) = ts;
+
+  return TRUE;
 }
 
 static GstFlowReturn
@@ -452,13 +683,23 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
       }
 
       if (segment_size > 0) {
+        gboolean pts_valid = FALSE;
+
         sub_buffer = gst_buffer_create_sub (buf, i, segment_size);
-        /* TODO: Transform PTS into proper buffer timestamp */
-        //GST_BUFFER_TIMESTAMP (aux_buffer) = aux_header.pts;
         GST_BUFFER_DURATION (sub_buffer) =
             aux_header.frame_interval * 100 * GST_NSECOND;
         gst_buffer_copy_metadata (sub_buffer, buf, GST_BUFFER_COPY_TIMESTAMPS);
         gst_buffer_set_caps (sub_buffer, *aux_caps);
+        if (self->priv->device_fd != -1)
+          pts_valid = _pts_to_timestamp (self, sub_buffer, aux_header.pts);
+
+        if (!pts_valid &&
+            aux_header.type == GST_MAKE_FOURCC ('H', '2', '6', '4')) {
+          /* Encoded stream has an extra delay that needs to be removed */
+          GST_DEBUG_OBJECT (self, "H264 stream has delay of %d ms",
+              aux_header.delay);
+          GST_BUFFER_TIMESTAMP (sub_buffer) -= aux_header.delay * GST_MSECOND;
+        }
         gst_buffer_list_iterator_add (aux_it, sub_buffer);
 
         aux_size -= segment_size;

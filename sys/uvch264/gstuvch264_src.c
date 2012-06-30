@@ -65,6 +65,7 @@ enum
   /* uvch264_src properties */
   PROP_COLORSPACE_NAME,
   PROP_JPEG_DECODER_NAME,
+  PROP_NUM_CLOCK_SAMPLES,
   /* v4l2src properties */
   PROP_NUM_BUFFERS,
   PROP_DEVICE,
@@ -113,6 +114,7 @@ static guint _signals[LAST_SIGNAL];
 /* Default values */
 #define DEFAULT_COLORSPACE_NAME "ffmpegcolorspace"
 #define DEFAULT_JPEG_DECODER_NAME "jpegdec"
+#define DEFAULT_NUM_CLOCK_SAMPLES 0
 #define DEFAULT_NUM_BUFFERS -1
 #define DEFAULT_DEVICE "/dev/video0"
 #define DEFAULT_DEVICE_NAME NULL
@@ -317,6 +319,14 @@ gst_uvc_h264_src_class_init (GstUvcH264SrcClass * klass)
           "The name of the jpeg decoder element",
           DEFAULT_JPEG_DECODER_NAME, G_PARAM_CONSTRUCT | G_PARAM_READWRITE |
           GST_PARAM_MUTABLE_READY | G_PARAM_STATIC_STRINGS));
+
+  g_object_class_install_property (gobject_class, PROP_NUM_CLOCK_SAMPLES,
+      g_param_spec_int ("num-clock-samples", "num-clock-samples",
+          "Number of clock samples to gather for the PTS synchronization"
+          " (-1 = unlimited)",
+          0, G_MAXINT, DEFAULT_NUM_CLOCK_SAMPLES,
+          G_PARAM_READWRITE | G_PARAM_CONSTRUCT | GST_PARAM_MUTABLE_PLAYING |
+          G_PARAM_STATIC_STRINGS));
 
   /* v4l2src proxied properties */
   g_object_class_install_property (gobject_class, PROP_NUM_BUFFERS,
@@ -606,6 +616,12 @@ gst_uvc_h264_src_set_property (GObject * object,
       g_free (self->jpeg_decoder_name);
       self->jpeg_decoder_name = g_value_dup_string (value);
       break;
+    case PROP_NUM_CLOCK_SAMPLES:
+      self->num_clock_samples = g_value_get_int (value);
+      if (self->mjpg_demux)
+        g_object_set (self->mjpg_demux,
+            "num-clock-samples", self->num_clock_samples, NULL);
+      break;
       /* v4l2 properties */
     case PROP_NUM_BUFFERS:
       self->num_buffers = g_value_get_int (value);
@@ -752,6 +768,9 @@ gst_uvc_h264_src_get_property (GObject * object,
       break;
     case PROP_JPEG_DECODER_NAME:
       g_value_set_string (value, self->jpeg_decoder_name);
+      break;
+    case PROP_NUM_CLOCK_SAMPLES:
+      g_value_set_int (value, self->num_clock_samples);
       break;
       /* v4l2src properties */
     case PROP_NUM_BUFFERS:
@@ -2404,6 +2423,8 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
       if (!self->mjpg_demux || !gst_bin_add (GST_BIN (self), self->mjpg_demux))
         goto error_remove;
       gst_object_ref (self->mjpg_demux);
+      g_object_set (self->mjpg_demux, "device-fd", self->v4l2_fd,
+          "num-clock-samples", self->num_clock_samples, NULL);
       if (!gst_element_link_filtered (self->v4l2_src, self->mjpg_demux,
               src_caps))
         goto error_remove_all;
@@ -2420,6 +2441,8 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
       if (!gst_bin_add (GST_BIN (self), self->mjpg_demux))
         goto error_remove;
       gst_object_ref (self->mjpg_demux);
+      g_object_set (self->mjpg_demux, "device-fd", self->v4l2_fd,
+          "num-clock-samples", self->num_clock_samples, NULL);
       if (!gst_bin_add (GST_BIN (self), self->vf_colorspace)) {
         gst_object_unref (self->vf_colorspace);
         self->vf_colorspace = NULL;
@@ -2446,6 +2469,8 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
       if (!gst_bin_add (GST_BIN (self), self->mjpg_demux))
         goto error_remove;
       gst_object_ref (self->mjpg_demux);
+      g_object_set (self->mjpg_demux, "device-fd", self->v4l2_fd,
+          "num-clock-samples", self->num_clock_samples, NULL);
       if (!gst_bin_add (GST_BIN (self), self->jpeg_dec)) {
         gst_object_unref (self->jpeg_dec);
         self->jpeg_dec = NULL;

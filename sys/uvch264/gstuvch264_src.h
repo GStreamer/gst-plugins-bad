@@ -112,6 +112,7 @@ struct _GstUvcH264Src
 
   gchar *colorspace_name;
   gchar *jpeg_decoder_name;
+  int num_clock_samples;
 
   /* v4l2src proxied properties */
   guint32 num_buffers;
