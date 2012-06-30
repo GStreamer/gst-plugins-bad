@@ -2210,6 +2210,8 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
       vf_struct = gst_caps_get_structure (vf_caps, 0);
     } else {
       GST_WARNING_OBJECT (self, "Could not negotiate vfsrc caps format");
+      gst_object_unref (v4l_pad);
+      gst_caps_unref (v4l_caps);
       goto error_remove;
     }
   }
@@ -2220,6 +2222,8 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
       vid_struct = gst_caps_get_structure (vid_caps, 0);
     } else {
       GST_WARNING_OBJECT (self, "Could not negotiate vidsrc caps format");
+      gst_object_unref (v4l_pad);
+      gst_caps_unref (v4l_caps);
       goto error_remove;
     }
   }
