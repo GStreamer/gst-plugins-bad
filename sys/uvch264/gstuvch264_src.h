@@ -128,6 +128,7 @@ struct _GstUvcH264Src
   gboolean enable_sei;
   guint8 num_reorder_frames;
   gboolean preview_flipped;
+  guint16 leaky_bucket_size;
 
   /* Dynamic controls */
   UvcH264RateControl rate_control;

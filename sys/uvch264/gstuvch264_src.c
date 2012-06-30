@@ -80,6 +80,7 @@ enum
   PROP_ENABLE_SEI,
   PROP_NUM_REORDER_FRAMES,
   PROP_PREVIEW_FLIPPED,
+  PROP_LEAKY_BUCKET_SIZE,
   /* Dynamic controls */
   PROP_RATE_CONTROL,
   PROP_FIXED_FRAMERATE,
@@ -127,6 +128,7 @@ static guint _signals[LAST_SIGNAL];
 #define DEFAULT_ENABLE_SEI FALSE
 #define DEFAULT_NUM_REORDER_FRAMES 0
 #define DEFAULT_PREVIEW_FLIPPED FALSE
+#define DEFAULT_LEAKY_BUCKET_SIZE 1000
 #define DEFAULT_RATE_CONTROL UVC_H264_RATECONTROL_CBR
 #define DEFAULT_FIXED_FRAMERATE FALSE
 #define DEFAULT_LEVEL_IDC 40
@@ -396,6 +398,12 @@ gst_uvc_h264_src_class_init (GstUvcH264SrcClass * klass)
           "Horizontal flipped image for non H.264 streams (static control)",
           DEFAULT_PREVIEW_FLIPPED, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
           GST_PARAM_MUTABLE_READY));
+  g_object_class_install_property (gobject_class, PROP_LEAKY_BUCKET_SIZE,
+      g_param_spec_uint ("leaky-bucket-size", "Size of the leaky bucket size",
+          "Size of the leaky bucket size in milliseconds (static control)",
+          0, G_MAXUINT16, DEFAULT_LEAKY_BUCKET_SIZE,
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
+          GST_PARAM_MUTABLE_READY));
 
   /* Dynamic controls */
   g_object_class_install_property (gobject_class, PROP_RATE_CONTROL,
@@ -574,6 +582,7 @@ gst_uvc_h264_src_init (GstUvcH264Src * self, GstUvcH264SrcClass * klass)
   self->enable_sei = DEFAULT_ENABLE_SEI;
   self->num_reorder_frames = DEFAULT_NUM_REORDER_FRAMES;
   self->preview_flipped = DEFAULT_PREVIEW_FLIPPED;
+  self->leaky_bucket_size = DEFAULT_LEAKY_BUCKET_SIZE;
 
   /* Dynamic controls */
   self->rate_control = DEFAULT_RATE_CONTROL;
@@ -662,6 +671,10 @@ gst_uvc_h264_src_set_property (GObject * object,
     case PROP_PREVIEW_FLIPPED:
       self->preview_flipped = g_value_get_boolean (value);
       break;
+    case PROP_LEAKY_BUCKET_SIZE:
+      self->leaky_bucket_size = g_value_get_uint (value);
+      break;
+
 
       /* Dynamic controls */
     case PROP_RATE_CONTROL:
@@ -752,6 +765,7 @@ gst_uvc_h264_src_get_property (GObject * object,
     case PROP_ENABLE_SEI:
     case PROP_NUM_REORDER_FRAMES:
     case PROP_PREVIEW_FLIPPED:
+    case PROP_LEAKY_BUCKET_SIZE:
       fill_probe_commit (self, &probe, 0, 0, 0, 0);
       if (self->v4l2_fd != -1) {
         xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_GET_CUR,
@@ -815,6 +829,10 @@ gst_uvc_h264_src_get_property (GObject * object,
       g_value_set_boolean (value,
           (probe.bPreviewFlipped == UVC_H264_PREFLIPPED_HORIZONTAL));
       break;
+    case PROP_LEAKY_BUCKET_SIZE:
+      g_value_set_uint (value, probe.wLeakyBucketSize);
+      break;
+
       /* Dynamic controls */
     case PROP_RATE_CONTROL:
       update_rate_control (self);
@@ -1407,6 +1425,13 @@ gst_uvc_h264_src_get_int_setting (GstUvcH264Src * self, gchar * property,
     *min = min8;
     *def = def8;
     *max = max8;
+  } else if (g_strcmp0 (property, "leaky-bucket-size") == 0) {
+    ret = probe_setting (self, UVCX_VIDEO_CONFIG_PROBE,
+        offsetof (uvcx_video_config_probe_commit_t, wLeakyBucketSize), 2,
+        &min16, &def16, &max16);
+    *min = min16;
+    *def = def16;
+    *max = max16;
   } else if (g_strcmp0 (property, "level-idc") == 0) {
     ret = probe_setting (self, UVCX_VIDEO_ADVANCE_CONFIG,
         offsetof (uvcx_video_advance_config_t, blevel_idc), 1,
@@ -1762,6 +1787,7 @@ fill_probe_commit (GstUvcH264Src * self,
   probe->bNumOfReorderFrames = self->num_reorder_frames;
   probe->bPreviewFlipped = self->preview_flipped ?
       UVC_H264_PREFLIPPED_HORIZONTAL : UVC_H264_PREFLIPPED_DISABLE;
+  probe->wLeakyBucketSize = self->leaky_bucket_size;
   /* FIXME: if requesting baseline, this will return width = 0 and height=0
      and it will generate 320x240 h264 buffers which can't be pushed */
   probe->bmHints = UVC_H264_BMHINTS_RESOLUTION | UVC_H264_BMHINTS_PROFILE |
