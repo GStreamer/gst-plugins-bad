@@ -1664,12 +1664,8 @@ xu_get_id (GstUvcH264Src * self)
 {
   struct uvc_xu_find_unit xu;
   static const __u8 guid[16] = GUID_UVCX_H264_XU;
-  int fd = self->v4l2_fd;
 
-  if (fd == -1 && self->v4l2_src)
-    g_object_get (self->v4l2_src, "device-fd", &fd, NULL);
-
-  if (fd == -1) {
+  if (self->v4l2_fd == -1) {
     GST_WARNING_OBJECT (self, "Can't query XU with fd = -1");
     return FALSE;
   }
@@ -1677,7 +1673,7 @@ xu_get_id (GstUvcH264Src * self)
   memcpy (xu.guid, guid, 16);
   xu.unit = 0;
 
-  if (-1 == ioctl (fd, UVCIOC_XU_FIND_UNIT, &xu)) {
+  if (-1 == ioctl (self->v4l2_fd, UVCIOC_XU_FIND_UNIT, &xu)) {
     GST_WARNING_OBJECT (self, "FIND_UNIT error");
     return 0;
   }
@@ -1690,13 +1686,8 @@ xu_query (GstUvcH264Src * self, guint selector, guint query, guchar * data)
 {
   struct uvc_xu_control_query xu;
   __u16 len;
-  int fd = self->v4l2_fd;
 
-
-  if (fd == -1 && self->v4l2_src)
-    g_object_get (self->v4l2_src, "device-fd", &fd, NULL);
-
-  if (fd == -1) {
+  if (self->v4l2_fd == -1) {
     GST_WARNING_OBJECT (self, "Can't query XU with fd = -1");
     return FALSE;
   }
@@ -1707,7 +1698,7 @@ xu_query (GstUvcH264Src * self, guint selector, guint query, guchar * data)
   xu.query = UVC_GET_LEN;
   xu.size = sizeof (len);
   xu.data = (unsigned char *) &len;
-  if (-1 == ioctl (fd, UVCIOC_CTRL_QUERY, &xu)) {
+  if (-1 == ioctl (self->v4l2_fd, UVCIOC_CTRL_QUERY, &xu)) {
     GST_WARNING_OBJECT (self, "PROBE GET_LEN error");
     return FALSE;
   }
@@ -1718,7 +1709,7 @@ xu_query (GstUvcH264Src * self, guint selector, guint query, guchar * data)
     xu.query = query;
     xu.size = len;
     xu.data = data;
-    if (-1 == ioctl (fd, UVCIOC_CTRL_QUERY, &xu)) {
+    if (-1 == ioctl (self->v4l2_fd, UVCIOC_CTRL_QUERY, &xu)) {
       return FALSE;
     }
   }
@@ -1881,7 +1872,6 @@ v4l2src_prepare_format (GstElement * v4l2src, gint fd, guint fourcc,
   GST_DEBUG_OBJECT (self, "v4l2src prepare-format with FCC %" GST_FOURCC_FORMAT,
       GST_FOURCC_ARGS (fourcc));
 
-  self->v4l2_fd = fd;
   if (self->main_format == UVC_H264_SRC_FORMAT_H264) {
     /* TODO: update static controls and g_object_notify those that changed */
     configure_h264 (self, fd);
@@ -2045,6 +2035,8 @@ gst_uvc_h264_src_destroy_pipeline (GstUvcH264Src * self, gboolean v4l2src)
     gst_element_set_state (self->v4l2_src, GST_STATE_NULL);
     gst_object_unref (self->v4l2_src);
     self->v4l2_src = NULL;
+    self->v4l2_fd = -1;
+    self->h264_unit_id = 0;
   }
   if (self->mjpg_demux) {
     gst_bin_remove (GST_BIN (self), self->mjpg_demux);
@@ -2127,7 +2119,8 @@ ensure_v4l2src (GstUvcH264Src * self)
     goto error_remove;
   }
 
-  /* Set/Update the unit id after we go to READY */
+  /* Set/Update the fd and unit id after we go to READY */
+  g_object_get (self->v4l2_src, "device-fd", &self->v4l2_fd, NULL);
   self->h264_unit_id = xu_get_id (self);
 
   if (self->h264_unit_id == 0) {
@@ -2146,6 +2139,8 @@ error:
   if (self->v4l2_src)
     gst_object_unref (self->v4l2_src);
   self->v4l2_src = NULL;
+  self->v4l2_fd = -1;
+  self->h264_unit_id = 0;
 
   return FALSE;
 }
@@ -2178,15 +2173,16 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
   GST_DEBUG_OBJECT (self, "Construct pipeline");
   self->reconfiguring = TRUE;
 
-  if (!ensure_v4l2src (self))
-    goto error;
-
-  if (self->v4l2_fd != -1) {
+  if (self->v4l2_src) {
     uvcx_encoder_reset req = { 0 };
 
     if (!xu_query (self, UVCX_ENCODER_RESET, UVC_SET_CUR, (guchar *) & req))
       GST_WARNING_OBJECT (self, " UVCX_ENCODER_RESET SET_CUR error");
   }
+
+  if (!ensure_v4l2src (self))
+    goto error;
+
   gst_uvc_h264_src_destroy_pipeline (self, FALSE);
 
   /* Potentially unlink v4l2src to the ghost pads */
@@ -2600,6 +2596,8 @@ error:
   if (self->v4l2_src)
     gst_object_unref (self->v4l2_src);
   self->v4l2_src = NULL;
+  self->v4l2_fd = -1;
+  self->h264_unit_id = 0;
 
   if (self->mjpg_demux)
     gst_object_unref (self->mjpg_demux);
@@ -2725,7 +2723,6 @@ gst_uvc_h264_src_change_state (GstElement * element, GstStateChange trans)
     case GST_STATE_CHANGE_PAUSED_TO_READY:
       self->vid_newseg = FALSE;
       self->vf_newseg = FALSE;
-      self->v4l2_fd = -1;
       break;
     case GST_STATE_CHANGE_READY_TO_NULL:
       gst_uvc_h264_src_destroy_pipeline (self, TRUE);
