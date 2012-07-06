@@ -837,7 +837,7 @@ gst_decklink_sink_videosink_event (GstPad * pad, GstEvent * event)
         gst_message_set_seqnum (message, decklinksink->video_seqnum);
         gst_element_post_message (GST_ELEMENT_CAST (decklinksink), message);
       }
-
+      res = gst_pad_event_default (pad, event);
       break;
     default:
       res = gst_pad_event_default (pad, event);
@@ -1066,6 +1066,7 @@ gst_decklink_sink_audiosink_event (GstPad * pad, GstEvent * event)
     case GST_EVENT_EOS:
       decklinksink->audio_eos = TRUE;
       decklinksink->audio_seqnum = gst_event_get_seqnum (event);
+      res = gst_pad_event_default (pad, event);
       break;
     default:
       res = gst_pad_event_default (pad, event);
