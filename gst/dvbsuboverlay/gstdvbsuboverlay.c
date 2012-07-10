@@ -732,8 +732,8 @@ gst_dvbsub_overlay_process_text (GstDVBSubOverlay * overlay, GstBuffer * buffer,
       " which is a time of %" GST_TIME_FORMAT, pts, GST_TIME_ARGS (pts));
   GST_DEBUG_OBJECT (overlay, "Feeding %u bytes to libdvbsub", size);
   g_mutex_lock (overlay->dvbsub_mutex);
-  dvb_sub_feed_with_pts (overlay->dvb_sub, pts, data, size);
   overlay->pending_sub = TRUE;
+  dvb_sub_feed_with_pts (overlay->dvb_sub, pts, data, size);
   g_mutex_unlock (overlay->dvbsub_mutex);
   gst_buffer_unref (buffer);
 
