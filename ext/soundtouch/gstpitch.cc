@@ -112,7 +112,7 @@ gst_pitch_base_init (gpointer g_class)
       &gst_pitch_sink_template);
 
   gst_element_class_set_details_simple (gstelement_class, "Pitch controller",
-      "Filter/Converter/Audio", "Control the pitch of an audio stream",
+      "Filter/Effect/Audio", "Control the pitch of an audio stream",
       "Wouter Paesen <wouter@blue-gate.be>");
 }
 
