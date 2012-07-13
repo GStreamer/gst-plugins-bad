@@ -67,14 +67,14 @@ enum
 static GstStaticPadTemplate src_factory = GST_STATIC_PAD_TEMPLATE ("src",
     GST_PAD_SRC,
     GST_PAD_ALWAYS,
-    GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("I420"))
+    GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("I420") "; video/x-surface")
     );
 
 static GstStaticPadTemplate video_sink_factory =
 GST_STATIC_PAD_TEMPLATE ("video_sink",
     GST_PAD_SINK,
     GST_PAD_ALWAYS,
-    GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("I420"))
+    GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("I420") "; video/x-surface")
     );
 
 static GstStaticPadTemplate text_sink_factory =
@@ -461,6 +461,7 @@ gst_dvbsub_overlay_setcaps_video (GstPad * pad, GstCaps * caps)
 {
   GstDVBSubOverlay *render = GST_DVBSUB_OVERLAY (gst_pad_get_parent (pad));
   gboolean ret = FALSE;
+  GstStructure *structure;
 
   render->width = 0;
   render->height = 0;
@@ -479,6 +480,15 @@ gst_dvbsub_overlay_setcaps_video (GstPad * pad, GstCaps * caps)
   ret = gst_pad_set_caps (render->srcpad, caps);
   if (!ret)
     goto out;
+
+  /* FIXME Use the query to the sink to do that when implemented */
+  /* Update wether to attach composition to buffer or do the composition
+   * ourselves */
+  structure = gst_caps_get_structure (caps, 0);
+  if (gst_structure_has_name (structure, "video/x-surface"))
+    render->attach_compo_to_buffer = TRUE;
+  else
+    render->attach_compo_to_buffer = FALSE;
 
   GST_DEBUG_OBJECT (render, "ass renderer setup complete");
 
@@ -870,7 +880,13 @@ gst_dvbsub_overlay_chain_video (GstPad * pad, GstBuffer * buffer)
   if (g_atomic_int_get (&overlay->enable) && overlay->current_subtitle) {
     g_assert (overlay->current_comp);
     buffer = gst_buffer_make_writable (buffer);
-    gst_video_overlay_composition_blend (overlay->current_comp, buffer);
+    if (overlay->attach_compo_to_buffer) {
+      GST_DEBUG_OBJECT (overlay, "Attaching overlay image to video buffer");
+      gst_video_buffer_set_overlay_composition (buffer, overlay->current_comp);
+    } else {
+      GST_DEBUG_OBJECT (overlay, "Blending overlay image to video buffer");
+      gst_video_overlay_composition_blend (overlay->current_comp, buffer);
+    }
   }
   g_mutex_unlock (overlay->dvbsub_mutex);
 
