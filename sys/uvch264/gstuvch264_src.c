@@ -2268,8 +2268,10 @@ ensure_v4l2src (GstUvcH264Src * self)
   }
 
   /* going to state READY makes v4l2src lose its reference to the clock */
-  if (v4l2_clock)
+  if (v4l2_clock) {
     gst_element_set_clock (self->v4l2_src, v4l2_clock);
+    gst_object_unref (v4l2_clock);
+  }
 
   return TRUE;
 
