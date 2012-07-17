@@ -409,7 +409,7 @@ _pts_to_timestamp (GstUvcH264MjpgDemux * self, GstBuffer * buf, guint32 pts)
   GstClockTime ts;
   GstClockTime base_time = gst_element_get_base_time (GST_ELEMENT (self));
 
-  if (priv->clock_samples == NULL)
+  if (self->priv->device_fd == -1 || priv->clock_samples == NULL)
     return FALSE;
 
   if (-1 == ioctl (priv->device_fd, UVCIOC_GET_LAST_SCR, &sample)) {
@@ -683,23 +683,14 @@ gst_uvc_h264_mjpg_demux_chain (GstPad * pad, GstBuffer * buf)
       }
 
       if (segment_size > 0) {
-        gboolean pts_valid = FALSE;
-
         sub_buffer = gst_buffer_create_sub (buf, i, segment_size);
         GST_BUFFER_DURATION (sub_buffer) =
             aux_header.frame_interval * 100 * GST_NSECOND;
         gst_buffer_copy_metadata (sub_buffer, buf, GST_BUFFER_COPY_TIMESTAMPS);
         gst_buffer_set_caps (sub_buffer, *aux_caps);
-        if (self->priv->device_fd != -1)
-          pts_valid = _pts_to_timestamp (self, sub_buffer, aux_header.pts);
 
-        if (!pts_valid &&
-            aux_header.type == GST_MAKE_FOURCC ('H', '2', '6', '4')) {
-          /* Encoded stream has an extra delay that needs to be removed */
-          GST_DEBUG_OBJECT (self, "H264 stream has delay of %d ms",
-              aux_header.delay);
-          GST_BUFFER_TIMESTAMP (sub_buffer) -= aux_header.delay * GST_MSECOND;
-        }
+        _pts_to_timestamp (self, sub_buffer, aux_header.pts);
+
         gst_buffer_list_iterator_add (aux_it, sub_buffer);
 
         aux_size -= segment_size;
