@@ -1637,6 +1637,71 @@ gst_uvc_h264_src_parse_event (GstUvcH264Src * self, GstPad * pad,
             }
           }
           return TRUE;
+        } else if (s && gst_structure_has_name (s, "uvc-h264-bitrate-control")) {
+          guint average, peak;
+
+          if (gst_structure_get_uint (s, "average-bitrate", &average) &&
+              gst_structure_get_uint (s, "peak-bitrate", &peak)) {
+            self->average_bitrate = average;
+            self->peak_bitrate = peak;
+            set_bitrate (self);
+            update_bitrate (self);
+
+            gst_event_unref (event);
+
+            return TRUE;
+          }
+        } else if (s && gst_structure_has_name (s, "uvc-h264-qp-control")) {
+          gint min_qp, max_qp;
+          gboolean valid_event = FALSE;
+
+          if (gst_structure_get_int (s, "min-iframe-qp", &min_qp) &&
+              gst_structure_get_int (s, "max-iframe-qp", &max_qp)) {
+            self->min_qp[QP_I_FRAME] = min_qp;
+            self->max_qp[QP_I_FRAME] = max_qp;
+            set_qp (self, QP_I_FRAME);
+            update_qp (self, QP_I_FRAME);
+            valid_event = TRUE;
+          }
+          if (gst_structure_get_int (s, "min-pframe-qp", &min_qp) &&
+              gst_structure_get_int (s, "max-pframe-qp", &max_qp)) {
+            self->min_qp[QP_P_FRAME] = min_qp;
+            self->max_qp[QP_P_FRAME] = max_qp;
+            set_qp (self, QP_P_FRAME);
+            update_qp (self, QP_P_FRAME);
+            valid_event = TRUE;
+          }
+          if (gst_structure_get_int (s, "min-bframe-qp", &min_qp) &&
+              gst_structure_get_int (s, "max-bframe-qp", &max_qp)) {
+            self->min_qp[QP_B_FRAME] = min_qp;
+            self->max_qp[QP_B_FRAME] = max_qp;
+            set_qp (self, QP_B_FRAME);
+            update_qp (self, QP_B_FRAME);
+            valid_event = TRUE;
+          }
+
+          if (valid_event) {
+            gst_event_unref (event);
+
+            return TRUE;
+          }
+        } else if (s && gst_structure_has_name (s, "uvc-h264-rate-control")) {
+          UvcH264RateControl rate;
+          gboolean fixed_framerate;
+
+          if (gst_structure_get_enum (s, "rate-control",
+                  UVC_H264_RATECONTROL_TYPE, (gint *) & rate) &&
+              gst_structure_get_boolean (s, "fixed-framerate",
+                  &fixed_framerate)) {
+            self->rate_control = rate;
+            self->fixed_framerate = fixed_framerate;
+            set_rate_control (self);
+            update_rate_control (self);
+
+            gst_event_unref (event);
+
+            return TRUE;
+          }
         }
       }
       if (s && gst_structure_has_name (s, "renegotiate")) {
