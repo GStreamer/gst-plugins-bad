@@ -2244,7 +2244,7 @@ ensure_v4l2src (GstUvcH264Src * self)
       "device", self->device, "num-buffers", self->num_buffers, NULL);
 
   /* Set to NULL if the device changed */
-  if (!g_strcmp0 (device, self->device))
+  if (g_strcmp0 (device, self->device))
     gst_element_set_state (self->v4l2_src, GST_STATE_NULL);
   g_free (device);
 
