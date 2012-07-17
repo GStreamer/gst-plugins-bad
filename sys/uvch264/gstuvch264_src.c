@@ -2228,6 +2228,7 @@ static gboolean
 ensure_v4l2src (GstUvcH264Src * self)
 {
   gchar *device = NULL;
+  GstClock *v4l2_clock = NULL;
 
   if (self->v4l2_src == NULL) {
     /* Create v4l2 source and set it up */
@@ -2242,6 +2243,8 @@ ensure_v4l2src (GstUvcH264Src * self)
   g_object_get (self->v4l2_src, "device", &device, NULL);
   g_object_set (self->v4l2_src,
       "device", self->device, "num-buffers", self->num_buffers, NULL);
+
+  v4l2_clock = gst_element_get_clock (self->v4l2_src);
 
   /* Set to NULL if the device changed */
   if (g_strcmp0 (device, self->device))
@@ -2263,6 +2266,10 @@ ensure_v4l2src (GstUvcH264Src * self)
         ("Device is not a valid UVC H264 camera"), (NULL));
     goto error_remove;
   }
+
+  /* going to state READY makes v4l2src lose its reference to the clock */
+  if (v4l2_clock)
+    gst_element_set_clock (self->v4l2_src, v4l2_clock);
 
   return TRUE;
 
