@@ -1620,8 +1620,7 @@ gst_uvc_h264_src_parse_event (GstUvcH264Src * self, GstPad * pad,
             }
           }
         } else if (s &&
-            gst_structure_has_name (s, "uvc_h264_ltr_picture_control")) {
-          /* TODO: Use - instead of _ for the event name */
+            gst_structure_has_name (s, "uvc-h264-ltr-picture-control")) {
           guint put_at, encode_using;
 
           if (gst_structure_get_uint (s, "put-at", &put_at) &&
