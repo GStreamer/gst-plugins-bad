@@ -228,6 +228,7 @@ static gboolean gst_uvc_h264_src_event_probe (GstPad * pad,
     GstEvent * event, gpointer user_data);
 static void gst_uvc_h264_src_pad_linking_cb (GstPad * pad,
     GstPad * peer, gpointer user_data);
+static GstCaps *gst_uvc_h264_src_getcaps (GstPad * pad);
 
 
 static void v4l2src_prepare_format (GstElement * v4l2src, gint fd, guint fourcc,
@@ -519,6 +520,8 @@ gst_uvc_h264_src_init (GstUvcH264Src * self, GstUvcH264SrcClass * klass)
   self->vfsrc =
       gst_ghost_pad_new_no_target (GST_BASE_CAMERA_SRC_VIEWFINDER_PAD_NAME,
       GST_PAD_SRC);
+  gst_pad_set_getcaps_function (self->vfsrc,
+      GST_DEBUG_FUNCPTR (gst_uvc_h264_src_getcaps));
   gst_element_add_pad (GST_ELEMENT (self), self->vfsrc);
 
   self->imgsrc =
@@ -529,6 +532,8 @@ gst_uvc_h264_src_init (GstUvcH264Src * self, GstUvcH264SrcClass * klass)
   self->vidsrc =
       gst_ghost_pad_new_no_target (GST_BASE_CAMERA_SRC_VIDEO_PAD_NAME,
       GST_PAD_SRC);
+  gst_pad_set_getcaps_function (self->vidsrc,
+      GST_DEBUG_FUNCPTR (gst_uvc_h264_src_getcaps));
   gst_element_add_pad (GST_ELEMENT (self), self->vidsrc);
   gst_pad_add_buffer_probe (self->vidsrc,
       (GCallback) gst_uvc_h264_src_buffer_probe, self);
@@ -2783,6 +2788,36 @@ error:
 
   self->reconfiguring = FALSE;
   return FALSE;
+}
+
+static GstCaps *
+gst_uvc_h264_src_getcaps (GstPad * pad)
+{
+  GstUvcH264Src *self = GST_UVC_H264_SRC (GST_OBJECT_PARENT (pad));
+  GstCaps *template = NULL;
+  GstCaps *result = NULL;
+
+  if (pad == self->vfsrc)
+    template = gst_static_pad_template_get_caps (&vfsrc_template);
+  else if (pad == self->vidsrc)
+    template = gst_static_pad_template_get_caps (&vidsrc_template);
+  else
+    template = gst_caps_new_empty ();
+
+  if (self->v4l2_src) {
+    GstPad *v4l_pad = gst_element_get_static_pad (self->v4l2_src, "src");
+    GstCaps *v4l_caps = gst_pad_get_caps (v4l_pad);
+
+
+    result = gst_caps_intersect (v4l_caps, template);
+    gst_object_unref (v4l_pad);
+    gst_caps_unref (v4l_caps);
+    gst_caps_unref (template);
+  } else {
+    result = template;
+  }
+
+  return result;
 }
 
 static gboolean
