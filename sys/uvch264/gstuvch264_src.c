@@ -2054,6 +2054,28 @@ _extract_caps_info (GstStructure * structure, guint16 * width, guint16 * height,
   return ret;
 }
 
+static guint16
+_extract_profile (GstStructure * structure)
+{
+  const gchar *profile_str;
+  guint16 profile;
+
+  profile = UVC_H264_PROFILE_HIGH;
+  profile_str = gst_structure_get_string (structure, "profile");
+  if (profile_str) {
+    if (!strcmp (profile_str, "constrained-baseline")) {
+      profile = UVC_H264_PROFILE_CONSTRAINED_BASELINE;
+    } else if (!strcmp (profile_str, "baseline")) {
+      profile = UVC_H264_PROFILE_BASELINE;
+    } else if (!strcmp (profile_str, "main")) {
+      profile = UVC_H264_PROFILE_MAIN;
+    } else if (!strcmp (profile_str, "high")) {
+      profile = UVC_H264_PROFILE_HIGH;
+    }
+  }
+  return profile;
+}
+
 /*
  * Algorithm/code copied from v4l2src's negotiate vmethod
  */
@@ -2310,7 +2332,6 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
   GstPad *v4l_pad = NULL;
   GstCaps *v4l_caps = NULL;
   const gchar *stream_format;
-  const gchar *profile;
 
   enum
   {
@@ -2417,21 +2438,7 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
         self->main_stream_format = UVC_H264_STREAMFORMAT_NAL;
     }
 
-    /* TODO: set output caps from demuxer into the right ones
-     * (Logitech C920 doesn't do baseline itself, only constrained) */
-    self->main_profile = UVC_H264_PROFILE_HIGH;
-    profile = gst_structure_get_string (vid_struct, "profile");
-    if (profile) {
-      if (!strcmp (profile, "constrained-baseline")) {
-        self->main_profile = UVC_H264_PROFILE_CONSTRAINED_BASELINE;
-      } else if (!strcmp (profile, "baseline")) {
-        self->main_profile = UVC_H264_PROFILE_BASELINE;
-      } else if (!strcmp (profile, "main")) {
-        self->main_profile = UVC_H264_PROFILE_MAIN;
-      } else if (!strcmp (profile, "high")) {
-        self->main_profile = UVC_H264_PROFILE_HIGH;
-      }
-    }
+    self->main_profile = _extract_profile (vid_struct);
 
     if (gst_structure_has_name (vf_struct, "image/jpeg")) {
       type = H264_JPG;
@@ -2476,19 +2483,7 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
           self->main_stream_format = UVC_H264_STREAMFORMAT_NAL;
       }
 
-      self->main_profile = UVC_H264_PROFILE_HIGH;
-      profile = gst_structure_get_string (vid_struct, "profile");
-      if (profile) {
-        if (!strcmp (profile, "constrained-baseline")) {
-          self->main_profile = UVC_H264_PROFILE_CONSTRAINED_BASELINE;
-        } else if (!strcmp (profile, "baseline")) {
-          self->main_profile = UVC_H264_PROFILE_BASELINE;
-        } else if (!strcmp (profile, "main")) {
-          self->main_profile = UVC_H264_PROFILE_MAIN;
-        } else if (!strcmp (profile, "high")) {
-          self->main_profile = UVC_H264_PROFILE_HIGH;
-        }
-      }
+      self->main_profile = _extract_profile (vid_struct);
     } else if (vid_struct && gst_structure_has_name (vid_struct, "image/jpeg")) {
       type = ENCODED_NONE;
       self->main_format = UVC_H264_SRC_FORMAT_JPG;
