@@ -1857,10 +1857,6 @@ fill_probe_commit (GstUvcH264Src * self,
   probe->bPreviewFlipped = self->preview_flipped ?
       UVC_H264_PREFLIPPED_HORIZONTAL : UVC_H264_PREFLIPPED_DISABLE;
   probe->wLeakyBucketSize = self->leaky_bucket_size;
-  /* FIXME: if requesting baseline, this will return width = 0 and height=0
-     and it will generate 320x240 h264 buffers which can't be pushed */
-  probe->bmHints = UVC_H264_BMHINTS_RESOLUTION | UVC_H264_BMHINTS_PROFILE |
-      UVC_H264_BMHINTS_FRAME_INTERVAL;
 }
 
 static void
@@ -1977,6 +1973,8 @@ configure_h264 (GstUvcH264Src * self, gint fd)
     probe.bStreamMuxOption = 3;
   else
     probe.bStreamMuxOption = 0;
+  probe.bmHints = UVC_H264_BMHINTS_RESOLUTION | UVC_H264_BMHINTS_PROFILE |
+      UVC_H264_BMHINTS_FRAME_INTERVAL;
 
   GST_DEBUG_OBJECT (self, "PROBE SET_CUR : ");
   print_probe_commit (self, &probe);
