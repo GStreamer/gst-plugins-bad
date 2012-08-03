@@ -2076,6 +2076,65 @@ _extract_profile (GstStructure * structure)
   return profile;
 }
 
+static GstCaps *
+gst_uvc_h264_src_transform_caps (GstUvcH264Src * self, GstCaps * caps)
+{
+  GstElement *csp = gst_element_factory_make (self->colorspace_name, NULL);
+  GstElement *cf = gst_element_factory_make ("capsfilter", NULL);
+  GstCaps *h264 = gst_caps_new_simple ("video/x-h264", NULL);
+  GstCaps *jpg = gst_caps_new_simple ("image/jpeg", NULL);
+  GstCaps *h264_caps = gst_caps_intersect (h264, caps);
+  GstCaps *jpg_caps = gst_caps_intersect (jpg, caps);
+  GstPad *sink = NULL;
+
+  gst_caps_unref (h264);
+  gst_caps_unref (jpg);
+
+  if (!csp || !cf || !gst_bin_add (GST_BIN (self), csp)) {
+    if (csp)
+      gst_object_unref (csp);
+    if (cf)
+      gst_object_unref (cf);
+    goto error;
+  }
+  if (!gst_bin_add (GST_BIN (self), cf)) {
+    gst_object_unref (cf);
+    gst_bin_remove (GST_BIN (self), csp);
+    goto error;
+  }
+  if (!gst_element_link (csp, cf))
+    goto error_remove;
+
+  sink = gst_element_get_static_pad (csp, "sink");
+  if (!sink)
+    goto error_remove;
+  g_object_set (cf, "caps", caps, NULL);
+
+  caps = gst_pad_get_caps (sink);
+  gst_object_unref (sink);
+
+  if (!gst_caps_is_empty (h264_caps)) {
+    GstCaps *temp = gst_caps_union (caps, h264_caps);
+    gst_caps_unref (caps);
+    caps = temp;
+  }
+  if (!gst_caps_is_empty (jpg_caps)) {
+    GstCaps *temp = gst_caps_union (caps, jpg_caps);
+    gst_caps_unref (caps);
+    caps = temp;
+  }
+error_remove:
+  gst_bin_remove (GST_BIN (self), cf);
+  gst_bin_remove (GST_BIN (self), csp);
+error:
+  if (h264_caps)
+    gst_caps_unref (h264_caps);
+  if (jpg_caps)
+    gst_caps_unref (jpg_caps);
+
+  return caps;
+}
+
 /*
  * Algorithm/code copied from v4l2src's negotiate vmethod
  */
@@ -2800,11 +2859,12 @@ gst_uvc_h264_src_getcaps (GstPad * pad)
   if (self->v4l2_src) {
     GstPad *v4l_pad = gst_element_get_static_pad (self->v4l2_src, "src");
     GstCaps *v4l_caps = gst_pad_get_caps (v4l_pad);
+    GstCaps *new_caps = gst_uvc_h264_src_transform_caps (self, v4l_caps);
 
-
-    result = gst_caps_intersect (v4l_caps, template);
+    result = gst_caps_intersect (new_caps, template);
     gst_object_unref (v4l_pad);
     gst_caps_unref (v4l_caps);
+    gst_caps_unref (new_caps);
     gst_caps_unref (template);
   } else {
     result = template;
