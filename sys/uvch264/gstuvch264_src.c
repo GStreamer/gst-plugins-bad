@@ -2100,42 +2100,53 @@ _extract_stream_format (GstStructure * structure)
 }
 
 static GstCaps *
-gst_uvc_h264_src_transform_caps (GstUvcH264Src * self, GstCaps * caps)
+_transform_caps (GstUvcH264Src * self, GstCaps * caps, const gchar * name)
 {
-  GstElement *csp = gst_element_factory_make (self->colorspace_name, NULL);
+  GstElement *el = gst_element_factory_make (name, NULL);
   GstElement *cf = gst_element_factory_make ("capsfilter", NULL);
-  GstCaps *h264 = gst_caps_new_simple ("video/x-h264", NULL);
-  GstCaps *jpg = gst_caps_new_simple ("image/jpeg", NULL);
-  GstCaps *h264_caps = gst_caps_intersect (h264, caps);
-  GstCaps *jpg_caps = gst_caps_intersect (jpg, caps);
-  GstPad *sink = NULL;
+  GstPad *sink;
 
-  gst_caps_unref (h264);
-  gst_caps_unref (jpg);
-
-  /* TODO: Keep caps order after transformation */
-  if (!csp || !cf || !gst_bin_add (GST_BIN (self), csp)) {
-    if (csp)
-      gst_object_unref (csp);
+  if (!el || !cf || !gst_bin_add (GST_BIN (self), el)) {
+    if (el)
+      gst_object_unref (el);
     if (cf)
       gst_object_unref (cf);
-    goto error;
+    goto done;
   }
   if (!gst_bin_add (GST_BIN (self), cf)) {
     gst_object_unref (cf);
-    gst_bin_remove (GST_BIN (self), csp);
-    goto error;
+    gst_bin_remove (GST_BIN (self), el);
+    goto done;
   }
-  if (!gst_element_link (csp, cf))
+  if (!gst_element_link (el, cf))
     goto error_remove;
 
-  sink = gst_element_get_static_pad (csp, "sink");
+  sink = gst_element_get_static_pad (el, "sink");
   if (!sink)
     goto error_remove;
   g_object_set (cf, "caps", caps, NULL);
 
   caps = gst_pad_get_caps (sink);
   gst_object_unref (sink);
+
+error_remove:
+  gst_bin_remove (GST_BIN (self), cf);
+  gst_bin_remove (GST_BIN (self), el);
+
+done:
+  return caps;
+}
+
+static GstCaps *
+gst_uvc_h264_src_transform_caps (GstUvcH264Src * self, GstCaps * caps)
+{
+  GstCaps *h264 = gst_caps_new_simple ("video/x-h264", NULL);
+  GstCaps *jpg = gst_caps_new_simple ("image/jpeg", NULL);
+  GstCaps *h264_caps = gst_caps_intersect (h264, caps);
+  GstCaps *jpg_caps = gst_caps_intersect (jpg, caps);
+
+  /* TODO: Keep caps order after transformation */
+  caps = _transform_caps (self, caps, self->colorspace_name);
 
   if (!gst_caps_is_empty (h264_caps)) {
     GstCaps *temp = gst_caps_union (caps, h264_caps);
@@ -2147,14 +2158,14 @@ gst_uvc_h264_src_transform_caps (GstUvcH264Src * self, GstCaps * caps)
     gst_caps_unref (caps);
     caps = temp;
   }
-error_remove:
-  gst_bin_remove (GST_BIN (self), cf);
-  gst_bin_remove (GST_BIN (self), csp);
-error:
+
   if (h264_caps)
     gst_caps_unref (h264_caps);
   if (jpg_caps)
     gst_caps_unref (jpg_caps);
+  gst_caps_unref (h264);
+  gst_caps_unref (jpg);
+
 
   return caps;
 }
@@ -2170,17 +2181,11 @@ gst_uvc_h264_src_fixate_caps (GstUvcH264Src * self, GstPad * v4l_pad,
 
   if (v4l_caps == NULL || gst_caps_is_any (v4l_caps)) {
     GST_DEBUG_OBJECT (self, "v4l caps are invalid. not fixating");
-    gst_caps_unref (peer_caps);
     return NULL;
   }
 
-  tcaps = gst_uvc_h264_src_transform_caps (self, peer_caps);
-  gst_caps_unref (peer_caps);
-  GST_DEBUG_OBJECT (self, "transformed: %" GST_PTR_FORMAT, tcaps);
-  icaps = gst_caps_intersect (v4l_caps, tcaps);
-  gst_caps_unref (tcaps);
-  GST_DEBUG_OBJECT (self, "intersect: %" GST_PTR_FORMAT, icaps);
-  tcaps = icaps;
+  tcaps = gst_caps_intersect (v4l_caps, peer_caps);
+  GST_DEBUG_OBJECT (self, "intersect: %" GST_PTR_FORMAT, tcaps);
   icaps = gst_caps_normalize (tcaps);
   gst_caps_unref (tcaps);
 
@@ -2457,6 +2462,7 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
   GstCaps *src_caps = NULL;
   GstPad *v4l_pad = NULL;
   GstCaps *v4l_caps = NULL;
+  gboolean jpg2raw = FALSE;
 
   enum
   {
@@ -2500,8 +2506,13 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
   v4l_caps = gst_pad_get_caps (v4l_pad);
   GST_DEBUG_OBJECT (self, "v4l2src caps : %" GST_PTR_FORMAT, v4l_caps);
   if (vid_caps) {
-    vid_caps = gst_uvc_h264_src_fixate_caps (self, v4l_pad, v4l_caps, vid_caps,
-        TRUE);
+    GstCaps *trans_caps = gst_uvc_h264_src_transform_caps (self, vid_caps);
+
+    gst_caps_unref (vid_caps);
+    vid_caps = gst_uvc_h264_src_fixate_caps (self, v4l_pad, v4l_caps,
+        trans_caps, TRUE);
+    gst_caps_unref (trans_caps);
+
     if (vid_caps) {
       vid_struct = gst_caps_get_structure (vid_caps, 0);
     } else {
@@ -2529,8 +2540,24 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
   }
 
   if (vf_caps) {
-    vf_caps = gst_uvc_h264_src_fixate_caps (self, v4l_pad, v4l_caps, vf_caps,
-        FALSE);
+    GstCaps *trans_caps = gst_uvc_h264_src_transform_caps (self, vf_caps);
+
+    gst_caps_unref (vf_caps);
+    vf_caps = gst_uvc_h264_src_fixate_caps (self, v4l_pad, v4l_caps,
+        trans_caps, FALSE);
+
+    /* If we couldn't find a suitable vf cap, try the jpeg2raw pipeline */
+    if (!vf_caps && self->main_format == UVC_H264_SRC_FORMAT_H264) {
+      GstCaps *jpg_caps;
+
+      jpg2raw = TRUE;
+      jpg_caps = _transform_caps (self, trans_caps, self->jpeg_decoder_name);
+
+      vf_caps = gst_uvc_h264_src_fixate_caps (self, v4l_pad, v4l_caps,
+          jpg_caps, FALSE);
+      gst_caps_unref (jpg_caps);
+    }
+    gst_caps_unref (trans_caps);
     if (vf_caps) {
       vf_struct = gst_caps_get_structure (vf_caps, 0);
     } else {
@@ -2567,14 +2594,11 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
             &self->secondary_height, &self->secondary_frame_interval))
       goto error_remove;
 
-    if (gst_structure_has_name (vf_struct, "image/jpeg")) {
+    if (jpg2raw == FALSE && gst_structure_has_name (vf_struct, "image/jpeg")) {
       type = H264_JPG;
       self->secondary_format = UVC_H264_SRC_FORMAT_JPG;
     } else {
-      /* TODO: shouldn't be needed anymore to check for max width/height
-       * with the new fixate_caps */
-      /* TODO: a 640x480 jpg2raw will not work anymore with the new fixate_caps */
-      if (self->secondary_width > 432 || self->secondary_height > 240) {
+      if (jpg2raw) {
         type = H264_JPG2RAW;
         self->secondary_format = UVC_H264_SRC_FORMAT_JPG;
       } else {
