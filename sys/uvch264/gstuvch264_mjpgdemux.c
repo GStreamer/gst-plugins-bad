@@ -404,10 +404,7 @@ _pts_to_timestamp (GstUvcH264MjpgDemux * self, GstBuffer * buf, guint32 pts)
   GstUvcH264ClockSample *oldest_sample = NULL;
   guint32 next_sample;
   struct uvc_last_scr_sample sample;
-  guint64 sof, delta_stc, mean, x1, x2, y1, y2;
   guint32 dev_sof;
-  GstClockTime ts;
-  GstClockTime base_time = gst_element_get_base_time (GST_ELEMENT (self));
 
   if (self->priv->device_fd == -1 || priv->clock_samples == NULL)
     return FALSE;
@@ -451,52 +448,9 @@ _pts_to_timestamp (GstUvcH264MjpgDemux * self, GstBuffer * buf, guint32 pts)
   next_sample = (priv->last_sample + 1) % priv->num_clock_samples;
   oldest_sample = &priv->clock_samples[next_sample];
 
-  /* This algorithm was taken from the uvcvideo kernel driver
-   * TODO: Check if the algorithm itself (code is almost identical)
-   * can cause licensing issues.
-   */
-  /* PTS to SOF conversion */
-  delta_stc = pts - (1 << 31);
-  x1 = oldest_sample->dev_stc - delta_stc;
-  x2 = current_sample->dev_stc - delta_stc;
-  y1 = oldest_sample->dev_sof;
-  y2 = current_sample->dev_sof;
-  /* Fix rollover */
-  if (y2 < y1)
-    y2 += 2048 << 16;
-
-  /* Avoid division by zero */
-  if (x1 == x2)
-    return FALSE;
-  sof = ((y2 - y1) * (1 << 31) + y1 * x2 - y2 * x1) / (x2 - x1);
-
-  /* SOF to host clock conversion */
-  x1 = oldest_sample->host_sof;
-  x2 = current_sample->host_sof;
-  if (x2 < x1)
-    x2 += 2048 << 16;
-  y1 = GST_SECOND;
-  y2 = (current_sample->host_ts - oldest_sample->host_ts) + GST_SECOND;
-
-  mean = (x1 + x2) / 2;
-  if (mean - (1024 << 16) > sof)
-    sof += 2048 << 16;
-  else if (sof > mean + (1024 << 16))
-    sof -= 2048 << 16;
-
-  /* Avoid division by zero */
-  if (x1 == x2)
-    return FALSE;
-  ts = ((y2 - y1) * sof + y1 * x2 - y2 * x1) / (x2 - x1);
-  ts = oldest_sample->host_ts - GST_SECOND + ts;
-  ts -= base_time;
-
-  GST_DEBUG_OBJECT (self, "buffer timestamp: %lu -- %" GST_TIME_FORMAT,
-      GST_BUFFER_TIMESTAMP (buf), GST_TIME_ARGS (GST_BUFFER_TIMESTAMP (buf)));
-  GST_DEBUG_OBJECT (self, "converted PTS: %lu -- %" GST_TIME_FORMAT,
-      ts, GST_TIME_ARGS (ts));
-
-  GST_BUFFER_TIMESTAMP (buf) = ts;
+  /* TODO: Use current_sample and oldest_sample to do the
+   * double linear regression and calculate a new PTS */
+  (void) oldest_sample;
 
   return TRUE;
 }
