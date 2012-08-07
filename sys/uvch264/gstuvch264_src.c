@@ -235,7 +235,8 @@ static void v4l2src_prepare_format (GstElement * v4l2src, gint fd, guint fourcc,
     guint width, guint height, gpointer user_data);
 static void fill_probe_commit (GstUvcH264Src * self,
     uvcx_video_config_probe_commit_t * probe, guint32 frame_interval,
-    guint32 width, guint32 height, guint32 profile);
+    guint32 width, guint32 height, guint32 profile,
+    UvcH264StreamFormat stream_format);
 static gboolean xu_query (GstUvcH264Src * self, guint selector, guint query,
     guchar * data);
 
@@ -771,7 +772,7 @@ gst_uvc_h264_src_get_property (GObject * object,
     case PROP_NUM_REORDER_FRAMES:
     case PROP_PREVIEW_FLIPPED:
     case PROP_LEAKY_BUCKET_SIZE:
-      fill_probe_commit (self, &probe, 0, 0, 0, 0);
+      fill_probe_commit (self, &probe, 0, 0, 0, 0, 0);
       if (GST_STATE (self) >= GST_STATE_PAUSED) {
         xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_GET_CUR,
             (guchar *) & probe);
@@ -1835,7 +1836,8 @@ xu_query (GstUvcH264Src * self, guint selector, guint query, guchar * data)
 static void
 fill_probe_commit (GstUvcH264Src * self,
     uvcx_video_config_probe_commit_t * probe, guint32 frame_interval,
-    guint32 width, guint32 height, guint32 profile)
+    guint32 width, guint32 height, guint32 profile,
+    UvcH264StreamFormat stream_format)
 {
   probe->dwFrameInterval = frame_interval;
   probe->dwBitRate = self->initial_bitrate;
@@ -1849,7 +1851,7 @@ fill_probe_commit (GstUvcH264Src * self,
   probe->bRateControlMode = self->rate_control;
   if (self->fixed_framerate)
     probe->bRateControlMode |= UVC_H264_RATECONTROL_FIXED_FRM_FLG;
-  probe->bStreamFormat = self->main_stream_format;
+  probe->bStreamFormat = stream_format;
   probe->bEntropyCABAC = self->entropy;
   probe->bTimestamp = self->enable_sei ?
       UVC_H264_TIMESTAMP_SEI_ENABLE : UVC_H264_TIMESTAMP_SEI_DISABLE;
@@ -1968,7 +1970,8 @@ configure_h264 (GstUvcH264Src * self, gint fd)
   print_probe_commit (self, &probe);
 
   fill_probe_commit (self, &probe, self->main_frame_interval,
-      self->main_width, self->main_height, self->main_profile);
+      self->main_width, self->main_height, self->main_profile,
+      self->main_stream_format);
   if (self->secondary_format != UVC_H264_SRC_FORMAT_NONE)
     probe.bStreamMuxOption = 3;
   else
@@ -2074,6 +2077,21 @@ _extract_profile (GstStructure * structure)
     }
   }
   return profile;
+}
+
+static UvcH264StreamFormat
+_extract_stream_format (GstStructure * structure)
+{
+  const gchar *stream_format;
+
+  stream_format = gst_structure_get_string (structure, "stream-format");
+  if (stream_format) {
+    if (!strcmp (stream_format, "avc"))
+      return UVC_H264_STREAMFORMAT_ANNEXB;
+    else if (!strcmp (stream_format, "byte-stream"))
+      return UVC_H264_STREAMFORMAT_NAL;
+  }
+  return UVC_H264_STREAMFORMAT_ANNEXB;
 }
 
 static GstCaps *
@@ -2390,7 +2408,6 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
   GstCaps *src_caps = NULL;
   GstPad *v4l_pad = NULL;
   GstCaps *v4l_caps = NULL;
-  const gchar *stream_format;
 
   enum
   {
@@ -2488,15 +2505,7 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
             &self->main_height, &self->main_frame_interval))
       goto error_remove;
 
-    self->main_stream_format = UVC_H264_STREAMFORMAT_ANNEXB;
-    stream_format = gst_structure_get_string (vid_struct, "stream-format");
-    if (stream_format) {
-      if (!strcmp (stream_format, "avc"))
-        self->main_stream_format = UVC_H264_STREAMFORMAT_ANNEXB;
-      else if (!strcmp (stream_format, "byte-stream"))
-        self->main_stream_format = UVC_H264_STREAMFORMAT_NAL;
-    }
-
+    self->main_stream_format = _extract_stream_format (vid_struct);
     self->main_profile = _extract_profile (vid_struct);
 
     if (gst_structure_has_name (vf_struct, "image/jpeg")) {
@@ -2533,15 +2542,7 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
       if (!_extract_caps_info (vid_struct, &self->main_width,
               &self->main_height, &self->main_frame_interval))
         goto error_remove;
-      self->main_stream_format = UVC_H264_STREAMFORMAT_ANNEXB;
-      stream_format = gst_structure_get_string (vid_struct, "stream-format");
-      if (stream_format) {
-        if (!strcmp (stream_format, "avc"))
-          self->main_stream_format = UVC_H264_STREAMFORMAT_ANNEXB;
-        else if (!strcmp (stream_format, "byte-stream"))
-          self->main_stream_format = UVC_H264_STREAMFORMAT_NAL;
-      }
-
+      self->main_stream_format = _extract_stream_format (vid_struct);
       self->main_profile = _extract_profile (vid_struct);
     } else if (vid_struct && gst_structure_has_name (vid_struct, "image/jpeg")) {
       type = ENCODED_NONE;
