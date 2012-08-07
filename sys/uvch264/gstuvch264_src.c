@@ -1703,6 +1703,16 @@ gst_uvc_h264_src_parse_event (GstUvcH264Src * self, GstPad * pad,
 
             return TRUE;
           }
+        } else if (s && gst_structure_has_name (s, "uvc-h264-level-idc")) {
+          guint level_idc;
+
+          if (gst_structure_get_uint (s, "level-idc", &level_idc)) {
+            self->level_idc = level_idc;
+            set_level_idc (self);
+            update_level_idc_and_get_max_mbps (self);
+
+            gst_event_unref (event);
+          }
         }
       }
       if (s && gst_structure_has_name (s, "renegotiate")) {
