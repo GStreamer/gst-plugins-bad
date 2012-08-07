@@ -4,11 +4,6 @@
  * Copyright (C) 2012 Cisco Systems, Inc.
  *   Author: Youness Alaoui <youness.alaoui@collabora.co.uk>
  *
- * The gst_uvc_h264_src_fixate_caps function was  copied largely
- * from v4l2src which has the following copyrights :
- * Copyright (C) 2001-2002 Ronald Bultje <rbultje@ronald.bitfreak.net>
- *               2006 Edgard Lima <edgard.lima@indt.org.br>
- *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
  * License as published by the Free Software Foundation; either
@@ -2153,95 +2148,136 @@ error:
   return caps;
 }
 
-/*
- * Algorithm/code copied from v4l2src's negotiate vmethod
- */
 static GstCaps *
 gst_uvc_h264_src_fixate_caps (GstUvcH264Src * self, GstPad * v4l_pad,
-    GstCaps * v4l_caps, GstCaps * peer_caps)
+    GstCaps * v4l_caps, GstCaps * peer_caps, gboolean primary)
 {
   GstCaps *caps = NULL;
+  GstCaps *icaps = NULL;
+  GstCaps *tcaps = NULL;
+  int i;
 
-  /* TODO: need to use uvc probe (no commit) to fixate h264 caps */
-  /* nothing or anything is allowed, we're done */
   if (v4l_caps == NULL || gst_caps_is_any (v4l_caps)) {
     GST_DEBUG_OBJECT (self, "v4l caps are invalid. not fixating");
     gst_caps_unref (peer_caps);
     return NULL;
   }
 
-  if (gst_caps_is_any (peer_caps)) {
-    /* peer have ANY caps, work with our own caps then */
-    caps = gst_caps_copy (v4l_caps);
-  } else {
-    GstCaps *icaps = NULL;
-    int i;
+  tcaps = gst_uvc_h264_src_transform_caps (self, peer_caps);
+  gst_caps_unref (peer_caps);
+  GST_DEBUG_OBJECT (self, "transformed: %" GST_PTR_FORMAT, tcaps);
+  icaps = gst_caps_intersect (v4l_caps, tcaps);
+  gst_caps_unref (tcaps);
+  GST_DEBUG_OBJECT (self, "intersect: %" GST_PTR_FORMAT, icaps);
+  tcaps = icaps;
+  icaps = gst_caps_normalize (tcaps);
+  gst_caps_unref (tcaps);
 
-    /* Prefer the first caps we are compatible with that the peer proposed */
-    for (i = 0; i < gst_caps_get_size (peer_caps); i++) {
-      /* get intersection */
-      GstCaps *ipcaps = gst_caps_copy_nth (peer_caps, i);
-      GstStructure *s = gst_caps_get_structure (ipcaps, 0);
+  /* Prefer the first caps we are compatible with that the peer proposed */
+  for (i = 0; i < gst_caps_get_size (icaps); i++) {
+    /* get intersection */
+    GstCaps *ipcaps = gst_caps_copy_nth (icaps, i);
+    GstStructure *s = gst_caps_get_structure (ipcaps, 0);
 
-      /* Remove the format setting */
-      /* TODO: Need to actually transform raw through colorspace */
-      gst_structure_remove_field (s, "format");
+    GST_DEBUG_OBJECT (self, "Testing %s: %" GST_PTR_FORMAT,
+        primary ? "primary" : "secondary", ipcaps);
+    if (primary && gst_structure_has_name (s, "video/x-h264")) {
+      uvcx_video_config_probe_commit_t probe;
+      guint16 width;
+      guint16 height;
+      guint32 interval;
+      guint16 profile;
+      UvcH264StreamFormat stream_format;
 
-      GST_DEBUG_OBJECT (self, "peer: %" GST_PTR_FORMAT, ipcaps);
+      if (_extract_caps_info (s, &width, &height, &interval)) {
+        profile = _extract_profile (s);
+        stream_format = _extract_stream_format (s);
+        fill_probe_commit (self, &probe, interval, width, height,
+            profile, stream_format);
+        probe.bmHints = UVC_H264_BMHINTS_RESOLUTION |
+            UVC_H264_BMHINTS_PROFILE | UVC_H264_BMHINTS_FRAME_INTERVAL;
 
-      icaps = gst_caps_intersect (v4l_caps, ipcaps);
-      gst_caps_unref (ipcaps);
-
-      if (!gst_caps_is_empty (icaps))
-        break;
-
-      gst_caps_unref (icaps);
-      icaps = NULL;
-    }
-
-    GST_DEBUG_OBJECT (self, "intersect: %" GST_PTR_FORMAT, icaps);
-
-    if (icaps) {
-      /* If there are multiple intersections pick the one with the smallest
-       * resolution strictly bigger then the first peer caps */
-      if (gst_caps_get_size (icaps) > 1) {
-        GstStructure *s = gst_caps_get_structure (peer_caps, 0);
-        int best = 0;
-        int twidth, theight;
-        int width = G_MAXINT, height = G_MAXINT;
-
-        if (gst_structure_get_int (s, "width", &twidth)
-            && gst_structure_get_int (s, "height", &theight)) {
-
-          /* Walk the structure backwards to get the first entry of the
-           * smallest resolution bigger (or equal to) the preferred resolution)
-           */
-          for (i = gst_caps_get_size (icaps) - 1; i >= 0; i--) {
-            GstStructure *is = gst_caps_get_structure (icaps, i);
-
-            int w, h;
-
-            if (gst_structure_get_int (is, "width", &w)
-                && gst_structure_get_int (is, "height", &h)) {
-              if (w >= twidth && w <= width && h >= theight && h <= height) {
-                width = w;
-                height = h;
-                best = i;
-              }
-            }
-          }
+        if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_SET_CUR,
+                (guchar *) & probe)) {
+          GST_WARNING_OBJECT (self, "PROBE SET_CUR error");
+          return NULL;
         }
 
-        caps = gst_caps_copy_nth (icaps, best);
-        gst_caps_unref (icaps);
-      } else {
-        caps = icaps;
+        if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_GET_CUR,
+                (guchar *) & probe)) {
+          GST_WARNING_OBJECT (self, "PROBE GET_CUR error");
+          return NULL;
+        }
+        GST_DEBUG_OBJECT (self, "Probe gives us %d==%d, %d==%d, %d==%d",
+            probe.wWidth, width, probe.wHeight, height,
+            probe.bStreamFormat, stream_format);
+        if (probe.wWidth == width && probe.wHeight == height &&
+            probe.bStreamFormat == stream_format) {
+          caps = ipcaps;
+          break;
+        }
       }
-    }
-  }
+    } else if (!primary && self->main_format == UVC_H264_SRC_FORMAT_H264) {
+      uvcx_video_config_probe_commit_t probe;
+      guint16 width;
+      guint16 height;
+      guint32 interval;
 
-  if (peer_caps)
-    gst_caps_unref (peer_caps);
+      if (_extract_caps_info (s, &width, &height, &interval)) {
+        if (gst_structure_has_name (s, "video/x-raw-yuv")) {
+          guint32 fcc = 0;
+          guint8 mux = 0;
+
+          if (gst_structure_get_fourcc (s, "format", &fcc)) {
+            if (fcc == GST_MAKE_FOURCC ('Y', 'U', 'Y', '2'))
+              mux = 4;
+            else if (fcc == GST_MAKE_FOURCC ('N', 'V', '1', '2'))
+              mux = 8;
+          }
+          if (mux != 0) {
+            memset (&probe, 0, sizeof (probe));
+            probe.dwFrameInterval = interval;
+            probe.wWidth = width;
+            probe.wHeight = height;
+            probe.bStreamMuxOption = mux | 1;
+            probe.bmHints = UVC_H264_BMHINTS_RESOLUTION |
+                UVC_H264_BMHINTS_PROFILE | UVC_H264_BMHINTS_FRAME_INTERVAL;
+
+            if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_SET_CUR,
+                    (guchar *) & probe)) {
+              GST_WARNING_OBJECT (self, "PROBE SET_CUR error");
+              return NULL;
+            }
+
+            if (!xu_query (self, UVCX_VIDEO_CONFIG_PROBE, UVC_GET_CUR,
+                    (guchar *) & probe)) {
+              GST_WARNING_OBJECT (self, "PROBE GET_CUR error");
+              return NULL;
+            }
+            GST_DEBUG_OBJECT (self, "Probe gives us %d==%d, %d==%d, %d~=%d",
+                probe.wWidth, width, probe.wHeight, height,
+                probe.bStreamMuxOption, mux);
+            if (probe.wWidth == width && probe.wHeight == height &&
+                (probe.bStreamMuxOption & mux) != 0) {
+              caps = ipcaps;
+              break;
+            }
+          }
+        } else if (gst_structure_has_name (s, "image/jpeg")) {
+          /* No way of figuring this one out but it seems the camera doesn't
+           * allow for h264 muxing and jpeg resolution higher than 640x480 */
+          if (width <= 640 && height <= 480) {
+            caps = ipcaps;
+            break;
+          }
+        }
+      }
+    } else {
+      caps = ipcaps;
+      break;
+    }
+    gst_caps_unref (ipcaps);
+  }
 
   if (caps) {
     caps = gst_caps_make_writable (caps);
@@ -2258,6 +2294,7 @@ gst_uvc_h264_src_fixate_caps (GstUvcH264Src * self, GstPad * v4l_pad,
       caps = NULL;
     }
   }
+
   return caps;
 }
 
@@ -2450,20 +2487,9 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
   v4l_pad = gst_element_get_static_pad (self->v4l2_src, "src");
   v4l_caps = gst_pad_get_caps (v4l_pad);
   GST_DEBUG_OBJECT (self, "v4l2src caps : %" GST_PTR_FORMAT, v4l_caps);
-  if (vf_caps) {
-    vf_caps = gst_uvc_h264_src_fixate_caps (self, v4l_pad, v4l_caps, vf_caps);
-    if (vf_caps) {
-      vf_struct = gst_caps_get_structure (vf_caps, 0);
-    } else {
-      GST_WARNING_OBJECT (self, "Could not negotiate vfsrc caps format");
-      gst_object_unref (v4l_pad);
-      gst_caps_unref (v4l_caps);
-      goto error_remove;
-    }
-  }
-  GST_DEBUG_OBJECT (self, "Fixated vfsrc caps : %" GST_PTR_FORMAT, vf_caps);
   if (vid_caps) {
-    vid_caps = gst_uvc_h264_src_fixate_caps (self, v4l_pad, v4l_caps, vid_caps);
+    vid_caps = gst_uvc_h264_src_fixate_caps (self, v4l_pad, v4l_caps, vid_caps,
+        TRUE);
     if (vid_caps) {
       vid_struct = gst_caps_get_structure (vid_caps, 0);
     } else {
@@ -2475,6 +2501,34 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
   }
   GST_DEBUG_OBJECT (self, "Fixated vidsrc caps : %" GST_PTR_FORMAT, vid_caps);
 
+  if (vid_caps && gst_structure_has_name (vid_struct, "video/x-h264")) {
+    self->main_format = UVC_H264_SRC_FORMAT_H264;
+    if (!_extract_caps_info (vid_struct, &self->main_width,
+            &self->main_height, &self->main_frame_interval)) {
+      gst_object_unref (v4l_pad);
+      gst_caps_unref (v4l_caps);
+      goto error_remove;
+    }
+
+    self->main_stream_format = _extract_stream_format (vid_struct);
+    self->main_profile = _extract_profile (vid_struct);
+  } else {
+    self->main_format = UVC_H264_SRC_FORMAT_NONE;
+  }
+
+  if (vf_caps) {
+    vf_caps = gst_uvc_h264_src_fixate_caps (self, v4l_pad, v4l_caps, vf_caps,
+        FALSE);
+    if (vf_caps) {
+      vf_struct = gst_caps_get_structure (vf_caps, 0);
+    } else {
+      GST_WARNING_OBJECT (self, "Could not negotiate vfsrc caps format");
+      gst_object_unref (v4l_pad);
+      gst_caps_unref (v4l_caps);
+      goto error_remove;
+    }
+  }
+  GST_DEBUG_OBJECT (self, "Fixated vfsrc caps : %" GST_PTR_FORMAT, vf_caps);
   gst_object_unref (v4l_pad);
   gst_caps_unref (v4l_caps);
 
@@ -2500,13 +2554,6 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
     if (!_extract_caps_info (vf_struct, &self->secondary_width,
             &self->secondary_height, &self->secondary_frame_interval))
       goto error_remove;
-    self->main_format = UVC_H264_SRC_FORMAT_H264;
-    if (!_extract_caps_info (vid_struct, &self->main_width,
-            &self->main_height, &self->main_frame_interval))
-      goto error_remove;
-
-    self->main_stream_format = _extract_stream_format (vid_struct);
-    self->main_profile = _extract_profile (vid_struct);
 
     if (gst_structure_has_name (vf_struct, "image/jpeg")) {
       type = H264_JPG;
@@ -2534,16 +2581,9 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
         "framerate", GST_TYPE_FRACTION,
         NSEC_PER_SEC / smallest_frame_interval, 100, NULL);
   } else if (vf_caps || vid_caps) {
-    self->main_format = UVC_H264_SRC_FORMAT_NONE;
     self->secondary_format = UVC_H264_SRC_FORMAT_NONE;
     if (vid_struct && gst_structure_has_name (vid_struct, "video/x-h264")) {
       type = ENCODED_NONE;
-      self->main_format = UVC_H264_SRC_FORMAT_H264;
-      if (!_extract_caps_info (vid_struct, &self->main_width,
-              &self->main_height, &self->main_frame_interval))
-        goto error_remove;
-      self->main_stream_format = _extract_stream_format (vid_struct);
-      self->main_profile = _extract_profile (vid_struct);
     } else if (vid_struct && gst_structure_has_name (vid_struct, "image/jpeg")) {
       type = ENCODED_NONE;
       self->main_format = UVC_H264_SRC_FORMAT_JPG;
