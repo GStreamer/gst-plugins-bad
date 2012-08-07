@@ -2103,6 +2103,7 @@ gst_uvc_h264_src_transform_caps (GstUvcH264Src * self, GstCaps * caps)
   gst_caps_unref (h264);
   gst_caps_unref (jpg);
 
+  /* TODO: Keep caps order after transformation */
   if (!csp || !cf || !gst_bin_add (GST_BIN (self), csp)) {
     if (csp)
       gst_object_unref (csp);
@@ -2264,8 +2265,9 @@ gst_uvc_h264_src_fixate_caps (GstUvcH264Src * self, GstPad * v4l_pad,
             }
           }
         } else if (gst_structure_has_name (s, "image/jpeg")) {
-          /* No way of figuring this one out but it seems the camera doesn't
-           * allow for h264 muxing and jpeg resolution higher than 640x480 */
+          /* HACK ALERT:  No way of figuring this one out but it seems the
+           * camera doesn't allow for h264 muxing and jpeg resolution higher
+           * than 640x480 so we shouldn't allow it */
           if (width <= 640 && height <= 480) {
             caps = ipcaps;
             break;
@@ -2559,6 +2561,9 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
       type = H264_JPG;
       self->secondary_format = UVC_H264_SRC_FORMAT_JPG;
     } else {
+      /* TODO: shouldn't be needed anymore to check for max width/height
+       * with the new fixate_caps */
+      /* TODO: a 640x480 jpg2raw will not work anymore with the new fixate_caps */
       if (self->secondary_width > 432 || self->secondary_height > 240) {
         type = H264_JPG2RAW;
         self->secondary_format = UVC_H264_SRC_FORMAT_JPG;
@@ -2574,7 +2579,6 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
       smallest_frame_interval = 333333;
 
     /* Frame interval is in 100ns units */
-    /* TODO: changing width/height screws everything up */
     src_caps = gst_caps_new_simple ("image/jpeg",
         "width", G_TYPE_INT, self->secondary_width,
         "height", G_TYPE_INT, self->secondary_height,
@@ -2768,7 +2772,6 @@ gst_uvc_h264_src_construct_pipeline (GstBaseCameraSrc * bcamsrc)
           gst_object_unref (tee);
         goto error_remove;
       }
-      /* TODO: For some reason this link fails */
       if (!gst_element_link (self->v4l2_src, tee))
         goto error_remove_all;
       vf_pad = gst_element_get_request_pad (tee, "src%d");
