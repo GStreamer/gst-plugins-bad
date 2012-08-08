@@ -2092,9 +2092,9 @@ _extract_stream_format (GstStructure * structure)
   stream_format = gst_structure_get_string (structure, "stream-format");
   if (stream_format) {
     if (!strcmp (stream_format, "avc"))
-      return UVC_H264_STREAMFORMAT_ANNEXB;
-    else if (!strcmp (stream_format, "byte-stream"))
       return UVC_H264_STREAMFORMAT_NAL;
+    else if (!strcmp (stream_format, "byte-stream"))
+      return UVC_H264_STREAMFORMAT_ANNEXB;
   }
   return UVC_H264_STREAMFORMAT_ANNEXB;
 }
