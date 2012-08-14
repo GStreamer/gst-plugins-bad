@@ -2184,7 +2184,8 @@ gst_uvc_h264_src_fixate_caps (GstUvcH264Src * self, GstPad * v4l_pad,
     return NULL;
   }
 
-  tcaps = gst_caps_intersect (v4l_caps, peer_caps);
+  tcaps = gst_caps_intersect_full (peer_caps, v4l_caps,
+      GST_CAPS_INTERSECT_FIRST);
   GST_DEBUG_OBJECT (self, "intersect: %" GST_PTR_FORMAT, tcaps);
   icaps = gst_caps_normalize (tcaps);
   gst_caps_unref (tcaps);
