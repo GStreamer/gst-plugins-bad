@@ -27,6 +27,8 @@ libgstuvch264_la_CFLAGS =   $(GST_PLUGINS_BAD_CFLAGS) \
 	  		    $(GST_BASE_CFLAGS) \
 			    $(GST_VIDEO_CFLAGS) \
 			    $(GST_CFLAGS) \
+			    $(G_UDEV_CFLAGS) \
+			    $(LIBUSB_CFLAGS) \
 			    -DGST_USE_UNSTABLE_API
 
 libgstuvch264_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS)
@@ -37,6 +39,8 @@ libgstuvch264_la_LIBADD =   $(GST_PLUGINS_BASE_LIBS) \
 			    $(GST_PLUGINS_BASE_LIBS) \
 			    $(GST_VIDEO_LIBS) \
 			    $(GST_LIBS) \
+			    $(G_UDEV_LIBS) \
+			    $(LIBUSB_LIBS) \
 			    $(top_builddir)/gst-libs/gst/basecamerabinsrc/libgstbasecamerabinsrc-$(GST_MAJORMINOR).la
 
 noinst_HEADERS = gstuvch264_mjpgdemux.h \

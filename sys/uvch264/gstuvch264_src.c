@@ -38,6 +38,31 @@
 #include <sys/ioctl.h>
 #include <string.h>
 
+#if defined (HAVE_GUDEV) && defined (HAVE_LIBUSB)
+#include <gudev/gudev.h>
+#include <libusb.h>
+
+typedef struct
+{
+  int8_t bLength;
+  int8_t bDescriptorType;
+  int8_t bDescriptorSubType;
+  int8_t bUnitID;
+  uint8_t guidExtensionCode[16];
+} __attribute__ ((__packed__)) xu_descriptor;
+
+#define GUID_FORMAT "02X%02X%02X%02X-%02X%02X%02X%02X-"\
+  "%02X%02X%02X%02X-%02X%02X%02X%02X"
+#define GUID_ARGS(guid) guid[0], guid[1], guid[2], guid[3],       \
+    guid[4], guid[5], guid[6], guid[7],                           \
+    guid[8], guid[9], guid[10], guid[11],                         \
+    guid[12], guid[13], guid[14], guid[15]
+
+#define USB_VIDEO_CONTROL		1
+#define USB_VIDEO_CONTROL_INTERFACE	0x24
+#define USB_VIDEO_CONTROL_XU_TYPE	0x06
+#endif
+
 #include "gstuvch264_src.h"
 #include "gstuvch264-marshal.h"
 
@@ -606,7 +631,13 @@ gst_uvc_h264_src_dispose (GObject * object)
 {
   GstUvcH264Src *self = GST_UVC_H264_SRC (object);
 
+#if defined (HAVE_GUDEV) && defined (HAVE_LIBUSB)
+  if (self->usb_ctx)
+    libusb_exit (self->usb_ctx);
+  self->usb_ctx = NULL;
+#else
   (void) self;
+#endif
 
   G_OBJECT_CLASS (parent_class)->dispose (object);
 }
@@ -1788,14 +1819,103 @@ xu_get_id (GstUvcH264Src * self)
 
   if (self->v4l2_fd == -1) {
     GST_WARNING_OBJECT (self, "Can't query XU with fd = -1");
-    return FALSE;
+    return 0;
   }
 
   memcpy (xu.guid, guid, 16);
   xu.unit = 0;
 
   if (-1 == ioctl (self->v4l2_fd, UVCIOC_XU_FIND_UNIT, &xu)) {
-    GST_WARNING_OBJECT (self, "FIND_UNIT error");
+#if defined (HAVE_GUDEV) && defined (HAVE_LIBUSB)
+    /* Fallback on libusb */
+    GUdevClient *client;
+    GUdevDevice *udevice;
+    GUdevDevice *parent;
+    guint64 busnum;
+    guint64 devnum;
+    libusb_device **device_list = NULL;
+    libusb_device *device = NULL;
+    ssize_t cnt;
+    int i, j, k;
+
+    GST_DEBUG_OBJECT (self, "XU_FIND_UNIT ioctl failed. Fallback on libusb");
+
+    if (self->usb_ctx == NULL)
+      libusb_init (&self->usb_ctx);
+
+    client = g_udev_client_new (NULL);
+    if (client) {
+      udevice = g_udev_client_query_by_device_file (client, self->device);
+      if (udevice) {
+        parent = g_udev_device_get_parent_with_subsystem (udevice, "usb",
+            "usb_device");
+        if (parent) {
+          busnum = g_udev_device_get_sysfs_attr_as_uint64 (parent, "busnum");
+          devnum = g_udev_device_get_sysfs_attr_as_uint64 (parent, "devnum");
+
+          cnt = libusb_get_device_list (self->usb_ctx, &device_list);
+          for (i = 0; i < cnt; i++) {
+            if (busnum == libusb_get_bus_number (device_list[i]) &&
+                devnum == libusb_get_device_address (device_list[i])) {
+              device = libusb_ref_device (device_list[i]);
+              break;
+            }
+          }
+          libusb_free_device_list (device_list, 1);
+          g_object_unref (parent);
+        }
+        g_object_unref (udevice);
+      }
+      g_object_unref (client);
+    }
+
+    if (device) {
+      struct libusb_device_descriptor desc;
+
+      if (libusb_get_device_descriptor (device, &desc) == 0) {
+        for (i = 0; i < desc.bNumConfigurations; ++i) {
+          struct libusb_config_descriptor *config = NULL;
+
+          if (libusb_get_config_descriptor (device, i, &config) == 0) {
+            for (j = 0; j < config->bNumInterfaces; j++) {
+              for (k = 0; k < config->interface[j].num_altsetting; k++) {
+                const struct libusb_interface_descriptor *interface;
+                const guint8 *ptr = NULL;
+
+                interface = &config->interface[j].altsetting[k];
+                if (interface->bInterfaceClass != LIBUSB_CLASS_VIDEO ||
+                    interface->bInterfaceSubClass != USB_VIDEO_CONTROL)
+                  continue;
+                ptr = interface->extra;
+                while (ptr - interface->extra +
+                    sizeof (xu_descriptor) < interface->extra_length) {
+                  xu_descriptor *desc = (xu_descriptor *) ptr;
+
+                  GST_DEBUG_OBJECT (self, "Found VideoControl interface with "
+                      "unit id %d : %" GUID_FORMAT, desc->bUnitID,
+                      GUID_ARGS (desc->guidExtensionCode));
+                  if (desc->bDescriptorType == USB_VIDEO_CONTROL_INTERFACE &&
+                      desc->bDescriptorSubType == USB_VIDEO_CONTROL_XU_TYPE &&
+                      memcmp (desc->guidExtensionCode, guid, 16) == 0) {
+                    guint8 unit_id = desc->bUnitID;
+
+                    GST_DEBUG_OBJECT (self, "Found H264 XU unit : %d", unit_id);
+
+                    libusb_unref_device (device);
+                    return unit_id;
+                  }
+                  ptr += desc->bLength;
+                }
+              }
+            }
+          }
+        }
+      }
+      libusb_unref_device (device);
+    }
+#else
+    GST_WARNING_OBJECT (self, "XU_FIND_UNIT ioctl failed");
+#endif
     return 0;
   }
 

@@ -24,10 +24,17 @@
 #ifndef __GST_UVC_H264_SRC_H__
 #define __GST_UVC_H264_SRC_H__
 
-#include <gst/gst.h>
-#include "uvc_h264.h"
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#endif
 
+#include <gst/gst.h>
 #include <gst/basecamerabinsrc/gstbasecamerasrc.h>
+#if defined (HAVE_GUDEV) && defined (HAVE_LIBUSB)
+#include <libusb.h>
+#endif
+
+#include "uvc_h264.h"
 
 G_BEGIN_DECLS
 #define GST_TYPE_UVC_H264_SRC                   \
@@ -98,6 +105,9 @@ struct _GstUvcH264Src
 
   int v4l2_fd;
   guint8 h264_unit_id;
+#if defined (HAVE_GUDEV) && defined (HAVE_LIBUSB)
+  libusb_context *usb_ctx;
+#endif
 
   GstPadEventFunction srcpad_event_func;
   GstEvent *key_unit_event;

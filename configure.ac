@@ -691,7 +691,19 @@ translit(dnm, m, l) AM_CONDITIONAL(USE_UVCH264, true)
 AG_GST_CHECK_FEATURE(UVCH264, [UVC H264], uvch264, [
   AC_CHECK_HEADER(linux/uvcvideo.h, HAVE_UVCH264=yes, HAVE_UVCH264=no)
   AG_GST_PKG_CHECK_MODULES(GST_VIDEO, gstreamer-video-0.10 >= 0.10.36)
+  PKG_CHECK_MODULES(G_UDEV, gudev-1.0 , [
+          AC_DEFINE([HAVE_GUDEV], 1, [Define if gudev is installed])
+          HAVE_GUDEV="yes" ],
+          [HAVE_GUDEV="no"])
+  PKG_CHECK_MODULES(LIBUSB, libusb-1.0 , [
+          AC_DEFINE([HAVE_LIBUSB], 1, [Define if libusb 1.x is installed])
+          HAVE_LIBUSB="yes" ],
+          [HAVE_LIBUSB="no"])
 ])
+AC_SUBST(LIBUDEV_CFLAGS)
+AC_SUBST(LIBUDEV_LIBS)
+AC_SUBST(LIBUSB_CFLAGS)
+AC_SUBST(LIBUSB_LIBS)
 
 
 dnl *** ext plug-ins ***
