@@ -148,34 +148,41 @@ gst_decklink_get_mode (GstDecklinkModeEnum e)
 }
 
 static GstStructure *
-gst_decklink_mode_get_structure (GstDecklinkModeEnum e)
+gst_decklink_mode_get_structure (GstDecklinkModeEnum e,
+    gboolean restrict_sample)
 {
   const GstDecklinkMode *mode = &modes[e];
+  GstStructure *s;
 
-  return gst_structure_new ("video/x-raw-yuv",
+  s = gst_structure_new ("video/x-raw-yuv",
       "format", GST_TYPE_FOURCC, GST_MAKE_FOURCC ('U', 'Y', 'V', 'Y'),
       "width", G_TYPE_INT, mode->width,
       "height", G_TYPE_INT, mode->height,
       "framerate", GST_TYPE_FRACTION, mode->fps_n, mode->fps_d,
       "interlaced", G_TYPE_BOOLEAN, mode->interlaced,
-      "pixel-aspect-ratio", GST_TYPE_FRACTION, mode->par_n, mode->par_d,
-      "color-matrix", G_TYPE_STRING, mode->is_hdtv ? "hdtv" : "sdtv",
-      "chroma-site", G_TYPE_STRING, "mpeg2", NULL);
+      "pixel-aspect-ratio", GST_TYPE_FRACTION, mode->par_n, mode->par_d, NULL);
+  if (restrict_sample) {
+    gst_structure_set (s, "color-matrix", G_TYPE_STRING,
+        mode->is_hdtv ? "hdtv" : "sdtv", "chroma-site", G_TYPE_STRING,
+        "mpeg2", NULL);
+  }
+  return s;
 }
 
 GstCaps *
-gst_decklink_mode_get_caps (GstDecklinkModeEnum e)
+gst_decklink_mode_get_caps (GstDecklinkModeEnum e, gboolean restrict_sample)
 {
   GstCaps *caps;
 
   caps = gst_caps_new_empty ();
-  gst_caps_append_structure (caps, gst_decklink_mode_get_structure (e));
+  gst_caps_append_structure (caps, gst_decklink_mode_get_structure (e,
+          restrict_sample));
 
   return caps;
 }
 
 GstCaps *
-gst_decklink_mode_get_template_caps (void)
+gst_decklink_mode_get_template_caps (gboolean restrict_sample)
 {
   int i;
   GstCaps *caps;
@@ -183,7 +190,8 @@ gst_decklink_mode_get_template_caps (void)
 
   caps = gst_caps_new_empty ();
   for (i = 0; i < (int) G_N_ELEMENTS (modes); i++) {
-    s = gst_decklink_mode_get_structure ((GstDecklinkModeEnum) i);
+    s = gst_decklink_mode_get_structure ((GstDecklinkModeEnum) i,
+        restrict_sample);
     gst_caps_append_structure (caps, s);
   }
 

@@ -180,7 +180,7 @@ gst_decklink_sink_base_init (gpointer g_class)
 
   pad_template =
       gst_pad_template_new ("videosink", GST_PAD_SINK, GST_PAD_ALWAYS,
-      gst_decklink_mode_get_template_caps ());
+      gst_decklink_mode_get_template_caps (FALSE));
   gst_element_class_add_pad_template (element_class, pad_template);
   gst_object_unref (pad_template);
   gst_element_class_add_static_pad_template (element_class,
@@ -625,7 +625,7 @@ gst_decklink_sink_videosink_getcaps (GstPad * pad)
 
   GST_DEBUG_OBJECT (decklinksink, "getcaps");
 
-  caps = gst_decklink_mode_get_caps (decklinksink->mode);
+  caps = gst_decklink_mode_get_caps (decklinksink->mode, FALSE);
 
   gst_object_unref (decklinksink);
   return caps;

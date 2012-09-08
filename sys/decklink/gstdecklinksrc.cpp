@@ -182,7 +182,7 @@ gst_decklink_src_base_init (gpointer g_class)
       &gst_decklink_src_audio_src_template);
   pad_template =
       gst_pad_template_new ("videosrc", GST_PAD_SRC, GST_PAD_ALWAYS,
-      gst_decklink_mode_get_template_caps ());
+      gst_decklink_mode_get_template_caps (TRUE));
   gst_element_class_add_pad_template (element_class, pad_template);
   gst_object_unref (pad_template);
 
@@ -996,7 +996,7 @@ gst_decklink_src_video_src_getcaps (GstPad * pad)
 
   GST_DEBUG_OBJECT (decklinksrc, "getcaps");
 
-  caps = gst_decklink_mode_get_caps (decklinksrc->mode);
+  caps = gst_decklink_mode_get_caps (decklinksrc->mode, TRUE);
 
   gst_object_unref (decklinksrc);
   return caps;
@@ -1013,7 +1013,7 @@ gst_decklink_src_video_src_setcaps (GstPad * pad, GstCaps * caps)
 
   GST_DEBUG_OBJECT (decklinksrc, "setcaps");
 
-  mode_caps = gst_decklink_mode_get_caps (decklinksrc->mode);
+  mode_caps = gst_decklink_mode_get_caps (decklinksrc->mode, TRUE);
   can_intersect = gst_caps_can_intersect (mode_caps, caps);
   gst_caps_unref (mode_caps);
 
@@ -1033,7 +1033,7 @@ gst_decklink_src_video_src_acceptcaps (GstPad * pad, GstCaps * caps)
 
   GST_DEBUG_OBJECT (decklinksrc, "acceptcaps");
 
-  mode_caps = gst_decklink_mode_get_caps (decklinksrc->mode);
+  mode_caps = gst_decklink_mode_get_caps (decklinksrc->mode, TRUE);
   can_intersect = gst_caps_can_intersect (mode_caps, caps);
   gst_caps_unref (mode_caps);
 
@@ -1345,7 +1345,8 @@ gst_decklink_src_task (void *priv)
   }
 
   if (decklinksrc->video_caps == NULL) {
-    decklinksrc->video_caps = gst_decklink_mode_get_caps (decklinksrc->mode);
+    decklinksrc->video_caps =
+        gst_decklink_mode_get_caps (decklinksrc->mode, TRUE);
   }
   gst_buffer_set_caps (buffer, decklinksrc->video_caps);
 

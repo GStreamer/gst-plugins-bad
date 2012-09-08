@@ -104,8 +104,9 @@ struct _GstDecklinkMode {
 };
 
 const GstDecklinkMode * gst_decklink_get_mode (GstDecklinkModeEnum e);
-GstCaps * gst_decklink_mode_get_caps (GstDecklinkModeEnum e);
-GstCaps * gst_decklink_mode_get_template_caps (void);
+GstCaps * gst_decklink_mode_get_caps (GstDecklinkModeEnum e,
+    gboolean restrict_sample);
+GstCaps * gst_decklink_mode_get_template_caps (gboolean restrict_sample);
 
 IDeckLink * gst_decklink_get_nth_device (int n);
 
