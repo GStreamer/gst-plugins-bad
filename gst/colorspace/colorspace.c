@@ -43,6 +43,7 @@ colorspace_convert_new (GstVideoFormat to_format, ColorSpaceColorSpec to_spec,
     int width, int height)
 {
   ColorspaceConvert *convert;
+  int n_components;
   int i;
 
   g_return_val_if_fail (!gst_video_format_is_rgb (to_format)
@@ -86,7 +87,8 @@ colorspace_convert_new (GstVideoFormat to_format, ColorSpaceColorSpec to_spec,
     convert->use_16bit = FALSE;
   }
 
-  for (i = 0; i < 4; i++) {
+  n_components = 3 + gst_video_format_has_alpha (to_format);
+  for (i = 0; i < n_components; i++) {
     convert->dest_stride[i] = gst_video_format_get_row_stride (to_format, i,
         width);
     convert->dest_offset[i] = gst_video_format_get_component_offset (to_format,
