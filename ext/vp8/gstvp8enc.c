@@ -967,6 +967,7 @@ gst_vp8_enc_process (GstVP8Enc * encoder)
         GST_BUFFER_FLAG_SET (buffer, GST_BUFFER_FLAG_PREROLL);
         frame->output_buffer = buffer;
         gst_video_encoder_finish_frame (video_encoder, frame);
+        gst_video_codec_frame_unref (frame);
       }
 
       pkt = vpx_codec_get_cx_data (&encoder->encoder, &iter);
@@ -1001,6 +1002,7 @@ gst_vp8_enc_process (GstVP8Enc * encoder)
       frame->output_buffer = buffer;
       ret = gst_video_encoder_finish_frame (video_encoder, frame);
     }
+    gst_video_codec_frame_unref (frame);
 
     pkt = vpx_codec_get_cx_data (&encoder->encoder, &iter);
   }
