@@ -518,8 +518,6 @@ gst_decklink_src_start (GstElement * element)
 {
   GstDecklinkSrc *decklinksrc = GST_DECKLINK_SRC (element);
   DeckLinkCaptureDelegate *delegate;
-  //IDeckLinkDisplayModeIterator *mode_iterator;
-  //IDeckLinkDisplayMode *mode;
   BMDAudioSampleType sample_depth;
   int channels;
   HRESULT ret;
@@ -535,23 +533,18 @@ gst_decklink_src_start (GstElement * element)
     return FALSE;
   }
 
-  ret = decklinksrc->decklink->QueryInterface (IID_IDeckLinkInput,
-      (void **) &decklinksrc->input);
-  if (ret != S_OK) {
-    GST_ERROR ("selected device does not have input interface");
-    return FALSE;
-  }
+  decklinksrc->input = gst_decklink_get_nth_input (decklinksrc->device);
 
   delegate = new DeckLinkCaptureDelegate ();
   delegate->priv = decklinksrc;
-  decklinksrc->input->SetCallback (delegate);
-
-  ret = decklinksrc->decklink->QueryInterface (IID_IDeckLinkConfiguration,
-      (void **) &config);
+  ret = decklinksrc->input->SetCallback (delegate);
   if (ret != S_OK) {
-    GST_ERROR ("query interface failed");
+    GST_ERROR ("set callback failed (input source)");
     return FALSE;
   }
+
+  decklinksrc->config = gst_decklink_get_nth_config (decklinksrc->device);
+  config = decklinksrc->config;
 
   switch (decklinksrc->connection) {
     default:
@@ -616,25 +609,6 @@ gst_decklink_src_start (GstElement * element)
     GST_ERROR ("set configuration (audio input connection)");
     return FALSE;
   }
-#if 0
-  ret = decklinksrc->input->GetDisplayModeIterator (&mode_iterator);
-  if (ret != S_OK) {
-    GST_ERROR ("failed to get display mode iterator");
-    return FALSE;
-  }
-
-  i = 0;
-  while (mode_iterator->Next (&mode) == S_OK) {
-    const char *mode_name;
-
-    mode->GetName (&mode_name);
-
-    GST_DEBUG ("%d: mode name: %s", i, mode_name);
-
-    mode->Release ();
-    i++;
-  }
-#endif
 
   mode = gst_decklink_get_mode (decklinksrc->mode);
 
@@ -670,6 +644,7 @@ static gboolean
 gst_decklink_src_stop (GstElement * element)
 {
   GstDecklinkSrc *decklinksrc = GST_DECKLINK_SRC (element);
+  //int refcount;
 
   gst_task_stop (decklinksrc->task);
 
@@ -683,12 +658,6 @@ gst_decklink_src_stop (GstElement * element)
   decklinksrc->input->StopStreams ();
   decklinksrc->input->DisableVideoInput ();
   decklinksrc->input->DisableAudioInput ();
-
-  decklinksrc->input->Release ();
-  decklinksrc->input = NULL;
-
-  decklinksrc->decklink->Release ();
-  decklinksrc->decklink = NULL;
 
   return TRUE;
 }
@@ -1460,6 +1429,7 @@ gst_decklinksrc_class_probe_devices (GstElementClass * klass)
       n_devices++;
     }
   }
+  iterator->Release();
 
   probed = TRUE;
 }
