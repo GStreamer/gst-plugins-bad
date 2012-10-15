@@ -160,6 +160,7 @@ gst_hls_demux_dispose (GObject * obj)
   if (demux->updates_task) {
     if (GST_TASK_STATE (demux->updates_task) != GST_TASK_STOPPED) {
       GST_DEBUG_OBJECT (demux, "Leaving updates task");
+      gst_uri_downloader_cancel (demux->downloader);
       gst_task_stop (demux->updates_task);
       g_mutex_lock (demux->updates_timed_lock);
       GST_TASK_SIGNAL (demux->updates_task);
@@ -329,6 +330,7 @@ gst_hls_demux_change_state (GstElement * element, GstStateChange transition)
 
   switch (transition) {
     case GST_STATE_CHANGE_PLAYING_TO_PAUSED:
+      gst_uri_downloader_cancel (demux->downloader);
       gst_task_stop (demux->updates_task);
       g_mutex_lock (demux->updates_timed_lock);
       GST_TASK_SIGNAL (demux->updates_task);
@@ -642,6 +644,7 @@ gst_hls_demux_stop (GstHLSDemux * demux)
 
   if (GST_TASK_STATE (demux->updates_task) != GST_TASK_STOPPED) {
     demux->stop_stream_task = TRUE;
+    gst_uri_downloader_cancel (demux->downloader);
     gst_task_stop (demux->updates_task);
     g_mutex_lock (demux->updates_timed_lock);
     GST_TASK_SIGNAL (demux->updates_task);
