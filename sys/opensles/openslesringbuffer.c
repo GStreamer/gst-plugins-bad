@@ -21,6 +21,7 @@
 #  include <config.h>
 #endif
 
+#include "opensles.h"
 #include "openslesringbuffer.h"
 
 GST_DEBUG_CATEGORY_STATIC (opensles_ringbuffer_debug);
@@ -684,18 +685,10 @@ gst_opensles_ringbuffer_open_device (GstRingBuffer * rb)
 
   thiz = GST_OPENSLES_RING_BUFFER_CAST (rb);
 
-  /* Create the engine object */
-  result = slCreateEngine (&thiz->engineObject, 0, NULL, 0, NULL, NULL);
-  if (result != SL_RESULT_SUCCESS) {
-    GST_ERROR_OBJECT (thiz, "slCreateEngine failed(0x%08x)", (guint32) result);
-    goto failed;
-  }
-
-  /* Realize the engine object */
-  result = (*thiz->engineObject)->Realize (thiz->engineObject,
-      SL_BOOLEAN_FALSE);
-  if (result != SL_RESULT_SUCCESS) {
-    GST_ERROR_OBJECT (thiz, "engine.Realize failed(0x%08x)", (guint32) result);
+  /* Create and realize the engine object */
+  thiz->engineObject = gst_opensles_get_engine ();
+  if (!thiz->engineObject) {
+    GST_ERROR_OBJECT (thiz, "Failed to get engine object");
     goto failed;
   }
 
@@ -772,7 +765,7 @@ gst_opensles_ringbuffer_close_device (GstRingBuffer * rb)
 
   /* Destroy the engine object and invalidate all associated interfaces */
   if (thiz->engineObject) {
-    (*thiz->engineObject)->Destroy (thiz->engineObject);
+    gst_opensles_release_engine (thiz->engineObject);
     thiz->engineObject = NULL;
     thiz->engineEngine = NULL;
   }
