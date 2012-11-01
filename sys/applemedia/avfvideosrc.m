@@ -27,8 +27,7 @@
 #define DEFAULT_DEVICE_INDEX  -1
 #define DEFAULT_DO_STATS      FALSE
 
-#define DEVICE_FPS_N          25
-#define DEVICE_FPS_D          1
+#define DEVICE_MAX_FPS        30
 
 #define BUFFER_QUEUE_SIZE     2
 
@@ -37,7 +36,7 @@ GST_DEBUG_CATEGORY (gst_avf_video_src_debug);
 
 #define VIDEO_CAPS_YUV(width, height) "video/x-raw-yuv, "       \
     "format = (fourcc) { NV12, UYVY, YUY2 }, "                  \
-    "framerate = " GST_VIDEO_FPS_RANGE ", "                     \
+    "framerate = (fraction) [ 1/max, " G_STRINGIFY (DEVICE_MAX_FPS) "/1 ], " \
     "width = (int) " G_STRINGIFY (width) ", height = (int) " G_STRINGIFY (height)
 
 #define VIDEO_CAPS_BGRA(width, height) "video/x-raw-rgb, "      \
@@ -48,6 +47,7 @@ GST_DEBUG_CATEGORY (gst_avf_video_src_debug);
     "green_mask = (int) " GST_VIDEO_BYTE2_MASK_32 ", "          \
     "blue_mask = (int) " GST_VIDEO_BYTE1_MASK_32 ", "           \
     "alpha_mask = (int) " GST_VIDEO_BYTE4_MASK_32 ", "          \
+    "framerate = (fraction) [ 1/max, " G_STRINGIFY (DEVICE_MAX_FPS) "/1 ], " \
     "width = (int) " G_STRINGIFY (width) ", height = (int) " G_STRINGIFY (height)
 
 static GstStaticPadTemplate src_template = GST_STATIC_PAD_TEMPLATE ("src",
@@ -114,6 +114,7 @@ static GstPushSrcClass * parent_class;
 
 - (BOOL)openDevice;
 - (void)closeDevice;
+- (void)setFramerate:(int) fps_n :(int)fps_d;
 - (GstCaps *)getCaps;
 - (BOOL)setCaps:(GstCaps *)caps;
 - (BOOL)start;
@@ -228,7 +229,8 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     [output setSampleBufferDelegate:self
                               queue:workerQueue];
     output.alwaysDiscardsLateVideoFrames = YES;
-    output.minFrameDuration = kCMTimeZero; /* unlimited */
+
+    [self setFramerate: DEVICE_MAX_FPS: 1];
     output.videoSettings = nil; /* device native format */
 
     session = [[AVCaptureSession alloc] init];
@@ -273,9 +275,32 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
   bufferFactory = nil;
 }
 
-#define GST_AVF_CAPS_NEW(format, w, h)                    \
-    (gst_video_format_new_caps (format, w, h, \
-                                DEVICE_FPS_N, DEVICE_FPS_D, 1, 1))
+static GstCaps *
+gst_avf_caps_new(GstFormat format, guint width, guint height)
+{
+  GstCaps *caps = gst_video_format_new_caps (format, width, height, 1, 1, 1, 1);
+
+  gst_caps_set_simple(caps, "framerate", GST_TYPE_FRACTION_RANGE, 1, G_MAXINT,
+		      DEVICE_MAX_FPS, 1, NULL);
+  return caps;
+}
+
+- (void)setFramerate:(int) fps_n :(int)fps_d
+{
+  AVCaptureConnection *connection =
+    [output connectionWithMediaType:AVMediaTypeVideo];
+
+  if (connection.supportsVideoMinFrameDuration) {
+    connection.videoMinFrameDuration = CMTimeMake(fps_d, fps_n);
+
+    if (connection.supportsVideoMaxFrameDuration) {
+      connection.videoMaxFrameDuration = CMTimeMake(fps_d, fps_n);
+    }
+  } else {
+    output.minFrameDuration = CMTimeMake(fps_d, fps_n);
+  }
+}
+
 
 - (GstCaps *)getCaps
 {
@@ -309,17 +334,17 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
       continue;
     }
 
-    gst_caps_append (result, GST_AVF_CAPS_NEW (gstformat, 192, 144));
+    gst_caps_append (result, gst_avf_caps_new (gstformat, 192, 144));
     if ([session canSetSessionPreset:AVCaptureSessionPreset352x288])
-      gst_caps_append (result, GST_AVF_CAPS_NEW (gstformat, 352, 288));
+      gst_caps_append (result, gst_avf_caps_new (gstformat, 352, 288));
     if ([session canSetSessionPreset:AVCaptureSessionPresetMedium])
-      gst_caps_append (result, GST_AVF_CAPS_NEW (gstformat, 480, 360));
+      gst_caps_append (result, gst_avf_caps_new (gstformat, 480, 360));
     if ([session canSetSessionPreset:AVCaptureSessionPreset640x480]) 
-      gst_caps_append (result, GST_AVF_CAPS_NEW (gstformat, 640, 480));
+      gst_caps_append (result, gst_avf_caps_new (gstformat, 640, 480));
     if ([session canSetSessionPreset:AVCaptureSessionPreset1280x720])
-      gst_caps_append (result, GST_AVF_CAPS_NEW (gstformat, 1280, 720));
+      gst_caps_append (result, gst_avf_caps_new (gstformat, 1280, 720));
     if ([session canSetSessionPreset:AVCaptureSessionPreset1920x1080])
-      gst_caps_append (result, GST_AVF_CAPS_NEW (gstformat, 1920, 1080));
+      gst_caps_append (result, gst_avf_caps_new (gstformat, 1920, 1080));
   }
 
   return result;
@@ -327,7 +352,11 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 
 - (BOOL)setCaps:(GstCaps *)caps
 {
+  gint fps_n;
+  gint fps_d;
+
   gst_video_format_parse_caps (caps, &format, &width, &height);
+  gst_video_parse_caps_framerate(caps, &fps_n, &fps_d);
 
   dispatch_async (mainQueue, ^{
     int newformat;
@@ -377,10 +406,12 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     GST_DEBUG_OBJECT(element,
        "Width: %d Height: %d Format: %" GST_FOURCC_FORMAT,
        width, height,
-       GST_FOURCC_ARGS (gst_video_format_to_fourc(format)));
+       GST_FOURCC_ARGS (gst_video_format_to_fourcc (format)));
 
 
-    output.videoSettings = [NSDictionary dictionaryWithObject:[NSNumber numberWithInt:newformat] forKey:(NSString*)kCVPixelBu
+    [self setFramerate: fps_n : fps_d];
+    output.videoSettings = [NSDictionary dictionaryWithObject:[NSNumber numberWithInt:newformat] forKey:(NSString*)kCVPixelBufferPixelFormatTypeKey];
+    duration = gst_util_uint64_scale (GST_SECOND, fps_d, fps_n);
 
     [session startRunning];
   });
@@ -395,7 +426,6 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
   bufQueue = [[NSMutableArray alloc] initWithCapacity:BUFFER_QUEUE_SIZE];
   stopRequest = NO;
 
-  duration = gst_util_uint64_scale (GST_SECOND, DEVICE_FPS_D, DEVICE_FPS_N);
   offset = 0;
 
   lastSampling = GST_CLOCK_TIME_NONE;
