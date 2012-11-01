@@ -339,10 +339,6 @@ _opensles_player_change_mute (GstRingBuffer * rb)
 static void
 _opensles_player_event_cb (SLPlayItf caller, void *context, SLuint32 event)
 {
-  GstOpenSLESRingBuffer *thiz;
-
-  thiz = GST_OPENSLES_RING_BUFFER_CAST (context);
-
   if (event & SL_PLAYEVENT_HEADATNEWPOS) {
     SLmillisecond position;
 
