@@ -28,14 +28,14 @@
 #include "openslessink.h"
 #include "openslessrc.h"
 
-static GMutex engine_mutex;
+static GMutex *engine_mutex;
 static SLObjectItf engine_object = NULL;
 static gint engine_object_refcount = 0;
 
 SLObjectItf
 gst_opensles_get_engine (void)
 {
-  g_mutex_lock (&engine_mutex);
+  g_mutex_lock (engine_mutex);
   if (!engine_object) {
     SLresult result;
     result = slCreateEngine (&engine_object, 0, NULL, 0, NULL, NULL);
@@ -55,7 +55,7 @@ gst_opensles_get_engine (void)
   if (engine_object) {
     engine_object_refcount++;
   }
-  g_mutex_unlock (&engine_mutex);
+  g_mutex_unlock (engine_mutex);
 
   return engine_object;
 }
@@ -63,7 +63,7 @@ gst_opensles_get_engine (void)
 void
 gst_opensles_release_engine (SLObjectItf engine_object_parameter)
 {
-  g_mutex_lock (&engine_mutex);
+  g_mutex_lock (engine_mutex);
   g_assert (engine_object == engine_object_parameter);
 
   if (engine_object) {
@@ -74,13 +74,13 @@ gst_opensles_release_engine (SLObjectItf engine_object_parameter)
       engine_object = NULL;
     }
   }
-  g_mutex_unlock (&engine_mutex);
+  g_mutex_unlock (engine_mutex);
 }
 
 static gboolean
 plugin_init (GstPlugin * plugin)
 {
-  g_mutex_init (&engine_mutex);
+  engine_mutex = g_mutex_new ();
 
   if (!gst_element_register (plugin, "openslessink", GST_RANK_PRIMARY,
           GST_TYPE_OPENSLES_SINK)) {
