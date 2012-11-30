@@ -59,8 +59,8 @@ struct  display
   struct wl_compositor *compositor;
   struct wl_shell *shell;
   struct wl_shm *shm;
+  struct wl_registry *registry;
   uint32_t formats;
-  uint32_t mask;
 };
 
 struct window
@@ -86,7 +86,8 @@ struct _GstWlBuffer {
   GstBuffer buffer; /* Extending GstBuffer */
   
   struct wl_buffer *wbuffer;
-  
+  struct wl_shm_pool *pool;
+
   GstWaylandSink *wlsink;
 };
 
