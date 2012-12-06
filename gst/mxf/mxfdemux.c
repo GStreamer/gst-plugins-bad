@@ -841,6 +841,14 @@ gst_mxf_demux_update_essence_tracks (GstMXFDemux * demux)
         caps = NULL;
       }
 
+
+      if (etrack->handler
+          && etrack->handler->get_track_wrapping (track) !=
+          MXF_ESSENCE_WRAPPING_FRAME_WRAPPING) {
+        GST_ERROR_OBJECT (demux, "Only frame wrapping currently supported");
+        return GST_FLOW_ERROR;
+      }
+
       etrack->source_package = package;
       etrack->source_track = track;
       continue;
@@ -872,6 +880,7 @@ gst_mxf_demux_update_essence_tracks (GstMXFDemux * demux)
       GST_ERROR_OBJECT (demux, "Failed to update essence track %u", i);
       return GST_FLOW_ERROR;
     }
+
   }
 
   return GST_FLOW_OK;
@@ -1939,6 +1948,9 @@ gst_mxf_demux_pull_klv_packet (GstMXFDemux * demux, guint64 offset, MXFUL * key,
   guint64 data_offset = 0;
   guint64 length;
   GstFlowReturn ret = GST_FLOW_OK;
+#ifndef GST_DISABLE_GST_DEBUG
+  gchar str[48];
+#endif
 
   memset (key, 0, sizeof (MXFUL));
 
@@ -1950,6 +1962,9 @@ gst_mxf_demux_pull_klv_packet (GstMXFDemux * demux, guint64 offset, MXFUL * key,
   data = GST_BUFFER_DATA (buffer);
 
   memcpy (key, GST_BUFFER_DATA (buffer), 16);
+
+  GST_DEBUG_OBJECT (demux, "Got KLV packet with key %s", mxf_ul_to_string (key,
+          str));
 
   /* Decode BER encoded packet length */
   if ((data[16] & 0x80) == 0) {
@@ -1995,6 +2010,9 @@ gst_mxf_demux_pull_klv_packet (GstMXFDemux * demux, guint64 offset, MXFUL * key,
     ret = GST_FLOW_ERROR;
     goto beach;
   }
+
+  GST_DEBUG_OBJECT (demux, "KLV packet with key %s has length %u",
+      mxf_ul_to_string (key, str), length);
 
   /* Pull the complete KLV packet */
   if ((ret = gst_mxf_demux_pull_range (demux, offset + data_offset, length,
@@ -2818,6 +2836,9 @@ gst_mxf_demux_chain (GstPad * pad, GstBuffer * inbuf)
   guint64 length = 0;
   guint64 offset = 0;
   GstBuffer *buffer = NULL;
+#ifndef GST_DISABLE_GST_DEBUG
+  gchar str[48];
+#endif
 
   demux = GST_MXF_DEMUX (gst_pad_get_parent (pad));
 
@@ -2911,6 +2932,9 @@ gst_mxf_demux_chain (GstPad * pad, GstBuffer * inbuf)
 
     memcpy (&key, data, 16);
 
+    GST_DEBUG_OBJECT (demux, "Got KLV packet with key %s",
+        mxf_ul_to_string (&key, str));
+
     /* Decode BER encoded packet length */
     if ((data[16] & 0x80) == 0) {
       length = data[16];
@@ -2950,6 +2974,9 @@ gst_mxf_demux_chain (GstPad * pad, GstBuffer * inbuf)
       ret = GST_FLOW_ERROR;
       break;
     }
+
+    GST_DEBUG_OBJECT (demux, "KLV packet with key %s has length %u",
+        mxf_ul_to_string (&key, str), length);
 
     if (gst_adapter_available (demux->adapter) < offset + length)
       break;
