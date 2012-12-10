@@ -19,6 +19,8 @@
  * Boston, MA 02111-1307, USA.
  */
 
+#define GLIB_DISABLE_DEPRECATION_WARNINGS
+
 #include <glib.h>
 #include "gstfragmented.h"
 #include "gstfragment.h"
