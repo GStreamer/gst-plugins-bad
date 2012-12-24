@@ -35,6 +35,7 @@
 
 #include "gstrsvgdec.h"
 
+#include <librsvg/rsvg-cairo.h>
 #include <string.h>
 
 GST_DEBUG_CATEGORY_STATIC (rsvgdec_debug);

@@ -66,6 +66,7 @@
 #include <gst/video/video.h>
 
 #include <librsvg/rsvg.h>
+#include <librsvg/rsvg-cairo.h>
 
 enum
 {
