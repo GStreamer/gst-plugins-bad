@@ -186,7 +186,16 @@ struct _GstEglGlesSink
   int par_n, par_d;             /* Aspect ratio from caps */
 
   GstVideoFormat format;
+
+  /* Region of the surface that should be rendered */
+  GstVideoRectangle render_region;
+  gboolean render_region_changed;
+  gboolean render_region_user;
+
+  /* Region of render_region that should be filled
+   * with the video frames */
   GstVideoRectangle display_region;
+
   GstCaps *sinkcaps;
   GstCaps *current_caps, *configured_caps;
 

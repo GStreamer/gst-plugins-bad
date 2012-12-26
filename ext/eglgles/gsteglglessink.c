@@ -406,8 +406,6 @@ static inline gboolean egl_init (GstEglGlesSink * eglglessink);
 static gboolean gst_eglglessink_context_make_current (GstEglGlesSink *
     eglglessink, gboolean bind);
 static void gst_eglglessink_wipe_eglglesctx (GstEglGlesSink * eglglessink);
-static inline void gst_eglglessink_reset_display_region (GstEglGlesSink *
-    eglglessink);
 
 GST_BOILERPLATE_FULL (GstEglGlesSink, gst_eglglessink, GstVideoSink,
     GST_TYPE_VIDEO_SINK, gst_eglglessink_init_interfaces);
@@ -715,21 +713,6 @@ gst_eglglessink_wipe_eglglesctx (GstEglGlesSink * eglglessink)
         eglglessink->eglglesctx.eglcontext);
     eglglessink->eglglesctx.eglcontext = NULL;
   }
-
-  gst_eglglessink_reset_display_region (eglglessink);
-}
-
-/* Reset display region
- * XXX: Should probably keep old ones if set_render_rect()
- * has been called.
- */
-static inline void
-gst_eglglessink_reset_display_region (GstEglGlesSink * eglglessink)
-{
-  GST_OBJECT_LOCK (eglglessink);
-  eglglessink->display_region.w = 0;
-  eglglessink->display_region.h = 0;
-  GST_OBJECT_UNLOCK (eglglessink);
 }
 
 static gboolean
@@ -754,8 +737,10 @@ gst_eglglessink_start (GstEglGlesSink * eglglessink)
     goto HANDLE_ERROR;
   }
 
-  gst_eglglessink_reset_display_region (eglglessink);
   eglglessink->last_flow = GST_FLOW_OK;
+  eglglessink->display_region.w = 0;
+  eglglessink->display_region.h = 0;
+
   gst_data_queue_set_flushing (eglglessink->queue, FALSE);
 
 #if !GLIB_CHECK_VERSION (2, 31, 0)
@@ -866,7 +851,9 @@ gst_eglglessink_create_window (GstEglGlesSink * eglglessink, gint width,
   } else
     GST_INFO_OBJECT (eglglessink, "Attempting internal window creation");
 
-  window = platform_create_native_window (width, height, &eglglessink->own_window_data);
+  window =
+      platform_create_native_window (width, height,
+      &eglglessink->own_window_data);
   if (!window) {
     GST_ERROR_OBJECT (eglglessink, "Could not create window");
     return window;
@@ -914,7 +901,7 @@ gst_eglglessink_init_egl_exts (GstEglGlesSink * eglglessink)
 static gboolean
 gst_eglglessink_setup_vbo (GstEglGlesSink * eglglessink, gboolean reset)
 {
-  gdouble surface_width, surface_height;
+  gdouble render_width, render_height;
   gdouble x1, x2, y1, y2;
 
   GST_INFO_OBJECT (eglglessink, "VBO setup. have_vbo:%d, should reset %d",
@@ -926,17 +913,17 @@ gst_eglglessink_setup_vbo (GstEglGlesSink * eglglessink, gboolean reset)
     eglglessink->have_vbo = FALSE;
   }
 
-  surface_width = eglglessink->eglglesctx.surface_width;
-  surface_height = eglglessink->eglglesctx.surface_height;
+  render_width = eglglessink->render_region.w;
+  render_height = eglglessink->render_region.h;
 
   GST_DEBUG_OBJECT (eglglessink, "Performing VBO setup");
 
-  x1 = (eglglessink->display_region.x / surface_width) * 2.0 - 1;
-  y1 = (eglglessink->display_region.y / surface_height) * 2.0 - 1;
+  x1 = (eglglessink->display_region.x / render_width) * 2.0 - 1;
+  y1 = (eglglessink->display_region.y / render_height) * 2.0 - 1;
   x2 = ((eglglessink->display_region.x +
-          eglglessink->display_region.w) / surface_width) * 2.0 - 1;
+          eglglessink->display_region.w) / render_width) * 2.0 - 1;
   y2 = ((eglglessink->display_region.y +
-          eglglessink->display_region.h) / surface_height) * 2.0 - 1;
+          eglglessink->display_region.h) / render_height) * 2.0 - 1;
 
   eglglessink->eglglesctx.position_array[0].x = x2;
   eglglessink->eglglesctx.position_array[0].y = y2;
@@ -1664,19 +1651,13 @@ gst_eglglessink_set_render_rectangle (GstXOverlay * overlay, gint x, gint y,
   g_return_if_fail (GST_IS_EGLGLESSINK (eglglessink));
 
   GST_OBJECT_LOCK (eglglessink);
-  if (width == -1 && height == -1) {
-    /* This is the set-defaults condition according to
-     * the xOverlay interface docs
-     */
-    gst_eglglessink_reset_display_region (eglglessink);
-  } else {
-    GST_OBJECT_LOCK (eglglessink);
-    eglglessink->display_region.x = x;
-    eglglessink->display_region.y = y;
-    eglglessink->display_region.w = width;
-    eglglessink->display_region.h = height;
-    GST_OBJECT_UNLOCK (eglglessink);
-  }
+  eglglessink->render_region.x = x;
+  eglglessink->render_region.y = y;
+  eglglessink->render_region.w = width;
+  eglglessink->render_region.h = height;
+  eglglessink->render_region_changed = TRUE;
+  eglglessink->render_region_user = (width != -1 && height != -1);
+  GST_OBJECT_UNLOCK (eglglessink);
 
   return;
 }
@@ -1726,9 +1707,7 @@ static GstFlowReturn
 gst_eglglessink_render_and_display (GstEglGlesSink * eglglessink,
     GstBuffer * buf)
 {
-  GstVideoRectangle frame, surface;
   gint w, h;
-  guint dar_n, dar_d;
 
   w = GST_VIDEO_SINK_WIDTH (eglglessink);
   h = GST_VIDEO_SINK_HEIGHT (eglglessink);
@@ -1879,16 +1858,34 @@ gst_eglglessink_render_and_display (GstEglGlesSink * eglglessink,
    * force_aspect_ratio to FALSE.
    */
   if (gst_eglglessink_update_surface_dimensions (eglglessink) ||
+      eglglessink->render_region_changed ||
       !eglglessink->display_region.w || !eglglessink->display_region.h) {
     GST_OBJECT_LOCK (eglglessink);
+
+    if (!eglglessink->render_region_user) {
+      eglglessink->render_region.x = 0;
+      eglglessink->render_region.y = 0;
+      eglglessink->render_region.w = eglglessink->eglglesctx.surface_width;
+      eglglessink->render_region.h = eglglessink->eglglesctx.surface_height;
+    }
+    eglglessink->render_region_changed = FALSE;
+
     if (!eglglessink->force_aspect_ratio) {
       eglglessink->display_region.x = 0;
       eglglessink->display_region.y = 0;
-      eglglessink->display_region.w = eglglessink->eglglesctx.surface_width;
-      eglglessink->display_region.h = eglglessink->eglglesctx.surface_height;
+      eglglessink->display_region.w = eglglessink->render_region.w;
+      eglglessink->display_region.h = eglglessink->render_region.h;
     } else {
-      if (!gst_video_calculate_display_ratio (&dar_n, &dar_d, w, h,
-              eglglessink->par_n, eglglessink->par_d,
+      GstVideoRectangle frame;
+      guint dar_n, dar_d;
+
+      frame.x = 0;
+      frame.y = 0;
+
+      if (!gst_video_calculate_display_ratio (&dar_n, &dar_d,
+              w, h,
+              eglglessink->par_n,
+              eglglessink->par_d,
               eglglessink->eglglesctx.pixel_aspect_ratio,
               EGL_DISPLAY_SCALING)) {
         GST_WARNING_OBJECT (eglglessink, "Could not compute resulting DAR");
@@ -1915,16 +1912,15 @@ gst_eglglessink_render_and_display (GstEglGlesSink * eglglessink,
         }
       }
 
-      surface.w = eglglessink->eglglesctx.surface_width;
-      surface.h = eglglessink->eglglesctx.surface_height;
-      gst_video_sink_center_rect (frame, surface,
+      gst_video_sink_center_rect (frame, eglglessink->render_region,
           &eglglessink->display_region, TRUE);
     }
-    GST_OBJECT_UNLOCK (eglglessink);
 
-    glViewport (0, 0,
-        eglglessink->eglglesctx.surface_width,
-        eglglessink->eglglesctx.surface_height);
+    glViewport (eglglessink->render_region.x,
+        eglglessink->eglglesctx.surface_height -
+        eglglessink->render_region.y -
+        eglglessink->render_region.w,
+        eglglessink->render_region.w, eglglessink->render_region.h);
 
     /* Clear the surface once if its content is preserved */
     if (eglglessink->eglglesctx.buffer_preserved) {
@@ -1933,9 +1929,11 @@ gst_eglglessink_render_and_display (GstEglGlesSink * eglglessink,
     }
 
     if (!gst_eglglessink_setup_vbo (eglglessink, FALSE)) {
+      GST_OBJECT_UNLOCK (eglglessink);
       GST_ERROR_OBJECT (eglglessink, "VBO setup failed");
       goto HANDLE_ERROR;
     }
+    GST_OBJECT_UNLOCK (eglglessink);
   }
 
   if (!eglglessink->eglglesctx.buffer_preserved) {
@@ -2387,6 +2385,13 @@ gst_eglglessink_init (GstEglGlesSink * eglglessink,
   eglglessink->create_window = TRUE;
   eglglessink->force_aspect_ratio = TRUE;
 
+  eglglessink->render_region.x = 0;
+  eglglessink->render_region.y = 0;
+  eglglessink->render_region.w = -1;
+  eglglessink->render_region.h = -1;
+  eglglessink->render_region_changed = TRUE;
+  eglglessink->render_region_user = FALSE;
+
   eglglessink->par_n = 1;
   eglglessink->par_d = 1;
 
@@ -2413,7 +2418,6 @@ gst_eglglessink_init_interfaces (GType type)
   g_type_add_interface_static (type, GST_TYPE_IMPLEMENTS_INTERFACE,
       &implements_info);
   g_type_add_interface_static (type, GST_TYPE_X_OVERLAY, &xoverlay_info);
-
 }
 
 /* entry point to initialize the plug-in
