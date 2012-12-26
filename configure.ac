@@ -247,7 +247,7 @@ AM_CONDITIONAL(HAVE_GTK, test "x$HAVE_GTK" = "xyes")
 dnl Needed for GtkBuilder to autoconnect signals
 PKG_CHECK_MODULES(GMODULE_EXPORT, gmodule-export-2.0, HAVE_GMODULE_EXPORT=yes, HAVE_GMODULE_EXPORT=no)
 
-dnl x11 is optional for librfb
+dnl x11 is optional for librfb and eglglessink
 HAVE_X11=NO
 PKG_CHECK_MODULES(X11, x11, HAVE_X11=yes, HAVE_X11=no)
 AC_SUBST(X11_LIBS)
