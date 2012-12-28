@@ -842,7 +842,8 @@ got_egl_error (const char *wtf)
   EGLint error;
 
   if ((error = eglGetError ()) != EGL_SUCCESS) {
-    GST_CAT_DEBUG (GST_CAT_DEFAULT, "EGL ERROR: %s returned 0x%04x", wtf, error);
+    GST_CAT_DEBUG (GST_CAT_DEFAULT, "EGL ERROR: %s returned 0x%04x", wtf,
+        error);
     return TRUE;
   }
 
@@ -1132,15 +1133,110 @@ gst_eglglessink_context_make_current (GstEglGlesSink * eglglessink,
 }
 
 static gboolean
-gst_eglglessink_init_egl_surface (GstEglGlesSink * eglglessink)
+create_shader_program (GstEglGlesSink * eglglessink, GLuint * prog,
+    GLuint * vert, GLuint * frag, const gchar * vert_text,
+    const gchar * frag_text)
 {
   GLint test;
-  GLboolean ret;
   GLchar *info_log;
+
+  /* Build shader program for video texture rendering */
+  *vert = glCreateShader (GL_VERTEX_SHADER);
+  GST_DEBUG_OBJECT (eglglessink, "Sending %s to handle %d", vert_text, *vert);
+  glShaderSource (*vert, 1, &vert_text, NULL);
+  if (got_gl_error ("glShaderSource vertex"))
+    goto HANDLE_ERROR;
+
+  glCompileShader (*vert);
+  if (got_gl_error ("glCompileShader vertex"))
+    goto HANDLE_ERROR;
+
+  glGetShaderiv (*vert, GL_COMPILE_STATUS, &test);
+  if (test != GL_FALSE)
+    GST_DEBUG_OBJECT (eglglessink, "Successfully compiled vertex shader");
+  else {
+    GST_ERROR_OBJECT (eglglessink, "Couldn't compile vertex shader");
+    glGetShaderiv (*vert, GL_INFO_LOG_LENGTH, &test);
+    info_log = g_new0 (GLchar, test);
+    glGetShaderInfoLog (*vert, test, NULL, info_log);
+    GST_INFO_OBJECT (eglglessink, "Compilation info log:\n%s", info_log);
+    g_free (info_log);
+    goto HANDLE_ERROR;
+  }
+
+  *frag = glCreateShader (GL_FRAGMENT_SHADER);
+  GST_DEBUG_OBJECT (eglglessink, "Sending %s to handle %d", frag_text, *frag);
+  glShaderSource (*frag, 1, &frag_text, NULL);
+  if (got_gl_error ("glShaderSource fragment"))
+    goto HANDLE_ERROR;
+
+  glCompileShader (*frag);
+  if (got_gl_error ("glCompileShader fragment"))
+    goto HANDLE_ERROR;
+
+  glGetShaderiv (*frag, GL_COMPILE_STATUS, &test);
+  if (test != GL_FALSE)
+    GST_DEBUG_OBJECT (eglglessink, "Successfully compiled fragment shader");
+  else {
+    GST_ERROR_OBJECT (eglglessink, "Couldn't compile fragment shader");
+    glGetShaderiv (*frag, GL_INFO_LOG_LENGTH, &test);
+    info_log = g_new0 (GLchar, test);
+    glGetShaderInfoLog (*frag, test, NULL, info_log);
+    GST_INFO_OBJECT (eglglessink, "Compilation info log:\n%s", info_log);
+    g_free (info_log);
+    goto HANDLE_ERROR;
+  }
+
+  *prog = glCreateProgram ();
+  if (got_gl_error ("glCreateProgram"))
+    goto HANDLE_ERROR;
+  glAttachShader (*prog, *vert);
+  if (got_gl_error ("glAttachShader vertices"))
+    goto HANDLE_ERROR;
+  glAttachShader (*prog, *frag);
+  if (got_gl_error ("glAttachShader fragments"))
+    goto HANDLE_ERROR;
+  glLinkProgram (*prog);
+  glGetProgramiv (*prog, GL_LINK_STATUS, &test);
+  if (test != GL_FALSE) {
+    GST_DEBUG_OBJECT (eglglessink, "GLES: Successfully linked program");
+  } else {
+    GST_ERROR_OBJECT (eglglessink, "Couldn't link program");
+    goto HANDLE_ERROR;
+  }
+
+  return TRUE;
+
+HANDLE_ERROR:
+  {
+    if (*frag && *prog)
+      glDetachShader (*prog, *frag);
+    if (*vert && *prog)
+      glDetachShader (*prog, *vert);
+    if (*prog)
+      glDeleteProgram (*prog);
+    if (*frag)
+      glDeleteShader (*frag);
+    if (*vert)
+      glDeleteShader (*vert);
+    *prog = 0;
+    *frag = 0;
+    *vert = 0;
+
+    return FALSE;
+  }
+}
+
+static gboolean
+gst_eglglessink_init_egl_surface (GstEglGlesSink * eglglessink)
+{
+  GLboolean ret;
   EGLint display_par;
   const gchar *texnames[3] = { NULL, };
-  gchar *tmp_prog = NULL;
+  gchar *frag_prog = NULL;
+  gboolean free_frag_prog = FALSE;
   EGLint swap_behavior;
+  gint i;
 
   GST_DEBUG_OBJECT (eglglessink, "Enter EGL surface setup");
 
@@ -1218,39 +1314,11 @@ gst_eglglessink_init_egl_surface (GstEglGlesSink * eglglessink)
   }
 
   /* Build shader program for video texture rendering */
-  eglglessink->eglglesctx.vertshader[0] = glCreateShader (GL_VERTEX_SHADER);
-  GST_DEBUG_OBJECT (eglglessink, "Sending %s to handle %d", vert_COPY_prog,
-      eglglessink->eglglesctx.vertshader[0]);
-  glShaderSource (eglglessink->eglglesctx.vertshader[0], 1, &vert_COPY_prog,
-      NULL);
-  if (got_gl_error ("glShaderSource vertex"))
-    goto HANDLE_ERROR;
 
-  glCompileShader (eglglessink->eglglesctx.vertshader[0]);
-  if (got_gl_error ("glCompileShader vertex"))
-    goto HANDLE_ERROR;
-
-  glGetShaderiv (eglglessink->eglglesctx.vertshader[0], GL_COMPILE_STATUS,
-      &test);
-  if (test != GL_FALSE)
-    GST_DEBUG_OBJECT (eglglessink, "Successfully compiled vertex shader");
-  else {
-    GST_ERROR_OBJECT (eglglessink, "Couldn't compile vertex shader");
-    glGetShaderiv (eglglessink->eglglesctx.vertshader[0], GL_INFO_LOG_LENGTH,
-        &test);
-    info_log = g_new0 (GLchar, test);
-    glGetShaderInfoLog (eglglessink->eglglesctx.vertshader[0], test, NULL,
-        info_log);
-    GST_INFO_OBJECT (eglglessink, "Compilation info log:\n%s", info_log);
-    g_free (info_log);
-    goto HANDLE_ERROR;
-  }
-
-  eglglessink->eglglesctx.fragshader[0] = glCreateShader (GL_FRAGMENT_SHADER);
   switch (eglglessink->format) {
     case GST_VIDEO_FORMAT_AYUV:
-      glShaderSource (eglglessink->eglglesctx.fragshader[0], 1, &frag_AYUV_prog,
-          NULL);
+      frag_prog = (gchar *) frag_AYUV_prog;
+      free_frag_prog = FALSE;
       eglglessink->eglglesctx.n_textures = 1;
       texnames[0] = "tex";
       break;
@@ -1259,49 +1327,44 @@ gst_eglglessink_init_egl_surface (GstEglGlesSink * eglglessink)
     case GST_VIDEO_FORMAT_YV12:
     case GST_VIDEO_FORMAT_Y42B:
     case GST_VIDEO_FORMAT_Y41B:
-      glShaderSource (eglglessink->eglglesctx.fragshader[0], 1,
-          &frag_PLANAR_YUV_prog, NULL);
+      frag_prog = (gchar *) frag_PLANAR_YUV_prog;
+      free_frag_prog = FALSE;
       eglglessink->eglglesctx.n_textures = 3;
       texnames[0] = "Ytex";
       texnames[1] = "Utex";
       texnames[2] = "Vtex";
       break;
     case GST_VIDEO_FORMAT_YUY2:
-      tmp_prog = g_strdup_printf (frag_YUY2_YVYU_UYVY_prog, 'r', 'g', 'a');
-      glShaderSource (eglglessink->eglglesctx.fragshader[0], 1,
-          (const GLchar **) &tmp_prog, NULL);
+      frag_prog = g_strdup_printf (frag_YUY2_YVYU_UYVY_prog, 'r', 'g', 'a');
+      free_frag_prog = TRUE;
       eglglessink->eglglesctx.n_textures = 2;
       texnames[0] = "Ytex";
       texnames[1] = "UVtex";
       break;
     case GST_VIDEO_FORMAT_YVYU:
-      tmp_prog = g_strdup_printf (frag_YUY2_YVYU_UYVY_prog, 'r', 'a', 'g');
-      glShaderSource (eglglessink->eglglesctx.fragshader[0], 1,
-          (const GLchar **) &tmp_prog, NULL);
+      frag_prog = g_strdup_printf (frag_YUY2_YVYU_UYVY_prog, 'r', 'a', 'g');
+      free_frag_prog = TRUE;
       eglglessink->eglglesctx.n_textures = 2;
       texnames[0] = "Ytex";
       texnames[1] = "UVtex";
       break;
     case GST_VIDEO_FORMAT_UYVY:
-      tmp_prog = g_strdup_printf (frag_YUY2_YVYU_UYVY_prog, 'a', 'r', 'b');
-      glShaderSource (eglglessink->eglglesctx.fragshader[0], 1,
-          (const GLchar **) &tmp_prog, NULL);
+      frag_prog = g_strdup_printf (frag_YUY2_YVYU_UYVY_prog, 'a', 'r', 'b');
+      free_frag_prog = TRUE;
       eglglessink->eglglesctx.n_textures = 2;
       texnames[0] = "Ytex";
       texnames[1] = "UVtex";
       break;
     case GST_VIDEO_FORMAT_NV12:
-      tmp_prog = g_strdup_printf (frag_NV12_NV21_prog, 'r', 'a');
-      glShaderSource (eglglessink->eglglesctx.fragshader[0], 1,
-          (const GLchar **) &tmp_prog, NULL);
+      frag_prog = g_strdup_printf (frag_NV12_NV21_prog, 'r', 'a');
+      free_frag_prog = TRUE;
       eglglessink->eglglesctx.n_textures = 2;
       texnames[0] = "Ytex";
       texnames[1] = "UVtex";
       break;
     case GST_VIDEO_FORMAT_NV21:
-      tmp_prog = g_strdup_printf (frag_NV12_NV21_prog, 'a', 'r');
-      glShaderSource (eglglessink->eglglesctx.fragshader[0], 1,
-          (const GLchar **) &tmp_prog, NULL);
+      frag_prog = g_strdup_printf (frag_NV12_NV21_prog, 'a', 'r');
+      free_frag_prog = TRUE;
       eglglessink->eglglesctx.n_textures = 2;
       texnames[0] = "Ytex";
       texnames[1] = "UVtex";
@@ -1309,25 +1372,22 @@ gst_eglglessink_init_egl_surface (GstEglGlesSink * eglglessink)
     case GST_VIDEO_FORMAT_BGR:
     case GST_VIDEO_FORMAT_BGRx:
     case GST_VIDEO_FORMAT_BGRA:
-      tmp_prog = g_strdup_printf (frag_REORDER_prog, 'b', 'g', 'r');
-      glShaderSource (eglglessink->eglglesctx.fragshader[0], 1,
-          (const GLchar **) &tmp_prog, NULL);
+      frag_prog = g_strdup_printf (frag_REORDER_prog, 'b', 'g', 'r');
+      free_frag_prog = TRUE;
       eglglessink->eglglesctx.n_textures = 1;
       texnames[0] = "tex";
       break;
     case GST_VIDEO_FORMAT_xRGB:
     case GST_VIDEO_FORMAT_ARGB:
-      tmp_prog = g_strdup_printf (frag_REORDER_prog, 'g', 'b', 'a');
-      glShaderSource (eglglessink->eglglesctx.fragshader[0], 1,
-          (const GLchar **) &tmp_prog, NULL);
+      frag_prog = g_strdup_printf (frag_REORDER_prog, 'g', 'b', 'a');
+      free_frag_prog = TRUE;
       eglglessink->eglglesctx.n_textures = 1;
       texnames[0] = "tex";
       break;
     case GST_VIDEO_FORMAT_xBGR:
     case GST_VIDEO_FORMAT_ABGR:
-      tmp_prog = g_strdup_printf (frag_REORDER_prog, 'a', 'b', 'g');
-      glShaderSource (eglglessink->eglglesctx.fragshader[0], 1,
-          (const GLchar **) &tmp_prog, NULL);
+      frag_prog = g_strdup_printf (frag_REORDER_prog, 'a', 'b', 'g');
+      free_frag_prog = TRUE;
       eglglessink->eglglesctx.n_textures = 1;
       texnames[0] = "tex";
       break;
@@ -1335,8 +1395,8 @@ gst_eglglessink_init_egl_surface (GstEglGlesSink * eglglessink)
     case GST_VIDEO_FORMAT_RGBx:
     case GST_VIDEO_FORMAT_RGBA:
     case GST_VIDEO_FORMAT_RGB16:
-      glShaderSource (eglglessink->eglglesctx.fragshader[0], 1, &frag_COPY_prog,
-          NULL);
+      frag_prog = (gchar *) frag_COPY_prog;
+      free_frag_prog = FALSE;
       eglglessink->eglglesctx.n_textures = 1;
       texnames[0] = "tex";
       break;
@@ -1345,140 +1405,46 @@ gst_eglglessink_init_egl_surface (GstEglGlesSink * eglglessink)
       break;
   }
 
-  if (got_gl_error ("glShaderSource fragment"))
-    goto HANDLE_ERROR;
-
-  glCompileShader (eglglessink->eglglesctx.fragshader[0]);
-  if (got_gl_error ("glCompileShader fragment"))
-    goto HANDLE_ERROR;
-
-  glGetShaderiv (eglglessink->eglglesctx.fragshader[0], GL_COMPILE_STATUS,
-      &test);
-  if (test != GL_FALSE)
-    GST_DEBUG_OBJECT (eglglessink, "Successfully compiled fragment shader");
-  else {
-    GST_ERROR_OBJECT (eglglessink, "Couldn't compile fragment shader");
-    glGetShaderiv (eglglessink->eglglesctx.fragshader[0], GL_INFO_LOG_LENGTH,
-        &test);
-    info_log = g_new0 (GLchar, test);
-    glGetShaderInfoLog (eglglessink->eglglesctx.fragshader[0], test, NULL,
-        info_log);
-    GST_INFO_OBJECT (eglglessink, "Compilation info log:\n%s", info_log);
-    g_free (info_log);
+  if (!create_shader_program (eglglessink,
+          &eglglessink->eglglesctx.glslprogram[0],
+          &eglglessink->eglglesctx.vertshader[0],
+          &eglglessink->eglglesctx.fragshader[0], vert_COPY_prog, frag_prog)) {
+    if (free_frag_prog)
+      g_free (frag_prog);
+    frag_prog = NULL;
     goto HANDLE_ERROR;
   }
-
-  eglglessink->eglglesctx.glslprogram[0] = glCreateProgram ();
-  if (got_gl_error ("glCreateProgram"))
-    goto HANDLE_ERROR;
-  glAttachShader (eglglessink->eglglesctx.glslprogram[0],
-      eglglessink->eglglesctx.vertshader[0]);
-  if (got_gl_error ("glAttachShader vertices"))
-    goto HANDLE_ERROR;
-  glAttachShader (eglglessink->eglglesctx.glslprogram[0],
-      eglglessink->eglglesctx.fragshader[0]);
-  if (got_gl_error ("glAttachShader fragments"))
-    goto HANDLE_ERROR;
-  glLinkProgram (eglglessink->eglglesctx.glslprogram[0]);
-  glGetProgramiv (eglglessink->eglglesctx.glslprogram[0], GL_LINK_STATUS,
-      &test);
-  if (test != GL_FALSE)
-    GST_DEBUG_OBJECT (eglglessink, "GLES: Successfully linked program");
-  else {
-    GST_ERROR_OBJECT (eglglessink, "Couldn't link program");
-    goto HANDLE_ERROR;
-  }
+  if (free_frag_prog)
+    g_free (frag_prog);
+  frag_prog = NULL;
 
   eglglessink->eglglesctx.position_loc[0] =
       glGetAttribLocation (eglglessink->eglglesctx.glslprogram[0], "position");
-  eglglessink->eglglesctx.texpos_loc =
+  eglglessink->eglglesctx.texpos_loc[0] =
       glGetAttribLocation (eglglessink->eglglesctx.glslprogram[0], "texpos");
 
   glEnableVertexAttribArray (eglglessink->eglglesctx.position_loc[0]);
   if (got_gl_error ("glEnableVertexAttribArray"))
     goto HANDLE_ERROR;
 
-  glEnableVertexAttribArray (eglglessink->eglglesctx.texpos_loc);
+  glEnableVertexAttribArray (eglglessink->eglglesctx.texpos_loc[0]);
   if (got_gl_error ("glEnableVertexAttribArray"))
     goto HANDLE_ERROR;
 
+  for (i = 0; i < eglglessink->eglglesctx.n_textures; i++) {
+    eglglessink->eglglesctx.tex_loc[0][i] =
+        glGetUniformLocation (eglglessink->eglglesctx.glslprogram[0],
+        texnames[i]);
+  }
+
   if (!eglglessink->eglglesctx.buffer_preserved) {
     /* Build shader program for black borders */
-    eglglessink->eglglesctx.vertshader[1] = glCreateShader (GL_VERTEX_SHADER);
-    GST_DEBUG_OBJECT (eglglessink, "Sending %s to handle %d",
-        vert_COPY_prog_no_tex, eglglessink->eglglesctx.vertshader[1]);
-    glShaderSource (eglglessink->eglglesctx.vertshader[1], 1,
-        &vert_COPY_prog_no_tex, NULL);
-    if (got_gl_error ("glShaderSource vertex"))
+    if (!create_shader_program (eglglessink,
+            &eglglessink->eglglesctx.glslprogram[1],
+            &eglglessink->eglglesctx.vertshader[1],
+            &eglglessink->eglglesctx.fragshader[1], vert_COPY_prog_no_tex,
+            frag_BLACK_prog))
       goto HANDLE_ERROR;
-
-    glCompileShader (eglglessink->eglglesctx.vertshader[1]);
-    if (got_gl_error ("glCompileShader vertex"))
-      goto HANDLE_ERROR;
-
-    glGetShaderiv (eglglessink->eglglesctx.vertshader[1], GL_COMPILE_STATUS,
-        &test);
-    if (test != GL_FALSE)
-      GST_DEBUG_OBJECT (eglglessink, "Successfully compiled vertex shader");
-    else {
-      GST_ERROR_OBJECT (eglglessink, "Couldn't compile vertex shader");
-      glGetShaderiv (eglglessink->eglglesctx.vertshader[1], GL_INFO_LOG_LENGTH,
-          &test);
-      info_log = g_new0 (GLchar, test);
-      glGetShaderInfoLog (eglglessink->eglglesctx.vertshader[1], test, NULL,
-          info_log);
-      GST_INFO_OBJECT (eglglessink, "Compilation info log:\n%s", info_log);
-      g_free (info_log);
-      goto HANDLE_ERROR;
-    }
-
-    eglglessink->eglglesctx.fragshader[1] = glCreateShader (GL_FRAGMENT_SHADER);
-    glShaderSource (eglglessink->eglglesctx.fragshader[1], 1, &frag_BLACK_prog,
-        NULL);
-
-    if (got_gl_error ("glShaderSource fragment"))
-      goto HANDLE_ERROR;
-
-    glCompileShader (eglglessink->eglglesctx.fragshader[1]);
-    if (got_gl_error ("glCompileShader fragment"))
-      goto HANDLE_ERROR;
-
-    glGetShaderiv (eglglessink->eglglesctx.fragshader[1], GL_COMPILE_STATUS,
-        &test);
-    if (test != GL_FALSE)
-      GST_DEBUG_OBJECT (eglglessink, "Successfully compiled fragment shader");
-    else {
-      GST_ERROR_OBJECT (eglglessink, "Couldn't compile fragment shader");
-      glGetShaderiv (eglglessink->eglglesctx.fragshader[1], GL_INFO_LOG_LENGTH,
-          &test);
-      info_log = g_new0 (GLchar, test);
-      glGetShaderInfoLog (eglglessink->eglglesctx.fragshader[1], test, NULL,
-          info_log);
-      GST_INFO_OBJECT (eglglessink, "Compilation info log:\n%s", info_log);
-      g_free (info_log);
-      goto HANDLE_ERROR;
-    }
-
-    eglglessink->eglglesctx.glslprogram[1] = glCreateProgram ();
-    if (got_gl_error ("glCreateProgram"))
-      goto HANDLE_ERROR;
-    glAttachShader (eglglessink->eglglesctx.glslprogram[1],
-        eglglessink->eglglesctx.vertshader[1]);
-    if (got_gl_error ("glAttachShader vertices"))
-      goto HANDLE_ERROR;
-    glAttachShader (eglglessink->eglglesctx.glslprogram[1],
-        eglglessink->eglglesctx.fragshader[1]);
-    if (got_gl_error ("glAttachShader fragments"))
-      goto HANDLE_ERROR;
-    glLinkProgram (eglglessink->eglglesctx.glslprogram[1]);
-    glGetProgramiv (eglglessink->eglglesctx.glslprogram[1], GL_LINK_STATUS,
-        &test);
-    if (test != GL_FALSE)
-      GST_DEBUG_OBJECT (eglglessink, "GLES: Successfully linked program");
-    else {
-      GST_ERROR_OBJECT (eglglessink, "Couldn't link program");
-      goto HANDLE_ERROR;
-    }
 
     eglglessink->eglglesctx.position_loc[1] =
         glGetAttribLocation (eglglessink->eglglesctx.glslprogram[1],
@@ -1489,12 +1455,8 @@ gst_eglglessink_init_egl_surface (GstEglGlesSink * eglglessink)
       goto HANDLE_ERROR;
   }
 
-  glUseProgram (eglglessink->eglglesctx.glslprogram[0]);
-
-  /* Generate and bind texture */
+  /* Generate textures */
   if (!eglglessink->have_texture) {
-    gint i;
-
     GST_INFO_OBJECT (eglglessink, "Performing initial texture setup");
 
     for (i = 0; i < eglglessink->eglglesctx.n_textures; i++) {
@@ -1511,12 +1473,7 @@ gst_eglglessink_init_egl_surface (GstEglGlesSink * eglglessink)
 
       glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[i]);
       if (got_gl_error ("glBindTexture"))
-        goto HANDLE_ERROR_LOCKED;
-
-      eglglessink->eglglesctx.tex_loc[i] =
-          glGetUniformLocation (eglglessink->eglglesctx.glslprogram[0],
-          texnames[i]);
-      glUniform1i (eglglessink->eglglesctx.tex_loc[i], i);
+        goto HANDLE_ERROR;
 
       /* Set 2D resizing params */
       glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -1533,9 +1490,8 @@ gst_eglglessink_init_egl_surface (GstEglGlesSink * eglglessink)
 
     eglglessink->have_texture = TRUE;
   }
-  glUseProgram (0);
 
-  g_free (tmp_prog);
+  glUseProgram (0);
 
   return TRUE;
 
@@ -1545,7 +1501,6 @@ HANDLE_EGL_ERROR_LOCKED:
 HANDLE_ERROR_LOCKED:
 HANDLE_ERROR:
   GST_ERROR_OBJECT (eglglessink, "Couldn't setup EGL surface");
-  g_free (tmp_prog);
   return FALSE;
 }
 
@@ -1699,7 +1654,7 @@ gst_eglglessink_queue_buffer (GstEglGlesSink * eglglessink, GstBuffer * buf)
 
   if (eglglessink->last_flow != GST_FLOW_OK)
     return eglglessink->last_flow;
-  
+
   item = g_slice_new0 (GstDataQueueItem);
 
   item->object = GST_MINI_OBJECT_CAST (buf);
@@ -1736,6 +1691,7 @@ gst_eglglessink_render_and_display (GstEglGlesSink * eglglessink,
     GstBuffer * buf)
 {
   gint w, h;
+  gint i;
 
   w = GST_VIDEO_SINK_WIDTH (eglglessink);
   h = GST_VIDEO_SINK_HEIGHT (eglglessink);
@@ -1994,12 +1950,25 @@ gst_eglglessink_render_and_display (GstEglGlesSink * eglglessink,
   GST_DEBUG_OBJECT (eglglessink, "Drawing video frame");
   glUseProgram (eglglessink->eglglesctx.glslprogram[0]);
 
+  for (i = 0; i < eglglessink->eglglesctx.n_textures; i++) {
+    if (i == 0)
+      glActiveTexture (GL_TEXTURE0);
+    else if (i == 1)
+      glActiveTexture (GL_TEXTURE1);
+    else if (i == 2)
+      glActiveTexture (GL_TEXTURE2);
+
+    glUniform1i (eglglessink->eglglesctx.tex_loc[0][i], i);
+    if (got_gl_error ("glUniform1i"))
+      goto HANDLE_ERROR;
+  }
+
   glVertexAttribPointer (eglglessink->eglglesctx.position_loc[0], 3,
       GL_FLOAT, GL_FALSE, sizeof (coord5), (gpointer) (0 * sizeof (coord5)));
   if (got_gl_error ("glVertexAttribPointer"))
     goto HANDLE_ERROR;
 
-  glVertexAttribPointer (eglglessink->eglglesctx.texpos_loc, 2, GL_FLOAT,
+  glVertexAttribPointer (eglglessink->eglglesctx.texpos_loc[0], 2, GL_FLOAT,
       GL_FALSE, sizeof (coord5), (gpointer) (3 * sizeof (gfloat)));
   if (got_gl_error ("glVertexAttribPointer"))
     goto HANDLE_ERROR;
