@@ -586,6 +586,7 @@ render_thread_func (GstEglGlesSink * eglglessink)
   GstMessage *message;
   GValue val = { 0 };
   GstDataQueueItem *item = NULL;
+  GstFlowReturn last_flow = GST_FLOW_OK;
 
   g_value_init (&val, G_TYPE_POINTER);
   g_value_set_pointer (&val, g_thread_self ());
@@ -611,8 +612,8 @@ render_thread_func (GstEglGlesSink * eglglessink)
       caps = GST_BUFFER_CAPS (buf);
       if (caps != eglglessink->configured_caps) {
         if (!gst_eglglessink_configure_caps (eglglessink, caps)) {
-          eglglessink->last_flow = GST_FLOW_NOT_NEGOTIATED;
           g_mutex_lock (eglglessink->render_lock);
+          eglglessink->last_flow = GST_FLOW_NOT_NEGOTIATED;
           g_cond_broadcast (eglglessink->render_cond);
           g_mutex_unlock (eglglessink->render_lock);
           item->destroy (item);
@@ -622,26 +623,29 @@ render_thread_func (GstEglGlesSink * eglglessink)
     }
 
     if (eglglessink->configured_caps) {
-      eglglessink->last_flow =
-          gst_eglglessink_render_and_display (eglglessink, buf);
+      last_flow = gst_eglglessink_render_and_display (eglglessink, buf);
     } else {
       GST_DEBUG_OBJECT (eglglessink,
           "No caps configured yet, not drawing anything");
     }
 
-    if (buf) {
-      g_mutex_lock (eglglessink->render_lock);
-      g_cond_broadcast (eglglessink->render_cond);
-      g_mutex_unlock (eglglessink->render_lock);
-    }
     item->destroy (item);
-    if (eglglessink->last_flow != GST_FLOW_OK)
+    g_mutex_lock (eglglessink->render_lock);
+    eglglessink->last_flow = last_flow;
+    g_cond_broadcast (eglglessink->render_cond);
+    g_mutex_unlock (eglglessink->render_lock);
+
+    if (last_flow != GST_FLOW_OK)
       break;
     GST_DEBUG_OBJECT (eglglessink, "Successfully handled object");
   }
 
-  if (eglglessink->last_flow == GST_FLOW_OK)
+  if (last_flow == GST_FLOW_OK) {
+    g_mutex_lock (eglglessink->render_lock);
     eglglessink->last_flow = GST_FLOW_WRONG_STATE;
+    g_cond_broadcast (eglglessink->render_cond);
+    g_mutex_unlock (eglglessink->render_lock);
+  }
 
   GST_DEBUG_OBJECT (eglglessink, "Shutting down thread");
 
@@ -1651,9 +1655,14 @@ static GstFlowReturn
 gst_eglglessink_queue_buffer (GstEglGlesSink * eglglessink, GstBuffer * buf)
 {
   GstDataQueueItem *item;
+  GstFlowReturn last_flow;
 
-  if (eglglessink->last_flow != GST_FLOW_OK)
-    return eglglessink->last_flow;
+  g_mutex_lock (eglglessink->render_lock);
+  last_flow = eglglessink->last_flow;
+  g_mutex_unlock (eglglessink->render_lock);
+
+  if (last_flow != GST_FLOW_OK)
+    return last_flow;
 
   item = g_slice_new0 (GstDataQueueItem);
 
@@ -1679,10 +1688,11 @@ gst_eglglessink_queue_buffer (GstEglGlesSink * eglglessink, GstBuffer * buf)
     g_cond_wait (eglglessink->render_cond, eglglessink->render_lock);
     GST_DEBUG_OBJECT (eglglessink, "Buffer rendered: %s",
         gst_flow_get_name (eglglessink->last_flow));
+    last_flow = eglglessink->last_flow;
     g_mutex_unlock (eglglessink->render_lock);
   }
 
-  return (buf ? eglglessink->last_flow : GST_FLOW_OK);
+  return (buf ? last_flow : GST_FLOW_OK);
 }
 
 /* Rendering and display */
