@@ -38,6 +38,7 @@
 #include <sys/ioctl.h>
 #include <string.h>
 
+#include <gst/interfaces/propertyprobe.h>
 #include "gstuvch264_src.h"
 #include "gstuvch264-marshal.h"
 #include <gudev/gudev.h>
@@ -149,9 +150,6 @@ static guint _signals[LAST_SIGNAL];
 GST_DEBUG_CATEGORY (uvc_h264_src_debug);
 #define GST_CAT_DEFAULT uvc_h264_src_debug
 
-GST_BOILERPLATE (GstUvcH264Src, gst_uvc_h264_src,
-    GstBaseCameraSrc, GST_TYPE_BASE_CAMERA_SRC);
-
 #define GST_UVC_H264_SRC_VF_CAPS_STR                                    \
   GST_VIDEO_CAPS_RGB ";"                                                \
   GST_VIDEO_CAPS_RGB";"							\
@@ -243,6 +241,7 @@ static void fill_probe_commit (GstUvcH264Src * self,
     UvcH264StreamFormat stream_format);
 static gboolean xu_query (GstUvcH264Src * self, guint selector, guint query,
     guchar * data);
+static guint8 xu_get_id (GstUvcH264Src * self, const gchar * device_file);
 
 static void set_rate_control (GstUvcH264Src * self);
 static void set_level_idc (GstUvcH264Src * self);
@@ -261,6 +260,39 @@ static gboolean gst_uvc_h264_src_get_boolean_setting (GstUvcH264Src * self,
     gchar * property, gboolean * changeable, gboolean * def);
 static gboolean gst_uvc_h264_src_get_int_setting (GstUvcH264Src * self,
     gchar * property, gint * min, gint * def, gint * max);
+
+/* GstPropertyProbe */
+static void gst_uvc_h264_src_init_interfaces (GType type);
+static void
+gst_uvc_h264_src_implements_interface_init (GstImplementsInterfaceClass *
+    klass);
+static void
+gst_uvc_h264_src_property_probe_interface_init (GstPropertyProbeInterface *
+    iface);
+
+GST_BOILERPLATE_FULL (GstUvcH264Src, gst_uvc_h264_src,
+    GstBaseCameraSrc, GST_TYPE_BASE_CAMERA_SRC,
+    gst_uvc_h264_src_init_interfaces);
+
+static void
+gst_uvc_h264_src_init_interfaces (GType type)
+{
+  static const GInterfaceInfo uvcsrc_propertyprobe_info = {
+    (GInterfaceInitFunc) gst_uvc_h264_src_property_probe_interface_init,
+    NULL,
+    NULL,
+  };
+  static const GInterfaceInfo uvcsrc_implements_interface_info = {
+    (GInterfaceInitFunc) gst_uvc_h264_src_implements_interface_init,
+    NULL,
+    NULL,
+  };
+
+  g_type_add_interface_static (type, GST_TYPE_PROPERTY_PROBE,
+      &uvcsrc_propertyprobe_info);
+  g_type_add_interface_static (type, GST_TYPE_IMPLEMENTS_INTERFACE,
+      &uvcsrc_implements_interface_info);
+}
 
 static void
 gst_uvc_h264_src_base_init (gpointer g_class)
@@ -619,7 +651,152 @@ gst_uvc_h264_src_dispose (GObject * object)
     libusb_exit (self->usb_ctx);
   self->usb_ctx = NULL;
 
+  if (self->probe_properties)
+    g_list_free (self->probe_properties);
+  self->probe_properties = NULL;
+  if (self->probe_v4l2src)
+    gst_object_unref (self->probe_v4l2src);
+  self->probe_v4l2src = NULL;
+  if (self->probe_device)
+    g_value_array_free (self->probe_device);
+  self->probe_device = NULL;
+
   G_OBJECT_CLASS (parent_class)->dispose (object);
+}
+
+static gboolean
+gst_uvc_h264_src_interface_supported (GstImplementsInterface * iface,
+    GType iface_type)
+{
+  if (iface_type == GST_TYPE_PROPERTY_PROBE)
+    return TRUE;
+  else
+    return FALSE;
+}
+
+static void
+gst_uvc_h264_src_implements_interface_init (GstImplementsInterfaceClass * klass)
+{
+  klass->supported = gst_uvc_h264_src_interface_supported;
+}
+
+static const GList *
+gst_uvc_h264_src_probe_get_properties (GstPropertyProbe * probe)
+{
+  GstUvcH264Src *self = GST_UVC_H264_SRC (probe);
+  GObjectClass *klass = G_OBJECT_GET_CLASS (probe);
+  GList **l = &self->probe_properties;
+
+  if (!*l)
+    *l = g_list_append (*l, g_object_class_find_property (klass, "device"));
+
+  return *l;
+}
+
+static gboolean
+gst_uvc_h264_src_probe_needs_probe (GstPropertyProbe * probe,
+    guint prop_id, const GParamSpec * pspec)
+{
+  GstUvcH264Src *self = GST_UVC_H264_SRC (probe);
+
+  if (prop_id != PROP_DEVICE) {
+    G_OBJECT_WARN_INVALID_PROPERTY_ID (probe, prop_id, pspec);
+    return FALSE;
+  }
+
+  if (!self->probe_v4l2src)
+    self->probe_v4l2src = gst_element_factory_make ("v4l2src", "uvch264_probe");
+
+  if (self->probe_v4l2src) {
+    GstPropertyProbe *v4l2src = GST_PROPERTY_PROBE (self->probe_v4l2src);
+    const GParamSpec *spec;
+
+    spec = gst_property_probe_get_property (v4l2src, "device");
+
+    return gst_property_probe_needs_probe (v4l2src, spec);
+  }
+
+  return FALSE;
+}
+
+static void
+gst_uvc_h264_src_probe_probe_property (GstPropertyProbe * probe,
+    guint prop_id, const GParamSpec * pspec)
+{
+  GstUvcH264Src *self = GST_UVC_H264_SRC (probe);
+
+  if (prop_id != PROP_DEVICE) {
+    G_OBJECT_WARN_INVALID_PROPERTY_ID (probe, prop_id, pspec);
+    return;
+  }
+
+  if (!self->probe_v4l2src)
+    self->probe_v4l2src = gst_element_factory_make ("v4l2src", "uvch264_probe");
+
+  if (self->probe_v4l2src) {
+    GstPropertyProbe *v4l2src = GST_PROPERTY_PROBE (self->probe_v4l2src);
+    GValueArray *values;
+    guint i;
+
+    if (self->probe_device)
+      g_value_array_free (self->probe_device);
+    self->probe_device = g_value_array_new (0);
+
+    values = gst_property_probe_probe_and_get_values_name (v4l2src, "device");
+    if (values) {
+      GValue value = { 0 };
+
+      g_value_init (&value, G_TYPE_STRING);
+
+      for (i = 0; i < values->n_values; ++i) {
+        GValue *val;
+        const gchar *device = NULL;
+        guint8 xu_id;
+
+        val = g_value_array_get_nth (values, i);
+        if (val == NULL || !G_VALUE_HOLDS_STRING (val))
+          continue;
+
+        device = g_value_get_string (val);
+        if (device == NULL)
+          continue;
+
+        xu_id = xu_get_id (self, device);
+        if (xu_id != 0) {
+          g_value_set_string (&value, device);
+          g_value_array_append (self->probe_device, &value);
+        }
+      }
+      g_value_unset (&value);
+      g_value_array_free (values);
+    }
+  }
+
+}
+
+static GValueArray *
+gst_uvc_h264_src_probe_get_values (GstPropertyProbe * probe,
+    guint prop_id, const GParamSpec * pspec)
+{
+  GstUvcH264Src *self = GST_UVC_H264_SRC (probe);
+
+  if (prop_id == PROP_DEVICE) {
+    return g_value_array_copy (self->probe_device);
+  } else {
+    G_OBJECT_WARN_INVALID_PROPERTY_ID (probe, prop_id, pspec);
+  }
+
+  return NULL;
+}
+
+static void
+gst_uvc_h264_src_property_probe_interface_init (GstPropertyProbeInterface *
+    iface)
+{
+  iface->needs_probe = gst_uvc_h264_src_probe_needs_probe;
+  iface->probe_property = gst_uvc_h264_src_probe_probe_property;
+  iface->get_properties = gst_uvc_h264_src_probe_get_properties;
+  iface->get_values = gst_uvc_h264_src_probe_get_values;
 }
 
 static void
@@ -1792,7 +1969,7 @@ gst_uvc_h264_src_event (GstPad * pad, GstEvent * event)
 }
 
 static guint8
-xu_get_id (GstUvcH264Src * self)
+xu_get_id (GstUvcH264Src * self, const gchar * device_file)
 {
   static const __u8 guid[16] = GUID_UVCX_H264_XU;
   GUdevClient *client;
@@ -1811,7 +1988,7 @@ xu_get_id (GstUvcH264Src * self)
 
   client = g_udev_client_new (NULL);
   if (client) {
-    udevice = g_udev_client_query_by_device_file (client, self->device);
+    udevice = g_udev_client_query_by_device_file (client, device_file);
     if (udevice) {
       parent = g_udev_device_get_parent_with_subsystem (udevice, "usb",
           "usb_device");
@@ -2497,7 +2674,7 @@ ensure_v4l2src (GstUvcH264Src * self)
 
   /* Set/Update the fd and unit id after we go to READY */
   g_object_get (self->v4l2_src, "device-fd", &self->v4l2_fd, NULL);
-  self->h264_unit_id = xu_get_id (self);
+  self->h264_unit_id = xu_get_id (self, self->device);
 
   if (self->h264_unit_id == 0) {
     GST_ELEMENT_ERROR (self, RESOURCE, SETTINGS,

@@ -83,6 +83,11 @@ struct _GstUvcH264Src
   GstPad *imgsrc;
   GstPad *vidsrc;
 
+  /* GstPropertyProbe */
+  GList *probe_properties;
+  GstElement *probe_v4l2src;
+  GValueArray *probe_device;
+
   /* source elements */
   GstElement *v4l2_src;
   GstElement *mjpg_demux;

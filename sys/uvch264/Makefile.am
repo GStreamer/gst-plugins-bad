@@ -41,7 +41,8 @@ libgstuvch264_la_LIBADD =   $(GST_PLUGINS_BASE_LIBS) \
 			    $(GST_LIBS) \
 			    $(G_UDEV_LIBS) \
 			    $(LIBUSB_LIBS) \
-			    $(top_builddir)/gst-libs/gst/basecamerabinsrc/libgstbasecamerabinsrc-$(GST_MAJORMINOR).la
+			    $(top_builddir)/gst-libs/gst/basecamerabinsrc/libgstbasecamerabinsrc-$(GST_MAJORMINOR).la \
+			    -lgstinterfaces-$(GST_MAJORMINOR)
 
 noinst_HEADERS = gstuvch264_mjpgdemux.h \
 		 gstuvch264_src.h \
