@@ -300,6 +300,16 @@ static const char *frag_NV12_NV21_prog = {
 };
 /* *INDENT-ON* */
 
+static const EGLint eglglessink_RGBA8888_attribs[] = {
+  EGL_RED_SIZE, 8,
+  EGL_GREEN_SIZE, 8,
+  EGL_BLUE_SIZE, 8,
+  EGL_ALPHA_SIZE, 8,
+  EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+  EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+  EGL_NONE
+};
+
 /* Input capabilities. */
 static GstStaticPadTemplate gst_eglglessink_sink_template_factory =
     GST_STATIC_PAD_TEMPLATE ("sink",
@@ -326,35 +336,6 @@ enum
   PROP_0,
   PROP_CREATE_WINDOW,
   PROP_FORCE_ASPECT_RATIO,
-};
-
-/* will probably move elsewhere */
-static const EGLint eglglessink_RGBA8888_attribs[] = {
-  EGL_RED_SIZE, 8,
-  EGL_GREEN_SIZE, 8,
-  EGL_BLUE_SIZE, 8,
-  EGL_ALPHA_SIZE, 8,
-  EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-  EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-  EGL_NONE
-};
-
-static const EGLint eglglessink_RGB888_attribs[] = {
-  EGL_RED_SIZE, 8,
-  EGL_GREEN_SIZE, 8,
-  EGL_BLUE_SIZE, 8,
-  EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-  EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-  EGL_NONE
-};
-
-static const EGLint eglglessink_RGB565_attribs[] = {
-  EGL_RED_SIZE, 5,
-  EGL_GREEN_SIZE, 6,
-  EGL_BLUE_SIZE, 5,
-  EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-  EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-  EGL_NONE
 };
 
 static void gst_eglglessink_finalize (GObject * object);
@@ -385,12 +366,10 @@ static void gst_eglglessink_set_render_rectangle (GstXOverlay * overlay, gint x,
     gint y, gint width, gint height);
 
 /* Utility */
-static GstEglGlesImageFmt *gst_eglglessink_get_compat_format_from_caps
-    (GstEglGlesSink * eglglessink, GstCaps * caps);
 static EGLNativeWindowType gst_eglglessink_create_window (GstEglGlesSink *
     eglglessink, gint width, gint height);
-static inline gint
-gst_eglglessink_fill_supported_fbuffer_configs (GstEglGlesSink * eglglessink);
+static gboolean gst_eglglessink_fill_supported_fbuffer_configs (GstEglGlesSink *
+    eglglessink);
 static gboolean gst_eglglessink_init_egl_display (GstEglGlesSink * eglglessink);
 static gboolean gst_eglglessink_choose_config (GstEglGlesSink * eglglessink);
 static gboolean gst_eglglessink_init_egl_surface (GstEglGlesSink * eglglessink);
@@ -406,7 +385,6 @@ static GstFlowReturn gst_eglglessink_queue_buffer (GstEglGlesSink * sink,
     GstBuffer * buf);
 static inline gboolean got_gl_error (const char *wtf);
 static inline gboolean got_egl_error (const char *wtf);
-static void gst_eglglessink_wipe_fmt (gpointer data);
 static inline gboolean egl_init (GstEglGlesSink * eglglessink);
 static gboolean gst_eglglessink_context_make_current (GstEglGlesSink *
     eglglessink, gboolean bind);
@@ -416,45 +394,12 @@ GST_BOILERPLATE_FULL (GstEglGlesSink, gst_eglglessink, GstVideoSink,
     GST_TYPE_VIDEO_SINK, gst_eglglessink_init_interfaces);
 
 
-static GstEglGlesImageFmt *
-gst_eglglessink_get_compat_format_from_caps (GstEglGlesSink * eglglessink,
-    GstCaps * caps)
-{
 
-  GList *list;
-  GstEglGlesImageFmt *format;
-
-  g_return_val_if_fail (GST_IS_EGLGLESSINK (eglglessink), 0);
-
-  list = eglglessink->supported_fmts;
-
-  /* Traverse the list trying to find a compatible format */
-  while (list) {
-    format = list->data;
-    GST_DEBUG_OBJECT (eglglessink, "Checking compatibility between listed %"
-        GST_PTR_FORMAT " and %" GST_PTR_FORMAT, format->caps, caps);
-    if (format) {
-      if (gst_caps_can_intersect (caps, format->caps)) {
-        GST_INFO_OBJECT (eglglessink, "Found compatible format %d",
-            format->fmt);
-        GST_DEBUG_OBJECT (eglglessink,
-            "Got caps %" GST_PTR_FORMAT " and this format can do %"
-            GST_PTR_FORMAT, caps, format->caps);
-        return format;
-      }
-    }
-    list = g_list_next (list);
-  }
-
-  return NULL;
-}
-
-static inline gint
+static gboolean
 gst_eglglessink_fill_supported_fbuffer_configs (GstEglGlesSink * eglglessink)
 {
-  gint ret = 0;
+  gboolean ret = FALSE;
   EGLint cfg_number;
-  GstEglGlesImageFmt *format;
   GstCaps *caps;
 
   GST_DEBUG_OBJECT (eglglessink,
@@ -465,83 +410,48 @@ gst_eglglessink_fill_supported_fbuffer_configs (GstEglGlesSink * eglglessink)
 
   if (eglChooseConfig (eglglessink->eglglesctx.display,
           eglglessink_RGBA8888_attribs, NULL, 1, &cfg_number) != EGL_FALSE) {
-    format = g_new0 (GstEglGlesImageFmt, 1);
-    format->fmt = GST_EGLGLESSINK_IMAGE_RGBA8888;
-    format->attribs = eglglessink_RGBA8888_attribs;
-    format->caps = gst_video_format_new_template_caps (GST_VIDEO_FORMAT_RGBA);
-    gst_caps_append (format->caps,
+    gst_caps_append (caps,
+        gst_video_format_new_template_caps (GST_VIDEO_FORMAT_RGBA));
+    gst_caps_append (caps,
         gst_video_format_new_template_caps (GST_VIDEO_FORMAT_BGRA));
-    gst_caps_append (format->caps,
+    gst_caps_append (caps,
         gst_video_format_new_template_caps (GST_VIDEO_FORMAT_ARGB));
-    gst_caps_append (format->caps,
+    gst_caps_append (caps,
         gst_video_format_new_template_caps (GST_VIDEO_FORMAT_ABGR));
-    gst_caps_append (format->caps,
+    gst_caps_append (caps,
         gst_video_format_new_template_caps (GST_VIDEO_FORMAT_RGBx));
-    gst_caps_append (format->caps,
+    gst_caps_append (caps,
         gst_video_format_new_template_caps (GST_VIDEO_FORMAT_BGRx));
-    gst_caps_append (format->caps,
+    gst_caps_append (caps,
         gst_video_format_new_template_caps (GST_VIDEO_FORMAT_xRGB));
-    gst_caps_append (format->caps,
+    gst_caps_append (caps,
         gst_video_format_new_template_caps (GST_VIDEO_FORMAT_xBGR));
-    gst_caps_append (format->caps,
+    gst_caps_append (caps,
         gst_video_format_new_template_caps (GST_VIDEO_FORMAT_AYUV));
-    gst_caps_append (format->caps,
+    gst_caps_append (caps,
         gst_video_format_new_template_caps (GST_VIDEO_FORMAT_Y444));
-    gst_caps_append (format->caps,
+    gst_caps_append (caps,
         gst_video_format_new_template_caps (GST_VIDEO_FORMAT_I420));
-    gst_caps_append (format->caps,
+    gst_caps_append (caps,
         gst_video_format_new_template_caps (GST_VIDEO_FORMAT_YV12));
-    gst_caps_append (format->caps,
+    gst_caps_append (caps,
         gst_video_format_new_template_caps (GST_VIDEO_FORMAT_NV12));
-    gst_caps_append (format->caps,
+    gst_caps_append (caps,
         gst_video_format_new_template_caps (GST_VIDEO_FORMAT_NV21));
-    gst_caps_append (format->caps,
+    gst_caps_append (caps,
         gst_video_format_new_template_caps (GST_VIDEO_FORMAT_YUY2));
-    gst_caps_append (format->caps,
+    gst_caps_append (caps,
         gst_video_format_new_template_caps (GST_VIDEO_FORMAT_YVYU));
-    gst_caps_append (format->caps,
+    gst_caps_append (caps,
         gst_video_format_new_template_caps (GST_VIDEO_FORMAT_UYVY));
-    gst_caps_append (format->caps,
+    gst_caps_append (caps,
         gst_video_format_new_template_caps (GST_VIDEO_FORMAT_Y42B));
-    gst_caps_append (format->caps,
+    gst_caps_append (caps,
         gst_video_format_new_template_caps (GST_VIDEO_FORMAT_Y41B));
-    eglglessink->supported_fmts =
-        g_list_append (eglglessink->supported_fmts, format);
-    ret++;
-    gst_caps_append (caps, gst_caps_ref (format->caps));
+    ret = TRUE;
   } else {
     GST_INFO_OBJECT (eglglessink,
         "EGL display doesn't support RGBA8888 config");
-  }
-
-  if (eglChooseConfig (eglglessink->eglglesctx.display,
-          eglglessink_RGB888_attribs, NULL, 1, &cfg_number) != EGL_FALSE) {
-    format = g_new0 (GstEglGlesImageFmt, 1);
-    format->fmt = GST_EGLGLESSINK_IMAGE_RGB888;
-    format->attribs = eglglessink_RGB888_attribs;
-    format->caps = gst_video_format_new_template_caps (GST_VIDEO_FORMAT_RGB);
-    gst_caps_append (format->caps,
-        gst_video_format_new_template_caps (GST_VIDEO_FORMAT_BGR));
-    eglglessink->supported_fmts =
-        g_list_append (eglglessink->supported_fmts, format);
-    ret++;
-    gst_caps_append (caps, gst_caps_ref (format->caps));
-  } else {
-    GST_INFO_OBJECT (eglglessink, "EGL display doesn't support RGB888 config");
-  }
-
-  if (eglChooseConfig (eglglessink->eglglesctx.display,
-          eglglessink_RGB565_attribs, NULL, 1, &cfg_number) != EGL_FALSE) {
-    format = g_new0 (GstEglGlesImageFmt, 1);
-    format->fmt = GST_EGLGLESSINK_IMAGE_RGB565;
-    format->attribs = eglglessink_RGB565_attribs;
-    format->caps = gst_video_format_new_template_caps (GST_VIDEO_FORMAT_RGB16);
-    eglglessink->supported_fmts =
-        g_list_append (eglglessink->supported_fmts, format);
-    ret++;
-    gst_caps_append (caps, gst_caps_ref (format->caps));
-  } else {
-    GST_INFO_OBJECT (eglglessink, "EGL display doesn't support RGB565 config");
   }
 
   GST_OBJECT_LOCK (eglglessink);
@@ -1582,7 +1492,7 @@ gst_eglglessink_choose_config (GstEglGlesSink * eglglessink)
   GLint egl_configs;
 
   if ((eglChooseConfig (eglglessink->eglglesctx.display,
-              eglglessink->selected_fmt->attribs,
+              eglglessink_RGBA8888_attribs,
               &eglglessink->eglglesctx.config, 1, &egl_configs)) == EGL_FALSE) {
     got_egl_error ("eglChooseConfig");
     GST_ERROR_OBJECT (eglglessink, "eglChooseConfig failed");
@@ -1717,138 +1627,99 @@ gst_eglglessink_fill_texture (GstEglGlesSink * eglglessink, GstBuffer * buf)
       "Got good buffer %p. Sink geometry is %dx%d size %d", buf, w, h,
       buf ? GST_BUFFER_SIZE (buf) : -1);
 
-  if (buf) {
-    switch (eglglessink->selected_fmt->fmt) {
-      case GST_EGLGLESSINK_IMAGE_RGB888:
-        glActiveTexture (GL_TEXTURE0);
-        glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[0]);
-        glTexImage2D (GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB,
-            GL_UNSIGNED_BYTE, GST_BUFFER_DATA (buf));
-        break;
-      case GST_EGLGLESSINK_IMAGE_RGB565:
-        glActiveTexture (GL_TEXTURE0);
-        glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[0]);
-        glTexImage2D (GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB,
-            GL_UNSIGNED_SHORT_5_6_5, GST_BUFFER_DATA (buf));
-        break;
-      case GST_EGLGLESSINK_IMAGE_RGBA8888:
+  switch (eglglessink->format) {
+    case GST_VIDEO_FORMAT_RGBA:
+    case GST_VIDEO_FORMAT_BGRA:
+    case GST_VIDEO_FORMAT_ARGB:
+    case GST_VIDEO_FORMAT_ABGR:
+    case GST_VIDEO_FORMAT_RGBx:
+    case GST_VIDEO_FORMAT_BGRx:
+    case GST_VIDEO_FORMAT_xRGB:
+    case GST_VIDEO_FORMAT_xBGR:
+      glActiveTexture (GL_TEXTURE0);
+      glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[0]);
+      glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA,
+          GL_UNSIGNED_BYTE, GST_BUFFER_DATA (buf));
+      break;
+    case GST_VIDEO_FORMAT_AYUV:
+      glActiveTexture (GL_TEXTURE0);
+      glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[0]);
+      glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA,
+          GL_UNSIGNED_BYTE, GST_BUFFER_DATA (buf));
+      break;
+    case GST_VIDEO_FORMAT_Y444:
+    case GST_VIDEO_FORMAT_I420:
+    case GST_VIDEO_FORMAT_YV12:
+    case GST_VIDEO_FORMAT_Y42B:
+    case GST_VIDEO_FORMAT_Y41B:{
+      gint coffset, cw, ch;
 
-        switch (eglglessink->format) {
-          case GST_VIDEO_FORMAT_RGBA:
-          case GST_VIDEO_FORMAT_BGRA:
-          case GST_VIDEO_FORMAT_ARGB:
-          case GST_VIDEO_FORMAT_ABGR:
-          case GST_VIDEO_FORMAT_RGBx:
-          case GST_VIDEO_FORMAT_BGRx:
-          case GST_VIDEO_FORMAT_xRGB:
-          case GST_VIDEO_FORMAT_xBGR:
-            glActiveTexture (GL_TEXTURE0);
-            glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[0]);
-            glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA,
-                GL_UNSIGNED_BYTE, GST_BUFFER_DATA (buf));
-            break;
-          case GST_VIDEO_FORMAT_AYUV:
-            glActiveTexture (GL_TEXTURE0);
-            glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[0]);
-            glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA,
-                GL_UNSIGNED_BYTE, GST_BUFFER_DATA (buf));
-            break;
-          case GST_VIDEO_FORMAT_Y444:
-          case GST_VIDEO_FORMAT_I420:
-          case GST_VIDEO_FORMAT_YV12:
-          case GST_VIDEO_FORMAT_Y42B:
-          case GST_VIDEO_FORMAT_Y41B:{
-            gint coffset, cw, ch;
-
-            coffset =
-                gst_video_format_get_component_offset (eglglessink->format,
-                0, w, h);
-            cw = gst_video_format_get_component_width (eglglessink->format,
-                0, w);
-            ch = gst_video_format_get_component_height (eglglessink->format,
-                0, h);
-            glActiveTexture (GL_TEXTURE0);
-            glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[0]);
-            glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE, cw, ch, 0,
-                GL_LUMINANCE, GL_UNSIGNED_BYTE,
-                GST_BUFFER_DATA (buf) + coffset);
-            coffset =
-                gst_video_format_get_component_offset (eglglessink->format,
-                1, w, h);
-            cw = gst_video_format_get_component_width (eglglessink->format,
-                1, w);
-            ch = gst_video_format_get_component_height (eglglessink->format,
-                1, h);
-            glActiveTexture (GL_TEXTURE1);
-            glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[1]);
-            glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE, cw, ch, 0,
-                GL_LUMINANCE, GL_UNSIGNED_BYTE,
-                GST_BUFFER_DATA (buf) + coffset);
-            coffset =
-                gst_video_format_get_component_offset (eglglessink->format,
-                2, w, h);
-            cw = gst_video_format_get_component_width (eglglessink->format,
-                2, w);
-            ch = gst_video_format_get_component_height (eglglessink->format,
-                2, h);
-            glActiveTexture (GL_TEXTURE2);
-            glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[2]);
-            glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE, cw, ch, 0,
-                GL_LUMINANCE, GL_UNSIGNED_BYTE,
-                GST_BUFFER_DATA (buf) + coffset);
-            break;
-          }
-          case GST_VIDEO_FORMAT_YUY2:
-          case GST_VIDEO_FORMAT_YVYU:
-          case GST_VIDEO_FORMAT_UYVY:
-            glActiveTexture (GL_TEXTURE0);
-            glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[0]);
-            glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, w, h, 0,
-                GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, GST_BUFFER_DATA (buf));
-            glActiveTexture (GL_TEXTURE1);
-            glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[1]);
-            glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, GST_ROUND_UP_2 (w) / 2,
-                h, 0, GL_RGBA, GL_UNSIGNED_BYTE, GST_BUFFER_DATA (buf));
-            break;
-          case GST_VIDEO_FORMAT_NV12:
-          case GST_VIDEO_FORMAT_NV21:{
-            gint coffset, cw, ch;
-
-            coffset =
-                gst_video_format_get_component_offset (eglglessink->format,
-                0, w, h);
-            cw = gst_video_format_get_component_width (eglglessink->format,
-                0, w);
-            ch = gst_video_format_get_component_height (eglglessink->format,
-                0, h);
-            glActiveTexture (GL_TEXTURE0);
-            glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[0]);
-            glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE, cw, ch, 0,
-                GL_LUMINANCE, GL_UNSIGNED_BYTE,
-                GST_BUFFER_DATA (buf) + coffset);
-
-            coffset =
-                gst_video_format_get_component_offset (eglglessink->format,
-                (eglglessink->format == GST_VIDEO_FORMAT_NV12 ? 1 : 2), w, h);
-            cw = gst_video_format_get_component_width (eglglessink->format, 1,
-                w);
-            ch = gst_video_format_get_component_height (eglglessink->format, 1,
-                h);
-            glActiveTexture (GL_TEXTURE1);
-            glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[1]);
-            glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, cw, ch, 0,
-                GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE,
-                GST_BUFFER_DATA (buf) + coffset);
-            break;
-          }
-          default:
-            g_assert_not_reached ();
-            break;
-        }
+      coffset =
+          gst_video_format_get_component_offset (eglglessink->format, 0, w, h);
+      cw = gst_video_format_get_component_width (eglglessink->format, 0, w);
+      ch = gst_video_format_get_component_height (eglglessink->format, 0, h);
+      glActiveTexture (GL_TEXTURE0);
+      glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[0]);
+      glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE, cw, ch, 0,
+          GL_LUMINANCE, GL_UNSIGNED_BYTE, GST_BUFFER_DATA (buf) + coffset);
+      coffset =
+          gst_video_format_get_component_offset (eglglessink->format, 1, w, h);
+      cw = gst_video_format_get_component_width (eglglessink->format, 1, w);
+      ch = gst_video_format_get_component_height (eglglessink->format, 1, h);
+      glActiveTexture (GL_TEXTURE1);
+      glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[1]);
+      glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE, cw, ch, 0,
+          GL_LUMINANCE, GL_UNSIGNED_BYTE, GST_BUFFER_DATA (buf) + coffset);
+      coffset =
+          gst_video_format_get_component_offset (eglglessink->format, 2, w, h);
+      cw = gst_video_format_get_component_width (eglglessink->format, 2, w);
+      ch = gst_video_format_get_component_height (eglglessink->format, 2, h);
+      glActiveTexture (GL_TEXTURE2);
+      glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[2]);
+      glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE, cw, ch, 0,
+          GL_LUMINANCE, GL_UNSIGNED_BYTE, GST_BUFFER_DATA (buf) + coffset);
+      break;
     }
+    case GST_VIDEO_FORMAT_YUY2:
+    case GST_VIDEO_FORMAT_YVYU:
+    case GST_VIDEO_FORMAT_UYVY:
+      glActiveTexture (GL_TEXTURE0);
+      glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[0]);
+      glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, w, h, 0,
+          GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, GST_BUFFER_DATA (buf));
+      glActiveTexture (GL_TEXTURE1);
+      glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[1]);
+      glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, GST_ROUND_UP_2 (w) / 2,
+          h, 0, GL_RGBA, GL_UNSIGNED_BYTE, GST_BUFFER_DATA (buf));
+      break;
+    case GST_VIDEO_FORMAT_NV12:
+    case GST_VIDEO_FORMAT_NV21:{
+      gint coffset, cw, ch;
 
-    if (got_gl_error ("glTexImage2D"))
-      goto HANDLE_ERROR;
+      coffset =
+          gst_video_format_get_component_offset (eglglessink->format, 0, w, h);
+      cw = gst_video_format_get_component_width (eglglessink->format, 0, w);
+      ch = gst_video_format_get_component_height (eglglessink->format, 0, h);
+      glActiveTexture (GL_TEXTURE0);
+      glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[0]);
+      glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE, cw, ch, 0,
+          GL_LUMINANCE, GL_UNSIGNED_BYTE, GST_BUFFER_DATA (buf) + coffset);
+
+      coffset =
+          gst_video_format_get_component_offset (eglglessink->format,
+          (eglglessink->format == GST_VIDEO_FORMAT_NV12 ? 1 : 2), w, h);
+      cw = gst_video_format_get_component_width (eglglessink->format, 1, w);
+      ch = gst_video_format_get_component_height (eglglessink->format, 1, h);
+      glActiveTexture (GL_TEXTURE1);
+      glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[1]);
+      glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, cw, ch, 0,
+          GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE,
+          GST_BUFFER_DATA (buf) + coffset);
+      break;
+    }
+    default:
+      g_assert_not_reached ();
+      break;
   }
 
   if (got_gl_error ("glTexImage2D"))
@@ -2088,7 +1959,6 @@ gst_eglglessink_configure_caps (GstEglGlesSink * eglglessink, GstCaps * caps)
   gboolean ret = TRUE;
   gint width, height;
   int par_n, par_d;
-  GstEglGlesImageFmt *format;
 
   if (!(ret = gst_video_format_parse_caps (caps, &eglglessink->format, &width,
               &height))) {
@@ -2103,16 +1973,6 @@ gst_eglglessink_configure_caps (GstEglGlesSink * eglglessink, GstCaps * caps)
         "Can't parse PAR from caps. Using default: 1");
   }
 
-  format = gst_eglglessink_get_compat_format_from_caps (eglglessink, caps);
-  if (!format) {
-    GST_ERROR_OBJECT (eglglessink,
-        "No supported and compatible EGL/GLES format found for given caps");
-    goto HANDLE_ERROR;
-  } else
-    GST_INFO_OBJECT (eglglessink, "Selected compatible EGL/GLES format %d",
-        format->fmt);
-
-  eglglessink->selected_fmt = format;
   eglglessink->par_n = par_n;
   eglglessink->par_d = par_d;
   GST_VIDEO_SINK_WIDTH (eglglessink) = width;
@@ -2198,14 +2058,6 @@ gst_eglglessink_setcaps (GstBaseSink * bsink, GstCaps * caps)
   return TRUE;
 }
 
-static void
-gst_eglglessink_wipe_fmt (gpointer data)
-{
-  GstEglGlesImageFmt *format = data;
-  gst_caps_unref (format->caps);
-  g_free (format);
-}
-
 static gboolean
 gst_eglglessink_open (GstEglGlesSink * eglglessink)
 {
@@ -2224,9 +2076,6 @@ gst_eglglessink_close (GstEglGlesSink * eglglessink)
     eglglessink->eglglesctx.display = NULL;
   }
 
-  eglglessink->selected_fmt = NULL;
-  g_list_free_full (eglglessink->supported_fmts, gst_eglglessink_wipe_fmt);
-  eglglessink->supported_fmts = NULL;
   gst_caps_unref (eglglessink->sinkcaps);
   eglglessink->sinkcaps = NULL;
   eglglessink->egl_started = FALSE;
