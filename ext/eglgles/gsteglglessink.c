@@ -399,8 +399,9 @@ static gboolean gst_eglglessink_setup_vbo (GstEglGlesSink * eglglessink,
     gboolean reset);
 static gboolean
 gst_eglglessink_configure_caps (GstEglGlesSink * eglglessink, GstCaps * caps);
-static GstFlowReturn gst_eglglessink_render_and_display (GstEglGlesSink * sink,
+static GstFlowReturn gst_eglglessink_upload (GstEglGlesSink * sink,
     GstBuffer * buf);
+static GstFlowReturn gst_eglglessink_render (GstEglGlesSink * sink);
 static GstFlowReturn gst_eglglessink_queue_buffer (GstEglGlesSink * sink,
     GstBuffer * buf);
 static inline gboolean got_gl_error (const char *wtf);
@@ -601,14 +602,14 @@ render_thread_func (GstEglGlesSink * eglglessink)
 
   while (gst_data_queue_pop (eglglessink->queue, &item)) {
     GstBuffer *buf = NULL;
+    GstMiniObject *object = item->object;
 
-    GST_DEBUG_OBJECT (eglglessink, "Handling object %" GST_PTR_FORMAT,
-        item->object);
+    GST_DEBUG_OBJECT (eglglessink, "Handling object %" GST_PTR_FORMAT, object);
 
-    if (item->object) {
+    if (GST_IS_BUFFER (object)) {
       GstCaps *caps;
 
-      buf = GST_BUFFER (item->object);
+      buf = GST_BUFFER_CAST (item->object);
       caps = GST_BUFFER_CAPS (buf);
       if (caps != eglglessink->configured_caps) {
         if (!gst_eglglessink_configure_caps (eglglessink, caps)) {
@@ -620,13 +621,25 @@ render_thread_func (GstEglGlesSink * eglglessink)
           break;
         }
       }
-    }
-
-    if (eglglessink->configured_caps) {
-      last_flow = gst_eglglessink_render_and_display (eglglessink, buf);
+      if (eglglessink->configured_caps) {
+        last_flow = gst_eglglessink_upload (eglglessink, buf);
+        if (last_flow == GST_FLOW_OK) {
+          last_flow = gst_eglglessink_render (eglglessink);
+        }
+      } else {
+        GST_DEBUG_OBJECT (eglglessink,
+            "No caps configured yet, not drawing anything");
+      }
+    } else if (!object) {
+      if (eglglessink->configured_caps) {
+        last_flow = gst_eglglessink_render (eglglessink);
+      } else {
+        last_flow = GST_FLOW_OK;
+        GST_DEBUG_OBJECT (eglglessink,
+            "No caps configured yet, not drawing anything");
+      }
     } else {
-      GST_DEBUG_OBJECT (eglglessink,
-          "No caps configured yet, not drawing anything");
+      g_assert_not_reached ();
     }
 
     item->destroy (item);
@@ -1692,13 +1705,10 @@ gst_eglglessink_queue_buffer (GstEglGlesSink * eglglessink, GstBuffer * buf)
   return (buf ? last_flow : GST_FLOW_OK);
 }
 
-/* Rendering and display */
-static GstFlowReturn
-gst_eglglessink_render_and_display (GstEglGlesSink * eglglessink,
-    GstBuffer * buf)
+static gboolean
+gst_eglglessink_fill_texture (GstEglGlesSink * eglglessink, GstBuffer * buf)
 {
   gint w, h;
-  gint i;
 
   w = GST_VIDEO_SINK_WIDTH (eglglessink);
   h = GST_VIDEO_SINK_HEIGHT (eglglessink);
@@ -1841,6 +1851,45 @@ gst_eglglessink_render_and_display (GstEglGlesSink * eglglessink,
       goto HANDLE_ERROR;
   }
 
+  if (got_gl_error ("glTexImage2D"))
+    goto HANDLE_ERROR;
+
+  return TRUE;
+
+HANDLE_ERROR:
+  return FALSE;
+}
+
+/* Rendering and display */
+static GstFlowReturn
+gst_eglglessink_upload (GstEglGlesSink * eglglessink, GstBuffer * buf)
+{
+  if (!buf) {
+    GST_DEBUG_OBJECT (eglglessink, "Rendering previous buffer again");
+  } else if (buf) {
+    if (!gst_eglglessink_fill_texture (eglglessink, buf))
+      goto HANDLE_ERROR;
+  }
+
+  return GST_FLOW_OK;
+
+HANDLE_ERROR:
+  {
+    GST_ERROR_OBJECT (eglglessink, "Failed to upload texture");
+    return GST_FLOW_ERROR;
+  }
+}
+
+static GstFlowReturn
+gst_eglglessink_render (GstEglGlesSink * eglglessink)
+{
+  guint dar_n, dar_d;
+  gint i;
+  gint w, h;
+
+  w = GST_VIDEO_SINK_WIDTH (eglglessink);
+  h = GST_VIDEO_SINK_HEIGHT (eglglessink);
+
   /* If no one has set a display rectangle on us initialize
    * a sane default. According to the docs on the xOverlay
    * interface we are supposed to fill the overlay 100%. We
@@ -1868,7 +1917,6 @@ gst_eglglessink_render_and_display (GstEglGlesSink * eglglessink,
       eglglessink->display_region.h = eglglessink->render_region.h;
     } else {
       GstVideoRectangle frame;
-      guint dar_n, dar_d;
 
       frame.x = 0;
       frame.y = 0;
