@@ -2010,9 +2010,7 @@ gst_eglglessink_show_frame (GstVideoSink * vsink, GstBuffer * buf)
   eglglessink = GST_EGLGLESSINK (vsink);
   GST_DEBUG_OBJECT (eglglessink, "Got buffer: %p", buf);
 
-  buf = gst_buffer_make_metadata_writable (gst_buffer_ref (buf));
-  gst_buffer_set_caps (buf, eglglessink->current_caps);
-  return gst_eglglessink_queue_buffer (eglglessink, buf);
+  return gst_eglglessink_queue_buffer (eglglessink, gst_buffer_ref (buf));
 }
 
 static GstCaps *
