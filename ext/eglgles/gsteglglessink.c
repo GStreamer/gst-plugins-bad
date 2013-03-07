@@ -1761,7 +1761,8 @@ gst_eglglessink_render (GstEglGlesSink * eglglessink)
    */
   if (gst_eglglessink_update_surface_dimensions (eglglessink) ||
       eglglessink->render_region_changed ||
-      !eglglessink->display_region.w || !eglglessink->display_region.h) {
+      !eglglessink->display_region.w || !eglglessink->display_region.h ||
+      eglglessink->size_changed) {
     GST_OBJECT_LOCK (eglglessink);
 
     if (!eglglessink->render_region_user) {
@@ -1771,6 +1772,7 @@ gst_eglglessink_render (GstEglGlesSink * eglglessink)
       eglglessink->render_region.h = eglglessink->eglglesctx.surface_height;
     }
     eglglessink->render_region_changed = FALSE;
+    eglglessink->size_changed = FALSE;
 
     if (!eglglessink->force_aspect_ratio) {
       eglglessink->display_region.x = 0;
@@ -1956,6 +1958,10 @@ gst_eglglessink_configure_caps (GstEglGlesSink * eglglessink, GstCaps * caps)
     GST_WARNING_OBJECT (eglglessink,
         "Can't parse PAR from caps. Using default: 1");
   }
+
+  eglglessink->size_changed = (GST_VIDEO_SINK_WIDTH (eglglessink) != width ||
+      GST_VIDEO_SINK_HEIGHT (eglglessink) != height ||
+      eglglessink->par_n != par_n || eglglessink->par_d != par_d);
 
   eglglessink->par_n = par_n;
   eglglessink->par_d = par_d;

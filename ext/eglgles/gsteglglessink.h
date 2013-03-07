@@ -178,6 +178,7 @@ struct _GstEglGlesSink
    * with the video frames */
   GstVideoRectangle display_region;
 
+  gboolean size_changed;
   GstCaps *sinkcaps;
   GstCaps *current_caps, *configured_caps;
 
