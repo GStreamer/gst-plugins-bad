@@ -103,9 +103,8 @@ mpegtsmux_prepare_aac (GstBuffer * buf, MpegTsPadData * data, MpegTsMux * mux)
   gst_buffer_copy_metadata (out_buf, buf, GST_BUFFER_COPY_ALL);
 
   /* Generate ADTS header */
-  obj_type = (GST_READ_UINT8 (GST_BUFFER_DATA (data->codec_data)) & 0xC) >> 2;
-  obj_type++;
-  rate_idx = (GST_READ_UINT8 (GST_BUFFER_DATA (data->codec_data)) & 0x3) << 1;
+  obj_type = GST_READ_UINT8 (GST_BUFFER_DATA (data->codec_data)) >> 3;
+  rate_idx = (GST_READ_UINT8 (GST_BUFFER_DATA (data->codec_data)) & 0x7) << 1;
   rate_idx |=
       (GST_READ_UINT8 (GST_BUFFER_DATA (data->codec_data) + 1) & 0x80) >> 7;
   channels =
@@ -118,7 +117,7 @@ mpegtsmux_prepare_aac (GstBuffer * buf, MpegTsPadData * data, MpegTsMux * mux)
    * (ID, layer, protection)*/
   adts_header[1] = 0xF1;
   /* Object type over first 2 bits */
-  adts_header[2] = obj_type << 6;
+  adts_header[2] = (obj_type - 1) << 6;
   /* rate index over next 4 bits */
   adts_header[2] |= (rate_idx << 2);
   /* channels over last 2 bits */
