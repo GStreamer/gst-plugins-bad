@@ -1381,18 +1381,12 @@ gst_eglglessink_init_egl_surface (GstEglGlesSink * eglglessink)
   if (!eglglessink->have_texture) {
     GST_INFO_OBJECT (eglglessink, "Performing initial texture setup");
 
+    glGenTextures (eglglessink->eglglesctx.n_textures,
+        eglglessink->eglglesctx.texture);
+    if (got_gl_error ("glGenTextures"))
+      goto HANDLE_ERROR_LOCKED;
+
     for (i = 0; i < eglglessink->eglglesctx.n_textures; i++) {
-      if (i == 0)
-        glActiveTexture (GL_TEXTURE0);
-      else if (i == 1)
-        glActiveTexture (GL_TEXTURE1);
-      else if (i == 2)
-        glActiveTexture (GL_TEXTURE2);
-
-      glGenTextures (1, &eglglessink->eglglesctx.texture[i]);
-      if (got_gl_error ("glGenTextures"))
-        goto HANDLE_ERROR_LOCKED;
-
       glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[i]);
       if (got_gl_error ("glBindTexture"))
         goto HANDLE_ERROR;
@@ -1429,6 +1423,7 @@ HANDLE_ERROR:
 static gboolean
 gst_eglglessink_init_egl_display (GstEglGlesSink * eglglessink)
 {
+  EGLDisplay display;
   GST_DEBUG_OBJECT (eglglessink, "Enter EGL initial configuration");
 
 #ifdef USE_EGL_RPI
@@ -1441,13 +1436,14 @@ gst_eglglessink_init_egl_display (GstEglGlesSink * eglglessink)
   }
 #endif
 
-  eglglessink->eglglesctx.display = eglGetDisplay (EGL_DEFAULT_DISPLAY);
-  if (eglglessink->eglglesctx.display == EGL_NO_DISPLAY) {
+  display = eglGetDisplay (EGL_DEFAULT_DISPLAY);
+  if (display == EGL_NO_DISPLAY) {
     GST_ERROR_OBJECT (eglglessink, "Could not get EGL display connection");
     goto HANDLE_ERROR;          /* No EGL error is set by eglGetDisplay() */
   }
+  eglglessink->eglglesctx.display = display;
 
-  if (!eglInitialize (eglglessink->eglglesctx.display,
+  if (!eglInitialize (display,
           &eglglessink->eglglesctx.egl_major,
           &eglglessink->eglglesctx.egl_minor)) {
     got_egl_error ("eglInitialize");
@@ -1872,13 +1868,6 @@ gst_eglglessink_render (GstEglGlesSink * eglglessink)
   glUseProgram (eglglessink->eglglesctx.glslprogram[0]);
 
   for (i = 0; i < eglglessink->eglglesctx.n_textures; i++) {
-    if (i == 0)
-      glActiveTexture (GL_TEXTURE0);
-    else if (i == 1)
-      glActiveTexture (GL_TEXTURE1);
-    else if (i == 2)
-      glActiveTexture (GL_TEXTURE2);
-
     glUniform1i (eglglessink->eglglesctx.tex_loc[0][i], i);
     if (got_gl_error ("glUniform1i"))
       goto HANDLE_ERROR;
@@ -2141,12 +2130,8 @@ gst_eglglessink_finalize (GObject * object)
     g_object_unref (eglglessink->queue);
   eglglessink->queue = NULL;
 
-  if (eglglessink->render_cond)
-    g_cond_free (eglglessink->render_cond);
-  eglglessink->render_cond = NULL;
-  if (eglglessink->render_lock);
+  g_cond_free (eglglessink->render_cond);
   g_mutex_free (eglglessink->render_lock);
-  eglglessink->render_lock = NULL;
 
   G_OBJECT_CLASS (parent_class)->finalize (object);
 }
