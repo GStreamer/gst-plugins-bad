@@ -595,6 +595,8 @@ render_thread_func (GstEglGlesSink * eglglessink)
 static void
 gst_eglglessink_wipe_eglglesctx (GstEglGlesSink * eglglessink)
 {
+  gint i;
+
   glUseProgram (0);
 
   if (eglglessink->have_vbo) {
@@ -610,26 +612,19 @@ gst_eglglessink_wipe_eglglesctx (GstEglGlesSink * eglglessink)
     eglglessink->eglglesctx.n_textures = 0;
   }
 
-  if (eglglessink->eglglesctx.glslprogram[0]) {
-    glDetachShader (eglglessink->eglglesctx.glslprogram[0],
-        eglglessink->eglglesctx.fragshader[0]);
-    glDetachShader (eglglessink->eglglesctx.glslprogram[0],
-        eglglessink->eglglesctx.vertshader[0]);
-    glDeleteProgram (eglglessink->eglglesctx.glslprogram[0]);
-    glDeleteShader (eglglessink->eglglesctx.fragshader[0]);
-    glDeleteShader (eglglessink->eglglesctx.vertshader[0]);
-    eglglessink->eglglesctx.glslprogram[0] = 0;
-  }
-
-  if (eglglessink->eglglesctx.glslprogram[1]) {
-    glDetachShader (eglglessink->eglglesctx.glslprogram[1],
-        eglglessink->eglglesctx.fragshader[1]);
-    glDetachShader (eglglessink->eglglesctx.glslprogram[1],
-        eglglessink->eglglesctx.vertshader[1]);
-    glDeleteProgram (eglglessink->eglglesctx.glslprogram[1]);
-    glDeleteShader (eglglessink->eglglesctx.fragshader[1]);
-    glDeleteShader (eglglessink->eglglesctx.vertshader[1]);
-    eglglessink->eglglesctx.glslprogram[1] = 0;
+  for (i = 0; i < 2; i++) {
+    if (eglglessink->eglglesctx.glslprogram[i]) {
+      glDetachShader (eglglessink->eglglesctx.glslprogram[i],
+          eglglessink->eglglesctx.fragshader[i]);
+      glDetachShader (eglglessink->eglglesctx.glslprogram[i],
+          eglglessink->eglglesctx.vertshader[i]);
+      glDeleteProgram (eglglessink->eglglesctx.glslprogram[i]);
+      glDeleteShader (eglglessink->eglglesctx.fragshader[i]);
+      glDeleteShader (eglglessink->eglglesctx.vertshader[i]);
+      eglglessink->eglglesctx.glslprogram[i] = 0;
+      eglglessink->eglglesctx.fragshader[i] = 0;
+      eglglessink->eglglesctx.vertshader[i] = 0;
+    }
   }
 
   gst_eglglessink_context_make_current (eglglessink, FALSE);
