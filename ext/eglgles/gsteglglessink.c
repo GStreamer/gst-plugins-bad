@@ -131,174 +131,9 @@
 
 #include "gsteglglessink.h"
 
-/* Some EGL implementations are reporting wrong
- * values for the display's EGL_PIXEL_ASPECT_RATIO.
- * They are required by the khronos specs to report
- * this value as w/h * EGL_DISPLAY_SCALING (Which is
- * a constant with value 10000) but at least the
- * Galaxy SIII (Android) is reporting just 1 when
- * w = h. We use these two to bound returned values to
- * sanity.
- */
-#define EGL_SANE_DAR_MIN ((EGL_DISPLAY_SCALING)/10)
-#define EGL_SANE_DAR_MAX ((EGL_DISPLAY_SCALING)*10)
-
 GST_DEBUG_CATEGORY_STATIC (gst_eglglessink_debug);
 #define GST_CAT_DEFAULT gst_eglglessink_debug
 
-/* GLESv2 GLSL Shaders
- *
- * OpenGL ES Standard does not mandate YUV support. This is
- * why most of these shaders deal with Packed/Planar YUV->RGB
- * conversion.
- */
-
-/* *INDENT-OFF* */
-/* Direct vertex copy */
-static const char *vert_COPY_prog = {
-      "attribute vec3 position;"
-      "attribute vec2 texpos;"
-      "varying vec2 opos;"
-      "void main(void)"
-      "{"
-      " opos = texpos;"
-      " gl_Position = vec4(position, 1.0);"
-      "}"
-};
-
-static const char *vert_COPY_prog_no_tex = {
-      "attribute vec3 position;"
-      "void main(void)"
-      "{"
-      " gl_Position = vec4(position, 1.0);"
-      "}"
-};
-
-/* Paint all black */
-static const char *frag_BLACK_prog = {
-  "precision mediump float;"
-      "void main(void)"
-      "{"
-      " gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);"
-      "}"
-};
-
-/* Direct fragments copy */
-static const char *frag_COPY_prog = {
-  "precision mediump float;"
-      "varying vec2 opos;"
-      "uniform sampler2D tex;"
-      "void main(void)"
-      "{"
-      " vec4 t = texture2D(tex, opos);"
-      " gl_FragColor = vec4(t.rgb, 1.0);"
-      "}"
-};
-
-/* Channel reordering for XYZ <-> ZYX conversion */
-static const char *frag_REORDER_prog = {
-  "precision mediump float;"
-      "varying vec2 opos;"
-      "uniform sampler2D tex;"
-      "void main(void)"
-      "{"
-      " vec4 t = texture2D(tex, opos);"
-      " gl_FragColor = vec4(t.%c, t.%c, t.%c, 1.0);"
-      "}"
-};
-
-/* Packed YUV converters */
-
-/** AYUV to RGB conversion */
-static const char *frag_AYUV_prog = {
-      "precision mediump float;"
-      "varying vec2 opos;"
-      "uniform sampler2D tex;"
-      "const vec3 offset = vec3(-0.0625, -0.5, -0.5);"
-      "const vec3 rcoeff = vec3(1.164, 0.000, 1.596);"
-      "const vec3 gcoeff = vec3(1.164,-0.391,-0.813);"
-      "const vec3 bcoeff = vec3(1.164, 2.018, 0.000);"
-      "void main(void) {"
-      "  float r,g,b;"
-      "  vec3 yuv;"
-      "  yuv  = texture2D(tex,opos).gba;"
-      "  yuv += offset;"
-      "  r = dot(yuv, rcoeff);"
-      "  g = dot(yuv, gcoeff);"
-      "  b = dot(yuv, bcoeff);"
-      "  gl_FragColor=vec4(r,g,b,1.0);"
-      "}"
-};
-
-/** YUY2/YVYU/UYVY to RGB conversion */
-static const char *frag_YUY2_YVYU_UYVY_prog = {
-      "precision mediump float;"
-      "varying vec2 opos;"
-      "uniform sampler2D Ytex, UVtex;"
-      "const vec3 offset = vec3(-0.0625, -0.5, -0.5);"
-      "const vec3 rcoeff = vec3(1.164, 0.000, 1.596);"
-      "const vec3 gcoeff = vec3(1.164,-0.391,-0.813);"
-      "const vec3 bcoeff = vec3(1.164, 2.018, 0.000);"
-      "void main(void) {"
-      "  float r, g, b;"
-      "  vec3 yuv;"
-      "  yuv.x = texture2D(Ytex,opos).%c;"
-      "  yuv.yz = texture2D(UVtex,opos).%c%c;"
-      "  yuv += offset;"
-      "  r = dot(yuv, rcoeff);"
-      "  g = dot(yuv, gcoeff);"
-      "  b = dot(yuv, bcoeff);"
-      "  gl_FragColor=vec4(r,g,b,1.0);"
-      "}"
-};
-
-/* Planar YUV converters */
-
-/** YUV to RGB conversion */
-static const char *frag_PLANAR_YUV_prog = {
-      "precision mediump float;"
-      "varying vec2 opos;"
-      "uniform sampler2D Ytex,Utex,Vtex;"
-      "const vec3 offset = vec3(-0.0625, -0.5, -0.5);"
-      "const vec3 rcoeff = vec3(1.164, 0.000, 1.596);"
-      "const vec3 gcoeff = vec3(1.164,-0.391,-0.813);"
-      "const vec3 bcoeff = vec3(1.164, 2.018, 0.000);"
-      "void main(void) {"
-      "  float r,g,b;"
-      "  vec3 yuv;"
-      "  yuv.x=texture2D(Ytex,opos).r;"
-      "  yuv.y=texture2D(Utex,opos).r;"
-      "  yuv.z=texture2D(Vtex,opos).r;"
-      "  yuv += offset;"
-      "  r = dot(yuv, rcoeff);"
-      "  g = dot(yuv, gcoeff);"
-      "  b = dot(yuv, bcoeff);"
-      "  gl_FragColor=vec4(r,g,b,1.0);"
-      "}"
-};
-
-/** NV12/NV21 to RGB conversion */
-static const char *frag_NV12_NV21_prog = {
-      "precision mediump float;"
-      "varying vec2 opos;"
-      "uniform sampler2D Ytex,UVtex;"
-      "const vec3 offset = vec3(-0.0625, -0.5, -0.5);"
-      "const vec3 rcoeff = vec3(1.164, 0.000, 1.596);"
-      "const vec3 gcoeff = vec3(1.164,-0.391,-0.813);"
-      "const vec3 bcoeff = vec3(1.164, 2.018, 0.000);"
-      "void main(void) {"
-      "  float r,g,b;"
-      "  vec3 yuv;"
-      "  yuv.x=texture2D(Ytex,opos).r;"
-      "  yuv.yz=texture2D(UVtex,opos).%c%c;"
-      "  yuv += offset;"
-      "  r = dot(yuv, rcoeff);"
-      "  g = dot(yuv, gcoeff);"
-      "  b = dot(yuv, bcoeff);"
-      "  gl_FragColor=vec4(r,g,b,1.0);"
-      "}"
-};
-/* *INDENT-ON* */
 
 static const EGLint eglglessink_RGBA8888_attribs[] = {
   EGL_RED_SIZE, 8,
@@ -368,12 +203,6 @@ static void gst_eglglessink_set_render_rectangle (GstXOverlay * overlay, gint x,
 /* Utility */
 static EGLNativeWindowType gst_eglglessink_create_window (GstEglGlesSink *
     eglglessink, gint width, gint height);
-static gboolean gst_eglglessink_fill_supported_fbuffer_configs (GstEglGlesSink *
-    eglglessink);
-static gboolean gst_eglglessink_init_egl_display (GstEglGlesSink * eglglessink);
-static gboolean gst_eglglessink_choose_config (GstEglGlesSink * eglglessink);
-static gboolean gst_eglglessink_init_egl_surface (GstEglGlesSink * eglglessink);
-static void gst_eglglessink_init_egl_exts (GstEglGlesSink * eglglessink);
 static gboolean gst_eglglessink_setup_vbo (GstEglGlesSink * eglglessink,
     gboolean reset);
 static gboolean
@@ -383,84 +212,10 @@ static GstFlowReturn gst_eglglessink_upload (GstEglGlesSink * sink,
 static GstFlowReturn gst_eglglessink_render (GstEglGlesSink * sink);
 static GstFlowReturn gst_eglglessink_queue_buffer (GstEglGlesSink * sink,
     GstBuffer * buf);
-static inline gboolean got_gl_error (const char *wtf);
-static inline gboolean got_egl_error (const char *wtf);
 static inline gboolean egl_init (GstEglGlesSink * eglglessink);
-static gboolean gst_eglglessink_context_make_current (GstEglGlesSink *
-    eglglessink, gboolean bind);
-static void gst_eglglessink_wipe_eglglesctx (GstEglGlesSink * eglglessink);
 
 GST_BOILERPLATE_FULL (GstEglGlesSink, gst_eglglessink, GstVideoSink,
     GST_TYPE_VIDEO_SINK, gst_eglglessink_init_interfaces);
-
-
-
-static gboolean
-gst_eglglessink_fill_supported_fbuffer_configs (GstEglGlesSink * eglglessink)
-{
-  gboolean ret = FALSE;
-  EGLint cfg_number;
-  GstCaps *caps;
-
-  GST_DEBUG_OBJECT (eglglessink,
-      "Building initial list of wanted eglattribs per format");
-
-  /* Init supported format/caps list */
-  caps = gst_caps_new_empty ();
-
-  if (eglChooseConfig (eglglessink->eglglesctx.display,
-          eglglessink_RGBA8888_attribs, NULL, 1, &cfg_number) != EGL_FALSE) {
-    gst_caps_append (caps,
-        gst_video_format_new_template_caps (GST_VIDEO_FORMAT_RGBA));
-    gst_caps_append (caps,
-        gst_video_format_new_template_caps (GST_VIDEO_FORMAT_BGRA));
-    gst_caps_append (caps,
-        gst_video_format_new_template_caps (GST_VIDEO_FORMAT_ARGB));
-    gst_caps_append (caps,
-        gst_video_format_new_template_caps (GST_VIDEO_FORMAT_ABGR));
-    gst_caps_append (caps,
-        gst_video_format_new_template_caps (GST_VIDEO_FORMAT_RGBx));
-    gst_caps_append (caps,
-        gst_video_format_new_template_caps (GST_VIDEO_FORMAT_BGRx));
-    gst_caps_append (caps,
-        gst_video_format_new_template_caps (GST_VIDEO_FORMAT_xRGB));
-    gst_caps_append (caps,
-        gst_video_format_new_template_caps (GST_VIDEO_FORMAT_xBGR));
-    gst_caps_append (caps,
-        gst_video_format_new_template_caps (GST_VIDEO_FORMAT_AYUV));
-    gst_caps_append (caps,
-        gst_video_format_new_template_caps (GST_VIDEO_FORMAT_Y444));
-    gst_caps_append (caps,
-        gst_video_format_new_template_caps (GST_VIDEO_FORMAT_I420));
-    gst_caps_append (caps,
-        gst_video_format_new_template_caps (GST_VIDEO_FORMAT_YV12));
-    gst_caps_append (caps,
-        gst_video_format_new_template_caps (GST_VIDEO_FORMAT_NV12));
-    gst_caps_append (caps,
-        gst_video_format_new_template_caps (GST_VIDEO_FORMAT_NV21));
-    gst_caps_append (caps,
-        gst_video_format_new_template_caps (GST_VIDEO_FORMAT_YUY2));
-    gst_caps_append (caps,
-        gst_video_format_new_template_caps (GST_VIDEO_FORMAT_YVYU));
-    gst_caps_append (caps,
-        gst_video_format_new_template_caps (GST_VIDEO_FORMAT_UYVY));
-    gst_caps_append (caps,
-        gst_video_format_new_template_caps (GST_VIDEO_FORMAT_Y42B));
-    gst_caps_append (caps,
-        gst_video_format_new_template_caps (GST_VIDEO_FORMAT_Y41B));
-    ret = TRUE;
-  } else {
-    GST_INFO_OBJECT (eglglessink,
-        "EGL display doesn't support RGBA8888 config");
-  }
-
-  GST_OBJECT_LOCK (eglglessink);
-  gst_caps_replace (&eglglessink->sinkcaps, caps);
-  GST_OBJECT_UNLOCK (eglglessink);
-  gst_caps_unref (caps);
-
-  return ret;
-}
 
 static inline gboolean
 egl_init (GstEglGlesSink * eglglessink)
@@ -470,14 +225,15 @@ egl_init (GstEglGlesSink * eglglessink)
     goto HANDLE_ERROR;
   }
 
-  if (!gst_eglglessink_init_egl_display (eglglessink)) {
+  if (!gst_egl_adaptation_init_display (eglglessink->egl_context)) {
     GST_ERROR_OBJECT (eglglessink, "Couldn't init EGL display");
     goto HANDLE_ERROR;
   }
 
-  gst_eglglessink_init_egl_exts (eglglessink);
+  gst_egl_adaptation_context_init_egl_exts (eglglessink->egl_context);
 
-  if (!gst_eglglessink_fill_supported_fbuffer_configs (eglglessink)) {
+  if (!gst_egl_adaptation_context_fill_supported_fbuffer_configs
+      (eglglessink->egl_context, &eglglessink->sinkcaps)) {
     GST_ERROR_OBJECT (eglglessink, "Display support NONE of our configs");
     goto HANDLE_ERROR;
   }
@@ -508,7 +264,7 @@ render_thread_func (GstEglGlesSink * eglglessink)
   gst_element_post_message (GST_ELEMENT_CAST (eglglessink), message);
   g_value_unset (&val);
 
-  eglBindAPI (EGL_OPENGL_ES_API);
+  gst_egl_adaptation_context_bind_API (eglglessink->egl_context);
 
   while (gst_data_queue_pop (eglglessink->queue, &item)) {
     GstBuffer *buf = NULL;
@@ -573,7 +329,7 @@ render_thread_func (GstEglGlesSink * eglglessink)
   GST_DEBUG_OBJECT (eglglessink, "Shutting down thread");
 
   /* EGL/GLES cleanup */
-  gst_eglglessink_wipe_eglglesctx (eglglessink);
+  gst_egl_adaptation_context_cleanup (eglglessink->egl_context);
 
   if (eglglessink->configured_caps) {
     gst_caps_unref (eglglessink->configured_caps);
@@ -590,57 +346,6 @@ render_thread_func (GstEglGlesSink * eglglessink)
   g_value_unset (&val);
 
   return NULL;
-}
-
-static void
-gst_eglglessink_wipe_eglglesctx (GstEglGlesSink * eglglessink)
-{
-  gint i;
-
-  glUseProgram (0);
-
-  if (eglglessink->have_vbo) {
-    glDeleteBuffers (1, &eglglessink->eglglesctx.position_buffer);
-    glDeleteBuffers (1, &eglglessink->eglglesctx.index_buffer);
-    eglglessink->have_vbo = FALSE;
-  }
-
-  if (eglglessink->have_texture) {
-    glDeleteTextures (eglglessink->eglglesctx.n_textures,
-        eglglessink->eglglesctx.texture);
-    eglglessink->have_texture = FALSE;
-    eglglessink->eglglesctx.n_textures = 0;
-  }
-
-  for (i = 0; i < 2; i++) {
-    if (eglglessink->eglglesctx.glslprogram[i]) {
-      glDetachShader (eglglessink->eglglesctx.glslprogram[i],
-          eglglessink->eglglesctx.fragshader[i]);
-      glDetachShader (eglglessink->eglglesctx.glslprogram[i],
-          eglglessink->eglglesctx.vertshader[i]);
-      glDeleteProgram (eglglessink->eglglesctx.glslprogram[i]);
-      glDeleteShader (eglglessink->eglglesctx.fragshader[i]);
-      glDeleteShader (eglglessink->eglglesctx.vertshader[i]);
-      eglglessink->eglglesctx.glslprogram[i] = 0;
-      eglglessink->eglglesctx.fragshader[i] = 0;
-      eglglessink->eglglesctx.vertshader[i] = 0;
-    }
-  }
-
-  gst_eglglessink_context_make_current (eglglessink, FALSE);
-
-  if (eglglessink->eglglesctx.surface) {
-    eglDestroySurface (eglglessink->eglglesctx.display,
-        eglglessink->eglglesctx.surface);
-    eglglessink->eglglesctx.surface = NULL;
-    eglglessink->have_surface = FALSE;
-  }
-
-  if (eglglessink->eglglesctx.eglcontext) {
-    eglDestroyContext (eglglessink->eglglesctx.display,
-        eglglessink->eglglesctx.eglcontext);
-    eglglessink->eglglesctx.eglcontext = NULL;
-  }
 }
 
 static gboolean
@@ -710,12 +415,12 @@ gst_eglglessink_stop (GstEglGlesSink * eglglessink)
   eglglessink->last_flow = GST_FLOW_WRONG_STATE;
 
   if (eglglessink->using_own_window) {
-    platform_destroy_native_window (eglglessink->eglglesctx.display,
-        eglglessink->eglglesctx.used_window, &eglglessink->own_window_data);
-    eglglessink->eglglesctx.used_window = 0;
+    platform_destroy_native_window (eglglessink->eglglesctx->display,
+        eglglessink->eglglesctx->used_window, &eglglessink->own_window_data);
+    eglglessink->eglglesctx->used_window = 0;
     eglglessink->have_window = FALSE;
   }
-  eglglessink->eglglesctx.used_window = 0;
+  eglglessink->eglglesctx->used_window = 0;
   if (eglglessink->current_caps) {
     gst_caps_unref (eglglessink->current_caps);
     eglglessink->current_caps = NULL;
@@ -744,32 +449,6 @@ static void
 gst_eglglessink_implements_init (GstImplementsInterfaceClass * klass)
 {
   klass->supported = gst_eglglessink_interface_supported;
-}
-
-static inline gboolean
-got_gl_error (const char *wtf)
-{
-  GLuint error = GL_NO_ERROR;
-
-  if ((error = glGetError ()) != GL_NO_ERROR) {
-    GST_CAT_ERROR (GST_CAT_DEFAULT, "GL ERROR: %s returned 0x%04x", wtf, error);
-    return TRUE;
-  }
-  return FALSE;
-}
-
-static inline gboolean
-got_egl_error (const char *wtf)
-{
-  EGLint error;
-
-  if ((error = eglGetError ()) != EGL_SUCCESS) {
-    GST_CAT_DEBUG (GST_CAT_DEFAULT, "EGL ERROR: %s returned 0x%04x", wtf,
-        error);
-    return TRUE;
-  }
-
-  return FALSE;
 }
 
 static EGLNativeWindowType
@@ -809,28 +488,6 @@ gst_eglglessink_expose (GstXOverlay * overlay)
     GST_ERROR_OBJECT (eglglessink, "Redisplay failed");
 }
 
-/* Prints available EGL/GLES extensions 
- * If another rendering path is implemented this is the place
- * where you want to check for the availability of its supporting
- * EGL/GLES extensions.
- */
-static void
-gst_eglglessink_init_egl_exts (GstEglGlesSink * eglglessink)
-{
-  const char *eglexts;
-  unsigned const char *glexts;
-
-  eglexts = eglQueryString (eglglessink->eglglesctx.display, EGL_EXTENSIONS);
-  glexts = glGetString (GL_EXTENSIONS);
-
-  GST_DEBUG_OBJECT (eglglessink, "Available EGL extensions: %s\n",
-      GST_STR_NULL (eglexts));
-  GST_DEBUG_OBJECT (eglglessink, "Available GLES extensions: %s\n",
-      GST_STR_NULL ((const char *) glexts));
-
-  return;
-}
-
 static gboolean
 gst_eglglessink_setup_vbo (GstEglGlesSink * eglglessink, gboolean reset)
 {
@@ -838,12 +495,12 @@ gst_eglglessink_setup_vbo (GstEglGlesSink * eglglessink, gboolean reset)
   gdouble x1, x2, y1, y2;
 
   GST_INFO_OBJECT (eglglessink, "VBO setup. have_vbo:%d, should reset %d",
-      eglglessink->have_vbo, reset);
+      eglglessink->egl_context->have_vbo, reset);
 
-  if (eglglessink->have_vbo && reset) {
-    glDeleteBuffers (1, &eglglessink->eglglesctx.position_buffer);
-    glDeleteBuffers (1, &eglglessink->eglglesctx.index_buffer);
-    eglglessink->have_vbo = FALSE;
+  if (eglglessink->egl_context->have_vbo && reset) {
+    glDeleteBuffers (1, &eglglessink->eglglesctx->position_buffer);
+    glDeleteBuffers (1, &eglglessink->eglglesctx->index_buffer);
+    eglglessink->egl_context->have_vbo = FALSE;
   }
 
   render_width = eglglessink->render_region.w;
@@ -858,663 +515,137 @@ gst_eglglessink_setup_vbo (GstEglGlesSink * eglglessink, gboolean reset)
   y2 = ((eglglessink->display_region.y +
           eglglessink->display_region.h) / render_height) * 2.0 - 1;
 
-  eglglessink->eglglesctx.position_array[0].x = x2;
-  eglglessink->eglglesctx.position_array[0].y = y2;
-  eglglessink->eglglesctx.position_array[0].z = 0;
-  eglglessink->eglglesctx.position_array[0].a = 1;
-  eglglessink->eglglesctx.position_array[0].b = 0;
+  eglglessink->eglglesctx->position_array[0].x = x2;
+  eglglessink->eglglesctx->position_array[0].y = y2;
+  eglglessink->eglglesctx->position_array[0].z = 0;
+  eglglessink->eglglesctx->position_array[0].a = 1;
+  eglglessink->eglglesctx->position_array[0].b = 0;
 
-  eglglessink->eglglesctx.position_array[1].x = x2;
-  eglglessink->eglglesctx.position_array[1].y = y1;
-  eglglessink->eglglesctx.position_array[1].z = 0;
-  eglglessink->eglglesctx.position_array[1].a = 1;
-  eglglessink->eglglesctx.position_array[1].b = 1;
+  eglglessink->eglglesctx->position_array[1].x = x2;
+  eglglessink->eglglesctx->position_array[1].y = y1;
+  eglglessink->eglglesctx->position_array[1].z = 0;
+  eglglessink->eglglesctx->position_array[1].a = 1;
+  eglglessink->eglglesctx->position_array[1].b = 1;
 
-  eglglessink->eglglesctx.position_array[2].x = x1;
-  eglglessink->eglglesctx.position_array[2].y = y2;
-  eglglessink->eglglesctx.position_array[2].z = 0;
-  eglglessink->eglglesctx.position_array[2].a = 0;
-  eglglessink->eglglesctx.position_array[2].b = 0;
+  eglglessink->eglglesctx->position_array[2].x = x1;
+  eglglessink->eglglesctx->position_array[2].y = y2;
+  eglglessink->eglglesctx->position_array[2].z = 0;
+  eglglessink->eglglesctx->position_array[2].a = 0;
+  eglglessink->eglglesctx->position_array[2].b = 0;
 
-  eglglessink->eglglesctx.position_array[3].x = x1;
-  eglglessink->eglglesctx.position_array[3].y = y1;
-  eglglessink->eglglesctx.position_array[3].z = 0;
-  eglglessink->eglglesctx.position_array[3].a = 0;
-  eglglessink->eglglesctx.position_array[3].b = 1;
+  eglglessink->eglglesctx->position_array[3].x = x1;
+  eglglessink->eglglesctx->position_array[3].y = y1;
+  eglglessink->eglglesctx->position_array[3].z = 0;
+  eglglessink->eglglesctx->position_array[3].a = 0;
+  eglglessink->eglglesctx->position_array[3].b = 1;
 
   if (eglglessink->display_region.x == 0) {
     /* Borders top/bottom */
 
-    eglglessink->eglglesctx.position_array[4 + 0].x = 1;
-    eglglessink->eglglesctx.position_array[4 + 0].y = 1;
-    eglglessink->eglglesctx.position_array[4 + 0].z = 0;
+    eglglessink->eglglesctx->position_array[4 + 0].x = 1;
+    eglglessink->eglglesctx->position_array[4 + 0].y = 1;
+    eglglessink->eglglesctx->position_array[4 + 0].z = 0;
 
-    eglglessink->eglglesctx.position_array[4 + 1].x = x2;
-    eglglessink->eglglesctx.position_array[4 + 1].y = y2;
-    eglglessink->eglglesctx.position_array[4 + 1].z = 0;
+    eglglessink->eglglesctx->position_array[4 + 1].x = x2;
+    eglglessink->eglglesctx->position_array[4 + 1].y = y2;
+    eglglessink->eglglesctx->position_array[4 + 1].z = 0;
 
-    eglglessink->eglglesctx.position_array[4 + 2].x = -1;
-    eglglessink->eglglesctx.position_array[4 + 2].y = 1;
-    eglglessink->eglglesctx.position_array[4 + 2].z = 0;
+    eglglessink->eglglesctx->position_array[4 + 2].x = -1;
+    eglglessink->eglglesctx->position_array[4 + 2].y = 1;
+    eglglessink->eglglesctx->position_array[4 + 2].z = 0;
 
-    eglglessink->eglglesctx.position_array[4 + 3].x = x1;
-    eglglessink->eglglesctx.position_array[4 + 3].y = y2;
-    eglglessink->eglglesctx.position_array[4 + 3].z = 0;
+    eglglessink->eglglesctx->position_array[4 + 3].x = x1;
+    eglglessink->eglglesctx->position_array[4 + 3].y = y2;
+    eglglessink->eglglesctx->position_array[4 + 3].z = 0;
 
-    eglglessink->eglglesctx.position_array[8 + 0].x = 1;
-    eglglessink->eglglesctx.position_array[8 + 0].y = y1;
-    eglglessink->eglglesctx.position_array[8 + 0].z = 0;
+    eglglessink->eglglesctx->position_array[8 + 0].x = 1;
+    eglglessink->eglglesctx->position_array[8 + 0].y = y1;
+    eglglessink->eglglesctx->position_array[8 + 0].z = 0;
 
-    eglglessink->eglglesctx.position_array[8 + 1].x = 1;
-    eglglessink->eglglesctx.position_array[8 + 1].y = -1;
-    eglglessink->eglglesctx.position_array[8 + 1].z = 0;
+    eglglessink->eglglesctx->position_array[8 + 1].x = 1;
+    eglglessink->eglglesctx->position_array[8 + 1].y = -1;
+    eglglessink->eglglesctx->position_array[8 + 1].z = 0;
 
-    eglglessink->eglglesctx.position_array[8 + 2].x = x1;
-    eglglessink->eglglesctx.position_array[8 + 2].y = y1;
-    eglglessink->eglglesctx.position_array[8 + 2].z = 0;
+    eglglessink->eglglesctx->position_array[8 + 2].x = x1;
+    eglglessink->eglglesctx->position_array[8 + 2].y = y1;
+    eglglessink->eglglesctx->position_array[8 + 2].z = 0;
 
-    eglglessink->eglglesctx.position_array[8 + 3].x = -1;
-    eglglessink->eglglesctx.position_array[8 + 3].y = -1;
-    eglglessink->eglglesctx.position_array[8 + 3].z = 0;
+    eglglessink->eglglesctx->position_array[8 + 3].x = -1;
+    eglglessink->eglglesctx->position_array[8 + 3].y = -1;
+    eglglessink->eglglesctx->position_array[8 + 3].z = 0;
   } else {
     /* Borders left/right */
 
-    eglglessink->eglglesctx.position_array[4 + 0].x = x1;
-    eglglessink->eglglesctx.position_array[4 + 0].y = 1;
-    eglglessink->eglglesctx.position_array[4 + 0].z = 0;
+    eglglessink->eglglesctx->position_array[4 + 0].x = x1;
+    eglglessink->eglglesctx->position_array[4 + 0].y = 1;
+    eglglessink->eglglesctx->position_array[4 + 0].z = 0;
 
-    eglglessink->eglglesctx.position_array[4 + 1].x = x1;
-    eglglessink->eglglesctx.position_array[4 + 1].y = -1;
-    eglglessink->eglglesctx.position_array[4 + 1].z = 0;
+    eglglessink->eglglesctx->position_array[4 + 1].x = x1;
+    eglglessink->eglglesctx->position_array[4 + 1].y = -1;
+    eglglessink->eglglesctx->position_array[4 + 1].z = 0;
 
-    eglglessink->eglglesctx.position_array[4 + 2].x = -1;
-    eglglessink->eglglesctx.position_array[4 + 2].y = 1;
-    eglglessink->eglglesctx.position_array[4 + 2].z = 0;
+    eglglessink->eglglesctx->position_array[4 + 2].x = -1;
+    eglglessink->eglglesctx->position_array[4 + 2].y = 1;
+    eglglessink->eglglesctx->position_array[4 + 2].z = 0;
 
-    eglglessink->eglglesctx.position_array[4 + 3].x = -1;
-    eglglessink->eglglesctx.position_array[4 + 3].y = -1;
-    eglglessink->eglglesctx.position_array[4 + 3].z = 0;
+    eglglessink->eglglesctx->position_array[4 + 3].x = -1;
+    eglglessink->eglglesctx->position_array[4 + 3].y = -1;
+    eglglessink->eglglesctx->position_array[4 + 3].z = 0;
 
-    eglglessink->eglglesctx.position_array[8 + 0].x = 1;
-    eglglessink->eglglesctx.position_array[8 + 0].y = 1;
-    eglglessink->eglglesctx.position_array[8 + 0].z = 0;
+    eglglessink->eglglesctx->position_array[8 + 0].x = 1;
+    eglglessink->eglglesctx->position_array[8 + 0].y = 1;
+    eglglessink->eglglesctx->position_array[8 + 0].z = 0;
 
-    eglglessink->eglglesctx.position_array[8 + 1].x = 1;
-    eglglessink->eglglesctx.position_array[8 + 1].y = -1;
-    eglglessink->eglglesctx.position_array[8 + 1].z = 0;
+    eglglessink->eglglesctx->position_array[8 + 1].x = 1;
+    eglglessink->eglglesctx->position_array[8 + 1].y = -1;
+    eglglessink->eglglesctx->position_array[8 + 1].z = 0;
 
-    eglglessink->eglglesctx.position_array[8 + 2].x = x2;
-    eglglessink->eglglesctx.position_array[8 + 2].y = y2;
-    eglglessink->eglglesctx.position_array[8 + 2].z = 0;
+    eglglessink->eglglesctx->position_array[8 + 2].x = x2;
+    eglglessink->eglglesctx->position_array[8 + 2].y = y2;
+    eglglessink->eglglesctx->position_array[8 + 2].z = 0;
 
-    eglglessink->eglglesctx.position_array[8 + 3].x = x2;
-    eglglessink->eglglesctx.position_array[8 + 3].y = -1;
-    eglglessink->eglglesctx.position_array[8 + 3].z = 0;
+    eglglessink->eglglesctx->position_array[8 + 3].x = x2;
+    eglglessink->eglglesctx->position_array[8 + 3].y = -1;
+    eglglessink->eglglesctx->position_array[8 + 3].z = 0;
   }
 
-  eglglessink->eglglesctx.index_array[0] = 0;
-  eglglessink->eglglesctx.index_array[1] = 1;
-  eglglessink->eglglesctx.index_array[2] = 2;
-  eglglessink->eglglesctx.index_array[3] = 3;
+  eglglessink->eglglesctx->index_array[0] = 0;
+  eglglessink->eglglesctx->index_array[1] = 1;
+  eglglessink->eglglesctx->index_array[2] = 2;
+  eglglessink->eglglesctx->index_array[3] = 3;
 
-  glGenBuffers (1, &eglglessink->eglglesctx.position_buffer);
-  glGenBuffers (1, &eglglessink->eglglesctx.index_buffer);
+  glGenBuffers (1, &eglglessink->eglglesctx->position_buffer);
+  glGenBuffers (1, &eglglessink->eglglesctx->index_buffer);
   if (got_gl_error ("glGenBuffers"))
     goto HANDLE_ERROR_LOCKED;
 
-  glBindBuffer (GL_ARRAY_BUFFER, eglglessink->eglglesctx.position_buffer);
+  glBindBuffer (GL_ARRAY_BUFFER, eglglessink->eglglesctx->position_buffer);
   if (got_gl_error ("glBindBuffer position_buffer"))
     goto HANDLE_ERROR_LOCKED;
 
   glBufferData (GL_ARRAY_BUFFER,
-      sizeof (eglglessink->eglglesctx.position_array),
-      eglglessink->eglglesctx.position_array, GL_STATIC_DRAW);
+      sizeof (eglglessink->eglglesctx->position_array),
+      eglglessink->eglglesctx->position_array, GL_STATIC_DRAW);
   if (got_gl_error ("glBufferData position_buffer"))
     goto HANDLE_ERROR_LOCKED;
 
-  glBindBuffer (GL_ELEMENT_ARRAY_BUFFER, eglglessink->eglglesctx.index_buffer);
+  glBindBuffer (GL_ELEMENT_ARRAY_BUFFER, eglglessink->eglglesctx->index_buffer);
   if (got_gl_error ("glBindBuffer index_buffer"))
     goto HANDLE_ERROR_LOCKED;
 
   glBufferData (GL_ELEMENT_ARRAY_BUFFER,
-      sizeof (eglglessink->eglglesctx.index_array),
-      eglglessink->eglglesctx.index_array, GL_STATIC_DRAW);
+      sizeof (eglglessink->eglglesctx->index_array),
+      eglglessink->eglglesctx->index_array, GL_STATIC_DRAW);
   if (got_gl_error ("glBufferData index_buffer"))
     goto HANDLE_ERROR_LOCKED;
 
-  eglglessink->have_vbo = TRUE;
+  eglglessink->egl_context->have_vbo = TRUE;
   GST_DEBUG_OBJECT (eglglessink, "VBO setup done");
 
   return TRUE;
 
 HANDLE_ERROR_LOCKED:
   GST_ERROR_OBJECT (eglglessink, "Unable to perform VBO setup");
-  return FALSE;
-}
-
-/* XXX: Lock eglgles context? */
-static gboolean
-gst_eglglessink_update_surface_dimensions (GstEglGlesSink * eglglessink)
-{
-  gint width, height;
-
-  /* Save surface dims */
-  eglQuerySurface (eglglessink->eglglesctx.display,
-      eglglessink->eglglesctx.surface, EGL_WIDTH, &width);
-  eglQuerySurface (eglglessink->eglglesctx.display,
-      eglglessink->eglglesctx.surface, EGL_HEIGHT, &height);
-
-  if (width != eglglessink->eglglesctx.surface_width ||
-      height != eglglessink->eglglesctx.surface_height) {
-    eglglessink->eglglesctx.surface_width = width;
-    eglglessink->eglglesctx.surface_height = height;
-    GST_INFO_OBJECT (eglglessink, "Got surface of %dx%d pixels", width, height);
-    return TRUE;
-  }
-
-  return FALSE;
-}
-
-static gboolean
-gst_eglglessink_context_make_current (GstEglGlesSink * eglglessink,
-    gboolean bind)
-{
-  g_assert (eglglessink->eglglesctx.display != NULL);
-
-  if (bind && eglglessink->eglglesctx.surface &&
-      eglglessink->eglglesctx.eglcontext) {
-    EGLContext *ctx = eglGetCurrentContext ();
-
-    if (ctx == eglglessink->eglglesctx.eglcontext) {
-      GST_DEBUG_OBJECT (eglglessink,
-          "Already attached the context to thread %p", g_thread_self ());
-      return TRUE;
-    }
-
-    GST_DEBUG_OBJECT (eglglessink, "Attaching context to thread %p",
-        g_thread_self ());
-    if (!eglMakeCurrent (eglglessink->eglglesctx.display,
-            eglglessink->eglglesctx.surface, eglglessink->eglglesctx.surface,
-            eglglessink->eglglesctx.eglcontext)) {
-      got_egl_error ("eglMakeCurrent");
-      GST_ERROR_OBJECT (eglglessink, "Couldn't bind context");
-      return FALSE;
-    }
-  } else {
-    GST_DEBUG_OBJECT (eglglessink, "Detaching context from thread %p",
-        g_thread_self ());
-    if (!eglMakeCurrent (eglglessink->eglglesctx.display, EGL_NO_SURFACE,
-            EGL_NO_SURFACE, EGL_NO_CONTEXT)) {
-      got_egl_error ("eglMakeCurrent");
-      GST_ERROR_OBJECT (eglglessink, "Couldn't unbind context");
-      return FALSE;
-    }
-  }
-
-  return TRUE;
-}
-
-static gboolean
-create_shader_program (GstEglGlesSink * eglglessink, GLuint * prog,
-    GLuint * vert, GLuint * frag, const gchar * vert_text,
-    const gchar * frag_text)
-{
-  GLint test;
-  GLchar *info_log;
-
-  /* Build shader program for video texture rendering */
-  *vert = glCreateShader (GL_VERTEX_SHADER);
-  GST_DEBUG_OBJECT (eglglessink, "Sending %s to handle %d", vert_text, *vert);
-  glShaderSource (*vert, 1, &vert_text, NULL);
-  if (got_gl_error ("glShaderSource vertex"))
-    goto HANDLE_ERROR;
-
-  glCompileShader (*vert);
-  if (got_gl_error ("glCompileShader vertex"))
-    goto HANDLE_ERROR;
-
-  glGetShaderiv (*vert, GL_COMPILE_STATUS, &test);
-  if (test != GL_FALSE)
-    GST_DEBUG_OBJECT (eglglessink, "Successfully compiled vertex shader");
-  else {
-    GST_ERROR_OBJECT (eglglessink, "Couldn't compile vertex shader");
-    glGetShaderiv (*vert, GL_INFO_LOG_LENGTH, &test);
-    info_log = g_new0 (GLchar, test);
-    glGetShaderInfoLog (*vert, test, NULL, info_log);
-    GST_INFO_OBJECT (eglglessink, "Compilation info log:\n%s", info_log);
-    g_free (info_log);
-    goto HANDLE_ERROR;
-  }
-
-  *frag = glCreateShader (GL_FRAGMENT_SHADER);
-  GST_DEBUG_OBJECT (eglglessink, "Sending %s to handle %d", frag_text, *frag);
-  glShaderSource (*frag, 1, &frag_text, NULL);
-  if (got_gl_error ("glShaderSource fragment"))
-    goto HANDLE_ERROR;
-
-  glCompileShader (*frag);
-  if (got_gl_error ("glCompileShader fragment"))
-    goto HANDLE_ERROR;
-
-  glGetShaderiv (*frag, GL_COMPILE_STATUS, &test);
-  if (test != GL_FALSE)
-    GST_DEBUG_OBJECT (eglglessink, "Successfully compiled fragment shader");
-  else {
-    GST_ERROR_OBJECT (eglglessink, "Couldn't compile fragment shader");
-    glGetShaderiv (*frag, GL_INFO_LOG_LENGTH, &test);
-    info_log = g_new0 (GLchar, test);
-    glGetShaderInfoLog (*frag, test, NULL, info_log);
-    GST_INFO_OBJECT (eglglessink, "Compilation info log:\n%s", info_log);
-    g_free (info_log);
-    goto HANDLE_ERROR;
-  }
-
-  *prog = glCreateProgram ();
-  if (got_gl_error ("glCreateProgram"))
-    goto HANDLE_ERROR;
-  glAttachShader (*prog, *vert);
-  if (got_gl_error ("glAttachShader vertices"))
-    goto HANDLE_ERROR;
-  glAttachShader (*prog, *frag);
-  if (got_gl_error ("glAttachShader fragments"))
-    goto HANDLE_ERROR;
-  glLinkProgram (*prog);
-  glGetProgramiv (*prog, GL_LINK_STATUS, &test);
-  if (test != GL_FALSE) {
-    GST_DEBUG_OBJECT (eglglessink, "GLES: Successfully linked program");
-  } else {
-    GST_ERROR_OBJECT (eglglessink, "Couldn't link program");
-    goto HANDLE_ERROR;
-  }
-
-  return TRUE;
-
-HANDLE_ERROR:
-  {
-    if (*frag && *prog)
-      glDetachShader (*prog, *frag);
-    if (*vert && *prog)
-      glDetachShader (*prog, *vert);
-    if (*prog)
-      glDeleteProgram (*prog);
-    if (*frag)
-      glDeleteShader (*frag);
-    if (*vert)
-      glDeleteShader (*vert);
-    *prog = 0;
-    *frag = 0;
-    *vert = 0;
-
-    return FALSE;
-  }
-}
-
-static gboolean
-gst_eglglessink_init_egl_surface (GstEglGlesSink * eglglessink)
-{
-  GLboolean ret;
-  EGLint display_par;
-  const gchar *texnames[3] = { NULL, };
-  gchar *frag_prog = NULL;
-  gboolean free_frag_prog = FALSE;
-  EGLint swap_behavior;
-  gint i;
-
-  GST_DEBUG_OBJECT (eglglessink, "Enter EGL surface setup");
-
-  eglglessink->eglglesctx.surface =
-      eglCreateWindowSurface (eglglessink->eglglesctx.display,
-      eglglessink->eglglesctx.config, eglglessink->eglglesctx.used_window,
-      NULL);
-
-  if (eglglessink->eglglesctx.surface == EGL_NO_SURFACE) {
-    got_egl_error ("eglCreateWindowSurface");
-    GST_ERROR_OBJECT (eglglessink, "Can't create surface");
-    goto HANDLE_EGL_ERROR_LOCKED;
-  }
-
-  eglglessink->eglglesctx.buffer_preserved = FALSE;
-  if (eglQuerySurface (eglglessink->eglglesctx.display,
-          eglglessink->eglglesctx.surface, EGL_SWAP_BEHAVIOR, &swap_behavior)) {
-    GST_DEBUG_OBJECT (eglglessink, "Buffer swap behavior %x", swap_behavior);
-    eglglessink->eglglesctx.buffer_preserved =
-        swap_behavior == EGL_BUFFER_PRESERVED;
-  } else {
-    GST_DEBUG_OBJECT (eglglessink, "Can't query buffer swap behavior");
-  }
-
-  if (!gst_eglglessink_context_make_current (eglglessink, TRUE))
-    goto HANDLE_EGL_ERROR_LOCKED;
-
-  /* Save display's pixel aspect ratio
-   *
-   * DAR is reported as w/h * EGL_DISPLAY_SCALING wich is
-   * a constant with value 10000. This attribute is only
-   * supported if the EGL version is >= 1.2
-   * XXX: Setup this as a property.
-   * or some other one time check. Right now it's being called once
-   * per frame.
-   */
-  if (eglglessink->eglglesctx.egl_major == 1 &&
-      eglglessink->eglglesctx.egl_minor < 2) {
-    GST_DEBUG_OBJECT (eglglessink, "Can't query PAR. Using default: %dx%d",
-        EGL_DISPLAY_SCALING, EGL_DISPLAY_SCALING);
-    eglglessink->eglglesctx.pixel_aspect_ratio = EGL_DISPLAY_SCALING;
-  } else {
-    eglQuerySurface (eglglessink->eglglesctx.display,
-        eglglessink->eglglesctx.surface, EGL_PIXEL_ASPECT_RATIO, &display_par);
-    /* Fix for outbound DAR reporting on some implementations not
-     * honoring the 'should return w/h * EGL_DISPLAY_SCALING' spec
-     * requirement
-     */
-    if (display_par == EGL_UNKNOWN || display_par < EGL_SANE_DAR_MIN ||
-        display_par > EGL_SANE_DAR_MAX) {
-      GST_DEBUG_OBJECT (eglglessink, "Nonsensical PAR value returned: %d. "
-          "Bad EGL implementation? "
-          "Will use default: %d/%d", eglglessink->eglglesctx.pixel_aspect_ratio,
-          EGL_DISPLAY_SCALING, EGL_DISPLAY_SCALING);
-      eglglessink->eglglesctx.pixel_aspect_ratio = EGL_DISPLAY_SCALING;
-    } else {
-      eglglessink->eglglesctx.pixel_aspect_ratio = display_par;
-    }
-  }
-
-  /* Save surface dims */
-  gst_eglglessink_update_surface_dimensions (eglglessink);
-
-  /* We have a surface! */
-  eglglessink->have_surface = TRUE;
-
-  /* Init vertex and fragment GLSL shaders. 
-   * Note: Shader compiler support is optional but we currently rely on it.
-   */
-
-  glGetBooleanv (GL_SHADER_COMPILER, &ret);
-  if (ret == GL_FALSE) {
-    GST_ERROR_OBJECT (eglglessink, "Shader compiler support is unavailable!");
-    goto HANDLE_ERROR;
-  }
-
-  /* Build shader program for video texture rendering */
-
-  switch (eglglessink->format) {
-    case GST_VIDEO_FORMAT_AYUV:
-      frag_prog = (gchar *) frag_AYUV_prog;
-      free_frag_prog = FALSE;
-      eglglessink->eglglesctx.n_textures = 1;
-      texnames[0] = "tex";
-      break;
-    case GST_VIDEO_FORMAT_Y444:
-    case GST_VIDEO_FORMAT_I420:
-    case GST_VIDEO_FORMAT_YV12:
-    case GST_VIDEO_FORMAT_Y42B:
-    case GST_VIDEO_FORMAT_Y41B:
-      frag_prog = (gchar *) frag_PLANAR_YUV_prog;
-      free_frag_prog = FALSE;
-      eglglessink->eglglesctx.n_textures = 3;
-      texnames[0] = "Ytex";
-      texnames[1] = "Utex";
-      texnames[2] = "Vtex";
-      break;
-    case GST_VIDEO_FORMAT_YUY2:
-      frag_prog = g_strdup_printf (frag_YUY2_YVYU_UYVY_prog, 'r', 'g', 'a');
-      free_frag_prog = TRUE;
-      eglglessink->eglglesctx.n_textures = 2;
-      texnames[0] = "Ytex";
-      texnames[1] = "UVtex";
-      break;
-    case GST_VIDEO_FORMAT_YVYU:
-      frag_prog = g_strdup_printf (frag_YUY2_YVYU_UYVY_prog, 'r', 'a', 'g');
-      free_frag_prog = TRUE;
-      eglglessink->eglglesctx.n_textures = 2;
-      texnames[0] = "Ytex";
-      texnames[1] = "UVtex";
-      break;
-    case GST_VIDEO_FORMAT_UYVY:
-      frag_prog = g_strdup_printf (frag_YUY2_YVYU_UYVY_prog, 'a', 'r', 'b');
-      free_frag_prog = TRUE;
-      eglglessink->eglglesctx.n_textures = 2;
-      texnames[0] = "Ytex";
-      texnames[1] = "UVtex";
-      break;
-    case GST_VIDEO_FORMAT_NV12:
-      frag_prog = g_strdup_printf (frag_NV12_NV21_prog, 'r', 'a');
-      free_frag_prog = TRUE;
-      eglglessink->eglglesctx.n_textures = 2;
-      texnames[0] = "Ytex";
-      texnames[1] = "UVtex";
-      break;
-    case GST_VIDEO_FORMAT_NV21:
-      frag_prog = g_strdup_printf (frag_NV12_NV21_prog, 'a', 'r');
-      free_frag_prog = TRUE;
-      eglglessink->eglglesctx.n_textures = 2;
-      texnames[0] = "Ytex";
-      texnames[1] = "UVtex";
-      break;
-    case GST_VIDEO_FORMAT_BGR:
-    case GST_VIDEO_FORMAT_BGRx:
-    case GST_VIDEO_FORMAT_BGRA:
-      frag_prog = g_strdup_printf (frag_REORDER_prog, 'b', 'g', 'r');
-      free_frag_prog = TRUE;
-      eglglessink->eglglesctx.n_textures = 1;
-      texnames[0] = "tex";
-      break;
-    case GST_VIDEO_FORMAT_xRGB:
-    case GST_VIDEO_FORMAT_ARGB:
-      frag_prog = g_strdup_printf (frag_REORDER_prog, 'g', 'b', 'a');
-      free_frag_prog = TRUE;
-      eglglessink->eglglesctx.n_textures = 1;
-      texnames[0] = "tex";
-      break;
-    case GST_VIDEO_FORMAT_xBGR:
-    case GST_VIDEO_FORMAT_ABGR:
-      frag_prog = g_strdup_printf (frag_REORDER_prog, 'a', 'b', 'g');
-      free_frag_prog = TRUE;
-      eglglessink->eglglesctx.n_textures = 1;
-      texnames[0] = "tex";
-      break;
-    case GST_VIDEO_FORMAT_RGB:
-    case GST_VIDEO_FORMAT_RGBx:
-    case GST_VIDEO_FORMAT_RGBA:
-    case GST_VIDEO_FORMAT_RGB16:
-      frag_prog = (gchar *) frag_COPY_prog;
-      free_frag_prog = FALSE;
-      eglglessink->eglglesctx.n_textures = 1;
-      texnames[0] = "tex";
-      break;
-    default:
-      g_assert_not_reached ();
-      break;
-  }
-
-  if (!create_shader_program (eglglessink,
-          &eglglessink->eglglesctx.glslprogram[0],
-          &eglglessink->eglglesctx.vertshader[0],
-          &eglglessink->eglglesctx.fragshader[0], vert_COPY_prog, frag_prog)) {
-    if (free_frag_prog)
-      g_free (frag_prog);
-    frag_prog = NULL;
-    goto HANDLE_ERROR;
-  }
-  if (free_frag_prog)
-    g_free (frag_prog);
-  frag_prog = NULL;
-
-  eglglessink->eglglesctx.position_loc[0] =
-      glGetAttribLocation (eglglessink->eglglesctx.glslprogram[0], "position");
-  eglglessink->eglglesctx.texpos_loc[0] =
-      glGetAttribLocation (eglglessink->eglglesctx.glslprogram[0], "texpos");
-
-  glEnableVertexAttribArray (eglglessink->eglglesctx.position_loc[0]);
-  if (got_gl_error ("glEnableVertexAttribArray"))
-    goto HANDLE_ERROR;
-
-  glEnableVertexAttribArray (eglglessink->eglglesctx.texpos_loc[0]);
-  if (got_gl_error ("glEnableVertexAttribArray"))
-    goto HANDLE_ERROR;
-
-  for (i = 0; i < eglglessink->eglglesctx.n_textures; i++) {
-    eglglessink->eglglesctx.tex_loc[0][i] =
-        glGetUniformLocation (eglglessink->eglglesctx.glslprogram[0],
-        texnames[i]);
-  }
-
-  if (!eglglessink->eglglesctx.buffer_preserved) {
-    /* Build shader program for black borders */
-    if (!create_shader_program (eglglessink,
-            &eglglessink->eglglesctx.glslprogram[1],
-            &eglglessink->eglglesctx.vertshader[1],
-            &eglglessink->eglglesctx.fragshader[1], vert_COPY_prog_no_tex,
-            frag_BLACK_prog))
-      goto HANDLE_ERROR;
-
-    eglglessink->eglglesctx.position_loc[1] =
-        glGetAttribLocation (eglglessink->eglglesctx.glslprogram[1],
-        "position");
-
-    glEnableVertexAttribArray (eglglessink->eglglesctx.position_loc[1]);
-    if (got_gl_error ("glEnableVertexAttribArray"))
-      goto HANDLE_ERROR;
-  }
-
-  /* Generate textures */
-  if (!eglglessink->have_texture) {
-    GST_INFO_OBJECT (eglglessink, "Performing initial texture setup");
-
-    glGenTextures (eglglessink->eglglesctx.n_textures,
-        eglglessink->eglglesctx.texture);
-    if (got_gl_error ("glGenTextures"))
-      goto HANDLE_ERROR_LOCKED;
-
-    for (i = 0; i < eglglessink->eglglesctx.n_textures; i++) {
-      glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[i]);
-      if (got_gl_error ("glBindTexture"))
-        goto HANDLE_ERROR;
-
-      /* Set 2D resizing params */
-      glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-      glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-      /* If these are not set the texture image unit will return
-       * (R, G, B, A) = black on glTexImage2D for non-POT width/height
-       * frames. For a deeper explanation take a look at the OpenGL ES
-       * documentation for glTexParameter */
-      glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-      glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-      if (got_gl_error ("glTexParameteri"))
-        goto HANDLE_ERROR_LOCKED;
-    }
-
-    eglglessink->have_texture = TRUE;
-  }
-
-  glUseProgram (0);
-
-  return TRUE;
-
-  /* Errors */
-HANDLE_EGL_ERROR_LOCKED:
-  GST_ERROR_OBJECT (eglglessink, "EGL call returned error %x", eglGetError ());
-HANDLE_ERROR_LOCKED:
-HANDLE_ERROR:
-  GST_ERROR_OBJECT (eglglessink, "Couldn't setup EGL surface");
-  return FALSE;
-}
-
-static gboolean
-gst_eglglessink_init_egl_display (GstEglGlesSink * eglglessink)
-{
-  EGLDisplay display;
-  GST_DEBUG_OBJECT (eglglessink, "Enter EGL initial configuration");
-
-#ifdef USE_EGL_RPI
-  /* See https://github.com/raspberrypi/firmware/issues/99 */
-  if (!eglMakeCurrent ((EGLDisplay) 1, EGL_NO_SURFACE, EGL_NO_SURFACE,
-          EGL_NO_CONTEXT)) {
-    got_egl_error ("eglMakeCurrent");
-    GST_ERROR_OBJECT (eglglessink, "Couldn't unbind context");
-    return FALSE;
-  }
-#endif
-
-  display = eglGetDisplay (EGL_DEFAULT_DISPLAY);
-  if (display == EGL_NO_DISPLAY) {
-    GST_ERROR_OBJECT (eglglessink, "Could not get EGL display connection");
-    goto HANDLE_ERROR;          /* No EGL error is set by eglGetDisplay() */
-  }
-  eglglessink->eglglesctx.display = display;
-
-  if (!eglInitialize (display,
-          &eglglessink->eglglesctx.egl_major,
-          &eglglessink->eglglesctx.egl_minor)) {
-    got_egl_error ("eglInitialize");
-    GST_ERROR_OBJECT (eglglessink, "Could not init EGL display connection");
-    goto HANDLE_EGL_ERROR;
-  }
-
-  /* Check against required EGL version
-   * XXX: Need to review the version requirement in terms of the needed API
-   */
-  if (eglglessink->eglglesctx.egl_major < GST_EGLGLESSINK_EGL_MIN_VERSION) {
-    GST_ERROR_OBJECT (eglglessink, "EGL v%d needed, but you only have v%d.%d",
-        GST_EGLGLESSINK_EGL_MIN_VERSION, eglglessink->eglglesctx.egl_major,
-        eglglessink->eglglesctx.egl_minor);
-    goto HANDLE_ERROR;
-  }
-
-  GST_INFO_OBJECT (eglglessink, "System reports supported EGL version v%d.%d",
-      eglglessink->eglglesctx.egl_major, eglglessink->eglglesctx.egl_minor);
-
-  eglBindAPI (EGL_OPENGL_ES_API);
-
-  return TRUE;
-
-  /* Errors */
-HANDLE_EGL_ERROR:
-  GST_ERROR_OBJECT (eglglessink, "EGL call returned error %x", eglGetError ());
-HANDLE_ERROR:
-  GST_ERROR_OBJECT (eglglessink, "Couldn't setup window/surface from handle");
-  return FALSE;
-}
-
-static gboolean
-gst_eglglessink_choose_config (GstEglGlesSink * eglglessink)
-{
-  EGLint con_attribs[] = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE };
-  GLint egl_configs;
-
-  if ((eglChooseConfig (eglglessink->eglglesctx.display,
-              eglglessink_RGBA8888_attribs,
-              &eglglessink->eglglesctx.config, 1, &egl_configs)) == EGL_FALSE) {
-    got_egl_error ("eglChooseConfig");
-    GST_ERROR_OBJECT (eglglessink, "eglChooseConfig failed");
-    goto HANDLE_EGL_ERROR;
-  }
-
-  if (egl_configs < 1) {
-    GST_ERROR_OBJECT (eglglessink,
-        "Could not find matching framebuffer config");
-    goto HANDLE_ERROR;
-  }
-
-  eglglessink->eglglesctx.eglcontext =
-      eglCreateContext (eglglessink->eglglesctx.display,
-      eglglessink->eglglesctx.config, EGL_NO_CONTEXT, con_attribs);
-
-  if (eglglessink->eglglesctx.eglcontext == EGL_NO_CONTEXT) {
-    GST_ERROR_OBJECT (eglglessink, "Error getting context, eglCreateContext");
-    goto HANDLE_EGL_ERROR;
-  }
-
-  GST_DEBUG_OBJECT (eglglessink, "EGL Context: %p",
-      eglglessink->eglglesctx.eglcontext);
-
-  return TRUE;
-
-  /* Errors */
-HANDLE_EGL_ERROR:
-  GST_ERROR_OBJECT (eglglessink, "EGL call returned error %x", eglGetError ());
-HANDLE_ERROR:
-  GST_ERROR_OBJECT (eglglessink, "Couldn't choose an usable config");
   return FALSE;
 }
 
@@ -1528,7 +659,7 @@ gst_eglglessink_set_window_handle (GstXOverlay * overlay, guintptr id)
 
   /* OK, we have a new window */
   GST_OBJECT_LOCK (eglglessink);
-  eglglessink->eglglesctx.window = (EGLNativeWindowType) id;
+  eglglessink->eglglesctx->window = (EGLNativeWindowType) id;
   eglglessink->have_window = ((gpointer) id != NULL);
   GST_OBJECT_UNLOCK (eglglessink);
 
@@ -1628,13 +759,13 @@ gst_eglglessink_fill_texture (GstEglGlesSink * eglglessink, GstBuffer * buf)
     case GST_VIDEO_FORMAT_xRGB:
     case GST_VIDEO_FORMAT_xBGR:
       glActiveTexture (GL_TEXTURE0);
-      glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[0]);
+      glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx->texture[0]);
       glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA,
           GL_UNSIGNED_BYTE, GST_BUFFER_DATA (buf));
       break;
     case GST_VIDEO_FORMAT_AYUV:
       glActiveTexture (GL_TEXTURE0);
-      glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[0]);
+      glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx->texture[0]);
       glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA,
           GL_UNSIGNED_BYTE, GST_BUFFER_DATA (buf));
       break;
@@ -1650,7 +781,7 @@ gst_eglglessink_fill_texture (GstEglGlesSink * eglglessink, GstBuffer * buf)
       cw = gst_video_format_get_component_width (eglglessink->format, 0, w);
       ch = gst_video_format_get_component_height (eglglessink->format, 0, h);
       glActiveTexture (GL_TEXTURE0);
-      glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[0]);
+      glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx->texture[0]);
       glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE, cw, ch, 0,
           GL_LUMINANCE, GL_UNSIGNED_BYTE, GST_BUFFER_DATA (buf) + coffset);
       coffset =
@@ -1658,7 +789,7 @@ gst_eglglessink_fill_texture (GstEglGlesSink * eglglessink, GstBuffer * buf)
       cw = gst_video_format_get_component_width (eglglessink->format, 1, w);
       ch = gst_video_format_get_component_height (eglglessink->format, 1, h);
       glActiveTexture (GL_TEXTURE1);
-      glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[1]);
+      glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx->texture[1]);
       glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE, cw, ch, 0,
           GL_LUMINANCE, GL_UNSIGNED_BYTE, GST_BUFFER_DATA (buf) + coffset);
       coffset =
@@ -1666,7 +797,7 @@ gst_eglglessink_fill_texture (GstEglGlesSink * eglglessink, GstBuffer * buf)
       cw = gst_video_format_get_component_width (eglglessink->format, 2, w);
       ch = gst_video_format_get_component_height (eglglessink->format, 2, h);
       glActiveTexture (GL_TEXTURE2);
-      glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[2]);
+      glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx->texture[2]);
       glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE, cw, ch, 0,
           GL_LUMINANCE, GL_UNSIGNED_BYTE, GST_BUFFER_DATA (buf) + coffset);
       break;
@@ -1675,11 +806,11 @@ gst_eglglessink_fill_texture (GstEglGlesSink * eglglessink, GstBuffer * buf)
     case GST_VIDEO_FORMAT_YVYU:
     case GST_VIDEO_FORMAT_UYVY:
       glActiveTexture (GL_TEXTURE0);
-      glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[0]);
+      glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx->texture[0]);
       glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, w, h, 0,
           GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, GST_BUFFER_DATA (buf));
       glActiveTexture (GL_TEXTURE1);
-      glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[1]);
+      glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx->texture[1]);
       glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, GST_ROUND_UP_2 (w) / 2,
           h, 0, GL_RGBA, GL_UNSIGNED_BYTE, GST_BUFFER_DATA (buf));
       break;
@@ -1692,7 +823,7 @@ gst_eglglessink_fill_texture (GstEglGlesSink * eglglessink, GstBuffer * buf)
       cw = gst_video_format_get_component_width (eglglessink->format, 0, w);
       ch = gst_video_format_get_component_height (eglglessink->format, 0, h);
       glActiveTexture (GL_TEXTURE0);
-      glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[0]);
+      glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx->texture[0]);
       glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE, cw, ch, 0,
           GL_LUMINANCE, GL_UNSIGNED_BYTE, GST_BUFFER_DATA (buf) + coffset);
 
@@ -1702,7 +833,7 @@ gst_eglglessink_fill_texture (GstEglGlesSink * eglglessink, GstBuffer * buf)
       cw = gst_video_format_get_component_width (eglglessink->format, 1, w);
       ch = gst_video_format_get_component_height (eglglessink->format, 1, h);
       glActiveTexture (GL_TEXTURE1);
-      glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx.texture[1]);
+      glBindTexture (GL_TEXTURE_2D, eglglessink->eglglesctx->texture[1]);
       glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, cw, ch, 0,
           GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE,
           GST_BUFFER_DATA (buf) + coffset);
@@ -1759,7 +890,7 @@ gst_eglglessink_render (GstEglGlesSink * eglglessink)
    * calling party explicitly ask us not to by setting
    * force_aspect_ratio to FALSE.
    */
-  if (gst_eglglessink_update_surface_dimensions (eglglessink) ||
+  if (gst_egl_adaptation_context_update_surface_dimensions (eglglessink->egl_context) ||
       eglglessink->render_region_changed ||
       !eglglessink->display_region.w || !eglglessink->display_region.h ||
       eglglessink->size_changed) {
@@ -1768,8 +899,8 @@ gst_eglglessink_render (GstEglGlesSink * eglglessink)
     if (!eglglessink->render_region_user) {
       eglglessink->render_region.x = 0;
       eglglessink->render_region.y = 0;
-      eglglessink->render_region.w = eglglessink->eglglesctx.surface_width;
-      eglglessink->render_region.h = eglglessink->eglglesctx.surface_height;
+      eglglessink->render_region.w = eglglessink->eglglesctx->surface_width;
+      eglglessink->render_region.h = eglglessink->eglglesctx->surface_height;
     }
     eglglessink->render_region_changed = FALSE;
     eglglessink->size_changed = FALSE;
@@ -1789,7 +920,7 @@ gst_eglglessink_render (GstEglGlesSink * eglglessink)
               w, h,
               eglglessink->par_n,
               eglglessink->par_d,
-              eglglessink->eglglesctx.pixel_aspect_ratio,
+              eglglessink->eglglesctx->pixel_aspect_ratio,
               EGL_DISPLAY_SCALING)) {
         GST_WARNING_OBJECT (eglglessink, "Could not compute resulting DAR");
         frame.w = w;
@@ -1820,13 +951,13 @@ gst_eglglessink_render (GstEglGlesSink * eglglessink)
     }
 
     glViewport (eglglessink->render_region.x,
-        eglglessink->eglglesctx.surface_height -
+        eglglessink->eglglesctx->surface_height -
         eglglessink->render_region.y -
         eglglessink->render_region.h,
         eglglessink->render_region.w, eglglessink->render_region.h);
 
     /* Clear the surface once if its content is preserved */
-    if (eglglessink->eglglesctx.buffer_preserved) {
+    if (eglglessink->eglglesctx->buffer_preserved) {
       glClearColor (0.0, 0.0, 0.0, 1.0);
       glClear (GL_COLOR_BUFFER_BIT);
     }
@@ -1839,12 +970,12 @@ gst_eglglessink_render (GstEglGlesSink * eglglessink)
     GST_OBJECT_UNLOCK (eglglessink);
   }
 
-  if (!eglglessink->eglglesctx.buffer_preserved) {
+  if (!eglglessink->eglglesctx->buffer_preserved) {
     /* Draw black borders */
     GST_DEBUG_OBJECT (eglglessink, "Drawing black border 1");
-    glUseProgram (eglglessink->eglglesctx.glslprogram[1]);
+    glUseProgram (eglglessink->eglglesctx->glslprogram[1]);
 
-    glVertexAttribPointer (eglglessink->eglglesctx.position_loc[1], 3,
+    glVertexAttribPointer (eglglessink->eglglesctx->position_loc[1], 3,
         GL_FLOAT, GL_FALSE, sizeof (coord5), (gpointer) (4 * sizeof (coord5)));
     if (got_gl_error ("glVertexAttribPointer"))
       goto HANDLE_ERROR;
@@ -1855,7 +986,7 @@ gst_eglglessink_render (GstEglGlesSink * eglglessink)
 
     GST_DEBUG_OBJECT (eglglessink, "Drawing black border 2");
 
-    glVertexAttribPointer (eglglessink->eglglesctx.position_loc[1], 3,
+    glVertexAttribPointer (eglglessink->eglglesctx->position_loc[1], 3,
         GL_FLOAT, GL_FALSE, sizeof (coord5), (gpointer) (8 * sizeof (coord5)));
     if (got_gl_error ("glVertexAttribPointer"))
       goto HANDLE_ERROR;
@@ -1867,20 +998,20 @@ gst_eglglessink_render (GstEglGlesSink * eglglessink)
 
   /* Draw video frame */
   GST_DEBUG_OBJECT (eglglessink, "Drawing video frame");
-  glUseProgram (eglglessink->eglglesctx.glslprogram[0]);
+  glUseProgram (eglglessink->eglglesctx->glslprogram[0]);
 
-  for (i = 0; i < eglglessink->eglglesctx.n_textures; i++) {
-    glUniform1i (eglglessink->eglglesctx.tex_loc[0][i], i);
+  for (i = 0; i < eglglessink->eglglesctx->n_textures; i++) {
+    glUniform1i (eglglessink->eglglesctx->tex_loc[0][i], i);
     if (got_gl_error ("glUniform1i"))
       goto HANDLE_ERROR;
   }
 
-  glVertexAttribPointer (eglglessink->eglglesctx.position_loc[0], 3,
+  glVertexAttribPointer (eglglessink->eglglesctx->position_loc[0], 3,
       GL_FLOAT, GL_FALSE, sizeof (coord5), (gpointer) (0 * sizeof (coord5)));
   if (got_gl_error ("glVertexAttribPointer"))
     goto HANDLE_ERROR;
 
-  glVertexAttribPointer (eglglessink->eglglesctx.texpos_loc[0], 2, GL_FLOAT,
+  glVertexAttribPointer (eglglessink->eglglesctx->texpos_loc[0], 2, GL_FLOAT,
       GL_FALSE, sizeof (coord5), (gpointer) (3 * sizeof (gfloat)));
   if (got_gl_error ("glVertexAttribPointer"))
     goto HANDLE_ERROR;
@@ -1889,10 +1020,8 @@ gst_eglglessink_render (GstEglGlesSink * eglglessink)
   if (got_gl_error ("glDrawElements"))
     goto HANDLE_ERROR;
 
-  if ((eglSwapBuffers (eglglessink->eglglesctx.display,
-              eglglessink->eglglesctx.surface))
+  if ((gst_egl_adaptation_context_swap_buffers (eglglessink->egl_context))
       == EGL_FALSE) {
-    got_egl_error ("eglSwapBuffers");
     goto HANDLE_ERROR;
   }
 
@@ -1978,13 +1107,13 @@ gst_eglglessink_configure_caps (GstEglGlesSink * eglglessink, GstCaps * caps)
     GST_DEBUG_OBJECT (eglglessink, "Caps are not compatible, reconfiguring");
 
     /* EGL/GLES cleanup */
-    gst_eglglessink_wipe_eglglesctx (eglglessink);
+    gst_egl_adaptation_context_cleanup (eglglessink->egl_context);
 
     gst_caps_unref (eglglessink->configured_caps);
     eglglessink->configured_caps = NULL;
   }
 
-  if (!gst_eglglessink_choose_config (eglglessink)) {
+  if (!gst_egl_adaptation_choose_config (eglglessink->egl_context)) {
     GST_ERROR_OBJECT (eglglessink, "Couldn't choose EGL config");
     goto HANDLE_ERROR;
   }
@@ -2006,18 +1135,19 @@ gst_eglglessink_configure_caps (GstEglGlesSink * eglglessink, GstCaps * caps)
       goto HANDLE_ERROR;
     }
     eglglessink->using_own_window = TRUE;
-    eglglessink->eglglesctx.window = window;
+    eglglessink->eglglesctx->window = window;
     eglglessink->have_window = TRUE;
   }
   GST_DEBUG_OBJECT (eglglessink, "Using window handle %p",
-      eglglessink->eglglesctx.window);
-  eglglessink->eglglesctx.used_window = eglglessink->eglglesctx.window;
+      eglglessink->eglglesctx->window);
+  eglglessink->eglglesctx->used_window = eglglessink->eglglesctx->window;
   GST_OBJECT_UNLOCK (eglglessink);
   gst_x_overlay_got_window_handle (GST_X_OVERLAY (eglglessink),
-      (guintptr) eglglessink->eglglesctx.used_window);
+      (guintptr) eglglessink->eglglesctx->used_window);
 
-  if (!eglglessink->have_surface) {
-    if (!gst_eglglessink_init_egl_surface (eglglessink)) {
+  if (!eglglessink->egl_context->have_surface) {
+    if (!gst_egl_adaptation_init_egl_surface (eglglessink->egl_context,
+            eglglessink->format)) {
       GST_ERROR_OBJECT (eglglessink, "Couldn't init EGL surface from window");
       goto HANDLE_ERROR;
     }
@@ -2061,10 +1191,7 @@ gst_eglglessink_open (GstEglGlesSink * eglglessink)
 static gboolean
 gst_eglglessink_close (GstEglGlesSink * eglglessink)
 {
-  if (eglglessink->eglglesctx.display) {
-    eglTerminate (eglglessink->eglglesctx.display);
-    eglglessink->eglglesctx.display = NULL;
-  }
+  gst_egl_adaptation_context_terminate_display (eglglessink->egl_context);
 
   gst_caps_unref (eglglessink->sinkcaps);
   eglglessink->sinkcaps = NULL;
@@ -2138,6 +1265,8 @@ gst_eglglessink_finalize (GObject * object)
 
   g_cond_free (eglglessink->render_cond);
   g_mutex_free (eglglessink->render_lock);
+
+  gst_egl_adaptation_context_free (eglglessink->egl_context);
 
   G_OBJECT_CLASS (parent_class)->finalize (object);
 }
@@ -2260,9 +1389,6 @@ gst_eglglessink_init (GstEglGlesSink * eglglessink,
 
   /** Flags */
   eglglessink->have_window = FALSE;
-  eglglessink->have_surface = FALSE;
-  eglglessink->have_vbo = FALSE;
-  eglglessink->have_texture = FALSE;
   eglglessink->egl_started = FALSE;
   eglglessink->using_own_window = FALSE;
 
@@ -2284,6 +1410,10 @@ gst_eglglessink_init (GstEglGlesSink * eglglessink,
   eglglessink->render_cond = g_cond_new ();
   eglglessink->queue = gst_data_queue_new (queue_check_full_func, NULL);
   eglglessink->last_flow = GST_FLOW_WRONG_STATE;
+
+  eglglessink->egl_context =
+      gst_egl_adaptation_context_new (GST_ELEMENT_CAST (eglglessink));
+  eglglessink->eglglesctx = &eglglessink->egl_context->eglglesctx;
 }
 
 /* Interface initializations. Used here for initializing the XOverlay
