@@ -1,6 +1,12 @@
 plugin_LTLIBRARIES = libgsteglglessink.la
 
-libgsteglglessink_la_SOURCES = gsteglglessink.c video_platform_wrapper.c gstegladaptation.c
+if HAVE_IOS
+DISTRO_SRC = gstegladaptation_ios.m
+else
+DISTRO_SRC = gstegladaptation_pc.c
+endif
+
+libgsteglglessink_la_SOURCES = gsteglglessink.c video_platform_wrapper.c gstegladaptation.c $(DISTRO_SRC)
 
 libgsteglglessink_la_CFLAGS = $(GST_PLUGINS_BASE_CFLAGS) \
                               $(GST_BASE_CFLAGS) \

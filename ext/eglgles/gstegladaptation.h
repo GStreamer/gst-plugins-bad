@@ -55,6 +55,7 @@
 #include <bcm_host.h>
 #endif
 
+#include <gst/video/video.h>
 #include "video_platform_wrapper.h"
 
 #define GST_EGLGLESSINK_IMAGE_NOFMT 0
@@ -63,6 +64,17 @@
 #define GST_EGLGLESSINK_IMAGE_RGBA8888 3
 #define GST_EGLGLESSINK_EGL_MIN_VERSION 1
 G_BEGIN_DECLS
+
+/* will probably move elsewhere */
+static const EGLint eglglessink_RGBA8888_attribs[] = {
+  EGL_RED_SIZE, 8,
+  EGL_GREEN_SIZE, 8,
+  EGL_BLUE_SIZE, 8,
+  EGL_ALPHA_SIZE, 8,
+  EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+  EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+  EGL_NONE
+};
 
 typedef struct GstEglAdaptationContext GstEglAdaptationContext;
 typedef struct _GstEglGlesRenderContext GstEglGlesRenderContext;
@@ -89,8 +101,6 @@ typedef struct _coord5
  * @vertshader: Vertex shader
  * @glslprogram: Compiled and linked GLSL program in use for rendering
  * @texture Texture units in use
- * @surface_width: Pixel width of the surface the sink is rendering into
- * @surface_height: Pixel height of the surface the sink is rendering into
  * @pixel_aspect_ratio: EGL display aspect ratio
  * @egl_minor: EGL version (minor)
  * @egl_major: EGL version (major)
@@ -110,27 +120,8 @@ struct _GstEglGlesRenderContext
 {
   EGLConfig config;
   EGLContext eglcontext;
-  EGLDisplay display;
-  EGLNativeWindowType window, used_window;
   EGLSurface surface;
-  gboolean buffer_preserved;
-  GLuint fragshader[3]; /* frame, border, frame-platform */
-  GLuint vertshader[3]; /* frame, border, frame-platform */
-  GLuint glslprogram[3]; /* frame, border, frame-platform */
-  GLuint texture[3]; /* RGB/Y, U/UV, V */
-  EGLint surface_width;
-  EGLint surface_height;
-  EGLint pixel_aspect_ratio;
   EGLint egl_minor, egl_major;
-  gint n_textures;
-
-  /* shader vars */
-  GLuint position_loc[3]; /* frame, border, frame-platform */
-  GLuint texpos_loc[2]; /* frame, frame-platform */
-  GLuint tex_loc[2][3]; /* [frame, frame-platform] RGB/Y, U/UV, V */
-  coord5 position_array[12];    /* 4 x Frame, 4 x Border1, 4 x Border2 */
-  unsigned short index_array[4];
-  unsigned int position_buffer, index_buffer;
 };
 
 /*
@@ -155,36 +146,96 @@ struct _GstEglGlesImageFmt
  * @have_vbo: Set if the GLES VBO setup has been performed
  * @have_texture: Set if the GLES texture setup has been performed
  * @have_surface: Set if the EGL surface setup has been performed
+ * @surface_width: Pixel width of the surface the sink is rendering into
+ * @surface_height: Pixel height of the surface the sink is rendering into
  *  
  * The #GstEglAdaptationContext data structure.
  */
 struct GstEglAdaptationContext
 {
   GstElement *element;
-  GstEglGlesRenderContext eglglesctx;
+
+  EGLNativeWindowType window, used_window;
+  EGLDisplay display;
+
+  unsigned int position_buffer, index_buffer;
 
   gboolean have_vbo;
   gboolean have_texture;
   gboolean have_surface;;
+
+  gboolean buffer_preserved;
+
+  gint surface_width;
+  gint surface_height;
+  gint pixel_aspect_ratio;
+
+  GLuint fragshader[3]; /* frame, border, frame-platform */
+  GLuint vertshader[3]; /* frame, border, frame-platform */
+  GLuint glslprogram[3]; /* frame, border, frame-platform */
+  GLuint texture[3]; /* RGB/Y, U/UV, V */
+  gint n_textures;
+
+  /* shader vars */
+  GLuint position_loc[3]; /* frame, border, frame-platform */
+  GLuint texpos_loc[2]; /* frame, frame-platform */
+  GLuint tex_loc[2][3]; /* [frame, frame-platform] RGB/Y, U/UV, V */
+  coord5 position_array[12];    /* 4 x Frame, 4 x Border1, 4 x Border2 */
+  unsigned short index_array[4];
+
+#if USE_IOS
+  EAGLContext *eagl_context;
+  GLUint framebuffer;
+  GLUint color_renderbuffer;
+#else
+  GstEglGlesRenderContext eglglesctx;
+#endif
 };
 
 GstEglAdaptationContext * gst_egl_adaptation_context_new (GstElement * element);
 void gst_egl_adaptation_context_free (GstEglAdaptationContext * ctx);
 
+/* platform window */
+gboolean gst_egl_adaptation_create_native_window (GstEglAdaptationContext * ctx, gint width, gint height, gpointer * own_window_data);
+void gst_egl_adaptation_destroy_native_window (GstEglAdaptationContext * ctx, gpointer * own_window_data);
+
+/* Initialization */
 gboolean gst_egl_adaptation_init_display (GstEglAdaptationContext * ctx);
-gboolean gst_egl_adaptation_choose_config (GstEglAdaptationContext * ctx);
 gint gst_egl_adaptation_context_fill_supported_fbuffer_configs (GstEglAdaptationContext * ctx, GstCaps ** ret_caps);
-gboolean gst_egl_adaptation_context_make_current (GstEglAdaptationContext * ctx, gboolean bind);
-void gst_egl_adaptation_context_cleanup (GstEglAdaptationContext * ctx);
 gboolean gst_egl_adaptation_init_egl_surface (GstEglAdaptationContext * ctx, GstVideoFormat format);
-gboolean gst_egl_adaptation_context_update_surface_dimensions (GstEglAdaptationContext * ctx);
-void gst_egl_adaptation_context_terminate_display(GstEglAdaptationContext * ctx);
-void gst_egl_adaptation_context_bind_API (GstEglAdaptationContext * ctx);
-gboolean gst_egl_adaptation_context_swap_buffers (GstEglAdaptationContext * ctx);
 void gst_egl_adaptation_context_init_egl_exts (GstEglAdaptationContext * ctx);
 
+/* cleanup */
+void gst_egl_adaptation_context_cleanup (GstEglAdaptationContext * ctx);
+void gst_egl_adaptation_context_terminate_display(GstEglAdaptationContext * ctx);
+
+/* configuration */
+gboolean gst_egl_adaptation_choose_config (GstEglAdaptationContext * ctx);
+gboolean gst_egl_adaptation_context_make_current (GstEglAdaptationContext * ctx, gboolean bind);
+gboolean gst_egl_adaptation_context_update_surface_dimensions (GstEglAdaptationContext * ctx);
+
+/* rendering */
+void gst_egl_adaptation_context_bind_API (GstEglAdaptationContext * ctx);
+gboolean gst_egl_adaptation_context_swap_buffers (GstEglAdaptationContext * ctx);
+
+/* get/set */
+void gst_egl_adaptation_context_set_window (GstEglAdaptationContext * ctx, EGLNativeWindowType window);
+GLuint gst_egl_adaptation_context_get_texture (GstEglAdaptationContext * ctx, gint i);
+gint gst_egl_adaptation_context_get_surface_width (GstEglAdaptationContext * ctx);
+gint gst_egl_adaptation_context_get_surface_height (GstEglAdaptationContext * ctx);
+
+/* error handling */
 gboolean got_egl_error (const char *wtf); 
 gboolean got_gl_error (const char *wtf);
+
+/* platform specific helpers */
+gboolean _gst_egl_choose_config (GstEglAdaptationContext * ctx, gboolean try_only, gint * num_configs);
+gboolean gst_egl_adaptation_create_egl_context (GstEglAdaptationContext * ctx);
+gboolean gst_egl_adaptation_create_surface (GstEglAdaptationContext * ctx);
+void gst_egl_adaptation_query_buffer_preserved (GstEglAdaptationContext * ctx);
+void gst_egl_adaptation_query_par (GstEglAdaptationContext * ctx);
+void gst_egl_adaptation_destroy_surface (GstEglAdaptationContext * ctx);
+void gst_egl_adaptation_destroy_context (GstEglAdaptationContext * ctx);
 
 G_END_DECLS
 

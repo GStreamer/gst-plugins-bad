@@ -112,7 +112,6 @@ struct _GstEglGlesSink
   GstCaps *current_caps, *configured_caps;
 
   GstEglAdaptationContext *egl_context;
-  GstEglGlesRenderContext *eglglesctx;
 
   /* Runtime flags */
   gboolean have_window;
