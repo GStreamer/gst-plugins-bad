@@ -50,11 +50,6 @@
 #include <gst/video/gstvideosink.h>
 #include <gst/base/gstdataqueue.h>
 
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
-#include <GLES2/gl2.h>
-#include <GLES2/gl2ext.h>
-
 #include "gstegladaptation.h"
 
 G_BEGIN_DECLS
@@ -80,7 +75,6 @@ typedef struct _GstEglGlesSinkClass GstEglGlesSinkClass;
  * @sinkcaps: Full set of suported caps
  * @current_caps: Current caps
  * @rendering_path: Rendering path (Slow/Fast)
- * @eglglesctx: Pointer to the associated EGL/GLESv2 rendering context
  * @flow_lock: Simple concurrent access ward to the sink's runtime state
  * @have_window: Set if the sink has access to a window to hold it's canvas
  * @using_own_window: Set if the sink created its own window

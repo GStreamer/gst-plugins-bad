@@ -45,11 +45,18 @@
 #ifndef __GST_EGL_ADAPTATION_H__
 #define __GST_EGL_ADAPTATION_H__
 
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#endif
+
 #include <gst/gst.h>
+
+#ifndef HAVE_IOS
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
+#endif
 
 #ifdef USE_EGL_RPI
 #include <bcm_host.h>
@@ -79,6 +86,7 @@ static const EGLint eglglessink_RGBA8888_attribs[] = {
 typedef struct GstEglAdaptationContext GstEglAdaptationContext;
 typedef struct _GstEglGlesRenderContext GstEglGlesRenderContext;
 typedef struct _GstEglGlesImageFmt GstEglGlesImageFmt;
+typedef struct _GstEaglContext GstEaglContext;
 
 typedef struct _coord5
 {
@@ -88,58 +96,6 @@ typedef struct _coord5
   float a;                      /* texpos x */
   float b;                      /* texpos y */
 } coord5;
-
-/*
- * GstEglGlesRenderContext:
- * @config: Current EGL config
- * @eglcontext: Current EGL context
- * @display: Current EGL display connection
- * @window: Current EGL window asociated with the display connection
- * @used_window: Last seen EGL window asociated with the display connection
- * @surface: EGL surface the sink is rendering into
- * @fragshader: Fragment shader
- * @vertshader: Vertex shader
- * @glslprogram: Compiled and linked GLSL program in use for rendering
- * @texture Texture units in use
- * @pixel_aspect_ratio: EGL display aspect ratio
- * @egl_minor: EGL version (minor)
- * @egl_major: EGL version (major)
- * @n_textures: Texture units count
- * @position_loc: Index of the position vertex attribute array
- * @texpos_loc: Index of the textpos vertex attribute array
- * @position_array: VBO position array
- * @texpos_array: VBO texpos array
- * @index_array: VBO index array
- * @position_buffer: Position buffer object name
- * @texpos_buffer: Texpos buffer object name
- * @index_buffer: Index buffer object name
- *
- * This struct holds the sink's EGL/GLES rendering context.
- */
-struct _GstEglGlesRenderContext
-{
-  EGLConfig config;
-  EGLContext eglcontext;
-  EGLSurface surface;
-  EGLint egl_minor, egl_major;
-};
-
-/*
- * GstEglGlesImageFmt:
- * @fmt: Internal identifier for the EGL attribs / GST caps pairing
- * @attribs: Pointer to the set of EGL attributes asociated with this format
- * @caps: Pointer to the GST caps asociated with this format
- *
- * This struct holds a pairing between GST caps and the matching EGL attributes
- * associated with a given pixel format
- */
-struct _GstEglGlesImageFmt
-{
-  gint fmt;                     /* Private identifier */
-  const EGLint *attribs;        /* EGL Attributes */
-  GstCaps *caps;                /* Matching caps for the attribs */
-};
-
 
 /*
  * GstEglAdaptationContext:
@@ -183,16 +139,16 @@ struct GstEglAdaptationContext
   coord5 position_array[12];    /* 4 x Frame, 4 x Border1, 4 x Border2 */
   unsigned short index_array[4];
 
-#if USE_IOS
-  EAGLContext *eagl_context;
-  GLUint framebuffer;
-  GLUint color_renderbuffer;
+#if HAVE_IOS
+  GstEaglContext *eaglctx;
 #else
-  GstEglGlesRenderContext eglglesctx;
+  GstEglGlesRenderContext *eglglesctx;
 #endif
 };
 
 GstEglAdaptationContext * gst_egl_adaptation_context_new (GstElement * element);
+void gst_egl_adaptation_context_init (GstEglAdaptationContext * ctx);
+void gst_egl_adaptation_context_deinit (GstEglAdaptationContext * ctx);
 void gst_egl_adaptation_context_free (GstEglAdaptationContext * ctx);
 
 /* platform window */

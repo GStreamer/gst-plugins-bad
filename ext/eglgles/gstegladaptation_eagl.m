@@ -42,6 +42,25 @@
  * Boston, MA 02111-1307, USA.
  */
 
+typedef struct _GstEaglContext
+{
+  EAGLContext *eagl_context;
+  GLUint framebuffer;
+  GLUint color_renderbuffer;
+} GstEaglContext;
+
+void
+gst_egl_adaptation_context_init (GstEglAdaptationContext * ctx)
+{
+  ctx->eaglctx = g_new0 (GstEaglContext, 1);
+}
+
+void
+gst_egl_adaptation_context_deinit (GstEglAdaptationContext * ctx)
+{
+  g_free (ctx->eaglctx);
+}
+
 gboolean
 gst_egl_adaptation_init_display (GstEglAdaptationContext * ctx)
 {

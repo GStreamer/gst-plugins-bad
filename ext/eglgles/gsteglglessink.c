@@ -118,11 +118,6 @@
 #include <gst/video/gstvideosink.h>
 #include <gst/interfaces/xoverlay.h>
 
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
-#include <GLES2/gl2.h>
-#include <GLES2/gl2ext.h>
-
 #ifdef USE_EGL_RPI
 #include <bcm_host.h>
 #endif
@@ -131,7 +126,6 @@
 
 GST_DEBUG_CATEGORY_STATIC (gst_eglglessink_debug);
 #define GST_CAT_DEFAULT gst_eglglessink_debug
-
 
 /* Input capabilities. */
 static GstStaticPadTemplate gst_eglglessink_sink_template_factory =

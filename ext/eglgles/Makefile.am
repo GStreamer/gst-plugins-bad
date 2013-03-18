@@ -1,9 +1,9 @@
 plugin_LTLIBRARIES = libgsteglglessink.la
 
 if HAVE_IOS
-DISTRO_SRC = gstegladaptation_ios.m
+DISTRO_SRC = gstegladaptation_eagl.m
 else
-DISTRO_SRC = gstegladaptation_pc.c
+DISTRO_SRC = gstegladaptation_egl.c
 endif
 
 libgsteglglessink_la_SOURCES = gsteglglessink.c video_platform_wrapper.c gstegladaptation.c $(DISTRO_SRC)

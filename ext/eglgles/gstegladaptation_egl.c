@@ -46,6 +46,41 @@
 
 #include "video_platform_wrapper.h"
 
+/*
+ * GstEglGlesRenderContext:
+ * @config: Current EGL config
+ * @eglcontext: Current EGL context
+ * @display: Current EGL display connection
+ * @window: Current EGL window asociated with the display connection
+ * @used_window: Last seen EGL window asociated with the display connection
+ * @surface: EGL surface the sink is rendering into
+ * @fragshader: Fragment shader
+ * @vertshader: Vertex shader
+ * @glslprogram: Compiled and linked GLSL program in use for rendering
+ * @texture Texture units in use
+ * @pixel_aspect_ratio: EGL display aspect ratio
+ * @egl_minor: EGL version (minor)
+ * @egl_major: EGL version (major)
+ * @n_textures: Texture units count
+ * @position_loc: Index of the position vertex attribute array
+ * @texpos_loc: Index of the textpos vertex attribute array
+ * @position_array: VBO position array
+ * @texpos_array: VBO texpos array
+ * @index_array: VBO index array
+ * @position_buffer: Position buffer object name
+ * @texpos_buffer: Texpos buffer object name
+ * @index_buffer: Index buffer object name
+ *
+ * This struct holds the sink's EGL/GLES rendering context.
+ */
+struct _GstEglGlesRenderContext
+{
+  EGLConfig config;
+  EGLContext eglcontext;
+  EGLSurface surface;
+  EGLint egl_minor, egl_major;
+};
+
 /* Some EGL implementations are reporting wrong
  * values for the display's EGL_PIXEL_ASPECT_RATIO.
  * They are required by the khronos specs to report
@@ -82,7 +117,7 @@ gst_egl_adaptation_init_display (GstEglAdaptationContext * ctx)
   ctx->display = display;
 
   if (!eglInitialize (display,
-          &ctx->eglglesctx.egl_major, &ctx->eglglesctx.egl_minor)) {
+          &ctx->eglglesctx->egl_major, &ctx->eglglesctx->egl_minor)) {
     got_egl_error ("eglInitialize");
     GST_ERROR_OBJECT (ctx->element, "Could not init EGL display connection");
     goto HANDLE_EGL_ERROR;
@@ -91,15 +126,15 @@ gst_egl_adaptation_init_display (GstEglAdaptationContext * ctx)
   /* Check against required EGL version
    * XXX: Need to review the version requirement in terms of the needed API
    */
-  if (ctx->eglglesctx.egl_major < GST_EGLGLESSINK_EGL_MIN_VERSION) {
+  if (ctx->eglglesctx->egl_major < GST_EGLGLESSINK_EGL_MIN_VERSION) {
     GST_ERROR_OBJECT (ctx->element, "EGL v%d needed, but you only have v%d.%d",
-        GST_EGLGLESSINK_EGL_MIN_VERSION, ctx->eglglesctx.egl_major,
-        ctx->eglglesctx.egl_minor);
+        GST_EGLGLESSINK_EGL_MIN_VERSION, ctx->eglglesctx->egl_major,
+        ctx->eglglesctx->egl_minor);
     goto HANDLE_ERROR;
   }
 
   GST_INFO_OBJECT (ctx->element, "System reports supported EGL version v%d.%d",
-      ctx->eglglesctx.egl_major, ctx->eglglesctx.egl_minor);
+      ctx->eglglesctx->egl_major, ctx->eglglesctx->egl_minor);
 
   eglBindAPI (EGL_OPENGL_ES_API);
 
@@ -132,7 +167,7 @@ _gst_egl_choose_config (GstEglAdaptationContext * ctx, gboolean try_only,
   EGLConfig *config = NULL;
 
   if (!try_only)
-    config = &ctx->eglglesctx.config;
+    config = &ctx->eglglesctx->config;
 
   ret = eglChooseConfig (ctx->display,
       eglglessink_RGBA8888_attribs, config, 1, &cfg_number) != EGL_FALSE;
@@ -147,16 +182,16 @@ gst_egl_adaptation_create_egl_context (GstEglAdaptationContext * ctx)
 {
   EGLint con_attribs[] = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE };
 
-  ctx->eglglesctx.eglcontext =
+  ctx->eglglesctx->eglcontext =
       eglCreateContext (ctx->display,
-      ctx->eglglesctx.config, EGL_NO_CONTEXT, con_attribs);
+      ctx->eglglesctx->config, EGL_NO_CONTEXT, con_attribs);
 
-  if (ctx->eglglesctx.eglcontext == EGL_NO_CONTEXT) {
+  if (ctx->eglglesctx->eglcontext == EGL_NO_CONTEXT) {
     return FALSE;
   }
 
   GST_DEBUG_OBJECT (ctx->element, "EGL Context: %p",
-      ctx->eglglesctx.eglcontext);
+      ctx->eglglesctx->eglcontext);
 
   return TRUE;
 }
@@ -167,10 +202,10 @@ gst_egl_adaptation_context_make_current (GstEglAdaptationContext * ctx,
 {
   g_assert (ctx->display != NULL);
 
-  if (bind && ctx->eglglesctx.surface && ctx->eglglesctx.eglcontext) {
+  if (bind && ctx->eglglesctx->surface && ctx->eglglesctx->eglcontext) {
     EGLContext *cur_ctx = eglGetCurrentContext ();
 
-    if (cur_ctx == ctx->eglglesctx.eglcontext) {
+    if (cur_ctx == ctx->eglglesctx->eglcontext) {
       GST_DEBUG_OBJECT (ctx->element,
           "Already attached the context to thread %p", g_thread_self ());
       return TRUE;
@@ -179,8 +214,8 @@ gst_egl_adaptation_context_make_current (GstEglAdaptationContext * ctx,
     GST_DEBUG_OBJECT (ctx->element, "Attaching context to thread %p",
         g_thread_self ());
     if (!eglMakeCurrent (ctx->display,
-            ctx->eglglesctx.surface, ctx->eglglesctx.surface,
-            ctx->eglglesctx.eglcontext)) {
+            ctx->eglglesctx->surface, ctx->eglglesctx->surface,
+            ctx->eglglesctx->eglcontext)) {
       got_egl_error ("eglMakeCurrent");
       GST_ERROR_OBJECT (ctx->element, "Couldn't bind context");
       return FALSE;
@@ -202,11 +237,11 @@ gst_egl_adaptation_context_make_current (GstEglAdaptationContext * ctx,
 gboolean
 gst_egl_adaptation_create_surface (GstEglAdaptationContext * ctx)
 {
-  ctx->eglglesctx.surface =
+  ctx->eglglesctx->surface =
       eglCreateWindowSurface (ctx->display,
-      ctx->eglglesctx.config, ctx->used_window, NULL);
+      ctx->eglglesctx->config, ctx->used_window, NULL);
 
-  if (ctx->eglglesctx.surface == EGL_NO_SURFACE) {
+  if (ctx->eglglesctx->surface == EGL_NO_SURFACE) {
     got_egl_error ("eglCreateWindowSurface");
     GST_ERROR_OBJECT (ctx->element, "Can't create surface");
     return FALSE;
@@ -221,7 +256,7 @@ gst_egl_adaptation_query_buffer_preserved (GstEglAdaptationContext * ctx)
 
   ctx->buffer_preserved = FALSE;
   if (eglQuerySurface (ctx->display,
-          ctx->eglglesctx.surface, EGL_SWAP_BEHAVIOR, &swap_behavior)) {
+          ctx->eglglesctx->surface, EGL_SWAP_BEHAVIOR, &swap_behavior)) {
     GST_DEBUG_OBJECT (ctx->element, "Buffer swap behavior %x", swap_behavior);
     ctx->buffer_preserved = swap_behavior == EGL_BUFFER_PRESERVED;
   } else {
@@ -243,13 +278,13 @@ gst_egl_adaptation_query_par (GstEglAdaptationContext * ctx)
    * or some other one time check. Right now it's being called once
    * per frame.
    */
-  if (ctx->eglglesctx.egl_major == 1 && ctx->eglglesctx.egl_minor < 2) {
+  if (ctx->eglglesctx->egl_major == 1 && ctx->eglglesctx->egl_minor < 2) {
     GST_DEBUG_OBJECT (ctx->element, "Can't query PAR. Using default: %dx%d",
         EGL_DISPLAY_SCALING, EGL_DISPLAY_SCALING);
     ctx->pixel_aspect_ratio = EGL_DISPLAY_SCALING;
   } else {
     eglQuerySurface (ctx->display,
-        ctx->eglglesctx.surface, EGL_PIXEL_ASPECT_RATIO, &display_par);
+        ctx->eglglesctx->surface, EGL_PIXEL_ASPECT_RATIO, &display_par);
     /* Fix for outbound DAR reporting on some implementations not
      * honoring the 'should return w/h * EGL_DISPLAY_SCALING' spec
      * requirement
@@ -276,8 +311,8 @@ gst_egl_adaptation_context_update_surface_dimensions (GstEglAdaptationContext *
   gint width, height;
 
   /* Save surface dims */
-  eglQuerySurface (ctx->display, ctx->eglglesctx.surface, EGL_WIDTH, &width);
-  eglQuerySurface (ctx->display, ctx->eglglesctx.surface, EGL_HEIGHT, &height);
+  eglQuerySurface (ctx->display, ctx->eglglesctx->surface, EGL_WIDTH, &width);
+  eglQuerySurface (ctx->display, ctx->eglglesctx->surface, EGL_HEIGHT, &height);
 
   if (width != ctx->surface_width || height != ctx->surface_height) {
     ctx->surface_width = width;
@@ -315,9 +350,9 @@ gst_egl_adaptation_context_init_egl_exts (GstEglAdaptationContext * ctx)
 void
 gst_egl_adaptation_destroy_surface (GstEglAdaptationContext * ctx)
 {
-  if (ctx->eglglesctx.surface) {
-    eglDestroySurface (ctx->display, ctx->eglglesctx.surface);
-    ctx->eglglesctx.surface = NULL;
+  if (ctx->eglglesctx->surface) {
+    eglDestroySurface (ctx->display, ctx->eglglesctx->surface);
+    ctx->eglglesctx->surface = NULL;
     ctx->have_surface = FALSE;
   }
 }
@@ -325,9 +360,9 @@ gst_egl_adaptation_destroy_surface (GstEglAdaptationContext * ctx)
 void
 gst_egl_adaptation_destroy_context (GstEglAdaptationContext * ctx)
 {
-  if (ctx->eglglesctx.eglcontext) {
-    eglDestroyContext (ctx->display, ctx->eglglesctx.eglcontext);
-    ctx->eglglesctx.eglcontext = NULL;
+  if (ctx->eglglesctx->eglcontext) {
+    eglDestroyContext (ctx->display, ctx->eglglesctx->eglcontext);
+    ctx->eglglesctx->eglcontext = NULL;
   }
 }
 
@@ -340,7 +375,7 @@ gst_egl_adaptation_context_bind_API (GstEglAdaptationContext * ctx)
 gboolean
 gst_egl_adaptation_context_swap_buffers (GstEglAdaptationContext * ctx)
 {
-  gboolean ret = eglSwapBuffers (ctx->display, ctx->eglglesctx.surface);
+  gboolean ret = eglSwapBuffers (ctx->display, ctx->eglglesctx->surface);
   if (ret == EGL_FALSE) {
     got_egl_error ("eglSwapBuffers");
   }
@@ -361,4 +396,16 @@ gst_egl_adaptation_destroy_native_window (GstEglAdaptationContext * ctx,
   platform_destroy_native_window (ctx->display, ctx->used_window,
       own_window_data);
   ctx->used_window = 0;
+}
+
+void
+gst_egl_adaptation_context_init (GstEglAdaptationContext * ctx)
+{
+  ctx->eglglesctx = g_new0 (GstEglGlesRenderContext, 1);
+}
+
+void
+gst_egl_adaptation_context_deinit (GstEglAdaptationContext * ctx)
+{
+  g_free (ctx->eglglesctx);
 }
