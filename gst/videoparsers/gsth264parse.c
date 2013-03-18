@@ -1470,6 +1470,17 @@ gst_h264_parse_pre_push_frame (GstBaseParse * parse, GstBaseParseFrame * frame)
     gst_h264_parse_prepare_key_unit (h264parse, event);
   }
 
+  char au_delim[] = { 0x00, 0x00, 0x00, 0x01,  /* nal prefix */
+                      0x09,  /* nal_unit_type = access unit delimiter */
+                      0xf0   /* allow any slice type */ };
+  GstBuffer *au_delim_buf = gst_buffer_new_allocate (
+          NULL, sizeof (au_delim), NULL);
+  gst_buffer_fill (au_delim_buf, 0, au_delim, sizeof (au_delim));
+  GST_BUFFER_TIMESTAMP (au_delim_buf) = GST_BUFFER_TIMESTAMP (buffer);
+  GST_BUFFER_DURATION (au_delim_buf) = 0;
+  GST_DEBUG_OBJECT (h264parse, "sending AU delimiter");
+  gst_pad_push (GST_BASE_PARSE_SRC_PAD (h264parse), au_delim_buf);
+
   /* periodic SPS/PPS sending */
   if (h264parse->interval > 0 || h264parse->push_codec) {
     GstClockTime timestamp = GST_BUFFER_TIMESTAMP (buffer);
