@@ -45,22 +45,6 @@
 #include <gst/video/video.h>
 #include "gstegladaptation.h"
 
-/*
- * GstEglGlesImageFmt:
- * @fmt: Internal identifier for the EGL attribs / GST caps pairing
- * @attribs: Pointer to the set of EGL attributes asociated with this format
- * @caps: Pointer to the GST caps asociated with this format
- *
- * This struct holds a pairing between GST caps and the matching EGL attributes
- * associated with a given pixel format
- */
-struct _GstEglGlesImageFmt
-{
-  gint fmt;                     /* Private identifier */
-  const EGLint *attribs;        /* EGL Attributes */
-  GstCaps *caps;                /* Matching caps for the attribs */
-};
-
 /* GLESv2 GLSL Shaders
  *
  * OpenGL ES Standard does not mandate YUV support. This is
