@@ -12,6 +12,8 @@ libgsteglglessink_la_CFLAGS = $(GST_PLUGINS_BASE_CFLAGS) \
                               $(GST_BASE_CFLAGS) \
                               $(GST_CFLAGS) \
                               $(EGLGLES_CFLAGS)
+libgsteglglessink_la_CPPFLAGS = $(libgsteglglessink_la_CFLAGS)
+libgsteglglessink_la_OBJCFLAGS = $(libgsteglglessink_la_CFLAGS)
 
 libgsteglglessink_la_LIBADD = $(GST_LIBS) $(GST_BASE_LIBS) \
 	$(GST_PLUGINS_BASE_LIBS) $(EGLGLES_LIBS) \
