@@ -202,11 +202,6 @@ GST_BOILERPLATE_FULL (GstEglGlesSink, gst_eglglessink, GstVideoSink,
 static inline gboolean
 egl_init (GstEglGlesSink * eglglessink)
 {
-  if (!platform_wrapper_init ()) {
-    GST_ERROR_OBJECT (eglglessink, "Couldn't init EGL platform wrapper");
-    goto HANDLE_ERROR;
-  }
-
   if (!gst_egl_adaptation_init_display (eglglessink->egl_context)) {
     GST_ERROR_OBJECT (eglglessink, "Couldn't init EGL display");
     goto HANDLE_ERROR;

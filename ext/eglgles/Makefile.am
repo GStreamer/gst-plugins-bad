@@ -3,10 +3,10 @@ plugin_LTLIBRARIES = libgsteglglessink.la
 if HAVE_IOS
 DISTRO_SRC = gstegladaptation_eagl.m
 else
-DISTRO_SRC = gstegladaptation_egl.c
+DISTRO_SRC = gstegladaptation_egl.c video_platform_wrapper.c
 endif
 
-libgsteglglessink_la_SOURCES = gsteglglessink.c video_platform_wrapper.c gstegladaptation.c $(DISTRO_SRC)
+libgsteglglessink_la_SOURCES = gsteglglessink.c gstegladaptation.c $(DISTRO_SRC)
 
 libgsteglglessink_la_CFLAGS = $(GST_PLUGINS_BASE_CFLAGS) \
                               $(GST_BASE_CFLAGS) \

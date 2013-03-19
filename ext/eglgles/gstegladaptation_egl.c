@@ -114,6 +114,10 @@ gst_egl_adaptation_init_display (GstEglAdaptationContext * ctx)
   EGLDisplay display;
   GST_DEBUG_OBJECT (ctx->element, "Enter EGL initial configuration");
 
+  if (!platform_wrapper_init ()) {
+    GST_ERROR_OBJECT (ctx->element, "Couldn't init EGL platform wrapper");
+    goto HANDLE_ERROR;
+  }
 #ifdef USE_EGL_RPI
   /* See https://github.com/raspberrypi/firmware/issues/99 */
   if (!eglMakeCurrent ((EGLDisplay) 1, EGL_NO_SURFACE, EGL_NO_SURFACE,
