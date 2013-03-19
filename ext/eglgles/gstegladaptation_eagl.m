@@ -42,11 +42,16 @@
  * Boston, MA 02111-1307, USA.
  */
 
+#import <OpenGLES/EAGL.h>
+#include <OpenGLES/ES2/gl.h>
+
+#include "gstegladaptation.h"
+
 typedef struct _GstEaglContext
 {
   EAGLContext *eagl_context;
-  GLUint framebuffer;
-  GLUint color_renderbuffer;
+  GLuint framebuffer;
+  GLuint color_renderbuffer;
 } GstEaglContext;
 
 void
