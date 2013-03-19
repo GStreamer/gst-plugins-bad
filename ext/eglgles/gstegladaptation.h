@@ -71,17 +71,6 @@
 #define GST_EGLGLESSINK_EGL_MIN_VERSION 1
 G_BEGIN_DECLS
 
-/* will probably move elsewhere */
-static const EGLint eglglessink_RGBA8888_attribs[] = {
-  EGL_RED_SIZE, 8,
-  EGL_GREEN_SIZE, 8,
-  EGL_BLUE_SIZE, 8,
-  EGL_ALPHA_SIZE, 8,
-  EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-  EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-  EGL_NONE
-};
-
 typedef struct GstEglAdaptationContext GstEglAdaptationContext;
 typedef struct _GstEglGlesRenderContext GstEglGlesRenderContext;
 typedef struct _GstEglGlesImageFmt GstEglGlesImageFmt;
