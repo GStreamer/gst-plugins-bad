@@ -183,7 +183,7 @@ static void gst_eglglessink_set_render_rectangle (GstXOverlay * overlay, gint x,
     gint y, gint width, gint height);
 
 /* Utility */
-static EGLNativeWindowType gst_eglglessink_create_window (GstEglGlesSink *
+static gboolean gst_eglglessink_create_window (GstEglGlesSink *
     eglglessink, gint width, gint height);
 static gboolean gst_eglglessink_setup_vbo (GstEglGlesSink * eglglessink,
     gboolean reset);
@@ -401,7 +401,6 @@ gst_eglglessink_stop (GstEglGlesSink * eglglessink)
         &eglglessink->own_window_data);
     eglglessink->have_window = FALSE;
   }
-  eglglessink->egl_context->used_window = 0;
   if (eglglessink->current_caps) {
     gst_caps_unref (eglglessink->current_caps);
     eglglessink->current_caps = NULL;
@@ -432,27 +431,26 @@ gst_eglglessink_implements_init (GstImplementsInterfaceClass * klass)
   klass->supported = gst_eglglessink_interface_supported;
 }
 
-static EGLNativeWindowType
+static gboolean
 gst_eglglessink_create_window (GstEglGlesSink * eglglessink, gint width,
     gint height)
 {
-  EGLNativeWindowType window = 0;
+  gboolean ret;
 
   if (!eglglessink->create_window) {
     GST_ERROR_OBJECT (eglglessink, "This sink can't create a window by itself");
-    return window;
+    return FALSE;
   } else
     GST_INFO_OBJECT (eglglessink, "Attempting internal window creation");
 
-  window =
+  ret =
       gst_egl_adaptation_create_native_window (eglglessink->egl_context, width,
       height, &eglglessink->own_window_data);
 
-  if (!window) {
+  if (!ret) {
     GST_ERROR_OBJECT (eglglessink, "Could not create window");
-    return window;
   }
-  return window;
+  return ret;
 }
 
 static void
@@ -642,7 +640,7 @@ gst_eglglessink_set_window_handle (GstXOverlay * overlay, guintptr id)
 
   /* OK, we have a new window */
   GST_OBJECT_LOCK (eglglessink);
-  eglglessink->egl_context->window = (EGLNativeWindowType) id;
+  gst_egl_adaptation_context_set_window (eglglessink->egl_context, id);
   eglglessink->have_window = ((gpointer) id != NULL);
   GST_OBJECT_UNLOCK (eglglessink);
 
@@ -1057,6 +1055,7 @@ gst_eglglessink_configure_caps (GstEglGlesSink * eglglessink, GstCaps * caps)
   gboolean ret = TRUE;
   gint width, height;
   int par_n, par_d;
+  guintptr used_window = 0;
 
   if (!(ret = gst_video_format_parse_caps (caps, &eglglessink->format, &width,
               &height))) {
@@ -1108,25 +1107,23 @@ gst_eglglessink_configure_caps (GstEglGlesSink * eglglessink, GstCaps * caps)
    */
   GST_OBJECT_LOCK (eglglessink);
   if (!eglglessink->have_window) {
-    EGLNativeWindowType window;
 
     GST_INFO_OBJECT (eglglessink,
         "No window. Will attempt internal window creation");
-    if (!(window = gst_eglglessink_create_window (eglglessink, width, height))) {
+    if (!gst_eglglessink_create_window (eglglessink, width, height)) {
       GST_ERROR_OBJECT (eglglessink, "Internal window creation failed!");
       GST_OBJECT_UNLOCK (eglglessink);
       goto HANDLE_ERROR;
     }
     eglglessink->using_own_window = TRUE;
-    eglglessink->egl_context->window = window;
+    gst_egl_adaptation_context_update_used_window (eglglessink->egl_context);
     eglglessink->have_window = TRUE;
   }
-  GST_DEBUG_OBJECT (eglglessink, "Using window handle %p",
-      eglglessink->egl_context->window);
-  eglglessink->egl_context->used_window = eglglessink->egl_context->window;
+  used_window =
+      gst_egl_adaptation_context_get_window (eglglessink->egl_context);
   GST_OBJECT_UNLOCK (eglglessink);
   gst_x_overlay_got_window_handle (GST_X_OVERLAY (eglglessink),
-      (guintptr) eglglessink->egl_context->used_window);
+      (guintptr) used_window);
 
   if (!eglglessink->egl_context->have_surface) {
     if (!gst_egl_adaptation_init_egl_surface (eglglessink->egl_context,

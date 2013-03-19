@@ -63,7 +63,6 @@
 #endif
 
 #include <gst/video/video.h>
-#include "video_platform_wrapper.h"
 
 #define GST_EGLGLESSINK_IMAGE_NOFMT 0
 #define GST_EGLGLESSINK_IMAGE_RGB888 1
@@ -110,9 +109,6 @@ typedef struct _coord5
 struct GstEglAdaptationContext
 {
   GstElement *element;
-
-  EGLNativeWindowType window, used_window;
-  EGLDisplay display;
 
   unsigned int position_buffer, index_buffer;
 
@@ -175,7 +171,9 @@ void gst_egl_adaptation_context_bind_API (GstEglAdaptationContext * ctx);
 gboolean gst_egl_adaptation_context_swap_buffers (GstEglAdaptationContext * ctx);
 
 /* get/set */
-void gst_egl_adaptation_context_set_window (GstEglAdaptationContext * ctx, EGLNativeWindowType window);
+void gst_egl_adaptation_context_set_window (GstEglAdaptationContext * ctx, guintptr window);
+void gst_egl_adaptation_context_update_used_window (GstEglAdaptationContext * ctx);
+guintptr gst_egl_adaptation_context_get_window (GstEglAdaptationContext * ctx);
 GLuint gst_egl_adaptation_context_get_texture (GstEglAdaptationContext * ctx, gint i);
 gint gst_egl_adaptation_context_get_surface_width (GstEglAdaptationContext * ctx);
 gint gst_egl_adaptation_context_get_surface_height (GstEglAdaptationContext * ctx);

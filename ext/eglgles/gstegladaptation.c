@@ -709,13 +709,6 @@ got_gl_error (const char *wtf)
   return FALSE;
 }
 
-void
-gst_egl_adaptation_context_set_window (GstEglAdaptationContext * ctx,
-    EGLNativeWindowType window)
-{
-  ctx->window = window;
-}
-
 GLuint
 gst_egl_adaptation_context_get_texture (GstEglAdaptationContext * ctx, gint i)
 {
