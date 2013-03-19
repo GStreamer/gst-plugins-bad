@@ -108,6 +108,20 @@ struct _GstEglGlesRenderContext
 #define EGL_SANE_DAR_MIN ((EGL_DISPLAY_SCALING)/10)
 #define EGL_SANE_DAR_MAX ((EGL_DISPLAY_SCALING)*10)
 
+static gboolean
+got_egl_error (const char *wtf)
+{
+  EGLint error;
+
+  if ((error = eglGetError ()) != EGL_SUCCESS) {
+    GST_CAT_DEBUG (GST_CAT_DEFAULT, "EGL ERROR: %s returned 0x%04x", wtf,
+        error);
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
 gboolean
 gst_egl_adaptation_init_display (GstEglAdaptationContext * ctx)
 {
@@ -190,6 +204,10 @@ _gst_egl_choose_config (GstEglAdaptationContext * ctx, gboolean try_only,
 
   ret = eglChooseConfig (ctx->eglglesctx->display,
       eglglessink_RGBA8888_attribs, config, 1, &cfg_number) != EGL_FALSE;
+  if (!ret) {
+    got_egl_error ("eglChooseConfig");
+    GST_ERROR_OBJECT (ctx->element, "eglChooseConfig failed");
+  }
 
   if (num_configs)
     *num_configs = cfg_number;

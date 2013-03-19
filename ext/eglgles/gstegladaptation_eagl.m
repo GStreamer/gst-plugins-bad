@@ -119,7 +119,7 @@ gst_egl_adaptation_context_make_current (GstEglAdaptationContext * ctx,
     GST_DEBUG_OBJECT (ctx->element, "Attaching context to thread %p",
         g_thread_self ());
     if ([EAGLContext setCurrentContext: ctx->eagl_context] == NO) {
-      got_egl_error ("eglMakeCurrent");
+      got_gl_error ("setCurrentContext");
       GST_ERROR_OBJECT (ctx->element, "Couldn't bind context");
       return FALSE;
     }
@@ -127,7 +127,7 @@ gst_egl_adaptation_context_make_current (GstEglAdaptationContext * ctx,
     GST_DEBUG_OBJECT (ctx->element, "Detaching context from thread %p",
         g_thread_self ());
     if ([EAGLContext setCurrentContext: nil] == NO) {
-      got_egl_error ("eglMakeCurrent");
+      got_gl_error ("setCurrentContext");
       GST_ERROR_OBJECT (ctx->element, "Couldn't unbind context");
       return FALSE;
     }

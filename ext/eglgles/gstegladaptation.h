@@ -172,7 +172,6 @@ gint gst_egl_adaptation_context_get_surface_width (GstEglAdaptationContext * ctx
 gint gst_egl_adaptation_context_get_surface_height (GstEglAdaptationContext * ctx);
 
 /* error handling */
-gboolean got_egl_error (const char *wtf); 
 gboolean got_gl_error (const char *wtf);
 
 /* platform specific helpers */

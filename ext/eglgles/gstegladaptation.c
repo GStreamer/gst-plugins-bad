@@ -315,27 +315,11 @@ gst_egl_adaptation_context_free (GstEglAdaptationContext * ctx)
 }
 
 gboolean
-got_egl_error (const char *wtf)
-{
-  EGLint error;
-
-  if ((error = eglGetError ()) != EGL_SUCCESS) {
-    GST_CAT_DEBUG (GST_CAT_DEFAULT, "EGL ERROR: %s returned 0x%04x", wtf,
-        error);
-    return TRUE;
-  }
-
-  return FALSE;
-}
-
-gboolean
 gst_egl_adaptation_choose_config (GstEglAdaptationContext * ctx)
 {
   gint egl_configs;
 
   if (!_gst_egl_choose_config (ctx, FALSE, &egl_configs)) {
-    got_egl_error ("eglChooseConfig");
-    GST_ERROR_OBJECT (ctx->element, "eglChooseConfig failed");
     goto HANDLE_EGL_ERROR;
   }
 
