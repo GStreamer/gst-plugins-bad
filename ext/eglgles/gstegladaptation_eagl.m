@@ -47,12 +47,12 @@
 
 #include "gstegladaptation.h"
 
-typedef struct _GstEaglContext
+struct _GstEaglContext
 {
   EAGLContext *eagl_context;
   GLuint framebuffer;
   GLuint color_renderbuffer;
-} GstEaglContext;
+};
 
 void
 gst_egl_adaptation_context_init (GstEglAdaptationContext * ctx)
