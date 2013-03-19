@@ -18,7 +18,13 @@ libgsteglglessink_la_LIBADD = $(GST_LIBS) $(GST_BASE_LIBS) \
 	-lgstvideo-$(GST_MAJORMINOR) \
 	-lgstinterfaces-$(GST_MAJORMINOR)
 
+if HAVE_IOS
+libgsteglglessink_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS) -Wl,-framework -Wl,OpenGLES
+else
 libgsteglglessink_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS)
+endif
+if !GST_PLUGIN_BUILD_STATIC
 libgsteglglessink_la_LIBTOOLFLAGS = --tag=disable-static
+endif
 
 noinst_HEADERS = gsteglglessink.h video_platform_wrapper.h gstegladaptation.h

@@ -51,7 +51,10 @@
 
 #include <gst/gst.h>
 
-#ifndef HAVE_IOS
+#ifdef HAVE_IOS
+#include <OpenGLES/ES2/gl.h>
+
+#else
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <GLES2/gl2.h>
