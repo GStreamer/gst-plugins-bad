@@ -284,6 +284,9 @@ gst_egl_adaptation_query_par (GstEglAdaptationContext * ctx)
 {
   EGLint display_par;
 
+  /* fixed value */
+  ctx->pixel_aspect_ratio_d = EGL_DISPLAY_SCALING;
+
   /* Save display's pixel aspect ratio
    *
    * DAR is reported as w/h * EGL_DISPLAY_SCALING wich is
