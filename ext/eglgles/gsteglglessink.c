@@ -1001,8 +1001,7 @@ gst_eglglessink_render (GstEglGlesSink * eglglessink)
   if (got_gl_error ("glDrawElements"))
     goto HANDLE_ERROR;
 
-  if ((gst_egl_adaptation_context_swap_buffers (eglglessink->egl_context))
-      == EGL_FALSE) {
+  if (!gst_egl_adaptation_context_swap_buffers (eglglessink->egl_context)) {
     goto HANDLE_ERROR;
   }
 
