@@ -43,6 +43,8 @@
  */
 
 #import <OpenGLES/EAGL.h>
+#import <QuartzCore/QuartzCore.h>
+#import <UIKit/UIKit.h>
 #include <OpenGLES/ES2/gl.h>
 
 #include "gstegladaptation.h"
@@ -101,11 +103,11 @@ gst_egl_adaptation_create_egl_context (GstEglAdaptationContext * ctx)
 {
   EAGLContext *context;
   context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
-  if (context == nil)
+  if (context == nil) {
     GST_ERROR_OBJECT (ctx->element, "Failed to create EAGL GLES2 context");
     return FALSE;
   }
-  ctx->eagl_context = context;
+  ctx->eaglctx->eagl_context = context;
 
   return TRUE;
 }
@@ -114,10 +116,10 @@ gboolean
 gst_egl_adaptation_context_make_current (GstEglAdaptationContext * ctx,
     gboolean bind)
 {
-  if (bind && ctx->eagl_context) {
+  if (bind && ctx->eaglctx->eagl_context) {
     EAGLContext *cur_ctx = [EAGLContext currentContext];
 
-    if (cur_ctx == ctx->eagl_context) {
+    if (cur_ctx == ctx->eaglctx->eagl_context) {
       GST_DEBUG_OBJECT (ctx->element,
           "Already attached the context to thread %p", g_thread_self ());
       return TRUE;
@@ -125,7 +127,7 @@ gst_egl_adaptation_context_make_current (GstEglAdaptationContext * ctx,
 
     GST_DEBUG_OBJECT (ctx->element, "Attaching context to thread %p",
         g_thread_self ());
-    if ([EAGLContext setCurrentContext: ctx->eagl_context] == NO) {
+    if ([EAGLContext setCurrentContext: ctx->eaglctx->eagl_context] == NO) {
       got_gl_error ("setCurrentContext");
       GST_ERROR_OBJECT (ctx->element, "Couldn't bind context");
       return FALSE;
@@ -152,6 +154,7 @@ gst_egl_adaptation_create_surface (GstEglAdaptationContext * ctx)
   GLint height;
   GLuint depthRenderbuffer;
   GLenum status;
+  CAEAGLLayer *eaglLayer = (CAEAGLLayer *)[[UIView ctx->window] layer];
 
   /* Allocate framebuffer */
   glGenFramebuffers(1, &framebuffer);
@@ -160,7 +163,7 @@ gst_egl_adaptation_create_surface (GstEglAdaptationContext * ctx)
   /* Allocate color render buffer */
   glGenRenderbuffers(1, &colorRenderbuffer);
   glBindRenderbuffer(GL_RENDERBUFFER, colorRenderbuffer);
-  [ctx->eagl_context renderbufferStorage:GL_RENDERBUFFER fromDrawable:myEAGLLayer];
+  [ctx->eaglctx->eagl_context renderbufferStorage:GL_RENDERBUFFER fromDrawable:eaglLayer];
   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
       GL_RENDERBUFFER, colorRenderbuffer);
 
@@ -182,8 +185,8 @@ gst_egl_adaptation_create_surface (GstEglAdaptationContext * ctx)
     return FALSE;
   }
 
-  ctx->framebuffer = framebuffer;
-  ctx->color_renderbuffer = colorRenderbuffer;
+  ctx->eaglctx->framebuffer = framebuffer;
+  ctx->eaglctx->color_renderbuffer = colorRenderbuffer;
 
   return TRUE;
 }
@@ -194,7 +197,7 @@ _gst_egl_choose_config (GstEglAdaptationContext * ctx, gboolean try_only, gint *
   CAEAGLLayer *eaglLayer = (CAEAGLLayer *)[[UIView ctx->window] layer];
   NSDictionary *dict = [NSDictionary dictionaryWithObjectsAndKeys:
                        [NSNumber numberWithBool:NO], kEAGLDrawablePropertyRetainedBacking,
-                        kEAGLColorFormatRGBA8888, kEAGLDrawablePropertyColorFormat,
+                        kEAGLColorFormatRGBA8, kEAGLDrawablePropertyColorFormat,
                         nil];
   [eaglLayer setOpaque:YES];
   [eaglLayer setDrawableProperties:dict];
@@ -260,9 +263,9 @@ gst_egl_adaptation_context_init_egl_exts (GstEglAdaptationContext * ctx)
 void
 gst_egl_adaptation_destroy_surface (GstEglAdaptationContext * ctx)
 {
-  if (ctx->framebuffer) {
-    glDeleteFrameuffers (1, &ctx->framebuffer);
-    ctx->framebuffer = 0;
+  if (ctx->eaglctx->framebuffer) {
+    glDeleteFrameBuffers (1, &ctx->eaglctx->framebuffer);
+    ctx->eaglctx->framebuffer = 0;
     ctx->have_surface = FALSE;
   }
 }
@@ -270,17 +273,17 @@ gst_egl_adaptation_destroy_surface (GstEglAdaptationContext * ctx)
 void
 gst_egl_adaptation_destroy_context (GstEglAdaptationContext * ctx)
 {
-  if (ctx->eglglesctx.eglcontext) {
-    [ctx->eagl_context dealloc];
-    ctx->eagl_context = NULL;
+  if (ctx->eaglctx->eagl_context) {
+    [ctx->eaglctx->eagl_context dealloc];
+    ctx->eaglctx->eagl_context = NULL;
   }
 }
 
 gboolean
 gst_egl_adaptation_context_swap_buffers (GstEglAdaptationContext * ctx)
 {
-  glBindRenderbuffer(GL_RENDERBUFFER, ctx->colorRenderbuffer);
-  [context presentRenderbuffer:GL_RENDERBUFFER];
+  glBindRenderbuffer(GL_RENDERBUFFER, ctx->eaglctx->color_renderbuffer);
+  [ctx->eaglctx->eagl_context presentRenderbuffer:GL_RENDERBUFFER];
 
   return TRUE;
 }
