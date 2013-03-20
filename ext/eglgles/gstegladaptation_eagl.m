@@ -54,6 +54,9 @@ struct _GstEaglContext
   EAGLContext *eagl_context;
   GLuint framebuffer;
   GLuint color_renderbuffer;
+
+  UIView *window;
+  UIView *used_window;
 };
 
 void
@@ -154,7 +157,7 @@ gst_egl_adaptation_create_surface (GstEglAdaptationContext * ctx)
   GLint height;
   GLuint depthRenderbuffer;
   GLenum status;
-  CAEAGLLayer *eaglLayer = (CAEAGLLayer *)[[UIView ctx->window] layer];
+  CAEAGLLayer *eaglLayer = (CAEAGLLayer *)[ctx->eaglctx->window layer];
 
   /* Allocate framebuffer */
   glGenFramebuffers(1, &framebuffer);
@@ -194,7 +197,7 @@ gst_egl_adaptation_create_surface (GstEglAdaptationContext * ctx)
 gboolean
 _gst_egl_choose_config (GstEglAdaptationContext * ctx, gboolean try_only, gint * num_configs)
 {
-  CAEAGLLayer *eaglLayer = (CAEAGLLayer *)[[UIView ctx->window] layer];
+  CAEAGLLayer *eaglLayer = (CAEAGLLayer *)[ctx->eaglctx->window layer];
   NSDictionary *dict = [NSDictionary dictionaryWithObjectsAndKeys:
                        [NSNumber numberWithBool:NO], kEAGLDrawablePropertyRetainedBacking,
                         kEAGLColorFormatRGBA8, kEAGLDrawablePropertyColorFormat,
@@ -209,7 +212,7 @@ _gst_egl_choose_config (GstEglAdaptationContext * ctx, gboolean try_only, gint *
 void
 gst_egl_adaptation_query_buffer_preserved (GstEglAdaptationContext * ctx)
 {
-  CAEAGLLayer *eaglLayer = (CAEAGLLayer *)[[UIView ctx->window] layer];
+  CAEAGLLayer *eaglLayer = (CAEAGLLayer *)[ctx->eaglctx->window layer];
   NSDictionary *dict = [eaglLayer drawableProperties];
 
   ctx->buffer_preserved = FALSE;
@@ -288,3 +291,20 @@ gst_egl_adaptation_context_swap_buffers (GstEglAdaptationContext * ctx)
   return TRUE;
 }
 
+void
+gst_egl_adaptation_context_set_window (GstEglAdaptationContext * ctx, guintptr window)
+{
+  ctx->eaglctx->window = window;
+}
+
+void
+gst_egl_adaptation_context_update_used_window (GstEglAdaptationContext * ctx)
+{
+  ctx->eaglctx->used_window = ctx->eaglctx->window;
+}
+
+guintptr
+gst_egl_adaptation_context_get_window (GstEglAdaptationContext * ctx)
+{
+  return ctx->eaglctx->window ? [ctx->eaglctx->window id] : 0;
+}
