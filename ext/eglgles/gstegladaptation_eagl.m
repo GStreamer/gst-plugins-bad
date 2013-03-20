@@ -207,6 +207,7 @@ _gst_egl_choose_config (GstEglAdaptationContext * ctx, gboolean try_only, gint *
 
   if (num_configs)
     *num_configs = 1;
+  return TRUE;
 }
 
 void
@@ -217,8 +218,8 @@ gst_egl_adaptation_query_buffer_preserved (GstEglAdaptationContext * ctx)
 
   ctx->buffer_preserved = FALSE;
   if ([dict objectForKey: kEAGLDrawablePropertyRetainedBacking] != nil) {
-    NSNumber n = [dict objectForKey: kEAGLDrawablePropertyRetainedBacking];
-    ctx->buffer_preserved = n != [NSNumber numberWithBool:NO];
+    NSNumber *n = [dict objectForKey: kEAGLDrawablePropertyRetainedBacking];
+    ctx->buffer_preserved = [n boolValue] != NO;
   } else {
     GST_DEBUG_OBJECT (ctx->element, "No information about buffer preserving in layer properties");
   }
@@ -257,7 +258,8 @@ gst_egl_adaptation_context_update_surface_dimensions (GstEglAdaptationContext *
 void
 gst_egl_adaptation_context_init_egl_exts (GstEglAdaptationContext * ctx)
 {
-  NSString *extensionsString = [NSString stringWithCString:glGetString(GL_EXTENSIONS) encoding: NSASCIIStringEncoding];
+  const gchar *extensions = (const gchar *) glGetString(GL_EXTENSIONS);
+  NSString *extensionsString = [NSString stringWithCString:extensions encoding: NSASCIIStringEncoding];
 
   GST_DEBUG_OBJECT (ctx->element, "Available GL extensions: %s\n",
       GST_STR_NULL ([extensionsString UTF8String]));
@@ -267,7 +269,7 @@ void
 gst_egl_adaptation_destroy_surface (GstEglAdaptationContext * ctx)
 {
   if (ctx->eaglctx->framebuffer) {
-    glDeleteFrameBuffers (1, &ctx->eaglctx->framebuffer);
+    glDeleteFramebuffers (1, &ctx->eaglctx->framebuffer);
     ctx->eaglctx->framebuffer = 0;
     ctx->have_surface = FALSE;
   }
@@ -294,7 +296,7 @@ gst_egl_adaptation_context_swap_buffers (GstEglAdaptationContext * ctx)
 void
 gst_egl_adaptation_context_set_window (GstEglAdaptationContext * ctx, guintptr window)
 {
-  ctx->eaglctx->window = window;
+  ctx->eaglctx->window = (UIView *) window;
 }
 
 void
@@ -306,5 +308,5 @@ gst_egl_adaptation_context_update_used_window (GstEglAdaptationContext * ctx)
 guintptr
 gst_egl_adaptation_context_get_window (GstEglAdaptationContext * ctx)
 {
-  return ctx->eaglctx->window ? [ctx->eaglctx->window id] : 0;
+  return (guintptr) ctx->eaglctx->window;
 }

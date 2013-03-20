@@ -21,7 +21,7 @@ libgsteglglessink_la_LIBADD = $(GST_LIBS) $(GST_BASE_LIBS) \
 	-lgstinterfaces-$(GST_MAJORMINOR)
 
 if HAVE_IOS
-libgsteglglessink_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS) -Wl,-framework -Wl,OpenGLES
+libgsteglglessink_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS) -Wl,-framework,OpenGLES -Wl,-framework,QuartzCore -Wl,-framework,UIKit -Wl,-framework,Foundation
 else
 libgsteglglessink_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS)
 endif

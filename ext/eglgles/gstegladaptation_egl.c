@@ -207,6 +207,8 @@ _gst_egl_choose_config (GstEglAdaptationContext * ctx, gboolean try_only,
   if (!ret) {
     got_egl_error ("eglChooseConfig");
     GST_ERROR_OBJECT (ctx->element, "eglChooseConfig failed");
+    GST_ERROR_OBJECT (ctx->element, "EGL call returned error %x",
+        eglGetError ());
   }
 
   if (num_configs)
@@ -224,6 +226,8 @@ gst_egl_adaptation_create_egl_context (GstEglAdaptationContext * ctx)
       ctx->eglglesctx->config, EGL_NO_CONTEXT, con_attribs);
 
   if (ctx->eglglesctx->eglcontext == EGL_NO_CONTEXT) {
+    GST_ERROR_OBJECT (ctx->element, "EGL call returned error %x",
+        eglGetError ());
     return FALSE;
   }
 
@@ -255,6 +259,8 @@ gst_egl_adaptation_context_make_current (GstEglAdaptationContext * ctx,
             ctx->eglglesctx->eglcontext)) {
       got_egl_error ("eglMakeCurrent");
       GST_ERROR_OBJECT (ctx->element, "Couldn't bind context");
+      GST_ERROR_OBJECT (ctx->element, "EGL call returned error %x",
+          eglGetError ());
       return FALSE;
     }
   } else {
@@ -264,6 +270,8 @@ gst_egl_adaptation_context_make_current (GstEglAdaptationContext * ctx,
             EGL_NO_SURFACE, EGL_NO_CONTEXT)) {
       got_egl_error ("eglMakeCurrent");
       GST_ERROR_OBJECT (ctx->element, "Couldn't unbind context");
+      GST_ERROR_OBJECT (ctx->element, "EGL call returned error %x",
+          eglGetError ());
       return FALSE;
     }
   }
@@ -281,6 +289,8 @@ gst_egl_adaptation_create_surface (GstEglAdaptationContext * ctx)
   if (ctx->eglglesctx->surface == EGL_NO_SURFACE) {
     got_egl_error ("eglCreateWindowSurface");
     GST_ERROR_OBJECT (ctx->element, "Can't create surface");
+    GST_ERROR_OBJECT (ctx->element, "EGL call returned error %x",
+        eglGetError ());
     return FALSE;
   }
   return TRUE;

@@ -1731,8 +1731,6 @@ AG_GST_CHECK_FEATURE(EGLGLES, [eglgles sink], eglgles, [
       ;;
     ios)
           HAVE_EGLGLES="yes"
-          EGLGLES_LIBS="-Wl,-framework -Wl,OpenGLES"
-          EGLGLES_CFLAGS="-Wl,-framework -Wl,OpenGLES"
       ;;
     *)
       AC_MSG_ERROR([invalid EGL window system specified])

@@ -320,7 +320,7 @@ gst_egl_adaptation_choose_config (GstEglAdaptationContext * ctx)
   gint egl_configs;
 
   if (!_gst_egl_choose_config (ctx, FALSE, &egl_configs)) {
-    goto HANDLE_EGL_ERROR;
+    goto HANDLE_ERROR;
   }
 
   if (egl_configs < 1) {
@@ -331,14 +331,12 @@ gst_egl_adaptation_choose_config (GstEglAdaptationContext * ctx)
 
   if (!gst_egl_adaptation_create_egl_context (ctx)) {
     GST_ERROR_OBJECT (ctx->element, "Error getting context, eglCreateContext");
-    goto HANDLE_EGL_ERROR;
+    goto HANDLE_ERROR;
   }
 
   return TRUE;
 
   /* Errors */
-HANDLE_EGL_ERROR:
-  GST_ERROR_OBJECT (ctx->element, "EGL call returned error %x", eglGetError ());
 HANDLE_ERROR:
   GST_ERROR_OBJECT (ctx->element, "Couldn't choose an usable config");
   return FALSE;
@@ -460,13 +458,13 @@ gst_egl_adaptation_init_egl_surface (GstEglAdaptationContext * ctx,
   GST_DEBUG_OBJECT (ctx->element, "Enter EGL surface setup");
 
   if (!gst_egl_adaptation_create_surface (ctx)) {
-    goto HANDLE_EGL_ERROR_LOCKED;
+    goto HANDLE_ERROR_LOCKED;
   }
 
   gst_egl_adaptation_query_buffer_preserved (ctx);
 
   if (!gst_egl_adaptation_context_make_current (ctx, TRUE))
-    goto HANDLE_EGL_ERROR_LOCKED;
+    goto HANDLE_ERROR_LOCKED;
 
   gst_egl_adaptation_query_par (ctx);
 
@@ -657,8 +655,6 @@ gst_egl_adaptation_init_egl_surface (GstEglAdaptationContext * ctx,
   return TRUE;
 
   /* Errors */
-HANDLE_EGL_ERROR_LOCKED:
-  GST_ERROR_OBJECT (ctx->element, "EGL call returned error %x", eglGetError ());
 HANDLE_ERROR_LOCKED:
 HANDLE_ERROR:
   GST_ERROR_OBJECT (ctx->element, "Couldn't setup EGL surface");
