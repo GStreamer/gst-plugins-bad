@@ -70,6 +70,7 @@ gboolean
 gst_egl_adaptation_init_display (GstEglAdaptationContext * ctx)
 {
   /* NOP - the display should be initialized by the application */
+  return TRUE;
 }
 
 void
@@ -87,6 +88,7 @@ gst_egl_adaptation_context_bind_API (GstEglAdaptationContext * ctx)
 gboolean
 gst_egl_adaptation_create_native_window (GstEglAdaptationContext * ctx, gint width, gint height, gpointer * own_window_data)
 {
+  return FALSE;
 }
 
 void
