@@ -12,8 +12,11 @@ libgsteglglessink_la_CFLAGS = $(GST_PLUGINS_BASE_CFLAGS) \
                               $(GST_BASE_CFLAGS) \
                               $(GST_CFLAGS) \
                               $(EGLGLES_CFLAGS)
-libgsteglglessink_la_CPPFLAGS = $(libgsteglglessink_la_CFLAGS)
-libgsteglglessink_la_OBJCFLAGS = $(libgsteglglessink_la_CFLAGS)
+libgsteglglessink_la_OBJCFLAGS = $(GST_PLUGINS_BASE_OBJCFLAGS) \
+                                 $(GST_BASE_OBJCFLAGS) \
+                                 $(GST_OBJCFLAGS) \
+                                 $(EGLGLES_OBJCFLAGS) \
+				 -fobjc-abi-version=2 -fobjc-legacy-dispatch
 
 libgsteglglessink_la_LIBADD = $(GST_LIBS) $(GST_BASE_LIBS) \
 	$(GST_PLUGINS_BASE_LIBS) $(EGLGLES_LIBS) \
@@ -21,7 +24,8 @@ libgsteglglessink_la_LIBADD = $(GST_LIBS) $(GST_BASE_LIBS) \
 	-lgstinterfaces-$(GST_MAJORMINOR)
 
 if HAVE_IOS
-libgsteglglessink_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS) -Wl,-framework,OpenGLES -Wl,-framework,QuartzCore -Wl,-framework,UIKit -Wl,-framework,Foundation
+libgsteglglessink_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS) -Wl,-framework,OpenGLES -Wl,-framework,QuartzCore -Wl,-framework,IOKit -Wl,-framework,UIKit -Wl,-framework,CoreGraphics -Wl,-framework,CoreFoundation -Wl,-framework,Foundation -W
+
 else
 libgsteglglessink_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS)
 endif
@@ -30,3 +34,5 @@ libgsteglglessink_la_LIBTOOLFLAGS = --tag=disable-static
 endif
 
 noinst_HEADERS = gsteglglessink.h video_platform_wrapper.h gstegladaptation.h
+
+EXTRA_DIST = gsteglglessink.c gstegladaptation.c gstegladaptation_egl.c video_platform_wrapper.c gstegladaptation_eagl.m $(noinst_HEADERS)
