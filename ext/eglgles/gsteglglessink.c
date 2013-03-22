@@ -207,9 +207,9 @@ egl_init (GstEglGlesSink * eglglessink)
     goto HANDLE_ERROR;
   }
 
-  gst_egl_adaptation_context_init_egl_exts (eglglessink->egl_context);
+  gst_egl_adaptation_init_egl_exts (eglglessink->egl_context);
 
-  if (!gst_egl_adaptation_context_fill_supported_fbuffer_configs
+  if (!gst_egl_adaptation_fill_supported_fbuffer_configs
       (eglglessink->egl_context, &eglglessink->sinkcaps)) {
     GST_ERROR_OBJECT (eglglessink, "Display support NONE of our configs");
     goto HANDLE_ERROR;
@@ -241,7 +241,7 @@ render_thread_func (GstEglGlesSink * eglglessink)
   gst_element_post_message (GST_ELEMENT_CAST (eglglessink), message);
   g_value_unset (&val);
 
-  gst_egl_adaptation_context_bind_API (eglglessink->egl_context);
+  gst_egl_adaptation_bind_API (eglglessink->egl_context);
 
   while (gst_data_queue_pop (eglglessink->queue, &item)) {
     GstBuffer *buf = NULL;
@@ -306,7 +306,7 @@ render_thread_func (GstEglGlesSink * eglglessink)
   GST_DEBUG_OBJECT (eglglessink, "Shutting down thread");
 
   /* EGL/GLES cleanup */
-  gst_egl_adaptation_context_cleanup (eglglessink->egl_context);
+  gst_egl_adaptation_cleanup (eglglessink->egl_context);
 
   if (eglglessink->configured_caps) {
     gst_caps_unref (eglglessink->configured_caps);
@@ -635,7 +635,7 @@ gst_eglglessink_set_window_handle (GstXOverlay * overlay, guintptr id)
 
   /* OK, we have a new window */
   GST_OBJECT_LOCK (eglglessink);
-  gst_egl_adaptation_context_set_window (eglglessink->egl_context, id);
+  gst_egl_adaptation_set_window (eglglessink->egl_context, id);
   eglglessink->have_window = ((gpointer) id != NULL);
   GST_OBJECT_UNLOCK (eglglessink);
 
@@ -866,7 +866,7 @@ gst_eglglessink_render (GstEglGlesSink * eglglessink)
    * calling party explicitly ask us not to by setting
    * force_aspect_ratio to FALSE.
    */
-  if (gst_egl_adaptation_context_update_surface_dimensions
+  if (gst_egl_adaptation_update_surface_dimensions
       (eglglessink->egl_context) || eglglessink->render_region_changed
       || !eglglessink->display_region.w || !eglglessink->display_region.h
       || eglglessink->size_changed) {
@@ -996,7 +996,7 @@ gst_eglglessink_render (GstEglGlesSink * eglglessink)
   if (got_gl_error ("glDrawElements"))
     goto HANDLE_ERROR;
 
-  if (!gst_egl_adaptation_context_swap_buffers (eglglessink->egl_context)) {
+  if (!gst_egl_adaptation_swap_buffers (eglglessink->egl_context)) {
     goto HANDLE_ERROR;
   }
 
@@ -1083,7 +1083,7 @@ gst_eglglessink_configure_caps (GstEglGlesSink * eglglessink, GstCaps * caps)
     GST_DEBUG_OBJECT (eglglessink, "Caps are not compatible, reconfiguring");
 
     /* EGL/GLES cleanup */
-    gst_egl_adaptation_context_cleanup (eglglessink->egl_context);
+    gst_egl_adaptation_cleanup (eglglessink->egl_context);
 
     gst_caps_unref (eglglessink->configured_caps);
     eglglessink->configured_caps = NULL;
@@ -1110,11 +1110,10 @@ gst_eglglessink_configure_caps (GstEglGlesSink * eglglessink, GstCaps * caps)
       goto HANDLE_ERROR;
     }
     eglglessink->using_own_window = TRUE;
-    gst_egl_adaptation_context_update_used_window (eglglessink->egl_context);
+    gst_egl_adaptation_update_used_window (eglglessink->egl_context);
     eglglessink->have_window = TRUE;
   }
-  used_window =
-      gst_egl_adaptation_context_get_window (eglglessink->egl_context);
+  used_window = gst_egl_adaptation_get_window (eglglessink->egl_context);
   GST_OBJECT_UNLOCK (eglglessink);
   gst_x_overlay_got_window_handle (GST_X_OVERLAY (eglglessink),
       (guintptr) used_window);
@@ -1165,7 +1164,7 @@ gst_eglglessink_open (GstEglGlesSink * eglglessink)
 static gboolean
 gst_eglglessink_close (GstEglGlesSink * eglglessink)
 {
-  gst_egl_adaptation_context_terminate_display (eglglessink->egl_context);
+  gst_egl_adaptation_terminate_display (eglglessink->egl_context);
 
   gst_caps_unref (eglglessink->sinkcaps);
   eglglessink->sinkcaps = NULL;
@@ -1240,7 +1239,7 @@ gst_eglglessink_finalize (GObject * object)
   g_cond_free (eglglessink->render_cond);
   g_mutex_free (eglglessink->render_lock);
 
-  gst_egl_adaptation_context_free (eglglessink->egl_context);
+  gst_egl_adaptation_free (eglglessink->egl_context);
 
   G_OBJECT_CLASS (parent_class)->finalize (object);
 }
@@ -1386,7 +1385,7 @@ gst_eglglessink_init (GstEglGlesSink * eglglessink,
   eglglessink->last_flow = GST_FLOW_WRONG_STATE;
 
   eglglessink->egl_context =
-      gst_egl_adaptation_context_new (GST_ELEMENT_CAST (eglglessink));
+      gst_egl_adaptation_new (GST_ELEMENT_CAST (eglglessink));
 }
 
 /* Interface initializations. Used here for initializing the XOverlay

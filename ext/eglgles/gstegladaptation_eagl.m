@@ -60,13 +60,13 @@ struct _GstEaglContext
 };
 
 void
-gst_egl_adaptation_context_init (GstEglAdaptationContext * ctx)
+gst_egl_adaptation_init (GstEglAdaptationContext * ctx)
 {
   ctx->eaglctx = g_new0 (GstEaglContext, 1);
 }
 
 void
-gst_egl_adaptation_context_deinit (GstEglAdaptationContext * ctx)
+gst_egl_adaptation_deinit (GstEglAdaptationContext * ctx)
 {
   g_free (ctx->eaglctx);
 }
@@ -79,13 +79,13 @@ gst_egl_adaptation_init_display (GstEglAdaptationContext * ctx)
 }
 
 void
-gst_egl_adaptation_context_terminate_display (GstEglAdaptationContext * ctx)
+gst_egl_adaptation_terminate_display (GstEglAdaptationContext * ctx)
 {
   /* NOP */
 }
 
 void
-gst_egl_adaptation_context_bind_API (GstEglAdaptationContext * ctx)
+gst_egl_adaptation_bind_API (GstEglAdaptationContext * ctx)
 {
   /* NOP */
 }
@@ -116,7 +116,7 @@ gst_egl_adaptation_create_egl_context (GstEglAdaptationContext * ctx)
 }
 
 gboolean
-gst_egl_adaptation_context_make_current (GstEglAdaptationContext * ctx,
+gst_egl_adaptation_make_current (GstEglAdaptationContext * ctx,
     gboolean bind)
 {
   if (bind && ctx->eaglctx->eagl_context) {
@@ -195,7 +195,7 @@ gst_egl_adaptation_create_surface (GstEglAdaptationContext * ctx)
 }
 
 gboolean
-_gst_egl_choose_config (GstEglAdaptationContext * ctx, gboolean try_only, gint * num_configs)
+gst_egl_choose_config (GstEglAdaptationContext * ctx, gboolean try_only, gint * num_configs)
 {
   CAEAGLLayer *eaglLayer = (CAEAGLLayer *)[ctx->eaglctx->window layer];
   NSDictionary *dict = [NSDictionary dictionaryWithObjectsAndKeys:
@@ -234,7 +234,7 @@ gst_egl_adaptation_query_par (GstEglAdaptationContext * ctx)
 }
 
 gboolean
-gst_egl_adaptation_context_update_surface_dimensions (GstEglAdaptationContext *
+gst_egl_adaptation_update_surface_dimensions (GstEglAdaptationContext *
     ctx)
 {
   GLint width;
@@ -256,7 +256,7 @@ gst_egl_adaptation_context_update_surface_dimensions (GstEglAdaptationContext *
 }
 
 void
-gst_egl_adaptation_context_init_egl_exts (GstEglAdaptationContext * ctx)
+gst_egl_adaptation_init_egl_exts (GstEglAdaptationContext * ctx)
 {
   const gchar *extensions = (const gchar *) glGetString(GL_EXTENSIONS);
   NSString *extensionsString = [NSString stringWithCString:extensions encoding: NSASCIIStringEncoding];
@@ -285,7 +285,7 @@ gst_egl_adaptation_destroy_context (GstEglAdaptationContext * ctx)
 }
 
 gboolean
-gst_egl_adaptation_context_swap_buffers (GstEglAdaptationContext * ctx)
+gst_egl_adaptation_swap_buffers (GstEglAdaptationContext * ctx)
 {
   glBindRenderbuffer(GL_RENDERBUFFER, ctx->eaglctx->color_renderbuffer);
   [ctx->eaglctx->eagl_context presentRenderbuffer:GL_RENDERBUFFER];
@@ -294,19 +294,19 @@ gst_egl_adaptation_context_swap_buffers (GstEglAdaptationContext * ctx)
 }
 
 void
-gst_egl_adaptation_context_set_window (GstEglAdaptationContext * ctx, guintptr window)
+gst_egl_adaptation_set_window (GstEglAdaptationContext * ctx, guintptr window)
 {
   ctx->eaglctx->window = (UIView *) window;
 }
 
 void
-gst_egl_adaptation_context_update_used_window (GstEglAdaptationContext * ctx)
+gst_egl_adaptation_update_used_window (GstEglAdaptationContext * ctx)
 {
   ctx->eaglctx->used_window = ctx->eaglctx->window;
 }
 
 guintptr
-gst_egl_adaptation_context_get_window (GstEglAdaptationContext * ctx)
+gst_egl_adaptation_get_window (GstEglAdaptationContext * ctx)
 {
   return (guintptr) ctx->eaglctx->window;
 }

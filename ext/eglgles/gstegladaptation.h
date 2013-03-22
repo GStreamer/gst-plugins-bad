@@ -134,10 +134,10 @@ struct GstEglAdaptationContext
 #endif
 };
 
-GstEglAdaptationContext * gst_egl_adaptation_context_new (GstElement * element);
-void gst_egl_adaptation_context_init (GstEglAdaptationContext * ctx);
-void gst_egl_adaptation_context_deinit (GstEglAdaptationContext * ctx);
-void gst_egl_adaptation_context_free (GstEglAdaptationContext * ctx);
+GstEglAdaptationContext * gst_egl_adaptation_new (GstElement * element);
+void gst_egl_adaptation_init (GstEglAdaptationContext * ctx);
+void gst_egl_adaptation_deinit (GstEglAdaptationContext * ctx);
+void gst_egl_adaptation_free (GstEglAdaptationContext * ctx);
 
 /* platform window */
 gboolean gst_egl_adaptation_create_native_window (GstEglAdaptationContext * ctx, gint width, gint height, gpointer * own_window_data);
@@ -145,36 +145,36 @@ void gst_egl_adaptation_destroy_native_window (GstEglAdaptationContext * ctx, gp
 
 /* Initialization */
 gboolean gst_egl_adaptation_init_display (GstEglAdaptationContext * ctx);
-gint gst_egl_adaptation_context_fill_supported_fbuffer_configs (GstEglAdaptationContext * ctx, GstCaps ** ret_caps);
+gint gst_egl_adaptation_fill_supported_fbuffer_configs (GstEglAdaptationContext * ctx, GstCaps ** ret_caps);
 gboolean gst_egl_adaptation_init_egl_surface (GstEglAdaptationContext * ctx, GstVideoFormat format);
-void gst_egl_adaptation_context_init_egl_exts (GstEglAdaptationContext * ctx);
+void gst_egl_adaptation_init_egl_exts (GstEglAdaptationContext * ctx);
 
 /* cleanup */
-void gst_egl_adaptation_context_cleanup (GstEglAdaptationContext * ctx);
-void gst_egl_adaptation_context_terminate_display(GstEglAdaptationContext * ctx);
+void gst_egl_adaptation_cleanup (GstEglAdaptationContext * ctx);
+void gst_egl_adaptation_terminate_display(GstEglAdaptationContext * ctx);
 
 /* configuration */
 gboolean gst_egl_adaptation_choose_config (GstEglAdaptationContext * ctx);
-gboolean gst_egl_adaptation_context_make_current (GstEglAdaptationContext * ctx, gboolean bind);
-gboolean gst_egl_adaptation_context_update_surface_dimensions (GstEglAdaptationContext * ctx);
+gboolean gst_egl_adaptation_make_current (GstEglAdaptationContext * ctx, gboolean bind);
+gboolean gst_egl_adaptation_update_surface_dimensions (GstEglAdaptationContext * ctx);
 
 /* rendering */
-void gst_egl_adaptation_context_bind_API (GstEglAdaptationContext * ctx);
-gboolean gst_egl_adaptation_context_swap_buffers (GstEglAdaptationContext * ctx);
+void gst_egl_adaptation_bind_API (GstEglAdaptationContext * ctx);
+gboolean gst_egl_adaptation_swap_buffers (GstEglAdaptationContext * ctx);
 
 /* get/set */
-void gst_egl_adaptation_context_set_window (GstEglAdaptationContext * ctx, guintptr window);
-void gst_egl_adaptation_context_update_used_window (GstEglAdaptationContext * ctx);
-guintptr gst_egl_adaptation_context_get_window (GstEglAdaptationContext * ctx);
-GLuint gst_egl_adaptation_context_get_texture (GstEglAdaptationContext * ctx, gint i);
-gint gst_egl_adaptation_context_get_surface_width (GstEglAdaptationContext * ctx);
-gint gst_egl_adaptation_context_get_surface_height (GstEglAdaptationContext * ctx);
+void gst_egl_adaptation_set_window (GstEglAdaptationContext * ctx, guintptr window);
+void gst_egl_adaptation_update_used_window (GstEglAdaptationContext * ctx);
+guintptr gst_egl_adaptation_get_window (GstEglAdaptationContext * ctx);
+GLuint gst_egl_adaptation_get_texture (GstEglAdaptationContext * ctx, gint i);
+gint gst_egl_adaptation_get_surface_width (GstEglAdaptationContext * ctx);
+gint gst_egl_adaptation_get_surface_height (GstEglAdaptationContext * ctx);
 
 /* error handling */
 gboolean got_gl_error (const char *wtf);
 
 /* platform specific helpers */
-gboolean _gst_egl_choose_config (GstEglAdaptationContext * ctx, gboolean try_only, gint * num_configs);
+gboolean gst_egl_choose_config (GstEglAdaptationContext * ctx, gboolean try_only, gint * num_configs);
 gboolean gst_egl_adaptation_create_egl_context (GstEglAdaptationContext * ctx);
 gboolean gst_egl_adaptation_create_surface (GstEglAdaptationContext * ctx);
 void gst_egl_adaptation_query_buffer_preserved (GstEglAdaptationContext * ctx);

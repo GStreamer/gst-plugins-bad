@@ -296,19 +296,19 @@ HANDLE_ERROR:
 
 
 GstEglAdaptationContext *
-gst_egl_adaptation_context_new (GstElement * element)
+gst_egl_adaptation_new (GstElement * element)
 {
   GstEglAdaptationContext *ctx = g_new0 (GstEglAdaptationContext, 1);
 
   ctx->element = gst_object_ref (element);
 
-  gst_egl_adaptation_context_init (ctx);
+  gst_egl_adaptation_init (ctx);
 
   return ctx;
 }
 
 void
-gst_egl_adaptation_context_free (GstEglAdaptationContext * ctx)
+gst_egl_adaptation_free (GstEglAdaptationContext * ctx)
 {
   gst_object_unref (ctx->element);
   g_free (ctx);
@@ -319,7 +319,7 @@ gst_egl_adaptation_choose_config (GstEglAdaptationContext * ctx)
 {
   gint egl_configs;
 
-  if (!_gst_egl_choose_config (ctx, FALSE, &egl_configs)) {
+  if (!gst_egl_choose_config (ctx, FALSE, &egl_configs)) {
     goto HANDLE_ERROR;
   }
 
@@ -342,7 +342,7 @@ HANDLE_ERROR:
   return FALSE;
 }
 
-gint gst_egl_adaptation_context_fill_supported_fbuffer_configs
+gint gst_egl_adaptation_fill_supported_fbuffer_configs
     (GstEglAdaptationContext * ctx, GstCaps ** ret_caps)
 {
   gboolean ret = FALSE;
@@ -354,7 +354,7 @@ gint gst_egl_adaptation_context_fill_supported_fbuffer_configs
   /* Init supported format/caps list */
   caps = gst_caps_new_empty ();
 
-  if (_gst_egl_choose_config (ctx, TRUE, NULL)) {
+  if (gst_egl_choose_config (ctx, TRUE, NULL)) {
     gst_caps_append (caps,
         gst_video_format_new_template_caps (GST_VIDEO_FORMAT_RGBA));
     gst_caps_append (caps,
@@ -408,7 +408,7 @@ gint gst_egl_adaptation_context_fill_supported_fbuffer_configs
 }
 
 void
-gst_egl_adaptation_context_cleanup (GstEglAdaptationContext * ctx)
+gst_egl_adaptation_cleanup (GstEglAdaptationContext * ctx)
 {
   gint i;
 
@@ -439,7 +439,7 @@ gst_egl_adaptation_context_cleanup (GstEglAdaptationContext * ctx)
     }
   }
 
-  gst_egl_adaptation_context_make_current (ctx, FALSE);
+  gst_egl_adaptation_make_current (ctx, FALSE);
 
   gst_egl_adaptation_destroy_surface (ctx);
   gst_egl_adaptation_destroy_context (ctx);
@@ -463,13 +463,13 @@ gst_egl_adaptation_init_egl_surface (GstEglAdaptationContext * ctx,
 
   gst_egl_adaptation_query_buffer_preserved (ctx);
 
-  if (!gst_egl_adaptation_context_make_current (ctx, TRUE))
+  if (!gst_egl_adaptation_make_current (ctx, TRUE))
     goto HANDLE_ERROR_LOCKED;
 
   gst_egl_adaptation_query_par (ctx);
 
   /* Save surface dims */
-  gst_egl_adaptation_context_update_surface_dimensions (ctx);
+  gst_egl_adaptation_update_surface_dimensions (ctx);
 
   /* We have a surface! */
   ctx->have_surface = TRUE;
@@ -674,19 +674,19 @@ got_gl_error (const char *wtf)
 }
 
 GLuint
-gst_egl_adaptation_context_get_texture (GstEglAdaptationContext * ctx, gint i)
+gst_egl_adaptation_get_texture (GstEglAdaptationContext * ctx, gint i)
 {
   return ctx->texture[i];
 }
 
 gint
-gst_egl_adaptation_context_get_surface_width (GstEglAdaptationContext * ctx)
+gst_egl_adaptation_get_surface_width (GstEglAdaptationContext * ctx)
 {
   return ctx->surface_width;
 }
 
 gint
-gst_egl_adaptation_context_get_surface_height (GstEglAdaptationContext * ctx)
+gst_egl_adaptation_get_surface_height (GstEglAdaptationContext * ctx)
 {
   return ctx->surface_height;
 }

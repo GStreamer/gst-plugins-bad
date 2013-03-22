@@ -182,7 +182,7 @@ HANDLE_ERROR:
 }
 
 void
-gst_egl_adaptation_context_terminate_display (GstEglAdaptationContext * ctx)
+gst_egl_adaptation_terminate_display (GstEglAdaptationContext * ctx)
 {
   if (ctx->eglglesctx->display) {
     eglTerminate (ctx->eglglesctx->display);
@@ -192,7 +192,7 @@ gst_egl_adaptation_context_terminate_display (GstEglAdaptationContext * ctx)
 
 
 gboolean
-_gst_egl_choose_config (GstEglAdaptationContext * ctx, gboolean try_only,
+gst_egl_choose_config (GstEglAdaptationContext * ctx, gboolean try_only,
     gint * num_configs)
 {
   EGLint cfg_number;
@@ -238,8 +238,7 @@ gst_egl_adaptation_create_egl_context (GstEglAdaptationContext * ctx)
 }
 
 gboolean
-gst_egl_adaptation_context_make_current (GstEglAdaptationContext * ctx,
-    gboolean bind)
+gst_egl_adaptation_make_current (GstEglAdaptationContext * ctx, gboolean bind)
 {
   g_assert (ctx->eglglesctx->display != NULL);
 
@@ -355,8 +354,7 @@ gst_egl_adaptation_query_par (GstEglAdaptationContext * ctx)
 /* XXX: Lock eglgles context? */
 /* TODO refactor only to get the w/h and let common code do the updates */
 gboolean
-gst_egl_adaptation_context_update_surface_dimensions (GstEglAdaptationContext *
-    ctx)
+gst_egl_adaptation_update_surface_dimensions (GstEglAdaptationContext * ctx)
 {
   gint width, height;
 
@@ -383,7 +381,7 @@ gst_egl_adaptation_context_update_surface_dimensions (GstEglAdaptationContext *
  * EGL/GLES extensions.
  */
 void
-gst_egl_adaptation_context_init_egl_exts (GstEglAdaptationContext * ctx)
+gst_egl_adaptation_init_egl_exts (GstEglAdaptationContext * ctx)
 {
   const char *eglexts;
   unsigned const char *glexts;
@@ -419,13 +417,13 @@ gst_egl_adaptation_destroy_context (GstEglAdaptationContext * ctx)
 }
 
 void
-gst_egl_adaptation_context_bind_API (GstEglAdaptationContext * ctx)
+gst_egl_adaptation_bind_API (GstEglAdaptationContext * ctx)
 {
   eglBindAPI (EGL_OPENGL_ES_API);
 }
 
 gboolean
-gst_egl_adaptation_context_swap_buffers (GstEglAdaptationContext * ctx)
+gst_egl_adaptation_swap_buffers (GstEglAdaptationContext * ctx)
 {
   gboolean ret =
       eglSwapBuffers (ctx->eglglesctx->display, ctx->eglglesctx->surface);
@@ -442,7 +440,7 @@ gst_egl_adaptation_create_native_window (GstEglAdaptationContext * ctx,
   EGLNativeWindowType window =
       platform_create_native_window (width, height, own_window_data);
   if (window)
-    gst_egl_adaptation_context_set_window (ctx, window);
+    gst_egl_adaptation_set_window (ctx, window);
   GST_DEBUG_OBJECT (ctx->element, "Using window handle %p", window);
   return window != 0;
 }
@@ -457,32 +455,31 @@ gst_egl_adaptation_destroy_native_window (GstEglAdaptationContext * ctx,
 }
 
 void
-gst_egl_adaptation_context_init (GstEglAdaptationContext * ctx)
+gst_egl_adaptation_init (GstEglAdaptationContext * ctx)
 {
   ctx->eglglesctx = g_new0 (GstEglGlesRenderContext, 1);
 }
 
 void
-gst_egl_adaptation_context_deinit (GstEglAdaptationContext * ctx)
+gst_egl_adaptation_deinit (GstEglAdaptationContext * ctx)
 {
   g_free (ctx->eglglesctx);
 }
 
 void
-gst_egl_adaptation_context_set_window (GstEglAdaptationContext * ctx,
-    guintptr window)
+gst_egl_adaptation_set_window (GstEglAdaptationContext * ctx, guintptr window)
 {
   ctx->eglglesctx->window = (EGLNativeWindowType) window;
 }
 
 void
-gst_egl_adaptation_context_update_used_window (GstEglAdaptationContext * ctx)
+gst_egl_adaptation_update_used_window (GstEglAdaptationContext * ctx)
 {
   ctx->eglglesctx->used_window = ctx->eglglesctx->window;
 }
 
 guintptr
-gst_egl_adaptation_context_get_window (GstEglAdaptationContext * ctx)
+gst_egl_adaptation_get_window (GstEglAdaptationContext * ctx)
 {
   return ctx->eglglesctx->window;
 }
