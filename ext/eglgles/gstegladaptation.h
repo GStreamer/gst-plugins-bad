@@ -112,7 +112,7 @@ struct GstEglAdaptationContext
 
   gint surface_width;
   gint surface_height;
-  gint pixel_aspect_ratio;
+  gint pixel_aspect_ratio_n;
   gint pixel_aspect_ratio_d;
 
   GLuint fragshader[3]; /* frame, border, frame-platform */

@@ -331,7 +331,7 @@ gst_egl_adaptation_query_par (GstEglAdaptationContext * ctx)
   if (ctx->eglglesctx->egl_major == 1 && ctx->eglglesctx->egl_minor < 2) {
     GST_DEBUG_OBJECT (ctx->element, "Can't query PAR. Using default: %dx%d",
         EGL_DISPLAY_SCALING, EGL_DISPLAY_SCALING);
-    ctx->pixel_aspect_ratio = EGL_DISPLAY_SCALING;
+    ctx->pixel_aspect_ratio_n = EGL_DISPLAY_SCALING;
   } else {
     eglQuerySurface (ctx->eglglesctx->display,
         ctx->eglglesctx->surface, EGL_PIXEL_ASPECT_RATIO, &display_par);
@@ -343,11 +343,11 @@ gst_egl_adaptation_query_par (GstEglAdaptationContext * ctx)
         display_par > EGL_SANE_DAR_MAX) {
       GST_DEBUG_OBJECT (ctx->element, "Nonsensical PAR value returned: %d. "
           "Bad EGL implementation? "
-          "Will use default: %d/%d", ctx->pixel_aspect_ratio,
+          "Will use default: %d/%d", ctx->pixel_aspect_ratio_n,
           EGL_DISPLAY_SCALING, EGL_DISPLAY_SCALING);
-      ctx->pixel_aspect_ratio = EGL_DISPLAY_SCALING;
+      ctx->pixel_aspect_ratio_n = EGL_DISPLAY_SCALING;
     } else {
-      ctx->pixel_aspect_ratio = display_par;
+      ctx->pixel_aspect_ratio_n = display_par;
     }
   }
 }

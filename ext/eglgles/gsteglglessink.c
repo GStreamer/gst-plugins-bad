@@ -896,7 +896,7 @@ gst_eglglessink_render (GstEglGlesSink * eglglessink)
               w, h,
               eglglessink->par_n,
               eglglessink->par_d,
-              eglglessink->egl_context->pixel_aspect_ratio,
+              eglglessink->egl_context->pixel_aspect_ratio_n,
               eglglessink->egl_context->pixel_aspect_ratio_d)) {
         GST_WARNING_OBJECT (eglglessink, "Could not compute resulting DAR");
         frame.w = w;

@@ -229,7 +229,7 @@ void
 gst_egl_adaptation_query_par (GstEglAdaptationContext * ctx)
 {
   /* TODO how can we check this? */
-  ctx->pixel_aspect_ratio = 1;
+  ctx->pixel_aspect_ratio_n = 1;
   ctx->pixel_aspect_ratio_d = 1;
 }
 
