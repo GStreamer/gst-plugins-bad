@@ -76,7 +76,6 @@ G_BEGIN_DECLS
 
 typedef struct GstEglAdaptationContext GstEglAdaptationContext;
 typedef struct _GstEglGlesRenderContext GstEglGlesRenderContext;
-typedef struct _GstEglGlesImageFmt GstEglGlesImageFmt;
 typedef struct _GstEaglContext GstEaglContext;
 
 typedef struct _coord5
