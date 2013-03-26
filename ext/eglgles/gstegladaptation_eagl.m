@@ -259,7 +259,11 @@ void
 gst_egl_adaptation_init_egl_exts (GstEglAdaptationContext * ctx)
 {
   const gchar *extensions = (const gchar *) glGetString(GL_EXTENSIONS);
-  NSString *extensionsString = [NSString stringWithCString:extensions encoding: NSASCIIStringEncoding];
+  NSString *extensionsString = NULL;
+
+  if (extensions) {
+    extensionsString= [NSString stringWithCString:extensions encoding: NSASCIIStringEncoding];
+  }
 
   GST_DEBUG_OBJECT (ctx->element, "Available GL extensions: %s\n",
       GST_STR_NULL ([extensionsString UTF8String]));
