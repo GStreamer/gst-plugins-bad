@@ -127,7 +127,7 @@ struct GstEglAdaptationContext
   coord5 position_array[12];    /* 4 x Frame, 4 x Border1, 4 x Border2 */
   unsigned short index_array[4];
 
-#if HAVE_IOS
+#ifdef HAVE_IOS
   GstEaglContext *eaglctx;
 #else
   GstEglGlesRenderContext *eglglesctx;
