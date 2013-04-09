@@ -591,7 +591,7 @@ gst_rtmp_src_unlock (GstBaseSrc * basesrc)
   /* This closes the socket, which means that any pending socket calls
    * error out. */
   if (rtmpsrc->rtmp) {
-    RTMP_Close (rtmpsrc->rtmp);
+    RTMPSockBuf_Close (&rtmpsrc->rtmp->m_sb);
   }
 
   return TRUE;
