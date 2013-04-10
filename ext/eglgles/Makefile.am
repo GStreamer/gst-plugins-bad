@@ -31,9 +31,11 @@ libgsteglglessink_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS)
 endif
 
 libgsteglglessink_la_LIBTOOLFLAGS = --tag=CC
-if !GST_PLUGIN_BUILD_STATIC
-libgsteglglessink_la_LIBTOOLFLAGS += --tag=disable-static
-endif
+
+# Disable until static plugin building is merged upstream
+#if !GST_PLUGIN_BUILD_STATIC
+#libgsteglglessink_la_LIBTOOLFLAGS += --tag=disable-static
+#endif
 
 noinst_HEADERS = gsteglglessink.h video_platform_wrapper.h gstegladaptation.h
 
