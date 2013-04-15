@@ -57,6 +57,8 @@
 #include <winsock2.h>
 #endif
 
+#include <sys/socket.h>
+
 GST_DEBUG_CATEGORY_STATIC (rtmpsrc_debug);
 #define GST_CAT_DEFAULT rtmpsrc_debug
 
@@ -588,10 +590,11 @@ gst_rtmp_src_unlock (GstBaseSrc * basesrc)
 
   GST_DEBUG_OBJECT (rtmpsrc, "unlock");
 
-  /* This closes the socket, which means that any pending socket calls
-   * error out. */
-  if (rtmpsrc->rtmp) {
-    RTMPSockBuf_Close (&rtmpsrc->rtmp->m_sb);
+  /* This cancels the recv() underlying RTMP_Read, but will cause a
+   * SIGPIPE.  Hopefully the app is ignoring it, or you've patched
+   * librtmp. */
+  if (rtmpsrc->rtmp && rtmpsrc->rtmp->m_sb.sb_socket > 0) {
+    shutdown (rtmpsrc->rtmp->m_sb.sb_socket, SHUT_RDWR);
   }
 
   return TRUE;
