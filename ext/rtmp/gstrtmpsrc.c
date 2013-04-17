@@ -609,6 +609,7 @@ gst_rtmp_src_stop (GstBaseSrc * basesrc)
   src = GST_RTMP_SRC (basesrc);
 
   if (src->rtmp) {
+    RTMP_Close (src->rtmp);
     RTMP_Free (src->rtmp);
     src->rtmp = NULL;
   }
