@@ -440,8 +440,8 @@ gst_egl_adaptation_create_native_window (GstEglAdaptationContext * ctx,
   EGLNativeWindowType window =
       platform_create_native_window (width, height, own_window_data);
   if (window)
-    gst_egl_adaptation_set_window (ctx, window);
-  GST_DEBUG_OBJECT (ctx->element, "Using window handle %p", window);
+    gst_egl_adaptation_set_window (ctx, (guintptr) window);
+  GST_DEBUG_OBJECT (ctx->element, "Using window handle %p", (guintptr) window);
   return window != 0;
 }
 
@@ -481,5 +481,5 @@ gst_egl_adaptation_update_used_window (GstEglAdaptationContext * ctx)
 guintptr
 gst_egl_adaptation_get_window (GstEglAdaptationContext * ctx)
 {
-  return ctx->eglglesctx->window;
+  return (guintptr) ctx->eglglesctx->window;
 }
