@@ -51,6 +51,16 @@
 
 #include <gst/gst.h>
 
+#if defined (USE_EGL_RPI) && defined(__GNUC__)
+#ifndef __VCCOREVER__
+#define __VCCOREVER__ 0x04000000
+#endif
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wredundant-decls"
+#pragma GCC optimize ("gnu89-inline")
+#endif
+
 #ifdef HAVE_IOS
 #include <OpenGLES/ES2/gl.h>
 
@@ -63,6 +73,11 @@
 
 #ifdef USE_EGL_RPI
 #include <bcm_host.h>
+#endif
+
+#if defined (USE_EGL_RPI) && defined(__GNUC__)
+#pragma GCC reset_options
+#pragma GCC diagnostic pop
 #endif
 
 #include <gst/video/video.h>
