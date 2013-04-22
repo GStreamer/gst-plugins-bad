@@ -42,7 +42,6 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#include <gst/video/video.h>
 #include "gstegladaptation.h"
 
 /* GLESv2 GLSL Shaders
