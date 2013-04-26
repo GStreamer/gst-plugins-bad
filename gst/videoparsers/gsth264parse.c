@@ -180,7 +180,8 @@ gst_h264_parse_reset_frame (GstH264Parse * h264parse)
   h264parse->current_off = -1;
 
   h264parse->picture_start = FALSE;
-  h264parse->update_caps = FALSE;
+  if (!h264parse->push_codec)
+    h264parse->update_caps = FALSE;
   h264parse->idr_pos = -1;
   h264parse->sei_pos = -1;
   h264parse->keyframe = FALSE;
@@ -1105,7 +1106,7 @@ gst_h264_parse_update_src_caps (GstH264Parse * h264parse, GstCaps * caps)
       }
     }
 
-    if (G_UNLIKELY (modified)) {
+    if (G_UNLIKELY (modified || h264parse->update_caps)) {
       gint fps_num = h264parse->fps_num;
       gint fps_den = h264parse->fps_den;
       gint width, height;
