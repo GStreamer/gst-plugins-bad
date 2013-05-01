@@ -594,7 +594,7 @@ gst_mpegv_parse_update_src_caps (GstMpegvParse * mpvparse)
   /* carry over input caps as much as possible; override with our own stuff */
   caps = GST_PAD_CAPS (GST_BASE_PARSE_SINK_PAD (mpvparse));
   if (caps) {
-    caps = gst_caps_make_writable (caps);
+    caps = gst_caps_copy (caps);
     s = gst_caps_get_structure (caps, 0);
   } else {
     caps = gst_caps_new_simple ("video/mpeg", NULL);
