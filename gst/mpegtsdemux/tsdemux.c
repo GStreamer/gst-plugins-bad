@@ -712,7 +712,7 @@ create_pad_for_stream (MpegTSBase * base, MpegTSBaseStream * bstream,
       caps = gst_caps_new_simple ("video/mpeg",
           "mpegversion", G_TYPE_INT,
           bstream->stream_type == ST_VIDEO_MPEG1 ? 1 : 2, "systemstream",
-          G_TYPE_BOOLEAN, FALSE, NULL);
+          G_TYPE_BOOLEAN, FALSE, "parsed", G_TYPE_BOOLEAN, FALSE, NULL);
 
       break;
     case ST_AUDIO_MPEG1:
@@ -837,14 +837,16 @@ create_pad_for_stream (MpegTSBase * base, MpegTSBaseStream * bstream,
       name = g_strdup_printf ("video_%04x", bstream->pid);
       caps = gst_caps_new_simple ("video/mpeg",
           "mpegversion", G_TYPE_INT, 4,
-          "systemstream", G_TYPE_BOOLEAN, FALSE, NULL);
+          "systemstream", G_TYPE_BOOLEAN, FALSE,
+          "parsed", G_TYPE_BOOLEAN, FALSE, NULL);
       break;
     case ST_VIDEO_H264:
       template = gst_static_pad_template_get (&video_template);
       name = g_strdup_printf ("video_%04x", bstream->pid);
       caps = gst_caps_new_simple ("video/x-h264",
           "stream-format", G_TYPE_STRING, "byte-stream",
-          "alignment", G_TYPE_STRING, "nal", NULL);
+          "alignment", G_TYPE_STRING, "nal",
+          "parsed", G_TYPE_BOOLEAN, FALSE, NULL);
       break;
     case ST_VIDEO_DIRAC:
       desc =
