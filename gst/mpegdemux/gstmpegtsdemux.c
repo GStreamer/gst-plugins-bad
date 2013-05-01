@@ -677,7 +677,8 @@ gst_mpegts_demux_fill_stream (GstMpegTSStream * stream, guint8 id,
       name = g_strdup_printf ("video_%04x", stream->PID);
       caps = gst_caps_new_simple ("video/mpeg",
           "mpegversion", G_TYPE_INT, stream_type == ST_VIDEO_MPEG1 ? 1 : 2,
-          "systemstream", G_TYPE_BOOLEAN, FALSE, NULL);
+          "systemstream", G_TYPE_BOOLEAN, FALSE,
+          "parsed", G_TYPE_BOOLEAN, FALSE, NULL);
       break;
     case ST_AUDIO_MPEG1:
     case ST_AUDIO_MPEG2:
@@ -742,14 +743,16 @@ gst_mpegts_demux_fill_stream (GstMpegTSStream * stream, guint8 id,
       name = g_strdup_printf ("video_%04x", stream->PID);
       caps = gst_caps_new_simple ("video/mpeg",
           "mpegversion", G_TYPE_INT, 4,
-          "systemstream", G_TYPE_BOOLEAN, FALSE, NULL);
+          "systemstream", G_TYPE_BOOLEAN, FALSE,
+          "parsed", G_TYPE_BOOLEAN, FALSE, NULL);
       break;
     case ST_VIDEO_H264:
       template = klass->video_template;
       name = g_strdup_printf ("video_%04x", stream->PID);
       caps = gst_caps_new_simple ("video/x-h264",
           "stream-format", G_TYPE_STRING, "byte-stream",
-          "alignment", G_TYPE_STRING, "nal", NULL);
+          "alignment", G_TYPE_STRING, "nal",
+          "parsed", G_TYPE_BOOLEAN, FALSE, NULL);
       break;
     case ST_VIDEO_DIRAC:
       if (gst_mpegts_is_dirac_stream (stream)) {
