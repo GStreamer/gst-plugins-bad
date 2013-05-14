@@ -186,7 +186,6 @@ gst_hls_sink_init (GstHlsSink * sink, GstHlsSinkClass * sink_class)
   sink->max_files = DEFAULT_MAX_FILES;
   sink->target_duration = DEFAULT_TARGET_DURATION;
   sink->count = 0;
-  sink->timeout_id = 0;
   gst_hls_sink_reset (sink);
 }
 
@@ -228,6 +227,25 @@ missing_element:
 }
 
 static void
+gst_hls_sink_send_force_key_unit_event (GstHlsSink * sink)
+{
+  GstPad *sinkpad = gst_element_get_static_pad (GST_ELEMENT (sink), "sink");
+
+  /* FIXME - try to make segments >= target duration in length by setting the
+   * time parameter of the force key unit event to last segment cut time +
+   * target duration */
+  sink->count++;
+  if (!gst_pad_push_event (sinkpad,
+          gst_video_event_new_upstream_force_key_unit (sink->target_duration *
+              sink->count * GST_SECOND, TRUE, sink->count))) {
+    GST_WARNING_OBJECT (sink, "Failed to push upstream force key unit event");
+  }
+
+  gst_object_unref (sinkpad);
+}
+
+
+static void
 gst_hls_sink_handle_message (GstBin * bin, GstMessage * message)
 {
   GstHlsSink *sink = GST_HLS_SINK_CAST (bin);
@@ -246,6 +264,8 @@ gst_hls_sink_handle_message (GstBin * bin, GstMessage * message)
       if (strcmp (gst_structure_get_name (message->structure),
               "GstMultiFileSink"))
         break;
+
+      gst_hls_sink_send_force_key_unit_event (sink);
 
       filename = gst_structure_get_string (message->structure, "filename");
       gst_structure_get_clock_time (message->structure, "stream-time",
@@ -278,27 +298,6 @@ gst_hls_sink_handle_message (GstBin * bin, GstMessage * message)
   GST_BIN_CLASS (parent_class)->handle_message (bin, message);
 }
 
-static gboolean
-send_force_key_unit_event (gpointer user_data)
-{
-  GstHlsSink *sink = GST_HLS_SINK_CAST (user_data);
-  GstPad *sinkpad = gst_element_get_static_pad (GST_ELEMENT (sink), "sink");
-
-  /* FIXME - try to make segments >= target duration in length by setting the
-   * time parameter of the force key unit event to last segment cut time +
-   * target duration */
-  sink->count++;
-  if (!gst_pad_push_event (sinkpad,
-          gst_video_event_new_upstream_force_key_unit (sink->target_duration *
-              sink->count, TRUE, sink->count))) {
-    GST_WARNING_OBJECT (sink, "Failed to push upstream force key unit event");
-  }
-
-  gst_object_unref (sinkpad);
-
-  return TRUE;
-}
-
 static GstStateChangeReturn
 gst_hls_sink_change_state (GstElement * element, GstStateChange trans)
 {
@@ -312,11 +311,7 @@ gst_hls_sink_change_state (GstElement * element, GstStateChange trans)
       }
       break;
     case GST_STATE_CHANGE_PAUSED_TO_PLAYING:
-      if (sink->target_duration) {
-        sink->timeout_id =
-            g_timeout_add_seconds (sink->target_duration,
-            send_force_key_unit_event, sink);
-      }
+      gst_hls_sink_send_force_key_unit_event (sink);
       break;
     default:
       break;
@@ -326,10 +321,6 @@ gst_hls_sink_change_state (GstElement * element, GstStateChange trans)
 
   switch (trans) {
     case GST_STATE_CHANGE_PLAYING_TO_PAUSED:
-      if (sink->timeout_id && !g_source_remove (sink->timeout_id)) {
-        GST_WARNING_OBJECT (sink, "Failed to remove target-duration timeout");
-      }
-      sink->timeout_id = 0;
       break;
     case GST_STATE_CHANGE_PAUSED_TO_READY:
       /* reset the segment/file count */
