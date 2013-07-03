@@ -69,17 +69,6 @@ static GstStateChangeReturn
 gst_hls_sink_change_state (GstElement * element, GstStateChange trans);
 
 static void
-gst_hls_sink_dispose (GObject * object)
-{
-  GstHlsSink *sink = GST_HLS_SINK_CAST (object);
-
-  if (sink->multifilesink)
-    g_object_unref (sink->multifilesink);
-
-  G_OBJECT_CLASS (parent_class)->dispose ((GObject *) sink);
-}
-
-static void
 gst_hls_sink_finalize (GObject * object)
 {
   GstHlsSink *sink = GST_HLS_SINK_CAST (object);
@@ -121,7 +110,6 @@ gst_hls_sink_class_init (GstHlsSinkClass * klass)
 
   element_class->change_state = GST_DEBUG_FUNCPTR (gst_hls_sink_change_state);
 
-  gobject_class->dispose = gst_hls_sink_dispose;
   gobject_class->finalize = gst_hls_sink_finalize;
   gobject_class->set_property = gst_hls_sink_set_property;
   gobject_class->get_property = gst_hls_sink_get_property;
