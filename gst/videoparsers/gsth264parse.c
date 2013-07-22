@@ -239,6 +239,7 @@ gst_h264_parse_start (GstBaseParse * parse)
   h264parse->sei_pic_struct_pres_flag = FALSE;
   h264parse->sei_pic_struct = 0;
   h264parse->field_pic_flag = 0;
+  h264parse->have_error = TRUE;
 
   gst_base_parse_set_min_frame_size (parse, 6);
 
@@ -751,16 +752,19 @@ gst_h264_parse_check_valid_frame (GstBaseParse * parse,
         }
         /* otherwise need more */
         goto more;
-      case GST_H264_PARSER_BROKEN_LINK:
-        g_assert_not_reached ();
-        break;
       case GST_H264_PARSER_ERROR:
-        /* should not really occur either */
-        GST_DEBUG_OBJECT (h264parse, "error parsing Nal Unit");
-        /* fall-through */
+        GST_ELEMENT_ERROR (h264parse, STREAM, FORMAT,
+            ("Error parsing H.264 stream"), ("Invalid H.264 stream"));
+        goto invalid_stream;
+      case GST_H264_PARSER_BROKEN_LINK:
+        GST_ELEMENT_ERROR (h264parse, STREAM, FORMAT,
+            ("Error parsing H.264 stream"),
+            ("The link to structure needed for the parsing couldn't be found"));
+        goto invalid_stream;
       case GST_H264_PARSER_NO_NAL:
-        g_assert_not_reached ();
-        break;
+        GST_ELEMENT_ERROR (h264parse, STREAM, FORMAT,
+            ("Error parsing H.264 stream"), ("No H.264 NAL unit found"));
+        goto invalid_stream;
       case GST_H264_PARSER_BROKEN_DATA:
         GST_WARNING_OBJECT (h264parse, "input stream is corrupt; "
             "it contains a NAL unit of length %u", nalu.size);
@@ -844,6 +848,10 @@ skip:
   GST_DEBUG_OBJECT (h264parse, "skipping %d", *skipsize);
   gst_h264_parse_reset_frame (h264parse);
   return FALSE;
+
+invalid_stream:
+  h264parse->have_error = TRUE;
+  return TRUE;
 }
 
 /* byte together avc codec data based on collected pps and sps so far */
@@ -1321,6 +1329,9 @@ gst_h264_parse_parse_frame (GstBaseParse * parse, GstBaseParseFrame * frame)
 
   h264parse = GST_H264_PARSE (parse);
   buffer = frame->buffer;
+
+  if (h264parse->have_error)
+    return GST_FLOW_ERROR;
 
   gst_h264_parse_update_src_caps (h264parse, NULL);
 
@@ -1838,6 +1849,7 @@ gst_h264_parse_event (GstBaseParse * parse, GstEvent * event)
     case GST_EVENT_FLUSH_STOP:
       h264parse->dts = GST_CLOCK_TIME_NONE;
       h264parse->ts_trn_nb = GST_CLOCK_TIME_NONE;
+      h264parse->have_error = FALSE;
       break;
     case GST_EVENT_NEWSEGMENT:
     {
