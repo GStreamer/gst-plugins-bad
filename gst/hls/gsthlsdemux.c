@@ -1279,7 +1279,6 @@ gst_hls_demux_get_next_fragment (GstHLSDemux * demux, gboolean caching)
 
 error:
   {
-    gst_hls_demux_stop (demux);
     return FALSE;
   }
 }
