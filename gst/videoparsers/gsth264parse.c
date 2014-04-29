@@ -208,7 +208,7 @@ gst_h264_parse_reset (GstH264Parse * h264parse)
   h264parse->do_ts = TRUE;
 
   h264parse->pending_key_unit_ts = GST_CLOCK_TIME_NONE;
-  h264parse->force_key_unit_event = NULL;
+  gst_event_replace (&h264parse->force_key_unit_event, NULL);
 
   gst_h264_parse_reset_frame (h264parse);
 }
