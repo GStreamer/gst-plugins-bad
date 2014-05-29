@@ -1759,6 +1759,10 @@ gst_eglglessink_render (GstEglGlesSink * eglglessink)
     GST_DEBUG_OBJECT (eglglessink, "Drawing black border 1");
     glUseProgram (eglglessink->egl_context->glslprogram[1]);
 
+    glEnableVertexAttribArray (eglglessink->egl_context->position_loc[1]);
+    if (got_gl_error ("glEnableVertexAttribArray"))
+      goto HANDLE_ERROR;
+
     glVertexAttribPointer (eglglessink->egl_context->position_loc[1], 3,
         GL_FLOAT, GL_FALSE, sizeof (coord5), (gpointer) (8 * sizeof (coord5)));
     if (got_gl_error ("glVertexAttribPointer"))
@@ -1778,6 +1782,8 @@ gst_eglglessink_render (GstEglGlesSink * eglglessink)
     glDrawElements (GL_TRIANGLE_STRIP, 4, GL_UNSIGNED_SHORT, 0);
     if (got_gl_error ("glDrawElements"))
       goto HANDLE_ERROR;
+
+    glDisableVertexAttribArray (eglglessink->egl_context->position_loc[1]);
   }
 
   /* Draw video frame */
@@ -1797,6 +1803,14 @@ gst_eglglessink_render (GstEglGlesSink * eglglessink)
     if (got_gl_error ("glUniform1i"))
       goto HANDLE_ERROR;
   }
+
+  glEnableVertexAttribArray (eglglessink->egl_context->position_loc[0]);
+  if (got_gl_error ("glEnableVertexAttribArray"))
+    goto HANDLE_ERROR;
+
+  glEnableVertexAttribArray (eglglessink->egl_context->texpos_loc[0]);
+  if (got_gl_error ("glEnableVertexAttribArray"))
+    goto HANDLE_ERROR;
 
   if (eglglessink->orientation ==
       GST_VIDEO_GL_TEXTURE_ORIENTATION_X_NORMAL_Y_NORMAL) {
@@ -1829,6 +1843,9 @@ gst_eglglessink_render (GstEglGlesSink * eglglessink)
   if (got_gl_error ("glDrawElements"))
     goto HANDLE_ERROR;
 
+  glDisableVertexAttribArray (eglglessink->egl_context->position_loc[0]);
+  glDisableVertexAttribArray (eglglessink->egl_context->texpos_loc[0]);
+
   if (!gst_egl_adaptation_context_swap_buffers (eglglessink->egl_context)) {
     goto HANDLE_ERROR;
   }
@@ -1838,8 +1855,11 @@ gst_eglglessink_render (GstEglGlesSink * eglglessink)
   return GST_FLOW_OK;
 
 HANDLE_ERROR:
-  GST_ERROR_OBJECT (eglglessink, "Rendering disabled for this frame");
+  glDisableVertexAttribArray (eglglessink->egl_context->position_loc[0]);
+  glDisableVertexAttribArray (eglglessink->egl_context->texpos_loc[0]);
+  glDisableVertexAttribArray (eglglessink->egl_context->position_loc[1]);
 
+  GST_ERROR_OBJECT (eglglessink, "Rendering disabled for this frame");
   return GST_FLOW_ERROR;
 }
 

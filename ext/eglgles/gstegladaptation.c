@@ -589,14 +589,6 @@ gst_egl_adaptation_init_surface (GstEglAdaptationContext * ctx,
   ctx->tex_scale_loc[0][2] =
       glGetUniformLocation (ctx->glslprogram[0], "tex_scale2");
 
-  glEnableVertexAttribArray (ctx->position_loc[0]);
-  if (got_gl_error ("glEnableVertexAttribArray"))
-    goto HANDLE_ERROR;
-
-  glEnableVertexAttribArray (ctx->texpos_loc[0]);
-  if (got_gl_error ("glEnableVertexAttribArray"))
-    goto HANDLE_ERROR;
-
   for (i = 0; i < ctx->n_textures; i++) {
     ctx->tex_loc[0][i] =
         glGetUniformLocation (ctx->glslprogram[0], texnames[i]);
@@ -612,10 +604,6 @@ gst_egl_adaptation_init_surface (GstEglAdaptationContext * ctx,
 
     ctx->position_loc[1] =
         glGetAttribLocation (ctx->glslprogram[1], "position");
-
-    glEnableVertexAttribArray (ctx->position_loc[1]);
-    if (got_gl_error ("glEnableVertexAttribArray"))
-      goto HANDLE_ERROR;
   }
 
   /* Generate textures */
