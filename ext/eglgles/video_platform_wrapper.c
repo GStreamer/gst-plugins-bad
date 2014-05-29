@@ -111,6 +111,11 @@ platform_create_native_window (gint width, gint height, gpointer * window_data)
   s = DefaultScreen (d);
   w = XCreateSimpleWindow (d, RootWindow (d, s), 10, 10, width, height, 1,
       BlackPixel (d, s), WhitePixel (d, s));
+
+  /* Prevent X from redrawing the background on ConfigureNotify.
+     Otherwise flickering is observed when resizing the window. */
+  XSetWindowBackgroundPixmap (d, w, None);
+
   XStoreName (d, w, "eglglessink");
   XMapWindow (d, w);
   XFlush (d);
