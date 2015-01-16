@@ -79,7 +79,7 @@
 # else
 #  include <GL/gl.h>
 #  include <GL/glu.h>
-#  if __WIN32__ || _WIN32
+#  if defined(__WIN32__) || defined(_WIN32)
 #   include <GL/glext.h>
 #  endif
 # endif
@@ -125,7 +125,7 @@ typedef enum
 #define GST_GL_EXT_BEGIN(name, gl_availability, min_gl, maj_gl, gles_maj, \
     gles_min, ext_suf, ext_name)
 #define GST_GL_EXT_FUNCTION(ret, name, args) \
-  ret GSTGLAPI (*name) args;
+  ret (GSTGLAPI *name) args;
 #define GST_GL_EXT_END()
 
 typedef struct _GstGLFuncs
