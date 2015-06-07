@@ -1,26 +1,28 @@
 # translation of gst-plugins-bad-0.10.21.2.po to Turkish
 # This file is put in the public domain.
+# This file is distributed under the same license as the gst-plugins-bad package.
 #
-# Server Acim <serveracim@gmail.com>, 2009.
+# Server Acim <serveracim@gmail.com>, 2009, 2015.
 msgid ""
 msgstr ""
-"Project-Id-Version: gst-plugins-bad-0.10.21.2\n"
+"Project-Id-Version: gst-plugins-bad-1.4.1\n"
 "Report-Msgid-Bugs-To: http://bugzilla.gnome.org/\n"
 "POT-Creation-Date: 2014-12-18 12:07+0100\n"
-"PO-Revision-Date: 2011-04-26 19:21+0200\n"
-"Last-Translator: Server Acim <serveracim@gmail.com>\n"
+"PO-Revision-Date: 2015-01-10 21:07+0100\n"
+"Last-Translator: Volkan Gezer <volkangezer@gmail.com>\n"
 "Language-Team: Turkish <gnu-tr-u12a@lists.sourceforge.net>\n"
 "Language: tr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: KBabel 1.11.4\n"
+"X-Generator: Lokalize 1.5\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
 msgid "Internal data stream error."
 msgstr "İç veri akım hatası."
 
 msgid "format wasn't negotiated before get function"
-msgstr ""
+msgstr "get fonksiyonundan önce biçim görüşülemedi"
 
 msgid "default GStreamer sound events audiosink"
 msgstr ""
@@ -132,57 +134,57 @@ msgid "Could not read DVD."
 msgstr "DVD okunamıyor."
 
 msgid "This file contains no playable streams."
-msgstr ""
+msgstr "Dosya çalınabilir akışlar içermiyor."
 
 msgid "Couldn't get the Manifest's URI"
-msgstr ""
+msgstr "Manifest URI alınamadı"
 
 msgid "Failed to get fragment URL."
-msgstr ""
+msgstr "Parça adresi alınamadı."
 
 msgid "Couldn't download fragments"
-msgstr ""
+msgstr "Parçalar indirilemedi"
 
-#, fuzzy
 msgid "Could not open sndfile stream for reading."
-msgstr "Dosyayı \"%s\" okumak için açamıyor."
+msgstr "Sndfile akışı okumak için açamıyor."
 
 msgid "Could not establish connection to sndio"
-msgstr ""
+msgstr "Sndio ile bağlantı kurulamadı"
 
 msgid "Failed to query sndio capabilities"
-msgstr ""
+msgstr "Sndio yetenekleri sorgulanamadı"
 
-#, fuzzy
 msgid "Could not configure sndio"
-msgstr "Dosyayı \"%s\" okumak için açamıyor."
+msgstr "Sndio yapılandırılamadı"
 
-#, fuzzy
 msgid "Could not start sndio"
-msgstr "DVD okunamıyor."
+msgstr "Sndio başlatılamadı"
 
 msgid "Internal data flow error."
 msgstr "İç veri akış hatası."
 
 msgid "Generated file has a larger preroll time than its streams duration"
 msgstr ""
+"Oluşturlmuş dosya, akışlarının süresinden daha büyük preroll zamanına sahip"
 
 #, c-format
 msgid "Missing element '%s' - check your GStreamer installation."
-msgstr ""
+msgstr "Eksik öge '%s' - GStreamer kurulumunuzu kontrol ediniz."
 
 msgid "File location is set to NULL, please set it to a valid filename"
 msgstr ""
+"Dosya konumunuz BOŞ bir değere ayarlı, lütfen geçerli bir dosya adı için "
+"ayarlayın"
 
 msgid "Subpicture format was not configured before data flow"
-msgstr ""
+msgstr "Alt resim biçimi, veri  akışından önce yapılandırılmış"
 
 msgid "No file name specified for writing."
 msgstr "Yazmak için dosya adı belirtilmedi."
 
 #, c-format
 msgid "Given file name \"%s\" can't be converted to local file name encoding."
-msgstr ""
+msgstr "Verilen dosya adı \"%s\" yerel dosya adı kodlamasına dönüştürülemiyor."
 
 #, c-format
 msgid "Could not open file \"%s\" for writing."
@@ -200,28 +202,27 @@ msgstr "Aygıt açılamaz durumda \"%s\"."
 msgid "Could not get settings from frontend device \"%s\"."
 msgstr "Aygıt ayarları bulunamadı \"%s\"."
 
-#, fuzzy, c-format
+#, c-format
 msgid "Cannot enumerate delivery systems from frontend device \"%s\"."
-msgstr "Aygıt ayarları bulunamadı \"%s\"."
+msgstr "\"%s\" ön yüz aygıtından iletim sistemleri numaralandırılanamıyor"
 
 #, c-format
 msgid "Could not open file \"%s\" for reading."
 msgstr "Dosyayı \"%s\" okumak için açamıyor."
 
-#, fuzzy
 msgid "Couldn't find DVB channel configuration file"
-msgstr "Sanal karıştırıcı kanal yapılandırması"
+msgstr "DVB kanal yapılandırma dosyası bulunamadı"
 
-#, fuzzy, c-format
+#, c-format
 msgid "Couldn't load DVB channel configuration file: %s"
-msgstr "Sanal karıştırıcı kanal yapılandırması"
+msgstr "DVB kanal yapılandırma dosyası yüklenemedi: %s"
 
 msgid "DVB channel configuration file doesn't contain any channels"
-msgstr ""
+msgstr "DVB kanal yapılandırma dosyası herhangi bir kanal içermiyor"
 
 #, c-format
 msgid "Couldn't find details for DVB channel %s"
-msgstr ""
+msgstr "DVB kanalı %s için ayrıntılar bulunamadı"
 
 #~ msgid "Could not write to file \"%s\"."
 #~ msgstr "Dosya yazılamıyor \"%s\"."

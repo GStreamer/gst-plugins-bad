@@ -3,14 +3,15 @@
 # This file is distributed under the same license as the gst-plugins-bad package.
 #
 # Claude Paroz <claude@2xlibre.net>, 2008-2011.
+# Stéphane Aulery <lkppo@free.fr>, 2015.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: gst-plugins-bad 0.10.21.2\n"
+"Project-Id-Version: gst-plugins-bad 1.4.1\n"
 "Report-Msgid-Bugs-To: http://bugzilla.gnome.org/\n"
 "POT-Creation-Date: 2014-12-18 12:07+0100\n"
-"PO-Revision-Date: 2011-04-28 09:13+0200\n"
-"Last-Translator: Claude Paroz <claude@2xlibre.net>\n"
+"PO-Revision-Date: 2015-04-26 19:24+0200\n"
+"Last-Translator: Stéphane Aulery <lkppo@free.fr>\n"
 "Language-Team: French <traduc@traduc.org>\n"
 "Language: fr\n"
 "MIME-Version: 1.0\n"
@@ -21,10 +22,10 @@ msgid "Internal data stream error."
 msgstr "Erreur interne de flux de données."
 
 msgid "format wasn't negotiated before get function"
-msgstr ""
+msgstr "Format non négocié avant l'appel de la fonction get"
 
 msgid "default GStreamer sound events audiosink"
-msgstr ""
+msgstr "sons par défaut audiosink des événements GStreamer"
 
 msgid ""
 "GStreamer can play audio using any number of output elements. Some possible "
@@ -33,7 +34,7 @@ msgid ""
 msgstr ""
 
 msgid "description for default GStreamer sound events audiosink"
-msgstr ""
+msgstr "description des sons par défaut audiosink des événements GStreamer"
 
 msgid "Describes the selected audiosink element."
 msgstr ""
@@ -52,7 +53,7 @@ msgid "description for default GStreamer audiosink for Music and Movies"
 msgstr ""
 
 msgid "default GStreamer videosink"
-msgstr ""
+msgstr "videosink GStreamer par défaut"
 
 msgid ""
 "GStreamer can play video using any number of output elements. Some possible "
@@ -67,7 +68,7 @@ msgid "Describes the selected videosink element."
 msgstr ""
 
 msgid "default GStreamer audiosrc"
-msgstr ""
+msgstr "audiosrc GStreamer par défaut"
 
 msgid ""
 "GStreamer can record audio using any number of input elements. Some possible "
@@ -82,7 +83,7 @@ msgid "Describes the selected audiosrc element."
 msgstr ""
 
 msgid "default GStreamer videosrc"
-msgstr ""
+msgstr "videosrc GStreamer par défaut"
 
 msgid ""
 "GStreamer can record video from any number of input elements. Some possible "
@@ -97,7 +98,7 @@ msgid "Describes the selected videosrc element."
 msgstr ""
 
 msgid "default GStreamer visualization"
-msgstr ""
+msgstr "aperçu GStreamer par défaut"
 
 msgid ""
 "GStreamer can put visualization plugins in a pipeline to transform audio "
@@ -107,7 +108,7 @@ msgid ""
 msgstr ""
 
 msgid "description for default GStreamer visualization"
-msgstr ""
+msgstr "description de l’aperçu GStreamer par défaut"
 
 msgid "Describes the selected visualization element."
 msgstr ""
@@ -127,7 +128,7 @@ msgid ""
 "decryption library is not installed."
 msgstr ""
 "Impossible de lire le DVD. Il se peut que le DVD soit chiffré et qu'aucune "
-"biblithèque de déchiffrement ne soit disponible."
+"bibliothèque de déchiffrement DVD ne soit disponible."
 
 msgid "Could not read DVD."
 msgstr "Impossible de lire le DVD."
@@ -142,25 +143,22 @@ msgid "Failed to get fragment URL."
 msgstr ""
 
 msgid "Couldn't download fragments"
-msgstr ""
+msgstr "Impossible de télécharger les fragments"
 
-#, fuzzy
 msgid "Could not open sndfile stream for reading."
-msgstr "Impossible d'ouvrir le fichier « %s » en lecture."
+msgstr "Impossible d'ouvrir le fichier snd en lecture."
 
 msgid "Could not establish connection to sndio"
-msgstr ""
+msgstr "Impossible de se connecter à sndio"
 
 msgid "Failed to query sndio capabilities"
-msgstr ""
+msgstr "Impossible d’interroger les capacités sndio"
 
-#, fuzzy
 msgid "Could not configure sndio"
-msgstr "Impossible d'ouvrir le fichier « %s » en lecture."
+msgstr "Impossible de configurer sndio"
 
-#, fuzzy
 msgid "Could not start sndio"
-msgstr "Impossible de lire le DVD."
+msgstr "Impossible de démarrer sndio"
 
 msgid "Internal data flow error."
 msgstr "Erreur interne de flux de données."
