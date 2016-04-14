@@ -63,11 +63,26 @@ contains a set of codecs plugins based on libav (formerly gst-ffmpeg)
 
 Bugs fixed in this release
      
+      * 743259 : tsdemux:  bogus timestamp when PTS < PCR
+      * 747633 : decklinkvideosrc: crash in ::VideoInputFrameArrived() callback with video_frame=NULL
+      * 754432 : curlsink: FTP active connection not handled properly in error case (aborted transfer)
+      * 760090 : gst-plugins-bad: implicit declaration of function ‘gst_init’
       * 760925 : GstGLVideoMixer leaks checker_vbo
       * 761070 : h265parse: Fix buffer memory leak
       * 761271 : gleffects: fix gleffects fisheye shader compile error
       * 761272 : glGenBuffers parameter should be GLsizei not GLuint
+      * 762013 : curlhttpsink: Problem in curlhttpsink when qtmux uses faststart, don't send empty buffers
       * 762098 : fix to make gtksink demo not hang on exit
+      * 762148 : dashdemux: correctly handle an HTTP-XSDATE that is exactly the size of the date string
+      * 762482 : fbdevsink SIGSEGV
+      * 762999 : Memory leak in qmlglsink
+      * 763494 : h265parse: Segfault while tranforming hevc packetized  stream to nal aligned bytestream
+      * 763793 : h264parse, h265parse: failure to parse downstream force-key-unit event
+      * 763974 : mxfdemux: Fix query memory leak
+      * 764448 : h264parse: constrained-baseline is a subset of baseline
+      * 764523 : -lole32 is missing for libgstdirectsoundsrc
+      * 758158 : opusdec: in-band FEC has no effect
+      * 763262 : mpegtsdemux: accurate seeks are no more accurate (regression)
 
 ==== Download ====
 
