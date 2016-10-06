@@ -629,7 +629,12 @@ gst_timidity_loop (GstPad * sinkpad)
     GST_DEBUG_OBJECT (timidity, "Parsing song");
 
     stream =
-        mid_istream_open_mem (timidity->mididata, timidity->mididata_size, 0);
+        mid_istream_open_mem (timidity->mididata, timidity->mididata_size
+#if LIBTIMIDITY_VERSION_MINOR >= 2L
+                              );
+#else
+                              , 0);
+#endif
 
     timidity->song = mid_song_load (stream, timidity->song_options);
     mid_istream_close (stream);
