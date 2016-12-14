@@ -850,7 +850,7 @@ gst_glimage_sink_finalize (GObject * object)
 }
 
 static void
-gst_glimage_sink_dealloc_texture ()
+gst_glimage_sink_dealloc_texture (GstGLImageSink * gl_sink)
 {
   GstBuffer *buf[2];
 
@@ -1087,7 +1087,7 @@ gst_glimage_sink_event (GstBaseSink * sink, GstEvent * event)
       }
       break;
     case GST_EVENT_FLUSH_START:
-      gst_glimage_sink_dealloc_texture ();
+      gst_glimage_sink_dealloc_texture (gl_sink);
       break;
     default:
       break;
@@ -1144,7 +1144,7 @@ gst_glimage_sink_query (GstBaseSink * bsink, GstQuery * query)
     }
     case GST_QUERY_DRAIN:
     {
-      gst_glimage_sink_dealloc_texture ();
+      gst_glimage_sink_dealloc_texture (glimage_sink);
       res = GST_BASE_SINK_CLASS (parent_class)->query (bsink, query);
       break;
     }
