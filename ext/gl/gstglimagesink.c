@@ -850,6 +850,30 @@ gst_glimage_sink_finalize (GObject * object)
 }
 
 static void
+gst_glimage_sink_dealloc_texture ()
+{
+  GstBuffer *buf[2];
+
+  GST_GLIMAGE_SINK_LOCK (gl_sink);
+  gl_sink->redisplay_texture = 0;
+  buf[0] = gl_sink->stored_buffer[0];
+  buf[1] = gl_sink->stored_buffer[1];
+  gl_sink->stored_buffer[0] = gl_sink->stored_buffer[1] = NULL;
+  gl_sink->stored_sync_meta = gl_sink->next_sync_meta = NULL;
+  GST_GLIMAGE_SINK_UNLOCK (gl_sink);
+
+  gst_buffer_replace (buf, NULL);
+  gst_buffer_replace (buf + 1, NULL);
+
+  gst_buffer_replace (&gl_sink->input_buffer, NULL);
+  gst_buffer_replace (&gl_sink->input_buffer2, NULL);
+  gst_buffer_replace (&gl_sink->next_buffer, NULL);
+  gst_buffer_replace (&gl_sink->next_buffer2, NULL);
+  gst_buffer_replace (&gl_sink->next_sync, NULL);
+
+}
+
+static void
 gst_glimage_sink_get_property (GObject * object, guint prop_id,
     GValue * value, GParamSpec * pspec)
 {
@@ -1062,6 +1086,9 @@ gst_glimage_sink_event (GstBaseSink * sink, GstEvent * event)
         g_free (orientation);
       }
       break;
+    case GST_EVENT_FLUSH_START:
+      gst_glimage_sink_dealloc_texture ();
+      break;
     default:
       break;
   }
@@ -1117,25 +1144,7 @@ gst_glimage_sink_query (GstBaseSink * bsink, GstQuery * query)
     }
     case GST_QUERY_DRAIN:
     {
-      GstBuffer *buf[2];
-
-      GST_GLIMAGE_SINK_LOCK (glimage_sink);
-      glimage_sink->redisplay_texture = 0;
-      buf[0] = glimage_sink->stored_buffer[0];
-      buf[1] = glimage_sink->stored_buffer[1];
-      glimage_sink->stored_buffer[0] = glimage_sink->stored_buffer[1] = NULL;
-      glimage_sink->stored_sync_meta = glimage_sink->next_sync_meta = NULL;
-      GST_GLIMAGE_SINK_UNLOCK (glimage_sink);
-
-      gst_buffer_replace (buf, NULL);
-      gst_buffer_replace (buf + 1, NULL);
-
-      gst_buffer_replace (&glimage_sink->input_buffer, NULL);
-      gst_buffer_replace (&glimage_sink->input_buffer2, NULL);
-      gst_buffer_replace (&glimage_sink->next_buffer, NULL);
-      gst_buffer_replace (&glimage_sink->next_buffer2, NULL);
-      gst_buffer_replace (&glimage_sink->next_sync, NULL);
-
+      gst_glimage_sink_dealloc_texture ();
       res = GST_BASE_SINK_CLASS (parent_class)->query (bsink, query);
       break;
     }
