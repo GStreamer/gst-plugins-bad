@@ -31,6 +31,7 @@ pkg_libs = [
   'mpegts',
   'player',
   'plugins-bad',
+  'webrtc',
 ]
 
 # XXX: requires the meson.build to be parsed/executed after gst-libs/gl/meson.build

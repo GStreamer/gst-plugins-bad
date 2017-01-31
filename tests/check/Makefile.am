@@ -12,8 +12,8 @@ REGISTRY_ENVIRONMENT = \
 AM_TESTS_ENVIRONMENT += \
 	$(REGISTRY_ENVIRONMENT)                                 \
 	GST_PLUGIN_SYSTEM_PATH_1_0=				\
-	GST_PLUGIN_PATH_1_0=$(top_builddir)/gst:$(top_builddir)/sys:$(top_builddir)/ext:$(GST_PLUGINS_LIBAV_DIR):$(GST_PLUGINS_UGLY_DIR):$(GST_PLUGINS_GOOD_DIR):$(GST_PLUGINS_BASE_DIR):$(GST_PLUGINS_DIR) \
-	GST_PLUGIN_LOADING_WHITELIST="gstreamer@$(GST_PLUGINS_DIR):gst-plugins-base@$(GSTPB_PLUGINS_DIR):gst-plugins-good:gst-plugins-ugly:gst-libav:gst-plugins-bad@$(top_builddir)" \
+	GST_PLUGIN_PATH_1_0=$(top_builddir)/gst:$(top_builddir)/sys:$(top_builddir)/ext:$(GST_PLUGINS_LIBAV_DIR):$(GST_PLUGINS_UGLY_DIR):$(GST_PLUGINS_GOOD_DIR):$(GST_PLUGINS_BASE_DIR):$(GST_PLUGINS_DIR):/home/matt/Projects/gst/1.12/libnice \
+	GST_PLUGIN_LOADING_WHITELIST="gstreamer@$(GST_PLUGINS_DIR):gst-plugins-base@$(GSTPB_PLUGINS_DIR):gst-plugins-good:gst-plugins-ugly:gst-libav:gst-plugins-bad@$(top_builddir):libnice" \
 	GST_STATE_IGNORE_ELEMENTS="avdtpsrc camerabin dc1394src \
 	    decklinksrc \
 	    decklinksink dtlssrtpdec dtlssrtpenc dvbsrc dvbbasebin dfbvideosink festival fluidsynth \
@@ -219,6 +219,12 @@ else
 check_gl=
 endif
 
+if USE_WEBRTC
+check_webrtc = elements/webrtcbin
+else
+check_webrtc=
+endif
+
 VALGRIND_TO_FIX = \
 	elements/mpeg2enc \
 	elements/mplex    \
@@ -301,6 +307,7 @@ check_PROGRAMS = \
 	$(check_hlsdemux) \
 	$(check_srtp) \
 	$(check_player) \
+	$(check_webrtc) \
 	$(EXPERIMENTAL_CHECKS)
 
 noinst_HEADERS = elements/mxfdemux.h libs/isoff.h
@@ -683,6 +690,13 @@ orc_videobox_CFLAGS = $(ORC_CFLAGS)
 orc/compositor.c: $(top_srcdir)/gst/compositor/compositororc.orc
 	$(MKDIR_P) orc/
 	$(ORCC) --test -o $@ $<
+
+elements_webrtcbin_LDADD = \
+	$(top_builddir)/gst-libs/gst/webrtc/libgstwebrtc-@GST_API_VERSION@.la \
+	$(GST_PLUGINS_BASE_LIBS) $(GST_BASE_LIBS) $(GST_SDP_LIBS) $(LDADD)
+elements_webrtcbin_CFLAGS = \
+	$(GST_PLUGINS_BASE_CLAGS) $(GST_PLUGINS_BAD_CFLAGS) $(GST_SDP_CFLAGS) \
+	$(GST_BASE_CFLAGS) $(CFLAGS) $(AM_CFLAGS)
 
 
 distclean-local-orc:
