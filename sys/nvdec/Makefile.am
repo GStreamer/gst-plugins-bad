@@ -22,5 +22,5 @@ libgstnvdec_la_LIBADD = \
 	$(CUDA_LIBS) \
 	$(NVDECODE_LIBS)
 
-libgstnvdec_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS) -lcuda
+libgstnvdec_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS)
 libgstnvdec_la_LIBTOOLFLAGS = $(GST_PLUGIN_LIBTOOLFLAGS)

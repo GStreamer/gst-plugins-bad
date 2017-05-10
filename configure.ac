@@ -2022,7 +2022,7 @@ AG_GST_CHECK_FEATURE(NVDEC, [NVIDIA Decode API], nvdec, [
   LIBS="$NVDECODE_LIBS $saved_LIBS"
   AC_CHECK_LIB(nvcuvid, cuvidDestroyDecoder, [HAVE_CUVIDEC_LIB="yes"],
       AC_MSG_WARN([Could not find library nvcuvid]))
-  NVDECODE_LIBS="$NVDECODE_LIBS -lnvidia-encode"
+  NVDECODE_LIBS="$NVDECODE_LIBS -lnvcuvid"
   AC_SUBST(NVDECODE_LIBS)
   LIBS="$saved_LIBS"
 
@@ -3627,6 +3627,7 @@ sys/fbdev/Makefile
 sys/kms/Makefile
 sys/msdk/Makefile
 sys/nvenc/Makefile
+sys/nvdec/Makefile
 sys/opensles/Makefile
 sys/shm/Makefile
 sys/tinyalsa/Makefile

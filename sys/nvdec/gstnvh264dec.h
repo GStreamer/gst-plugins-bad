@@ -15,8 +15,6 @@
 #ifndef _GST_NVH264DEC_H_
 #define _GST_NVH264DEC_H_
 
-#define GST_USE_UNSTABLE_API
-
 #include <gst/video/video.h>
 #include <gst/video/gstvideodecoder.h>
 

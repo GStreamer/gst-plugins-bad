@@ -35,8 +35,6 @@
 GST_DEBUG_CATEGORY_STATIC (gst_nvh264dec_debug_category);
 #define GST_CAT_DEFAULT gst_nvh264dec_debug_category
 
-static void gst_nvh264dec_init (GstNvh264dec * nvh264dec);
-
 /* prototypes */
 static void gst_nvh264dec_set_property (GObject * object,
     guint property_id, const GValue * value, GParamSpec * pspec);
@@ -65,6 +63,10 @@ static gboolean gst_nvh264dec_init_decoder (GstVideoDecoder * decoder,
     CUVIDEOFORMAT * cuvidfmt);
 static gboolean gst_nvh264dec_free_decoder (GstVideoDecoder * decoder);
 
+static int CUDAAPI
+gst_nvh264dec_handle_picture_display (void *decoder,
+    CUVIDPARSERDISPINFO * cuviddisp);
+
 enum
 { PROP_0, PROP_DEVICE_ID, N_PROPERTIES };
 
@@ -73,7 +75,7 @@ enum
 
 #define DEFAULT_DEVICE_ID (0)
 
-struct _GstNvh264decPrivate
+typedef struct _GstNvh264decPrivate
 {
   CUdevice cu_device;
   CUcontext cuda_ctx;
@@ -99,7 +101,7 @@ struct _GstNvh264decPrivate
 
   guint width;
   guint height;
-};
+} GstNvh264decPrivate;
 
 static gboolean
 check_cu (GstNvh264dec * nvh264dec, CUresult err, const char *func)
@@ -193,12 +195,12 @@ gst_nvh264dec_class_init (GstNvh264decClass * klass)
           (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
 }
 
-void
+static void
 gst_nvh264dec_init (GstNvh264dec * nvh264dec)
 {
+  GstNvh264decPrivate *pnvh264dec = GST_NVH264DEC_GET_PRIVATE (nvh264dec);
   IS_CUDA_CALL_SUCCSESS (nvh264dec, cuInit (0));
 
-  GstNvh264decPrivate *pnvh264dec = GST_NVH264DEC_GET_PRIVATE (nvh264dec);
   pnvh264dec->device_id = DEFAULT_DEVICE_ID;
   pnvh264dec->decoder = NULL;
   pnvh264dec->input_state = NULL;
@@ -384,6 +386,8 @@ gst_nvh264dec_init_parser (GstVideoDecoder * decoder)
 {
   GstNvh264dec *nvh264dec = GST_NVH264DEC (decoder);
   GstNvh264decPrivate *pnvh264dec = GST_NVH264DEC_GET_PRIVATE (decoder);
+  CUvideoparser lparser;
+  gboolean is_ok;
 
   if (pnvh264dec->parser) {
     return TRUE;
@@ -413,10 +417,8 @@ gst_nvh264dec_init_parser (GstVideoDecoder * decoder)
   pnvh264dec->cuparseinfo.pfnDisplayPicture =
       gst_nvh264dec_handle_picture_display;
 
-  CUvideoparser lparser;
-  gboolean is_ok = IS_CUDA_CALL_SUCCSESS (nvh264dec,
-      cuvidCreateVideoParser (&lparser,
-          &pnvh264dec->cuparseinfo));
+  is_ok = IS_CUDA_CALL_SUCCSESS (nvh264dec,
+      cuvidCreateVideoParser (&lparser, &pnvh264dec->cuparseinfo));
   if (!is_ok) {
     return FALSE;
   }
@@ -447,16 +449,20 @@ gst_nvh264dec_init_decoder (GstVideoDecoder * decoder, CUVIDEOFORMAT * cuvidfmt)
   static const int MAX_FRAME_COUNT = 2;
   GstNvh264dec *nvh264dec = GST_NVH264DEC (decoder);
   GstNvh264decPrivate *pnvh264dec = GST_NVH264DEC_GET_PRIVATE (decoder);
+  CUvideodecoder ldecoder;
+  CUVIDDECODECREATEINFO dec_param;
+  gboolean is_ok;
+  unsigned int width;
+  unsigned int height;
 
   if (pnvh264dec->decoder) {
     return TRUE;
   }
 
-  CUVIDDECODECREATEINFO dec_param;
   memset (&dec_param, 0, sizeof (CUVIDDECODECREATEINFO));
   dec_param.CodecType = cuvidfmt->codec;
-  unsigned int width = cuvidfmt->coded_width;
-  unsigned int height = cuvidfmt->coded_height;
+  width = cuvidfmt->coded_width;
+  height = cuvidfmt->coded_height;
 
   dec_param.ulWidth = width;
   dec_param.ulHeight = height;
@@ -479,8 +485,7 @@ gst_nvh264dec_init_decoder (GstVideoDecoder * decoder, CUVIDEOFORMAT * cuvidfmt)
   dec_param.ulNumOutputSurfaces = MAX_FRAME_COUNT;      // We won't simultaneously map more than 8 surfaces
   dec_param.ulCreationFlags = cudaVideoCreate_PreferCUVID;
 
-  CUvideodecoder ldecoder;
-  gboolean is_ok = IS_CUDA_CALL_SUCCSESS (nvh264dec,
+  is_ok = IS_CUDA_CALL_SUCCSESS (nvh264dec,
       cuvidCreateDecoder (&ldecoder, &dec_param));
   if (!is_ok) {
     return FALSE;
@@ -536,7 +541,7 @@ gst_nvh264dec_stop (GstVideoDecoder * decoder)
 GstFlowReturn
 gst_nvh264dec_drain (GstVideoDecoder * decoder)
 {
-  GstNvh264dec *nvh264dec = GST_NVH264DEC (decoder);
+  // GstNvh264dec *nvh264dec = GST_NVH264DEC (decoder);
   return gst_nvh264dec_handle_frame (decoder, NULL);
 }
 
@@ -545,18 +550,20 @@ gst_nvh264dec_set_format (GstVideoDecoder * decoder, GstVideoCodecState * state)
 {
   GstNvh264dec *nvh264dec = GST_NVH264DEC (decoder);
   GstNvh264decPrivate *pnvh264dec = GST_NVH264DEC_GET_PRIVATE (decoder);
+  const gchar *codec_data;
+  GstStructure *pad_struct;
+  gint width = 0;
+  gint height = 0;
 
   GST_DEBUG_OBJECT (nvh264dec, "input caps: %" GST_PTR_FORMAT, state->caps);
 
-  GstStructure *pad_struct = gst_caps_get_structure (state->caps, 0);
-  gint width = 0;
-  gint height = 0;
+  pad_struct = gst_caps_get_structure (state->caps, 0);
   if (gst_structure_get_int (pad_struct, "width", &width)) {
   }
   if (gst_structure_get_int (pad_struct, "height", &height)) {
   }
 
-  const gchar *codec_data = gst_structure_get_string (pad_struct, "codec_data");
+  codec_data = gst_structure_get_string (pad_struct, "codec_data");
   if (codec_data) {
   }
 
@@ -614,6 +621,13 @@ gst_nvh264dec_send_decoded_frame (GstVideoDecoder * decoder,
 {
   GstNvh264dec *nvh264dec = GST_NVH264DEC (decoder);
   GstNvh264decPrivate *pnvh264dec = GST_NVH264DEC_GET_PRIVATE (decoder);
+  GstMapInfo omap_info;
+  GstFlowReturn ret;
+  int pitch_offset;
+  int size;
+  CUdeviceptr mapped_frame;
+  unsigned int pitch;
+  gboolean is_ok;
 
   CUVIDPROCPARAMS proc_params;
   memset (&proc_params, 0, sizeof (CUVIDPROCPARAMS));
@@ -622,20 +636,15 @@ gst_nvh264dec_send_decoded_frame (GstVideoDecoder * decoder,
   proc_params.top_field_first = cuviddisp->top_field_first;
   proc_params.unpaired_field = cuviddisp->progressive_frame == 1;
 
-  CUdeviceptr mapped_frame;
-  unsigned int pitch;
-  gboolean is_ok = IS_CUDA_CALL_SUCCSESS (nvh264dec,
+  is_ok = IS_CUDA_CALL_SUCCSESS (nvh264dec,
       cuvidMapVideoFrame (pnvh264dec->decoder,
-          cuviddisp->picture_index,
-          &mapped_frame,
-          &pitch,
-          &proc_params));
+          cuviddisp->picture_index, &mapped_frame, &pitch, &proc_params));
   if (!is_ok) {
     return GST_FLOW_ERROR;
   }
 
-  int pitch_offset = pitch * pnvh264dec->height;
-  int size = pitch_offset * 3 / 2;
+  pitch_offset = pitch * pnvh264dec->height;
+  size = pitch_offset * 3 / 2;
   if (size > pnvh264dec->host_data_size && pnvh264dec->host_data) {
     IS_CUDA_CALL_SUCCSESS (nvh264dec, cuMemFreeHost (pnvh264dec->host_data));
     pnvh264dec->host_data = 0;
@@ -669,12 +678,11 @@ gst_nvh264dec_send_decoded_frame (GstVideoDecoder * decoder,
     return GST_FLOW_ERROR;
   }
 
-  GstFlowReturn ret = gst_video_decoder_allocate_output_frame (decoder, frame);
+  ret = gst_video_decoder_allocate_output_frame (decoder, frame);
   if (G_UNLIKELY (ret != GST_FLOW_OK)) {
     return GST_FLOW_ERROR;
   }
 
-  GstMapInfo omap_info;
   if (!gst_buffer_map (frame->output_buffer, &omap_info, GST_MAP_WRITE)) {
     GST_ERROR_OBJECT (nvh264dec, "Cannot map output buffer!");
     return GST_FLOW_ERROR;
@@ -698,6 +706,10 @@ gst_nvh264dec_handle_frame (GstVideoDecoder * decoder,
 {
   GstNvh264dec *nvh264dec = GST_NVH264DEC (decoder);
   GstNvh264decPrivate *pnvh264dec = GST_NVH264DEC_GET_PRIVATE (decoder);
+  gboolean is_ok;
+  CUVIDSOURCEDATAPACKET cuvid_pkt;
+  CUVIDPARSERDISPINFO cuviddisp;
+  GstMapInfo map_info;
 
   if (!pnvh264dec->parser) {
     if (frame) {
@@ -713,15 +725,13 @@ gst_nvh264dec_handle_frame (GstVideoDecoder * decoder,
     memset (&cuvid_pkt, 0, sizeof (CUVIDSOURCEDATAPACKET));
     cuvid_pkt.flags = CUVID_PKT_ENDOFSTREAM;
 
-    gboolean is_ok = IS_CUDA_CALL_SUCCSESS (nvh264dec,
-        cuvidParseVideoData (pnvh264dec->parser,
-            &cuvid_pkt));
+    is_ok = IS_CUDA_CALL_SUCCSESS (nvh264dec,
+        cuvidParseVideoData (pnvh264dec->parser, &cuvid_pkt));
     if (cuvid_pkt.flags & CUVID_PKT_ENDOFSTREAM || !is_ok) {
     }
     return GST_FLOW_OK;
   }
 
-  GstMapInfo map_info;
   if (!gst_buffer_map (frame->input_buffer, &map_info, GST_MAP_READ)) {
     GST_ERROR_OBJECT (nvh264dec, "Cannot map input buffer!");
     gst_video_codec_frame_unref (frame);
@@ -731,7 +741,6 @@ gst_nvh264dec_handle_frame (GstVideoDecoder * decoder,
   GST_LOG_OBJECT (nvh264dec, "handle frame, %d",
       map_info.size > 4 ? map_info.data[4] & 0x1f : -1);
 
-  CUVIDSOURCEDATAPACKET cuvid_pkt;
   memset (&cuvid_pkt, 0, sizeof (CUVIDSOURCEDATAPACKET));
   cuvid_pkt.payload = map_info.data;
   cuvid_pkt.payload_size = map_info.size;
@@ -740,9 +749,8 @@ gst_nvh264dec_handle_frame (GstVideoDecoder * decoder,
     cuvid_pkt.timestamp = frame->pts;
   }
 
-  gboolean is_ok = IS_CUDA_CALL_SUCCSESS (nvh264dec,
-      cuvidParseVideoData (pnvh264dec->parser,
-          &cuvid_pkt));
+  is_ok = IS_CUDA_CALL_SUCCSESS (nvh264dec,
+      cuvidParseVideoData (pnvh264dec->parser, &cuvid_pkt));
   if (!is_ok) {
     gst_buffer_unmap (frame->input_buffer, &map_info);
     gst_video_codec_frame_unref (frame);
@@ -752,7 +760,6 @@ gst_nvh264dec_handle_frame (GstVideoDecoder * decoder,
   if (cuvid_pkt.flags & CUVID_PKT_ENDOFSTREAM || !is_ok) {
   }
 
-  CUVIDPARSERDISPINFO cuviddisp;
   if (pnvh264dec->output_state
       && gst_nvh264dec_dequeue_frame (pnvh264dec, &cuviddisp)) {
     GstFlowReturn ret =
