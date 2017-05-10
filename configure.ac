@@ -1961,6 +1961,83 @@ AG_GST_CHECK_FEATURE(NVENC, [NVIDIA Encode API], nvenc, [
 ])
 AM_CONDITIONAL(USE_NVENC_GST_GL, test "x$USE_NVENC_GST_GL" = "xyes")
 
+dnl *** NVDEC ***
+translit(dnm, m, l) AM_CONDITIONAL(USE_NVDEC, true)
+AG_GST_CHECK_FEATURE(NVDEC, [NVIDIA Decode API], nvdec, [
+  AC_ARG_WITH([cuda-prefix],
+          AS_HELP_STRING([--with-cuda-prefix],
+          [Use the provided prefix for detecting the cuda installation]),
+          [AS_IF([test "x$with_cuda_prefix" != "x"],
+                 [CUDA_PREFIX="$with_cuda_prefix"])],
+          [CUDA_PREFIX=""])
+
+  HAVE_CUDA="yes"
+  if test "x$CUDA_PREFIX" != "x"; then
+    dnl only override if not already set
+    if test "x$CUDA_CFLAGS" = "x" -a "x$CUDA_LIBS" = "x"; then
+      dnl this is an educated guess, user can always override these
+      CUDA_CFLAGS="-I$CUDA_PREFIX/include"
+      CUDA_LIBS="-L$CUDA_PREFIX/lib -L$CUDA_PREFIX/lib64 -L$CUDA_PREFIX/lib/stubs -L$CUDA_PREFIX/lib64/stubs -lcuda -lcudart"
+    fi
+  else
+    PKG_CHECK_MODULES([CUDA], [cuda-7.5 cudart-7.5],, [
+      PKG_CHECK_MODULES([CUDA], [cuda-7.0 cudart-7.0],, [
+        PKG_CHECK_MODULES([CUDA], [cuda-6.5 cudart-6.5],, [
+          AC_MSG_WARN([Could not find cuda headers/libraries])])])])
+  fi
+
+  HAVE_CUDA_H=no
+  HAVE_CUDART_H=no
+  save_CPPFLAGS="$CPPFLAGS"
+  CPPFLAGS="$CUDA_CFLAGS $save_CPPFLAGS "
+  AC_CHECK_HEADER([cuda.h], [HAVE_CUDA_H=yes],
+      AC_MSG_WARN([Could not find cuda.h]))
+  AC_CHECK_HEADER([cuda_runtime_api.h], [HAVE_CUDART_H=yes],
+      AC_MSG_WARN([Could not find cuda_runtime_api.h]))
+  CPPFLAGS=$save_CPPFLAGS
+
+  dnl libcuda and libcudart libraries
+  save_LIBS="$LIBS"
+  LIBS="$CUDA_LIBS $save_LIBS"
+  HAVE_CUDART_LIB="no"
+  AC_CHECK_LIB(cudart,cudaGetErrorString,[HAVE_CUDART_LIB="yes"], [
+      AC_MSG_WARN([Could not find cudart library])])
+  HAVE_CUDA_LIB="no"
+  AC_CHECK_LIB(cuda,cuInit,[HAVE_CUDA_LIB="yes"], [
+      AC_MSG_WARN([Could not find cuda library])])
+  LIBS="$save_LIBS"
+
+  dnl cuviddec.h header
+  HAVE_CUVIDEC_H=no
+  save_CPPFLAGS="$CPPFLAGS"
+  CPPFLAGS="$CUDA_CFLAGS $save_CPPFLAGS "
+  AC_CHECK_HEADER([cuviddec.h], [HAVE_CUVIDEC_H=yes],
+      AC_MSG_WARN([Could not find cuviddec.h]))
+  CPPFLAGS=$save_CPPFLAGS
+
+  dnl nvcuvid library
+  HAVE_CUVIDEC_LIB=no
+  AC_ARG_VAR(NVDECODE_LIBS, [linker flags for nvidia-encode])
+  saved_LIBS="$LIBS"
+  LIBS="$NVDECODE_LIBS $saved_LIBS"
+  AC_CHECK_LIB(nvcuvid, cuvidDestroyDecoder, [HAVE_CUVIDEC_LIB="yes"],
+      AC_MSG_WARN([Could not find library nvcuvid]))
+  NVDECODE_LIBS="$NVDECODE_LIBS -lnvidia-encode"
+  AC_SUBST(NVDECODE_LIBS)
+  LIBS="$saved_LIBS"
+
+  if test "x$HAVE_CUDA_H" = "xyes" \
+      -a "x$HAVE_CUDART_H" = "xyes" \
+      -a "x$HAVE_CUDA_LIB" = "xyes" \
+      -a "x$HAVE_CUDART_LIB" = "xyes" \
+      -a "x$HAVE_CUVIDEC_H" = "xyes" \
+      -a "x$HAVE_CUVIDEC_LIB" = "xyes"; then
+    HAVE_NVDEC="yes"
+  else
+    HAVE_NVDEC="no"
+  fi
+])
+
 dnl check for tinyalsa
 translit(dnm, m, l) AM_CONDITIONAL(USE_TINYALSA, true)
 AG_GST_CHECK_FEATURE(TINYALSA, [tinyalsa], tinyalsa, [
