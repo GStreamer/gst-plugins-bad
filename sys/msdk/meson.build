@@ -11,6 +11,10 @@ msdk_sources = [
   'gstmsdkmpeg2enc.c',
   'gstmsdkvp8enc.c',
   'msdk.c',
+  'dummy.cpp', # This forces C++ linking of gstmsdk, which is
+               # required by libmfx.a. This can be removed when we
+               # depend on a version of meson that has a fix for
+               # https://github.com/mesonbuild/meson/issues/1653
 ]
 
 if host_machine.system() == 'windows'
