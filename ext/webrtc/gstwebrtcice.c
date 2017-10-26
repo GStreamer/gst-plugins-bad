@@ -38,8 +38,8 @@ GST_DEBUG_CATEGORY_STATIC (GST_CAT_DEFAULT);
 #define gst_webrtc_ice_parent_class parent_class
 G_DEFINE_TYPE_WITH_CODE (GstWebRTCICE, gst_webrtc_ice,
     GST_TYPE_OBJECT,
-    GST_DEBUG_CATEGORY_INIT (gst_webrtc_ice_debug, "webrtcice", 0, "webrtcice");
-    );
+    GST_DEBUG_CATEGORY_INIT (gst_webrtc_ice_debug, "webrtcice", 0,
+        "webrtcice"););
 
 GQuark
 gst_webrtc_ice_error_quark (void)
@@ -319,33 +319,46 @@ gst_webrtc_ice_add_stream (GstWebRTCICE * ice, guint session_id,
   if (ice->turn_server) {
     gboolean ret;
     gchar *user, *pass;
-    const gchar *userinfo;
+    const gchar *userinfo, *transport, *scheme;
+    NiceRelayType relays[4] = { 0, };
+    int i, relay_n = 0;
 
+    scheme = gst_uri_get_scheme (ice->turn_server);
+    transport = gst_uri_get_query_value (ice->turn_server, "transport");
     userinfo = gst_uri_get_userinfo (ice->turn_server);
     _parse_userinfo (userinfo, &user, &pass);
 
-    /* XXX: RTCP? */
-    ret = nice_agent_set_relay_info (ice->priv->nice_agent,
-        item->nice_stream_id, NICE_COMPONENT_TYPE_RTP,
-        gst_uri_get_host (ice->turn_server),
-        gst_uri_get_port (ice->turn_server),
-        user, pass, NICE_RELAY_TYPE_TURN_UDP);
-    if (!ret) {
-      gchar *uri = gst_uri_to_string (ice->turn_server);
-      GST_ERROR_OBJECT (ice, "Failed to set UDP TURN server '%s'", uri);
-      g_free (uri);
+    if (g_strcmp0 (scheme, "turns") == 0) {
+      relays[relay_n++] = NICE_RELAY_TYPE_TURN_TLS;
+    } else if (g_strcmp0 (scheme, "turn") == 0) {
+      if (!transport || g_strcmp0 (transport, "udp") == 0)
+        relays[relay_n++] = NICE_RELAY_TYPE_TURN_UDP;
+      if (!transport || g_strcmp0 (transport, "tcp") == 0)
+        relays[relay_n++] = NICE_RELAY_TYPE_TURN_TCP;
     }
+    g_assert (relay_n < G_N_ELEMENTS (relays));
 
-    /* XXX: RTCP? */
-    ret = nice_agent_set_relay_info (ice->priv->nice_agent,
-        item->nice_stream_id, NICE_COMPONENT_TYPE_RTP,
-        gst_uri_get_host (ice->turn_server),
-        gst_uri_get_port (ice->turn_server),
-        user, pass, NICE_RELAY_TYPE_TURN_TCP);
-    if (!ret) {
-      gchar *uri = gst_uri_to_string (ice->turn_server);
-      GST_ERROR_OBJECT (ice, "Failed to set TCP TURN server '%s'", uri);
-      g_free (uri);
+    for (i = 0; i < relay_n; i++) {
+      ret = nice_agent_set_relay_info (ice->priv->nice_agent,
+          item->nice_stream_id, NICE_COMPONENT_TYPE_RTP,
+          gst_uri_get_host (ice->turn_server),
+          gst_uri_get_port (ice->turn_server), user, pass, relays[i]);
+      if (!ret) {
+        gchar *uri = gst_uri_to_string (ice->turn_server);
+        GST_ERROR_OBJECT (ice, "Failed to set TURN server '%s'", uri);
+        g_free (uri);
+        break;
+      }
+      ret = nice_agent_set_relay_info (ice->priv->nice_agent,
+          item->nice_stream_id, NICE_COMPONENT_TYPE_RTCP,
+          gst_uri_get_host (ice->turn_server),
+          gst_uri_get_port (ice->turn_server), user, pass, relays[i]);
+      if (!ret) {
+        gchar *uri = gst_uri_to_string (ice->turn_server);
+        GST_ERROR_OBJECT (ice, "Failed to set TURN server '%s'", uri);
+        g_free (uri);
+        break;
+      }
     }
     g_free (user);
     g_free (pass);
@@ -596,8 +609,10 @@ static void
 _set_turn_server (GstWebRTCICE * ice, const gchar * s)
 {
   GstUri *uri = gst_uri_from_string (s);
-  const gchar *userinfo, *host;
-  gchar *ip, *user, *pass;
+  const gchar *userinfo, *host, *scheme;
+  GList *keys = NULL, *l;
+  gchar *ip = NULL, *user = NULL, *pass = NULL;
+  gboolean turn_tls = FALSE;
   guint port;
 
   GST_DEBUG_OBJECT (ice, "setting turn server, %s", s);
@@ -607,18 +622,65 @@ _set_turn_server (GstWebRTCICE * ice, const gchar * s)
     return;
   }
 
+  scheme = gst_uri_get_scheme (uri);
+  if (g_strcmp0 (scheme, "turn") == 0) {
+  } else if (g_strcmp0 (scheme, "turns") == 0) {
+    turn_tls = TRUE;
+  } else {
+    GST_ERROR_OBJECT (ice, "unknown scheme '%s'", scheme);
+    goto out;
+  }
+
+  keys = gst_uri_get_query_keys (uri);
+  for (l = keys; l; l = l->next) {
+    gchar *key = l->data;
+
+    if (g_strcmp0 (key, "transport") == 0) {
+      const gchar *transport = gst_uri_get_query_value (uri, "transport");
+      if (!transport) {
+      } else if (g_strcmp0 (transport, "udp") == 0) {
+      } else if (g_strcmp0 (transport, "tcp") == 0) {
+      } else {
+        GST_ERROR_OBJECT (ice, "unknown transport value, '%s'", transport);
+        goto out;
+      }
+    } else {
+      GST_ERROR_OBJECT (ice, "unknown query key, '%s'", key);
+      goto out;
+    }
+  }
+
   /* TODO: Implement error checking similar to the stun server below */
   userinfo = gst_uri_get_userinfo (uri);
   _parse_userinfo (userinfo, &user, &pass);
+  if (!user) {
+    GST_ERROR_OBJECT (ice, "No username specified in '%s'", s);
+    goto out;
+  }
+  if (!pass) {
+    GST_ERROR_OBJECT (ice, "No password specified in '%s'", s);
+    goto out;
+  }
+
   host = gst_uri_get_host (uri);
+  if (!host) {
+    GST_ERROR_OBJECT (ice, "Turn server has no host");
+    goto out;
+  }
   ip = _resolve_host (host);
+  if (!ip) {
+    GST_ERROR_OBJECT (ice, "Failed to resolve turn server '%s'", host);
+    goto out;
+  }
   port = gst_uri_get_port (uri);
 
-  if (!ip)
-    goto out;
-
-  if (port == GST_URI_NO_PORT)
-    gst_uri_set_port (uri, 3478);
+  if (port == GST_URI_NO_PORT) {
+    if (turn_tls) {
+      gst_uri_set_port (uri, 5349);
+    } else {
+      gst_uri_set_port (uri, 3478);
+    }
+  }
   /* Set the resolved IP as the host since that's what libnice wants */
   gst_uri_set_host (uri, ip);
 
@@ -627,6 +689,7 @@ _set_turn_server (GstWebRTCICE * ice, const gchar * s)
   ice->turn_server = uri;
 
 out:
+  g_list_free (keys);
   g_free (ip);
   g_free (user);
   g_free (pass);
@@ -761,13 +824,13 @@ gst_webrtc_ice_class_init (GstWebRTCICEClass * klass)
   g_object_class_install_property (gobject_class,
       PROP_STUN_SERVER,
       g_param_spec_string ("stun-server", "STUN Server",
-          "The STUN server of the form hostname:port",
+          "The STUN server of the form stun://hostname:port",
           NULL, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
   g_object_class_install_property (gobject_class,
       PROP_TURN_SERVER,
       g_param_spec_string ("turn-server", "TURN Server",
-          "The TURN server of the form username:password@host:port",
+          "The TURN server of the form turn(s)://username:password@host:port",
           NULL, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
   g_object_class_install_property (gobject_class,
