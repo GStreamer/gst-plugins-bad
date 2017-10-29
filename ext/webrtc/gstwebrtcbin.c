@@ -3545,14 +3545,30 @@ gst_webrtc_bin_change_state (GstElement * element, GstStateChange transition)
       gst_element_state_get_name (GST_STATE_TRANSITION_NEXT (transition)));
 
   switch (transition) {
-    case GST_STATE_CHANGE_NULL_TO_READY:
+    case GST_STATE_CHANGE_NULL_TO_READY:{
+      GstElement *nice;
       if (!webrtc->rtpbin) {
         /* FIXME: is this the right thing for a missing plugin? */
         GST_ELEMENT_ERROR (webrtc, CORE, MISSING_PLUGIN, (NULL), (NULL));
         return GST_STATE_CHANGE_FAILURE;
       }
+      nice = gst_element_factory_make ("nicesrc", NULL);
+      if (!nice) {
+        /* FIXME: is this the right thing for a missing plugin? */
+        GST_ELEMENT_ERROR (webrtc, CORE, MISSING_PLUGIN, (NULL), (NULL));
+        return GST_STATE_CHANGE_FAILURE;
+      }
+      gst_object_unref (nice);
+      nice = gst_element_factory_make ("nicesink", NULL);
+      if (!nice) {
+        /* FIXME: is this the right thing for a missing plugin? */
+        GST_ELEMENT_ERROR (webrtc, CORE, MISSING_PLUGIN, (NULL), (NULL));
+        return GST_STATE_CHANGE_FAILURE;
+      }
+      gst_object_unref (nice);
       _update_need_negotiation (webrtc);
       break;
+    }
     case GST_STATE_CHANGE_READY_TO_PAUSED:
       webrtc->priv->running = TRUE;
       break;

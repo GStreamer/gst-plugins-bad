@@ -211,14 +211,18 @@ gst_webrtc_nice_transport_constructed (GObject * object)
       G_CALLBACK (_on_new_selected_pair), nice);
 
   ice->src = gst_element_factory_make ("nicesrc", NULL);
-  g_object_set (ice->src, "agent", agent, "stream", our_stream_id,
-      "component", component, NULL);
+  if (ice->src) {
+    g_object_set (ice->src, "agent", agent, "stream", our_stream_id,
+        "component", component, NULL);
+  }
   ice->sink = gst_element_factory_make ("nicesink", NULL);
-  g_object_set (ice->sink, "agent", agent, "stream", our_stream_id,
-      "component", component, "async", FALSE, "enable-last-sample", FALSE,
-      NULL);
-  if (ice->component == GST_WEBRTC_ICE_COMPONENT_RTCP)
-    g_object_set (ice->sink, "sync", FALSE, NULL);
+  if (ice->sink) {
+    g_object_set (ice->sink, "agent", agent, "stream", our_stream_id,
+        "component", component, "async", FALSE, "enable-last-sample", FALSE,
+        NULL);
+    if (ice->component == GST_WEBRTC_ICE_COMPONENT_RTCP)
+      g_object_set (ice->sink, "sync", FALSE, NULL);
+  }
 
   g_object_unref (agent);
 }
