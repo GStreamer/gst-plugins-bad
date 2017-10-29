@@ -88,7 +88,7 @@ struct _GstWebRTCBin
 
   GstElement                       *rtpbin;
 
-  GstWebRTCSignallingState          signalling_state;
+  GstWebRTCSignalingState           signaling_state;
   GstWebRTCICEGatheringState        ice_gathering_state;
   GstWebRTCICEConnectionState       ice_connection_state;
   GstWebRTCPeerConnectionState      peer_connection_state;

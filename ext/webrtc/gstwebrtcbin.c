@@ -239,7 +239,7 @@ enum
 {
   PROP_0,
   PROP_CONNECTION_STATE,
-  PROP_SIGNALLING_STATE,
+  PROP_SIGNALING_STATE,
   PROP_ICE_GATHERING_STATE,
   PROP_ICE_CONNECTION_STATE,
   PROP_LOCAL_DESCRIPTION,
@@ -1284,7 +1284,7 @@ _update_need_negotiation (GstWebRTCBin * webrtc)
   if (webrtc->priv->is_closed)
     return;
   /* If connection's signaling state is not "stable", abort these steps. */
-  if (webrtc->signalling_state != GST_WEBRTC_SIGNALLING_STATE_STABLE)
+  if (webrtc->signaling_state != GST_WEBRTC_SIGNALING_STATE_STABLE)
     return;
 
   /* If the result of checking if negotiation is needed is "false", clear the
@@ -2051,8 +2051,8 @@ static gboolean
 _check_valid_state_for_sdp_change (GstWebRTCBin * webrtc, SDPSource source,
     GstWebRTCSDPType type, GError ** error)
 {
-  GstWebRTCSignallingState state = webrtc->signalling_state;
-#define STATE(val) GST_WEBRTC_SIGNALLING_STATE_ ## val
+  GstWebRTCSignalingState state = webrtc->signaling_state;
+#define STATE(val) GST_WEBRTC_SIGNALING_STATE_ ## val
 #define TYPE(val) GST_WEBRTC_SDP_TYPE_ ## val
 
   if (source == SDP_LOCAL && type == TYPE (OFFER) && state == STATE (STABLE))
@@ -2086,8 +2086,8 @@ _check_valid_state_for_sdp_change (GstWebRTCBin * webrtc, SDPSource source,
     return TRUE;
 
   {
-    gchar *state = _enum_value_to_string (GST_TYPE_WEBRTC_SIGNALLING_STATE,
-        webrtc->signalling_state);
+    gchar *state = _enum_value_to_string (GST_TYPE_WEBRTC_SIGNALING_STATE,
+        webrtc->signaling_state);
     gchar *type_str = _enum_value_to_string (GST_TYPE_WEBRTC_SDP_TYPE, type);
     g_set_error (error, GST_WEBRTC_BIN_ERROR,
         GST_WEBRTC_BIN_ERROR_INVALID_STATE,
@@ -3053,12 +3053,12 @@ struct set_description
 static void
 _set_description_task (GstWebRTCBin * webrtc, struct set_description *sd)
 {
-  GstWebRTCSignallingState new_signalling_state = webrtc->signalling_state;
+  GstWebRTCSignalingState new_signaling_state = webrtc->signaling_state;
   GError *error = NULL;
 
   {
-    gchar *state = _enum_value_to_string (GST_TYPE_WEBRTC_SIGNALLING_STATE,
-        webrtc->signalling_state);
+    gchar *state = _enum_value_to_string (GST_TYPE_WEBRTC_SIGNALING_STATE,
+        webrtc->signaling_state);
     gchar *type_str =
         _enum_value_to_string (GST_TYPE_WEBRTC_SDP_TYPE, sd->sdp->type);
     gchar *sdp_text = gst_sdp_message_as_text (sd->sdp->sdp);
@@ -3087,13 +3087,13 @@ _set_description_task (GstWebRTCBin * webrtc, struct set_description *sd)
           gst_webrtc_session_description_free
               (webrtc->pending_local_description);
         webrtc->pending_local_description = sd->sdp;
-        new_signalling_state = GST_WEBRTC_SIGNALLING_STATE_HAVE_LOCAL_OFFER;
+        new_signaling_state = GST_WEBRTC_SIGNALING_STATE_HAVE_LOCAL_OFFER;
       } else {
         if (webrtc->pending_remote_description)
           gst_webrtc_session_description_free
               (webrtc->pending_remote_description);
         webrtc->pending_remote_description = sd->sdp;
-        new_signalling_state = GST_WEBRTC_SIGNALLING_STATE_HAVE_REMOTE_OFFER;
+        new_signaling_state = GST_WEBRTC_SIGNALING_STATE_HAVE_REMOTE_OFFER;
       }
       break;
     }
@@ -3131,7 +3131,7 @@ _set_description_task (GstWebRTCBin * webrtc, struct set_description *sd)
             (webrtc->pending_remote_description);
       webrtc->pending_remote_description = NULL;
 
-      new_signalling_state = GST_WEBRTC_SIGNALLING_STATE_STABLE;
+      new_signaling_state = GST_WEBRTC_SIGNALING_STATE_STABLE;
       break;
     }
     case GST_WEBRTC_SDP_TYPE_ROLLBACK:{
@@ -3148,7 +3148,7 @@ _set_description_task (GstWebRTCBin * webrtc, struct set_description *sd)
         webrtc->pending_remote_description = NULL;
       }
 
-      new_signalling_state = GST_WEBRTC_SIGNALLING_STATE_STABLE;
+      new_signaling_state = GST_WEBRTC_SIGNALING_STATE_STABLE;
       break;
     }
     case GST_WEBRTC_SDP_TYPE_PRANSWER:{
@@ -3159,29 +3159,29 @@ _set_description_task (GstWebRTCBin * webrtc, struct set_description *sd)
               (webrtc->pending_local_description);
         webrtc->pending_local_description = sd->sdp;
 
-        new_signalling_state = GST_WEBRTC_SIGNALLING_STATE_HAVE_LOCAL_PRANSWER;
+        new_signaling_state = GST_WEBRTC_SIGNALING_STATE_HAVE_LOCAL_PRANSWER;
       } else {
         if (webrtc->pending_remote_description)
           gst_webrtc_session_description_free
               (webrtc->pending_remote_description);
         webrtc->pending_remote_description = sd->sdp;
 
-        new_signalling_state = GST_WEBRTC_SIGNALLING_STATE_HAVE_REMOTE_PRANSWER;
+        new_signaling_state = GST_WEBRTC_SIGNALING_STATE_HAVE_REMOTE_PRANSWER;
       }
       break;
     }
   }
 
-  if (new_signalling_state != webrtc->signalling_state) {
-    gchar *from = _enum_value_to_string (GST_TYPE_WEBRTC_SIGNALLING_STATE,
-        webrtc->signalling_state);
-    gchar *to = _enum_value_to_string (GST_TYPE_WEBRTC_SIGNALLING_STATE,
-        new_signalling_state);
-    GST_TRACE_OBJECT (webrtc, "notify signalling-state from %s "
+  if (new_signaling_state != webrtc->signaling_state) {
+    gchar *from = _enum_value_to_string (GST_TYPE_WEBRTC_SIGNALING_STATE,
+        webrtc->signaling_state);
+    gchar *to = _enum_value_to_string (GST_TYPE_WEBRTC_SIGNALING_STATE,
+        new_signaling_state);
+    GST_TRACE_OBJECT (webrtc, "notify signaling-state from %s "
         "to %s", from, to);
-    webrtc->signalling_state = new_signalling_state;
+    webrtc->signaling_state = new_signaling_state;
     PC_UNLOCK (webrtc);
-    g_object_notify (G_OBJECT (webrtc), "signalling-state");
+    g_object_notify (G_OBJECT (webrtc), "signaling-state");
     PC_LOCK (webrtc);
 
     g_free (from);
@@ -3206,13 +3206,13 @@ _set_description_task (GstWebRTCBin * webrtc, struct set_description *sd)
      */
   }
 
-  if (webrtc->signalling_state == GST_WEBRTC_SIGNALLING_STATE_STABLE) {
+  if (webrtc->signaling_state == GST_WEBRTC_SIGNALING_STATE_STABLE) {
     gboolean prev_need_negotiation = webrtc->priv->need_negotiation;
 
     /* media modifications */
     _update_transceivers_from_sdp (webrtc, sd->source, sd->sdp);
 
-    /* If connection's signalling state is now stable, update the
+    /* If connection's signaling state is now stable, update the
      * negotiation-needed flag. If connection's [[ needNegotiation]] slot
      * was true both before and after this update, queue a task to check
      * connection's [[needNegotiation]] slot and, if still true, fire a
@@ -3666,8 +3666,8 @@ gst_webrtc_bin_get_property (GObject * object, guint prop_id,
     case PROP_CONNECTION_STATE:
       g_value_set_enum (value, webrtc->peer_connection_state);
       break;
-    case PROP_SIGNALLING_STATE:
-      g_value_set_enum (value, webrtc->signalling_state);
+    case PROP_SIGNALING_STATE:
+      g_value_set_enum (value, webrtc->signaling_state);
       break;
     case PROP_ICE_GATHERING_STATE:
       g_value_set_enum (value, webrtc->ice_gathering_state);
@@ -3836,11 +3836,11 @@ gst_webrtc_bin_class_init (GstWebRTCBinClass * klass)
           G_PARAM_READABLE | G_PARAM_STATIC_STRINGS));
 
   g_object_class_install_property (gobject_class,
-      PROP_SIGNALLING_STATE,
-      g_param_spec_enum ("signalling-state", "Signalling State",
-          "The signalling state of this element",
-          GST_TYPE_WEBRTC_SIGNALLING_STATE,
-          GST_WEBRTC_SIGNALLING_STATE_STABLE,
+      PROP_SIGNALING_STATE,
+      g_param_spec_enum ("signaling-state", "Signaling State",
+          "The signaling state of this element",
+          GST_TYPE_WEBRTC_SIGNALING_STATE,
+          GST_WEBRTC_SIGNALING_STATE_STABLE,
           G_PARAM_READABLE | G_PARAM_STATIC_STRINGS));
 
   g_object_class_install_property (gobject_class,
