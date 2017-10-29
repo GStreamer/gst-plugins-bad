@@ -24,6 +24,8 @@
 #include "transportstream.h"
 #include "utils.h"
 
+G_BEGIN_DECLS
+
 GType transport_send_bin_get_type(void);
 #define GST_TYPE_WEBRTC_TRANSPORT_SEND_BIN (transport_send_bin_get_type())
 #define TRANSPORT_SEND_BIN(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_WEBRTC_TRANSPORT_SEND_BIN,TransportSendBin))
@@ -48,5 +50,7 @@ struct _TransportSendBinClass
 {
   GstBinClass           parent_class;
 };
+
+G_END_DECLS
 
 #endif /* __TRANSPORT_SEND_BIN_H__ */

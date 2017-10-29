@@ -23,6 +23,8 @@
 #include <gst/gst.h>
 #include <gst/webrtc/webrtc.h>
 
+G_BEGIN_DECLS
+
 typedef struct _GstWebRTCBin GstWebRTCBin;
 typedef struct _GstWebRTCBinClass GstWebRTCBinClass;
 typedef struct _GstWebRTCBinPrivate GstWebRTCBinPrivate;
@@ -47,5 +49,7 @@ typedef struct _TransportSendBinClass TransportSendBinClass;
 
 typedef struct _TransportReceiveBin TransportReceiveBin;
 typedef struct _TransportReceiveBinClass TransportReceiveBinClass;
+
+G_END_DECLS
 
 #endif /* __WEBRTC_FWD_H__ */

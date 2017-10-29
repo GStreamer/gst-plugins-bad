@@ -24,6 +24,8 @@
 #include <gst/sdp/sdp.h>
 #include <gst/webrtc/webrtc_fwd.h>
 
+G_BEGIN_DECLS
+
 const gchar *       gst_webrtc_sdp_type_to_string (GstWebRTCSDPType type);
 
 #define GST_TYPE_WEBRTC_SESSION_DESCRIPTION (gst_webrtc_session_description_get_type())
@@ -38,5 +40,7 @@ struct _GstWebRTCSessionDescription
 GstWebRTCSessionDescription *       gst_webrtc_session_description_new      (GstWebRTCSDPType type, GstSDPMessage *sdp);
 GstWebRTCSessionDescription *       gst_webrtc_session_description_copy     (const GstWebRTCSessionDescription * src);
 void                                gst_webrtc_session_description_free     (GstWebRTCSessionDescription * desc);
+
+G_END_DECLS
 
 #endif /* __GST_WEBRTC_PEERCONNECTION_H__ */

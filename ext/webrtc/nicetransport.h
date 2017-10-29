@@ -26,6 +26,8 @@
 #include <gst/webrtc/webrtc.h>
 #include "gstwebrtcice.h"
 
+G_BEGIN_DECLS
+
 GType gst_webrtc_nice_transport_get_type(void);
 #define GST_TYPE_WEBRTC_NICE_TRANSPORT            (gst_webrtc_nice_transport_get_type())
 #define GST_WEBRTC_NICE_TRANSPORT(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_WEBRTC_NICE_TRANSPORT,GstWebRTCNiceTransport))
@@ -50,5 +52,7 @@ struct _GstWebRTCNiceTransportClass
 
 GstWebRTCNiceTransport *    gst_webrtc_nice_transport_new               (GstWebRTCICEStream * stream,
                                                                          GstWebRTCICEComponent component);
+
+G_END_DECLS
 
 #endif /* __GST_WEBRTC_NICE_TRANSPORT_H__ */

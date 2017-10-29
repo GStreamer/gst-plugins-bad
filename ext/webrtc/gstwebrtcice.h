@@ -25,6 +25,8 @@
 #include <gst/webrtc/webrtc.h>
 #include "fwd.h"
 
+G_BEGIN_DECLS
+
 #define GST_WEBRTC_ICE_ERROR gst_webrtc_ice_error_quark ()
 GQuark gst_webrtc_ice_error_quark (void);
 
@@ -76,5 +78,7 @@ gboolean                    gst_webrtc_ice_set_remote_credentials   (GstWebRTCIC
                                                                      GstWebRTCICEStream * stream,
                                                                      gchar * ufrag,
                                                                      gchar * pwd);
+
+G_END_DECLS
 
 #endif /* __GST_WEBRTC_ICE_H__ */

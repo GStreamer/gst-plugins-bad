@@ -25,6 +25,8 @@
 #include <gst/webrtc/rtpsender.h>
 #include <gst/webrtc/rtpreceiver.h>
 
+G_BEGIN_DECLS
+
 GType gst_webrtc_rtp_transceiver_get_type(void);
 #define GST_TYPE_WEBRTC_RTP_TRANSCEIVER            (gst_webrtc_rtp_transceiver_get_type())
 #define GST_WEBRTC_RTP_TRANSCEIVER(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_WEBRTC_RTP_TRANSCEIVER,GstWebRTCRTPTransceiver))
@@ -55,5 +57,7 @@ struct _GstWebRTCRTPTransceiverClass
 };
 
 void                        gst_webrtc_rtp_transceiver_stop     (GstWebRTCRTPTransceiver * transceiver);
+
+G_END_DECLS
 
 #endif /* __GST_WEBRTC_RTP_TRANSCEIVER_H__ */

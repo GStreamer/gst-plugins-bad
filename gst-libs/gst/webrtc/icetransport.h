@@ -23,6 +23,8 @@
 #include <gst/gst.h>
 #include <gst/webrtc/webrtc_fwd.h>
 
+G_BEGIN_DECLS
+
 GType gst_webrtc_ice_transport_get_type(void);
 #define GST_TYPE_WEBRTC_ICE_TRANSPORT            (gst_webrtc_ice_transport_get_type())
 #define GST_WEBRTC_ICE_TRANSPORT(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_WEBRTC_ICE_TRANSPORT,GstWebRTCICETransport))
@@ -59,5 +61,7 @@ void            gst_webrtc_ice_transport_gathering_state_change     (GstWebRTCIC
                                                                      GstWebRTCICEGatheringState new_state);
 void            gst_webrtc_ice_transport_selected_pair_change       (GstWebRTCICETransport * ice);
 void            gst_webrtc_ice_transport_new_candidate              (GstWebRTCICETransport * ice, guint stream_id, GstWebRTCICEComponent component, gchar * attr);
+
+G_END_DECLS
 
 #endif /* __GST_WEBRTC_ICE_TRANSPORT_H__ */

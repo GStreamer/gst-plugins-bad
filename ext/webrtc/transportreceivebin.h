@@ -23,6 +23,8 @@
 #include <gst/gst.h>
 #include "transportstream.h"
 
+G_BEGIN_DECLS
+
 GType transport_receive_bin_get_type(void);
 #define GST_TYPE_WEBRTC_TRANSPORT_RECEIVE_BIN (transport_receive_bin_get_type())
 #define TRANSPORT_RECEIVE_BIN(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_WEBRTC_TRANSPORT_RECEIVE_BIN,TransportReceiveBin))
@@ -57,5 +59,7 @@ struct _TransportReceiveBinClass
 
 void        transport_receive_bin_set_receive_state         (TransportReceiveBin * receive,
                                                              ReceiveState state);
+
+G_END_DECLS
 
 #endif /* __TRANSPORT_RECEIVE_BIN_H__ */

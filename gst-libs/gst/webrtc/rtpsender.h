@@ -24,6 +24,8 @@
 #include <gst/webrtc/webrtc_fwd.h>
 #include <gst/webrtc/dtlstransport.h>
 
+G_BEGIN_DECLS
+
 GType gst_webrtc_rtp_sender_get_type(void);
 #define GST_TYPE_WEBRTC_RTP_SENDER            (gst_webrtc_rtp_sender_get_type())
 #define GST_WEBRTC_RTP_SENDER(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_WEBRTC_RTP_SENDER,GstWebRTCRTPSender))
@@ -53,5 +55,7 @@ GstStructure *          gst_webrtc_rtp_sender_get_parameters    (GstWebRTCRTPSen
 /* FIXME: promise? */
 gboolean                gst_webrtc_rtp_sender_set_parameters    (GstWebRTCRTPSender * sender,
                                                                  GstStructure * parameters);
+
+G_END_DECLS
 
 #endif /* __GST_WEBRTC_RTP_SENDER_H__ */

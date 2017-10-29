@@ -23,6 +23,8 @@
 #include "fwd.h"
 #include <gst/webrtc/rtptransceiver.h>
 
+G_BEGIN_DECLS
+
 GType transport_stream_get_type(void);
 #define GST_TYPE_WEBRTC_TRANSPORT_STREAM (transport_stream_get_type())
 #define TRANSPORT_STREAM(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_WEBRTC_TRANSPORT_STREAM,TransportStream))
@@ -53,5 +55,7 @@ TransportStream *       transport_stream_new        (GstWebRTCBin * webrtc,
                                                      GstWebRTCRTPReceiver * receiver,
                                                      guint session_id,
                                                      guint mlineindex);
+
+G_END_DECLS
 
 #endif /* __TRANSPORT_STREAM_H__ */

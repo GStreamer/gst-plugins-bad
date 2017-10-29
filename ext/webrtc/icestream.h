@@ -26,6 +26,8 @@
 #include <gst/webrtc/webrtc.h>
 #include "gstwebrtcice.h"
 
+G_BEGIN_DECLS
+
 GType gst_webrtc_ice_stream_get_type(void);
 #define GST_TYPE_WEBRTC_ICE_STREAM            (gst_webrtc_ice_stream_get_type())
 #define GST_WEBRTC_ICE_STREAM(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_WEBRTC_ICE_STREAM,GstWebRTCICEStream))
@@ -55,5 +57,7 @@ GstWebRTCICEStream *        gst_webrtc_ice_stream_new                   (GstWebR
 GstWebRTCICETransport *     gst_webrtc_ice_stream_find_transport        (GstWebRTCICEStream * stream,
                                                                          GstWebRTCICEComponent component);
 gboolean                    gst_webrtc_ice_stream_gather_candidates     (GstWebRTCICEStream * ice);
+
+G_END_DECLS
 
 #endif /* __GST_WEBRTC_ICE_STREAM_H__ */

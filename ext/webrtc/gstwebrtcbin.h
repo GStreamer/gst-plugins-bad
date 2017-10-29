@@ -24,6 +24,8 @@
 #include "fwd.h"
 #include "gstwebrtcice.h"
 
+G_BEGIN_DECLS
+
 #define GST_WEBRTC_BIN_ERROR gst_webrtc_bin_error_quark ()
 GQuark gst_webrtc_bin_error_quark (void);
 
@@ -151,5 +153,7 @@ typedef struct
 void            gst_webrtc_bin_enqueue_task             (GstWebRTCBin * pc,
                                                          GstWebRTCBinFunc func,
                                                          gpointer data);
+
+G_END_DECLS
 
 #endif /* __GST_WEBRTC_BIN_H__ */

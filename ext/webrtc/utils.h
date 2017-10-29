@@ -24,6 +24,8 @@
 #include <gst/webrtc/webrtc.h>
 #include "fwd.h"
 
+G_BEGIN_DECLS
+
 GstPadTemplate *        _find_pad_template          (GstElement * element,
                                                      GstPadDirection direction,
                                                      GstPadPresence presence,
@@ -52,5 +54,7 @@ struct pad_block *      _create_pad_block           (GstElement * element,
                                                      gulong block_id,
                                                      gpointer user_data,
                                                      GDestroyNotify notify);
+
+G_END_DECLS
 
 #endif /* __WEBRTC_UTILS_H__ */
