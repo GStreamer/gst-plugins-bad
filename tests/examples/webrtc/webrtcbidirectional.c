@@ -91,12 +91,13 @@ _on_answer_received (GstPromise * promise, gpointer user_data)
   g_print ("Created answer:\n%s\n", desc);
   g_free (desc);
 
+  /* this is one way to tell webrtcbin that we don't want to be notified when
+   * this task is complete: set a NULL promise */
+  g_signal_emit_by_name (webrtc1, "set-remote-description", answer, NULL);
+  /* this is another way to tell webrtcbin that we don't want to be notified
+   * when this task is complete: interrupt the promise */
   promise = gst_promise_new ();
-  g_signal_emit_by_name (webrtc1, "set-remote-description", answer, promise);
-  gst_promise_interrupt (promise);
-  gst_promise_unref (promise);
-  promise = gst_promise_new ();
-  g_signal_emit_by_name (webrtc2, "set-local-description", answer, promise);
+  g_signal_emit_by_name (webrtc2, "set-local-description", answer, NULL);
   gst_promise_interrupt (promise);
   gst_promise_unref (promise);
 
@@ -117,14 +118,8 @@ _on_offer_received (GstPromise * promise, gpointer user_data)
   g_print ("Created offer:\n%s\n", desc);
   g_free (desc);
 
-  promise = gst_promise_new ();
-  g_signal_emit_by_name (webrtc1, "set-local-description", offer, promise);
-  gst_promise_interrupt (promise);
-  gst_promise_unref (promise);
-  promise = gst_promise_new ();
-  g_signal_emit_by_name (webrtc2, "set-remote-description", offer, promise);
-  gst_promise_interrupt (promise);
-  gst_promise_unref (promise);
+  g_signal_emit_by_name (webrtc1, "set-local-description", offer, NULL);
+  g_signal_emit_by_name (webrtc2, "set-remote-description", offer, NULL);
 
   promise = gst_promise_new ();
   gst_promise_set_change_callback (promise, _on_answer_received, user_data,

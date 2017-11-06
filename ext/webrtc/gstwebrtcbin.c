@@ -3289,7 +3289,8 @@ out:
   PC_UNLOCK (webrtc);
   gst_promise_reply (sd->promise, NULL);
   PC_LOCK (webrtc);
-  gst_promise_unref (sd->promise);
+  if (sd->promise)
+    gst_promise_unref (sd->promise);
   g_free (sd);
 }
 
@@ -3305,7 +3306,8 @@ gst_webrtc_bin_set_remote_description (GstWebRTCBin * webrtc,
     goto bad_input;
 
   sd = g_new0 (struct set_description, 1);
-  sd->promise = gst_promise_ref (promise);
+  if (promise != NULL)
+    sd->promise = gst_promise_ref (promise);
   sd->source = SDP_REMOTE;
   sd->sdp = gst_webrtc_session_description_copy (remote_sdp);
 
@@ -3333,8 +3335,8 @@ gst_webrtc_bin_set_local_description (GstWebRTCBin * webrtc,
     goto bad_input;
 
   sd = g_new0 (struct set_description, 1);
-
-  sd->promise = gst_promise_ref (promise);
+  if (promise != NULL)
+    sd->promise = gst_promise_ref (promise);
   sd->source = SDP_LOCAL;
   sd->sdp = gst_webrtc_session_description_copy (local_sdp);
 
@@ -3879,8 +3881,7 @@ gst_webrtc_bin_class_init (GstWebRTCBinClass * klass)
    * GstWebRTCBin::create-offer:
    * @object: the #GstWebRtcBin
    * @options: create-offer options
-   *
-   * Returns: a #GstSDPMessage offer
+   * @promise: a #GstPromise which will contain the offer
    */
   gst_webrtc_bin_signals[CREATE_OFFER_SIGNAL] =
       g_signal_new_class_handler ("create-offer", G_TYPE_FROM_CLASS (klass),
@@ -3893,8 +3894,7 @@ gst_webrtc_bin_class_init (GstWebRTCBinClass * klass)
    * GstWebRTCBin::create-answer:
    * @object: the #GstWebRtcBin
    * @options: create-answer options
-   *
-   * Returns: a #GstSDPMessage answer
+   * @promise: a #GstPromise which will contain the answer
    */
   gst_webrtc_bin_signals[CREATE_ANSWER_SIGNAL] =
       g_signal_new_class_handler ("create-answer", G_TYPE_FROM_CLASS (klass),
@@ -3908,8 +3908,7 @@ gst_webrtc_bin_class_init (GstWebRTCBinClass * klass)
    * @object: the #GstWebRtcBin
    * @type: the type of description being set
    * @sdp: a #GstSDPMessage description
-   *
-   * Returns: a #GstSDPMessage offer
+   * @promise (allow-none): a #GstPromise to be notified when it's set
    */
   gst_webrtc_bin_signals[SET_LOCAL_DESCRIPTION_SIGNAL] =
       g_signal_new_class_handler ("set-local-description",
@@ -3923,6 +3922,7 @@ gst_webrtc_bin_class_init (GstWebRTCBinClass * klass)
    * @object: the #GstWebRtcBin
    * @type: the type of description being set
    * @sdp: a #GstSDPMessage description
+   * @promise (allow-none): a #GstPromise to be notified when it's set
    */
   gst_webrtc_bin_signals[SET_REMOTE_DESCRIPTION_SIGNAL] =
       g_signal_new_class_handler ("set-remote-description",
