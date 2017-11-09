@@ -67,13 +67,13 @@ struct test_webrtc
   GDestroyNotify ice_candidate_notify;
   GstWebRTCSessionDescription * (*on_offer_created)     (struct test_webrtc * t,
                                                          GstElement * element,
-                                                         GstResponse * response,
+                                                         GstPromise * promise,
                                                          gpointer user_data);
   gpointer offer_data;
   GDestroyNotify offer_notify;
   GstWebRTCSessionDescription * (*on_answer_created)    (struct test_webrtc * t,
                                                          GstElement * element,
-                                                         GstResponse * response,
+                                                         GstPromise * promise,
                                                          gpointer user_data);
   gpointer answer_data;
   GDestroyNotify answer_notify;
@@ -93,7 +93,7 @@ struct test_webrtc
 };
 
 static void
-_on_answer_received (GstResponse * response, gpointer user_data)
+_on_answer_received (GstPromise * promise, gpointer user_data)
 {
   struct test_webrtc *t = user_data;
   GstElement *offeror = t->offerror == 1 ? t->webrtc1 : t->webrtc2;
@@ -103,12 +103,12 @@ _on_answer_received (GstResponse * response, gpointer user_data)
 
   g_mutex_lock (&t->lock);
   if (t->on_offer_created) {
-    answer = t->on_answer_created (t, answerer, response, t->answer_data);
+    answer = t->on_answer_created (t, answerer, promise, t->answer_data);
   } else {
-    gst_structure_get (response->response, "answer",
+    gst_structure_get (promise->promise, "answer",
         GST_TYPE_WEBRTC_SESSION_DESCRIPTION, &answer, NULL);
   }
-  gst_response_unref (response);
+  gst_promise_unref (promise);
   desc = gst_sdp_message_as_text (answer->sdp);
   GST_LOG ("Created Answer: %s", desc);
   g_free (desc);
@@ -117,18 +117,14 @@ _on_answer_received (GstResponse * response, gpointer user_data)
   g_cond_broadcast (&t->cond);
   g_mutex_unlock (&t->lock);
 
-  g_signal_emit_by_name (answerer, "set-local-description", answer, &response);
-  gst_response_interrupt (response);
-  gst_response_unref (response);
-  g_signal_emit_by_name (offeror, "set-remote-description", answer, &response);
-  gst_response_interrupt (response);
-  gst_response_unref (response);
+  g_signal_emit_by_name (answerer, "set-local-description", answer, NULL);
+  g_signal_emit_by_name (offeror, "set-remote-description", answer, NULL);
 
   gst_webrtc_session_description_free (answer);
 }
 
 static void
-_on_offer_received (GstResponse * response, gpointer user_data)
+_on_offer_received (GstPromise * promise, gpointer user_data)
 {
   struct test_webrtc *t = user_data;
   GstElement *offeror = t->offerror == 1 ? t->webrtc1 : t->webrtc2;
@@ -138,12 +134,12 @@ _on_offer_received (GstResponse * response, gpointer user_data)
 
   g_mutex_lock (&t->lock);
   if (t->on_offer_created) {
-    offer = t->on_offer_created (t, offeror, response, t->offer_data);
+    offer = t->on_offer_created (t, offeror, promise, t->offer_data);
   } else {
-    gst_structure_get (response->response, "offer",
+    gst_structure_get (promise->promise, "offer",
         GST_TYPE_WEBRTC_SESSION_DESCRIPTION, &offer, NULL);
   }
-  gst_response_unref (response);
+  gst_promise_unref (promise);
   desc = gst_sdp_message_as_text (offer->sdp);
   GST_LOG ("Created offer: %s", desc);
   g_free (desc);
@@ -152,15 +148,12 @@ _on_offer_received (GstResponse * response, gpointer user_data)
   g_cond_broadcast (&t->cond);
   g_mutex_unlock (&t->lock);
 
-  g_signal_emit_by_name (offeror, "set-local-description", offer, &response);
-  gst_response_interrupt (response);
-  gst_response_unref (response);
-  g_signal_emit_by_name (answerer, "set-remote-description", offer, &response);
-  gst_response_interrupt (response);
-  gst_response_unref (response);
+  g_signal_emit_by_name (offeror, "set-local-description", offer, NULL);
+  g_signal_emit_by_name (answerer, "set-remote-description", offer, NULL);
 
-  g_signal_emit_by_name (answerer, "create-answer", NULL, &response);
-  gst_response_set_reply_callback (response, _on_answer_received, t, NULL);
+  promise = gst_promise_new ();
+  gst_promise_set_change_callback (promise, _on_answer_received, t, NULL);
+  g_signal_emit_by_name (answerer, "create-answer", NULL, promise);
 
   gst_webrtc_session_description_free (offer);
 }
@@ -297,7 +290,7 @@ _bus_no_errors (struct test_webrtc *t, GstBus * bus, GstMessage * msg,
 
 static GstWebRTCSessionDescription *
 _offer_answer_not_reached (struct test_webrtc *t, GstElement * element,
-    GstResponse * response, gpointer user_data)
+    GstPromise * promise, gpointer user_data)
 {
   g_assert_not_reached ();
 }
@@ -386,11 +379,11 @@ test_webrtc_free (struct test_webrtc *t)
 static void
 test_webrtc_create_offer (struct test_webrtc *t, GstElement * webrtc)
 {
-  GstResponse *response;
+  GstPromise *promise = gst_promise_new ();
 
   t->offerror = webrtc == t->webrtc1 ? 1 : 2;
-  g_signal_emit_by_name (webrtc, "create-offer", NULL, &response);
-  gst_response_set_reply_callback (response, _on_offer_received, t, NULL);
+  gst_promise_set_change_callback (promise, _on_offer_received, t, NULL);
+  g_signal_emit_by_name (webrtc, "create-offer", NULL, promise);
 }
 
 static void
@@ -459,7 +452,7 @@ _pad_added_fakesink (struct test_webrtc *t, GstElement * element,
 
 static GstWebRTCSessionDescription *
 _count_num_sdp_media (struct test_webrtc *t, GstElement * element,
-    GstResponse * response, gpointer user_data)
+    GstPromise * promise, gpointer user_data)
 {
   GstWebRTCSessionDescription *offer = NULL;
   guint expected = GPOINTER_TO_UINT (user_data);
@@ -467,7 +460,7 @@ _count_num_sdp_media (struct test_webrtc *t, GstElement * element,
 
   field = t->offerror == 1 && t->webrtc1 == element ? "offer" : "answer";
 
-  gst_structure_get (response->response, field,
+  gst_structure_get (promise->promise, field,
       GST_TYPE_WEBRTC_SESSION_DESCRIPTION, &offer, NULL);
 
   fail_unless_equals_int (gst_sdp_message_medias_len (offer->sdp), expected);
