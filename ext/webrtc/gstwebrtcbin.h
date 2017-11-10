@@ -147,12 +147,14 @@ typedef struct
   GstWebRTCBin *webrtc;
   GstWebRTCBinFunc op;
   gpointer data;
+  GDestroyNotify notify;
 //  GstPromise *promise;      /* FIXME */
 } GstWebRTCBinTask;
 
 void            gst_webrtc_bin_enqueue_task             (GstWebRTCBin * pc,
                                                          GstWebRTCBinFunc func,
-                                                         gpointer data);
+                                                         gpointer data,
+                                                         GDestroyNotify notify);
 
 G_END_DECLS
 
