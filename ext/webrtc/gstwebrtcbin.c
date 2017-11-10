@@ -1277,8 +1277,10 @@ _check_need_negotiation_task (GstWebRTCBin * webrtc, gpointer unused)
 {
   if (webrtc->priv->need_negotiation) {
     GST_TRACE_OBJECT (webrtc, "emitting on-negotiation-needed");
+    PC_UNLOCK (webrtc);
     g_signal_emit (webrtc, gst_webrtc_bin_signals[ON_NEGOTIATION_NEEDED_SIGNAL],
         0);
+    PC_LOCK (webrtc);
   }
 }
 
