@@ -313,6 +313,8 @@ transport_send_bin_constructed (GObject * object)
   ghost = gst_ghost_pad_new ("rtcp_sink", pad);
   gst_element_add_pad (GST_ELEMENT (send), ghost);
   gst_object_unref (pad);
+
+  G_OBJECT_CLASS (parent_class)->constructed (object);
 }
 
 static void

@@ -798,6 +798,8 @@ gst_webrtc_ice_finalize (GObject * object)
 
   _stop_thread (ice);
 
+  g_signal_handlers_disconnect_by_data (ice->priv->nice_agent, ice);
+
   if (ice->turn_server)
     gst_uri_unref (ice->turn_server);
   if (ice->stun_server)
@@ -808,6 +810,8 @@ gst_webrtc_ice_finalize (GObject * object)
   g_cond_clear (&ice->priv->cond);
 
   g_array_free (ice->priv->nice_stream_map, TRUE);
+
+  G_OBJECT_CLASS (parent_class)->finalize (object);
 }
 
 static void

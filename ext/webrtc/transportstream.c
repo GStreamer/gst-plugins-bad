@@ -111,6 +111,8 @@ transport_stream_dispose (GObject * object)
     gst_object_unref (stream->rtcp_transport);
   stream->rtcp_transport = NULL;
 
+  GST_OBJECT_PARENT (object) = NULL;
+
   G_OBJECT_CLASS (parent_class)->dispose (object);
 }
 
@@ -154,6 +156,8 @@ transport_stream_constructed (GObject * object)
   gst_object_ref_sink (stream->receive_bin);
 
   gst_object_unref (webrtc);
+
+  G_OBJECT_CLASS (parent_class)->constructed (object);
 }
 
 static void

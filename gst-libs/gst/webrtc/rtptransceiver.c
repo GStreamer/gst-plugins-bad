@@ -30,7 +30,8 @@ GST_DEBUG_CATEGORY_STATIC (GST_CAT_DEFAULT);
 G_DEFINE_ABSTRACT_TYPE_WITH_CODE (GstWebRTCRTPTransceiver,
     gst_webrtc_rtp_transceiver, GST_TYPE_OBJECT,
     GST_DEBUG_CATEGORY_INIT (gst_webrtc_rtp_transceiver_debug,
-        "webrtctransceiver", 0, "webrtctransceiver"););
+        "webrtctransceiver", 0, "webrtctransceiver");
+    );
 
 enum
 {
@@ -102,6 +103,8 @@ gst_webrtc_rtp_transceiver_constructed (GObject * object)
 
   gst_object_set_parent (GST_OBJECT (webrtc->sender), GST_OBJECT (webrtc));
   gst_object_set_parent (GST_OBJECT (webrtc->receiver), GST_OBJECT (webrtc));
+
+  G_OBJECT_CLASS (parent_class)->constructed (object);
 }
 
 static void
@@ -109,12 +112,18 @@ gst_webrtc_rtp_transceiver_dispose (GObject * object)
 {
   GstWebRTCRTPTransceiver *webrtc = GST_WEBRTC_RTP_TRANSCEIVER (object);
 
-  if (webrtc->sender)
+  if (webrtc->sender) {
+    GST_OBJECT_PARENT (webrtc->sender) = NULL;
     gst_object_unref (webrtc->sender);
+  }
   webrtc->sender = NULL;
-  if (webrtc->receiver)
+  if (webrtc->receiver) {
+    GST_OBJECT_PARENT (webrtc->receiver) = NULL;
     gst_object_unref (webrtc->receiver);
+  }
   webrtc->receiver = NULL;
+
+  G_OBJECT_CLASS (parent_class)->dispose (object);
 }
 
 static void

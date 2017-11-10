@@ -114,6 +114,8 @@ static void
 gst_webrtc_dtls_transport_finalize (GObject * object)
 {
 //  GstWebRTCDTLSTransport *webrtc = GST_WEBRTC_DTLS_TRANSPORT (object);
+
+  G_OBJECT_CLASS (parent_class)->finalize (object);
 }
 
 static void
@@ -135,6 +137,8 @@ gst_webrtc_dtls_transport_constructed (GObject * object)
   webrtc->dtlssrtpdec = gst_element_factory_make ("dtlssrtpdec", NULL);
   g_object_set (webrtc->dtlssrtpdec, "connection-id", connection_id, NULL);
   g_free (connection_id);
+
+  G_OBJECT_CLASS (parent_class)->constructed (object);
 }
 
 static void

@@ -127,12 +127,16 @@ static void
 gst_webrtc_ice_transport_finalize (GObject * object)
 {
 //  GstWebRTCICETransport *webrtc = GST_WEBRTC_ICE_TRANSPORT (object);
+
+  G_OBJECT_CLASS (parent_class)->finalize (object);
 }
 
 static void
 gst_webrtc_ice_transport_constructed (GObject * object)
 {
 //  GstWebRTCICETransport *webrtc = GST_WEBRTC_ICE_TRANSPORT (object);
+
+  G_OBJECT_CLASS (parent_class)->constructed (object);
 }
 
 static void

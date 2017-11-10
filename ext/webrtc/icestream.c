@@ -96,9 +96,14 @@ gst_webrtc_ice_stream_get_property (GObject * object, guint prop_id,
 static void
 gst_webrtc_ice_stream_finalize (GObject * object)
 {
-  GstWebRTCICEStream *ice = GST_WEBRTC_ICE_STREAM (object);
+  GstWebRTCICEStream *stream = GST_WEBRTC_ICE_STREAM (object);
+  NiceAgent *agent;
 
-  g_object_unref (ice->ice);
+  g_object_get (stream->ice, "agent", &agent, NULL);
+  g_signal_handlers_disconnect_by_data (agent, stream);
+  g_object_unref (agent);
+
+  g_object_unref (stream->ice);
 }
 
 static void

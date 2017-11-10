@@ -143,6 +143,8 @@ gst_webrtc_nice_transport_finalize (GObject * object)
   GstWebRTCNiceTransport *nice = GST_WEBRTC_NICE_TRANSPORT (object);
 
   g_object_unref (nice->stream);
+
+  G_OBJECT_CLASS (parent_class)->finalize (object);
 }
 
 static void
@@ -225,6 +227,8 @@ gst_webrtc_nice_transport_constructed (GObject * object)
   }
 
   g_object_unref (agent);
+
+  G_OBJECT_CLASS (parent_class)->constructed (object);
 }
 
 static void

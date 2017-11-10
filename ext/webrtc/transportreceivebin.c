@@ -343,6 +343,8 @@ transport_receive_bin_constructed (GObject * object)
   ghost = gst_ghost_pad_new ("rtcp_src", pad);
   gst_element_add_pad (GST_ELEMENT (receive), ghost);
   gst_object_unref (pad);
+
+  G_OBJECT_CLASS (parent_class)->constructed (object);
 }
 
 static void

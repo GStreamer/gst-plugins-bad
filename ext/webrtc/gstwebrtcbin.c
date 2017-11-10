@@ -4000,7 +4000,20 @@ gst_webrtc_bin_class_init (GstWebRTCBinClass * klass)
 static void
 _deref_and_unref (GObject ** object)
 {
+  TransportStream *item = (TransportStream *) * object;
+  GstWebRTCBin *webrtc =
+      GST_WEBRTC_BIN (gst_object_get_parent (GST_OBJECT (item)));
+
+  g_signal_handlers_disconnect_by_data (item->transport->transport, webrtc);
+  g_signal_handlers_disconnect_by_data (item->transport, webrtc);
+  if (item->transport != item->rtcp_transport) {
+    g_signal_handlers_disconnect_by_data (item->rtcp_transport->transport,
+        webrtc);
+    g_signal_handlers_disconnect_by_data (item->rtcp_transport, webrtc);
+  }
+
   gst_object_unref (*object);
+  gst_object_unref (webrtc);
 }
 
 static void
