@@ -207,7 +207,8 @@ gst_webrtc_bin_pad_new (const gchar * name, GstPadDirection direction)
 #define gst_webrtc_bin_parent_class parent_class
 G_DEFINE_TYPE_WITH_CODE (GstWebRTCBin, gst_webrtc_bin, GST_TYPE_BIN,
     GST_DEBUG_CATEGORY_INIT (gst_webrtc_bin_debug, "webrtcbin", 0,
-        "webrtcbin element"););
+        "webrtcbin element");
+    );
 
 static GstStaticPadTemplate sink_template = GST_STATIC_PAD_TEMPLATE ("sink_%u",
     GST_PAD_SINK,
@@ -3586,20 +3587,23 @@ gst_webrtc_bin_change_state (GstElement * element, GstStateChange transition)
       GstElement *nice;
       if (!webrtc->rtpbin) {
         /* FIXME: is this the right thing for a missing plugin? */
-        GST_ELEMENT_ERROR (webrtc, CORE, MISSING_PLUGIN, (NULL), (NULL));
+        GST_ELEMENT_ERROR (webrtc, CORE, MISSING_PLUGIN, (NULL),
+            ("%s", "rtpbin element is not available"));
         return GST_STATE_CHANGE_FAILURE;
       }
       nice = gst_element_factory_make ("nicesrc", NULL);
       if (!nice) {
         /* FIXME: is this the right thing for a missing plugin? */
-        GST_ELEMENT_ERROR (webrtc, CORE, MISSING_PLUGIN, (NULL), (NULL));
+        GST_ELEMENT_ERROR (webrtc, CORE, MISSING_PLUGIN, (NULL),
+            ("%s", "libnice elements are not available"));
         return GST_STATE_CHANGE_FAILURE;
       }
       gst_object_unref (nice);
       nice = gst_element_factory_make ("nicesink", NULL);
       if (!nice) {
         /* FIXME: is this the right thing for a missing plugin? */
-        GST_ELEMENT_ERROR (webrtc, CORE, MISSING_PLUGIN, (NULL), (NULL));
+        GST_ELEMENT_ERROR (webrtc, CORE, MISSING_PLUGIN, (NULL),
+            ("%s", "libnice elements are not available"));
         return GST_STATE_CHANGE_FAILURE;
       }
       gst_object_unref (nice);
@@ -3641,7 +3645,26 @@ gst_webrtc_bin_request_new_pad (GstElement * element, GstPadTemplate * templ,
 {
   GstWebRTCBin *webrtc = GST_WEBRTC_BIN (element);
   GstWebRTCBinPad *pad = NULL;
+  GstPluginFeature *feature;
   guint serial;
+
+  feature = gst_registry_lookup_feature (gst_registry_get (), "nicesrc");
+  if (feature) {
+    gst_object_unref (feature);
+  } else {
+    GST_ELEMENT_ERROR (element, CORE, MISSING_PLUGIN, NULL,
+        ("%s", "libnice elements are not available"));
+    return NULL;
+  }
+
+  feature = gst_registry_lookup_feature (gst_registry_get (), "nicesink");
+  if (feature) {
+    gst_object_unref (feature);
+  } else {
+    GST_ELEMENT_ERROR (element, CORE, MISSING_PLUGIN, NULL,
+        ("%s", "libnice elements are not available"));
+    return NULL;
+  }
 
   if (templ->direction == GST_PAD_SINK ||
       g_strcmp0 (templ->name_template, "sink_%u") == 0) {

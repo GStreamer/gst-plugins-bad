@@ -39,9 +39,13 @@ typedef enum
   STATE_ERROR,
 } TestState;
 
+/* basic premise of this is that webrtc1 and webrtc2 are attempting to connect
+ * to each other in various configurations */
 struct test_webrtc;
 struct test_webrtc
 {
+  GThread *thread;
+  GMainLoop *loop;
   GstElement *pipeline;
   GstElement *webrtc1;
   GstElement *webrtc2;
@@ -303,6 +307,32 @@ _broadcast (struct test_webrtc *t)
   g_mutex_unlock (&t->lock);
 }
 
+static gboolean
+_unlock_create_thread (GMutex * lock)
+{
+  g_mutex_unlock (lock);
+  return G_SOURCE_REMOVE;
+}
+
+static gpointer
+_bus_thread (struct test_webrtc *t)
+{
+  g_mutex_lock (&t->lock);
+  t->loop = g_main_loop_new (NULL, FALSE);
+  g_idle_add ((GSourceFunc) _unlock_create_thread, &t->lock);
+  g_cond_broadcast (&t->cond);
+
+  g_main_loop_run (t->loop);
+
+  g_mutex_lock (&t->lock);
+  g_main_loop_unref (t->loop);
+  t->loop = NULL;
+  g_cond_broadcast (&t->cond);
+  g_mutex_unlock (&t->lock);
+
+  return NULL;
+}
+
 static struct test_webrtc *
 test_webrtc_new (void)
 {
@@ -349,12 +379,31 @@ test_webrtc_new (void)
   g_signal_connect_swapped (ret->webrtc2, "notify::ice-connection-state",
       G_CALLBACK (_broadcast), ret);
 
+  ret->thread = g_thread_new ("test-webrtc", (GThreadFunc) _bus_thread, ret);
+
+  g_mutex_lock (&ret->lock);
+  while (!ret->loop)
+    g_cond_wait (&ret->cond, &ret->lock);
+  g_mutex_unlock (&ret->lock);
+
   return ret;
 }
 
 static void
 test_webrtc_free (struct test_webrtc *t)
 {
+  gst_element_set_state (t->pipeline, GST_STATE_NULL);
+
+  gst_object_unref (t->pipeline);
+
+  g_main_loop_quit (t->loop);
+  g_mutex_lock (&t->lock);
+  while (t->loop)
+    g_cond_wait (&t->cond, &t->lock);
+  g_mutex_unlock (&t->lock);
+
+  g_thread_join (t->thread);
+
   if (t->data_notify)
     t->data_notify (t->user_data);
   if (t->negotiation_notify)
@@ -370,8 +419,6 @@ test_webrtc_free (struct test_webrtc *t)
 
   g_mutex_clear (&t->lock);
   g_cond_clear (&t->cond);
-
-  gst_object_unref (t->pipeline);
 
   g_free (t);
 }
@@ -551,27 +598,97 @@ GST_START_TEST (test_audio_video)
 
 GST_END_TEST;
 
+GST_START_TEST (test_no_nice_elements_request_pad)
+{
+  struct test_webrtc *t = test_webrtc_new ();
+  GstPluginFeature *nicesrc, *nicesink;
+  GstRegistry *registry;
+  GstPad *pad;
+
+  registry = gst_registry_get ();
+  nicesrc = gst_registry_lookup_feature (registry, "nicesrc");
+  nicesink = gst_registry_lookup_feature (registry, "nicesink");
+
+  if (nicesrc)
+    gst_registry_remove_feature (registry, nicesrc);
+  if (nicesink)
+    gst_registry_remove_feature (registry, nicesink);
+
+  t->bus_message = NULL;
+
+  pad = gst_element_get_request_pad (t->webrtc1, "sink_0");
+  fail_unless (pad == NULL);
+
+  test_webrtc_wait_for_answer_error_eos (t);
+  fail_unless (t->state == STATE_ERROR);
+  test_webrtc_free (t);
+
+  if (nicesrc)
+    gst_registry_add_feature (registry, nicesrc);
+  if (nicesink)
+    gst_registry_add_feature (registry, nicesink);
+}
+
+GST_END_TEST;
+
+GST_START_TEST (test_no_nice_elements_state_change)
+{
+  struct test_webrtc *t = test_webrtc_new ();
+  GstPluginFeature *nicesrc, *nicesink;
+  GstRegistry *registry;
+
+  registry = gst_registry_get ();
+  nicesrc = gst_registry_lookup_feature (registry, "nicesrc");
+  nicesink = gst_registry_lookup_feature (registry, "nicesink");
+
+  if (nicesrc)
+    gst_registry_remove_feature (registry, nicesrc);
+  if (nicesink)
+    gst_registry_remove_feature (registry, nicesink);
+
+  t->bus_message = NULL;
+
+  fail_unless_equals_int (GST_STATE_CHANGE_FAILURE,
+      gst_element_set_state (t->pipeline, GST_STATE_READY));
+
+  test_webrtc_wait_for_answer_error_eos (t);
+  fail_unless (t->state == STATE_ERROR);
+  test_webrtc_free (t);
+
+  if (nicesrc)
+    gst_registry_add_feature (registry, nicesrc);
+  if (nicesink)
+    gst_registry_add_feature (registry, nicesink);
+}
+
+GST_END_TEST;
+
 static Suite *
 webrtcbin_suite (void)
 {
   Suite *s = suite_create ("webrtcbin");
   TCase *tc = tcase_create ("general");
-  GstElement *nicesrc, *nicesink;
+  GstPluginFeature *nicesrc, *nicesink;
+  GstRegistry *registry;
 
-  nicesrc = gst_element_factory_make ("nicesrc", NULL);
-  nicesink = gst_element_factory_make ("nicesink", NULL);
+  registry = gst_registry_get ();
+  nicesrc = gst_registry_lookup_feature (registry, "nicesrc");
+  nicesink = gst_registry_lookup_feature (registry, "nicesink");
 
   tcase_add_test (tc, test_sdp_no_media);
+  tcase_add_test (tc, test_no_nice_elements_request_pad);
+  tcase_add_test (tc, test_no_nice_elements_state_change);
   if (nicesrc && nicesink) {
     tcase_add_test (tc, test_audio);
     tcase_add_test (tc, test_audio_video);
   }
-  suite_add_tcase (s, tc);
 
   if (nicesrc)
     gst_object_unref (nicesrc);
   if (nicesink)
     gst_object_unref (nicesink);
+
+  suite_add_tcase (s, tc);
 
   return s;
 }
