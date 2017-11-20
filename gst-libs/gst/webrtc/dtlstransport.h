@@ -26,6 +26,7 @@
 
 G_BEGIN_DECLS
 
+GST_EXPORT
 GType gst_webrtc_dtls_transport_get_type(void);
 #define GST_TYPE_WEBRTC_DTLS_TRANSPORT            (gst_webrtc_dtls_transport_get_type())
 #define GST_WEBRTC_DTLS_TRANSPORT(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_WEBRTC_DTLS_TRANSPORT,GstWebRTCDTLSTransport))
@@ -53,6 +54,7 @@ struct _GstWebRTCDTLSTransportClass
   GstBinClass               parent_class;
 };
 
+GST_EXPORT
 GstWebRTCDTLSTransport *    gst_webrtc_dtls_transport_new               (guint session_id, gboolean rtcp);
 
 G_END_DECLS

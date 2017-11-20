@@ -26,6 +26,7 @@
 
 G_BEGIN_DECLS
 
+GST_EXPORT
 GType gst_webrtc_rtp_sender_get_type(void);
 #define GST_TYPE_WEBRTC_RTP_SENDER            (gst_webrtc_rtp_sender_get_type())
 #define GST_WEBRTC_RTP_SENDER(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_WEBRTC_RTP_SENDER,GstWebRTCRTPSender))
@@ -50,9 +51,12 @@ struct _GstWebRTCRTPSenderClass
   GstBinClass               parent_class;
 };
 
+GST_EXPORT
 GstWebRTCRTPSender *    gst_webrtc_rtp_sender_new               (GArray * send_encodings);
+GST_EXPORT
 GstStructure *          gst_webrtc_rtp_sender_get_parameters    (GstWebRTCRTPSender * sender, gchar * kind);
 /* FIXME: promise? */
+GST_EXPORT
 gboolean                gst_webrtc_rtp_sender_set_parameters    (GstWebRTCRTPSender * sender,
                                                                  GstStructure * parameters);
 

@@ -25,7 +25,7 @@
 #include <gst/webrtc/dtlstransport.h>
 
 G_BEGIN_DECLS
-
+GST_EXPORT
 GType gst_webrtc_rtp_receiver_get_type(void);
 #define GST_TYPE_WEBRTC_RTP_RECEIVER            (gst_webrtc_rtp_receiver_get_type())
 #define GST_WEBRTC_RTP_RECEIVER(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_WEBRTC_RTP_RECEIVER,GstWebRTCRTPReceiver))
@@ -51,9 +51,12 @@ struct _GstWebRTCRTPReceiverClass
   GstBinClass               parent_class;
 };
 
+GST_EXPORT
 GstWebRTCRTPReceiver *  gst_webrtc_rtp_receiver_new                 (void);
+GST_EXPORT
 GstStructure *          gst_webrtc_rtp_receiver_get_parameters      (GstWebRTCRTPReceiver * receiver, gchar * kind);
 /* FIXME: promise? */
+GST_EXPORT
 gboolean                gst_webrtc_rtp_receiver_set_parameters      (GstWebRTCRTPReceiver * receiver,
                                                                      GstStructure * parameters);
 
