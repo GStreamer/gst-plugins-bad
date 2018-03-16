@@ -42,6 +42,7 @@
 #include "gstgrabcut.h"
 #include "gstdisparity.h"
 #include "gstdewarp.h"
+#include "gstgpudewarp.h"
 
 static gboolean
 plugin_init (GstPlugin * plugin)
@@ -101,6 +102,9 @@ plugin_init (GstPlugin * plugin)
     return FALSE;
 
   if (!gst_dewarp_plugin_init (plugin))
+    return FALSE;
+
+  if (!gst_gpu_dewarp_plugin_init (plugin))
     return FALSE;
 
   return TRUE;

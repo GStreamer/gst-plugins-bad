@@ -21,7 +21,8 @@ gstopencv_sources = [
   'gsttextoverlay.cpp',
   'MotionCells.cpp',
   'motioncells_wrapper.cpp',
-  'gstdewarp.cpp'
+  'gstdewarp.cpp',
+  'gstgpudewarp.cpp'
 ]
 
 libopencv2_headers = [
