@@ -108,7 +108,7 @@ _gst_nice_thread (GstWebRTCICE * ice)
 
   g_mutex_lock (&ice->priv->lock);
   g_main_context_unref (ice->priv->main_context);
-  ice->priv->main_context = NULL; 
+  ice->priv->main_context = NULL;
   g_main_loop_unref (ice->priv->loop);
   ice->priv->loop = NULL;
   g_cond_broadcast (&ice->priv->cond);
