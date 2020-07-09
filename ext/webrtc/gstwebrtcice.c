@@ -108,7 +108,7 @@ _gst_nice_thread (GstWebRTCICE * ice)
 
   g_mutex_lock (&ice->priv->lock);
   g_main_context_unref (ice->priv->main_context);
-  ice->priv->main_context = NULL;
+  ice->priv->main_context = NULL; 
   g_main_loop_unref (ice->priv->loop);
   ice->priv->loop = NULL;
   g_cond_broadcast (&ice->priv->cond);
@@ -287,7 +287,7 @@ _parse_userinfo (const gchar * userinfo, gchar ** user, gchar ** pass)
     return;
   }
 
-  colon = g_strstr_len (userinfo, -1, ":");
+  colon = g_strrstr_len (userinfo, -1, ":");
   if (!colon) {
     *user = g_strdup (userinfo);
     *pass = NULL;
