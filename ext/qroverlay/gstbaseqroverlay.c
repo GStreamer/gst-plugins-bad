@@ -197,6 +197,7 @@ draw_overlay (GstBaseQROverlay * self, QRcode * qrcode)
 
   rect = gst_video_overlay_rectangle_new_raw (buf, x, y,
       info.width, info.height, GST_VIDEO_OVERLAY_FORMAT_FLAG_NONE);
+  gst_buffer_unref (buf);
   comp = gst_video_overlay_composition_new (rect);
   gst_video_overlay_rectangle_unref (rect);
 
@@ -241,6 +242,7 @@ gst_base_qr_overlay_draw_cb (GstBaseQROverlay * self, GstSample * sample,
       overlay = draw_overlay (GST_BASE_QR_OVERLAY (self), qrcode);
       gst_mini_object_replace (((GstMiniObject **) & priv->prev_overlay),
           (GstMiniObject *) overlay);
+      QRcode_free (qrcode);
     } else {
       GST_WARNING_OBJECT (self, "Could not encode content: %s", content);
     }
