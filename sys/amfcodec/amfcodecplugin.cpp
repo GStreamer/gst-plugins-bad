@@ -2,27 +2,25 @@
 #include <config.h>
 #endif
 #include <gst/gst.h>
-#include "gst-amf.hpp"
+#include "gstamf.hpp"
 #include "gstamfh264enc.h"
 #include "gstamfh265enc.h"
 
 GST_DEBUG_CATEGORY (gst_amfenc_debug);
+GST_DEBUG_CATEGORY (gst_amfench264_debug);
+GST_DEBUG_CATEGORY (gst_amfench265_debug);
 
 static gboolean 
 plugin_init(GstPlugin* plugin)
 {
     gboolean ret = TRUE;
-    AMF::Initialize();
-    AMF::Instance()->FillCaps();
-    if (AMF::Instance()->H264Available())
+    if (gst_amf_h264_available())
     {
-        gst_element_register(plugin, "amfh264enc", GST_RANK_NONE,
-            GST_TYPE_AMFH264ENC);
+        ret |= GST_ELEMENT_REGISTER(amfh264enc, plugin);
     }
-    if (AMF::Instance()->HEVCAvailable())
+    if (gst_amf_h265_available())
     {
-        gst_element_register(plugin, "amfh265enc", GST_RANK_NONE,
-            GST_TYPE_AMFH265ENC);
+        ret |= GST_ELEMENT_REGISTER(amfh265enc, plugin);
     }
 
     return ret;
@@ -33,10 +31,6 @@ plugin_init(GstPlugin* plugin)
 
 #ifndef VERSION
 #define VERSION "1.0.0.0"
-#endif
-
-#ifndef GST_PACKAGE_NAME
-#define GST_PACKAGE_NAME "amfcodec"
 #endif
 
 #ifndef GST_PACKAGE_ORIGIN

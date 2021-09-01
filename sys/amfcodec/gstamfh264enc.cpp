@@ -9,18 +9,23 @@
 #include <gst/video/video.h>
 #include <gst/video/gstvideoencoder.h>
 #include <string.h>
-#include "gst-amf.hpp"
+#include "gstamf.hpp"
 #include "AMF/include/components/VideoEncoderVCE.h"
 #include <thread>
 #include <chrono>
+#if defined(_WIN32)
+    #include <gst/d3d11/gstd3d11memory.h>
+    #include <gst/d3d11/gstd3d11bufferpool.h>
+    #include <gst/d3d11/gstd3d11utils.h>
+#endif
 
-#include <gst/d3d11/gstd3d11memory.h>
-#include <gst/d3d11/gstd3d11bufferpool.h>
-#include <gst/d3d11/gstd3d11utils.h>
+GST_DEBUG_CATEGORY_EXTERN(gst_amfench264_debug);
+#define GST_CAT_DEFAULT gst_amfench264_debug
+G_DEFINE_TYPE(GstAMFh264Enc, gst_amfh264enc, GST_TYPE_AMF_BASE_ENC);
+GST_ELEMENT_REGISTER_DEFINE (amfh264enc, "amfh264enc", GST_RANK_SECONDARY,
+            GST_TYPE_AMFH264ENC);
 
-GST_DEBUG_CATEGORY_EXTERN(gst_amfenc_debug);
-#define GST_CAT_DEFAULT gst_amfenc_debug
-G_DEFINE_TYPE(GstAMFh264Enc, gst_amfh264enc, GST_TYPE_VIDEO_ENCODER);
+
 
 #define GST_TYPE_RATE_CONTROL (gst_amf_rate_control_get_type ())
 static GType
@@ -204,12 +209,11 @@ static gboolean gst_amfh264enc_start(GstVideoEncoder* encoder);
 static gboolean gst_amfh264enc_stop(GstVideoEncoder* encoder);
 static gboolean gst_amfh264enc_set_format(GstVideoEncoder* encoder,
     GstVideoCodecState* state);
-static GstFlowReturn gst_amfh264enc_handle_frame(GstVideoEncoder* encoder,
-    GstVideoCodecFrame* frame);
-static GstFlowReturn gst_amfh264enc_finish(GstVideoEncoder* encoder);
 static gboolean gst_amfh264enc_propose_allocation(GstVideoEncoder* encoder,
     GstQuery* query);
 static gboolean amfh264enc_element_init(GstPlugin* plugin);
+static gboolean init_h264_encoder(GstVideoEncoder* encoder,
+    GstVideoCodecFrame* frame);
 
 static void
 gst_amfh264enc_class_init(GstAMFh264EncClass* klass)
@@ -221,9 +225,12 @@ gst_amfh264enc_class_init(GstAMFh264EncClass* klass)
     GstCaps* sink_caps = NULL;
     GstCaps* src_caps = NULL;
 
-    sink_caps = gst_caps_from_string("video/x-raw("
+    sink_caps = gst_caps_from_string(
+#if defined(_WIN32)
+        "video/x-raw("
         GST_CAPS_FEATURE_MEMORY_D3D11_MEMORY
         "), format = (string) NV12; "
+#endif
         "video/x-raw, format = (string) NV12"
     );
 
@@ -250,11 +257,8 @@ gst_amfh264enc_class_init(GstAMFh264EncClass* klass)
     video_encoder_class->stop = GST_DEBUG_FUNCPTR(gst_amfh264enc_stop);
     video_encoder_class->set_format =
         GST_DEBUG_FUNCPTR(gst_amfh264enc_set_format);
-    video_encoder_class->handle_frame =
-        GST_DEBUG_FUNCPTR(gst_amfh264enc_handle_frame);
     video_encoder_class->propose_allocation =
         GST_DEBUG_FUNCPTR(gst_amfh264enc_propose_allocation);
-    video_encoder_class->finish = GST_DEBUG_FUNCPTR(gst_amfh264enc_finish);
 
     g_object_class_install_property(gobject_class, PROP_DEVICE_NUM,
         g_param_spec_int("device-num",
@@ -306,18 +310,6 @@ gst_amfh264enc_class_init(GstAMFh264EncClass* klass)
           AMF_VIDEO_ENCODER_UNDEFINED,
           (GParamFlags) (G_PARAM_READWRITE | GST_PARAM_CONTROLLABLE |
               G_PARAM_STATIC_STRINGS)));
-    g_object_class_install_property (gobject_class, PROP_BITRATE,
-      g_param_spec_uint ("bitrate", "Bitrate",
-          "Bitrate (in kbits per second)",
-          0, G_MAXUINT, 6000,
-          (GParamFlags) (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
-              GST_PARAM_MUTABLE_PLAYING)));
-    g_object_class_install_property (gobject_class, PROP_BITRATE,
-      g_param_spec_uint ("bitrate-max", "Bitrate max",
-          "Bitrate max(in kbits per second)",
-          0, G_MAXUINT, 9000,
-          (GParamFlags) (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS |
-              GST_PARAM_MUTABLE_PLAYING)));
     g_object_class_install_property (gobject_class, PROP_BUFFER_SIZE,
       g_param_spec_uint ("buffer-size", "VBV Buffer size",
           "VBV Buffer size(in seconds)",
@@ -342,30 +334,14 @@ gst_amfh264enc_class_init(GstAMFh264EncClass* klass)
       g_param_spec_boolean ("enable-de-blocking", "De-blocking Filter",
           "De-blocking Filter",
           TRUE, (GParamFlags) (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
-}
-
-AMF_RESULT init_d3d11(uint32_t adapterIndex, GstAMFh264Enc* enc)
-{
-    enc->device = gst_d3d11_device_new (adapterIndex, D3D11_CREATE_DEVICE_BGRA_SUPPORT);
-    if (!enc->device)
-      return AMF_FAIL;
-    guint device_id = 0;
-    guint vendor_id = 0;
-    gchar *desc = NULL;
-    g_object_get (enc->device, "device-id", &device_id, "vendor-id", &vendor_id,
-      "description", &desc, NULL);
-    if (vendor_id != 0x1002) {
-        AMF_LOG_ERROR("D3D11CreateDevice failed. Invalid vendor.");
-        gst_object_unref (enc->device);
-        return AMF_FAIL;
-    }
-
-    return AMF_OK;
+    GST_DEBUG_CATEGORY_INIT (gst_amfench264_debug,
+      "amfh264", 0, "AMF h264 encoder");
 }
 
 static void
-gst_amfh264enc_init(GstAMFh264Enc* enc)
+gst_amfh264enc_init(GstAMFh264Enc* enc) 
 {
+    enc->base_enc.init_encoder = init_h264_encoder;
     enc->rate_control = AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_CBR;
     enc->usage = AMF_VIDEO_ENCODER_USAGE_TRANSCONDING;
     enc->quality_preset = AMF_VIDEO_ENCODER_QUALITY_PRESET_QUALITY;
@@ -373,20 +349,14 @@ gst_amfh264enc_init(GstAMFh264Enc* enc)
     enc->low_latency_mode = false;
     enc->preencode = AMF_VIDEO_ENCODER_PREENCODE_ENABLED;
     enc->coding_type = AMF_VIDEO_ENCODER_UNDEFINED;
-    enc->bitrate = 6000;
-    enc->bitrate_peak = 9000;
+    enc->base_enc.bitrate = 6000;
+    enc->base_enc.bitrate_peak = 9000;
     enc->buffer_size = 1;
     enc->motion_boost = false;
     enc->enforce_hdr = true;
     enc->keyframe_interval = 2;
     enc->de_blocking_filter = true;
-    enc->device_num = AMF::Instance()->defaultDeviceH264();
-    AMF_RESULT result = AMF_FAIL;
-    result = AMF::Instance()->GetFactory()->CreateContext(&enc->context);
-    if (result != AMF_OK) {
-        AMF_LOG_WARNING("CreateContext Failed");
-        return;
-    }
+    enc->base_enc.device_num = defaultDeviceHEVC(enc->base_enc.amf_ctx);
 }
 
 void
@@ -397,9 +367,6 @@ gst_amfh264enc_set_property(GObject* object, guint property_id,
 
     GST_DEBUG_OBJECT(amfh264enc, "set_property");
     switch (property_id) {
-    case PROP_DEVICE_NUM:
-        amfh264enc->device_num = g_value_get_int(value);
-        break;
     case PROP_RATE_CONTROL:
         amfh264enc->rate_control = (AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_ENUM)
             g_value_get_enum(value);
@@ -426,12 +393,6 @@ gst_amfh264enc_set_property(GObject* object, guint property_id,
     case PROP_CODING_TYPE:
         amfh264enc->coding_type = (AMF_VIDEO_ENCODER_CODING_ENUM)
             g_value_get_enum(value);
-        break;
-    case PROP_BITRATE:
-        amfh264enc->bitrate = g_value_get_uint (value);
-        break;
-    case PROP_BITRATE_PEAK:
-        amfh264enc->bitrate_peak = g_value_get_uint (value);
         break;
     case PROP_BUFFER_SIZE:
         amfh264enc->buffer_size = g_value_get_uint (value);
@@ -463,7 +424,7 @@ gst_amfh264enc_get_property(GObject* object, guint property_id,
     GST_DEBUG_OBJECT(enc, "get_property");
     switch (property_id) {
     case PROP_DEVICE_NUM:
-        g_value_set_int(value, enc->device_num);
+        g_value_set_int(value, enc->base_enc.device_num);
         break;
     case PROP_RATE_CONTROL:
         g_value_set_enum (value, enc->rate_control);
@@ -485,12 +446,6 @@ gst_amfh264enc_get_property(GObject* object, guint property_id,
         break;
     case PROP_CODING_TYPE:
         g_value_set_enum (value, enc->coding_type);
-        break;
-    case PROP_BITRATE:
-        g_value_set_uint (value, enc->bitrate);
-        break;
-    case PROP_BITRATE_PEAK:
-        g_value_set_uint (value, enc->bitrate_peak);
         break;
     case PROP_BUFFER_SIZE:
         g_value_set_uint (value, enc->buffer_size);
@@ -541,62 +496,64 @@ gst_amfh264enc_stop(GstVideoEncoder* encoder)
 
 static gboolean setup_encoder(GstAMFh264Enc* enc)
 {
+    GstAMFBaseEnc * base_enc = &enc->base_enc;
     guint fps_n, fps_d;
     AMF_RESULT result = AMF_FAIL;
     amf::AMFVariant p;
     
-    fps_n = GST_VIDEO_INFO_FPS_N(&enc->in_state->info);
-    fps_d = GST_VIDEO_INFO_FPS_D(&enc->in_state->info);
+    fps_n = GST_VIDEO_INFO_FPS_N(&base_enc->in_state->info);
+    fps_d = GST_VIDEO_INFO_FPS_D(&base_enc->in_state->info);
 
-    enc->frameH = GST_VIDEO_INFO_HEIGHT(&enc->in_state->info);
-    enc->frameW = GST_VIDEO_INFO_WIDTH(&enc->in_state->info);
-    enc->frame_rate = AMFConstructRate(fps_n, fps_d);
-    double_t frameRateFraction =
-        ((double_t)fps_d / (double_t)fps_n);
-    enc->timestamp_step = AMF_SECOND * frameRateFraction;
-    enc->query_wait_time = std::chrono::milliseconds(1);
+    base_enc->frameH = GST_VIDEO_INFO_HEIGHT(&base_enc->in_state->info);
+    base_enc->frameW = GST_VIDEO_INFO_WIDTH(&base_enc->in_state->info);
+    base_enc->frame_rate = AMFConstructRate(fps_n, fps_d);
+    amf_double frameRateFraction =
+        ((amf_double)fps_d / (amf_double)fps_n);
+    base_enc->timestamp_step = AMF_SECOND * frameRateFraction;
+    base_enc->query_wait_time = std::chrono::milliseconds(1);
+    amf::AMFTrace * trace = GetTrace(base_enc->amf_ctx);
     
-    SET_AMF_VALUE_OR_FAIL(enc->encoder_amf, AMF_VIDEO_ENCODER_FRAMESIZE,
-        AMFConstructSize(enc->frameW, enc->frameH));
+    SET_AMF_VALUE_OR_FAIL(base_enc->encoder_amf, AMF_VIDEO_ENCODER_FRAMESIZE,
+        AMFConstructSize(base_enc->frameW, base_enc->frameH));
 
-    SET_AMF_VALUE_OR_FAIL(enc->encoder_amf, AMF_VIDEO_ENCODER_USAGE,
+    SET_AMF_VALUE_OR_FAIL(base_enc->encoder_amf, AMF_VIDEO_ENCODER_USAGE,
         enc->usage);
 
-    SET_AMF_VALUE_OR_FAIL(enc->encoder_amf,
+    SET_AMF_VALUE_OR_FAIL(base_enc->encoder_amf,
         AMF_VIDEO_ENCODER_QUALITY_PRESET,
         enc->quality_preset);
 
-    SET_AMF_VALUE_OR_FAIL(enc->encoder_amf, AMF_VIDEO_ENCODER_PROFILE,
+    SET_AMF_VALUE_OR_FAIL(base_enc->encoder_amf, AMF_VIDEO_ENCODER_PROFILE,
         enc->profile);
 
-    SET_AMF_VALUE(enc->encoder_amf, AMF_VIDEO_ENCODER_LOWLATENCY_MODE,
+    SET_AMF_VALUE(base_enc->encoder_amf, AMF_VIDEO_ENCODER_LOWLATENCY_MODE,
         enc->low_latency_mode);
 
-    SET_AMF_VALUE(enc->encoder_amf, AMF_VIDEO_ENCODER_PRE_ANALYSIS_ENABLE,
+    SET_AMF_VALUE(base_enc->encoder_amf, AMF_VIDEO_ENCODER_PRE_ANALYSIS_ENABLE,
         (bool)enc->preencode);
 
-    SET_AMF_VALUE_OR_FAIL(enc->encoder_amf, AMF_VIDEO_ENCODER_CABAC_ENABLE,
+    SET_AMF_VALUE_OR_FAIL(base_enc->encoder_amf, AMF_VIDEO_ENCODER_CABAC_ENABLE,
         enc->coding_type);
-    result = enc->encoder_amf->Init(amf::AMF_SURFACE_NV12, enc->frameW,
-        enc->frameH);
+    result = base_enc->encoder_amf->Init(amf::AMF_SURFACE_NV12, base_enc->frameW,
+        base_enc->frameH);
     if (result != AMF_OK) {
         AMF_LOG_WARNING("AMF: Failed to init encoder");
         return FALSE;
     }
-    SET_AMF_VALUE(enc->encoder_amf, AMF_VIDEO_ENCODER_FRAMERATE,
-        enc->frame_rate);
+    SET_AMF_VALUE(base_enc->encoder_amf, AMF_VIDEO_ENCODER_FRAMERATE,
+        base_enc->frame_rate);
 
     AMF_RESULT res =
-        enc->encoder_amf->GetProperty(AMF_VIDEO_ENCODER_EXTRADATA, &p);
+        base_enc->encoder_amf->GetProperty(AMF_VIDEO_ENCODER_EXTRADATA, &p);
     if (res == AMF_OK && p.type == amf::AMF_VARIANT_INTERFACE) {
-        enc->header = amf::AMFBufferPtr(p.pInterface);
+        base_enc->header = amf::AMFBufferPtr(p.pInterface);
     }
 
-    if (AMF::Instance()->GetRuntimeVersion() <
+    if (GetRuntimeVersion(base_enc->amf_ctx) <
         AMF_MAKE_FULL_VERSION(1, 4, 0, 0)) {
         // Support for 1.3.x drivers.
         AMF_RESULT res =
-            enc->encoder_amf->SetProperty(L"NominalRange", false);
+            base_enc->encoder_amf->SetProperty(L"NominalRange", false);
         if (res != AMF_OK) {
             AMF_LOG_WARNING(
                 "Failed to set encoder color range, error code %d.",
@@ -604,55 +561,55 @@ static gboolean setup_encoder(GstAMFh264Enc* enc)
         }
     }
     else {
-        SET_AMF_VALUE(enc->encoder_amf,
+        SET_AMF_VALUE(base_enc->encoder_amf,
             AMF_VIDEO_ENCODER_FULL_RANGE_COLOR, false);
     }
 
     ///dinamic properties
-    SET_AMF_VALUE_OR_FAIL(enc->encoder_amf,
+    SET_AMF_VALUE_OR_FAIL(base_enc->encoder_amf,
         AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD, enc->rate_control);
 
-    SET_AMF_VALUE(enc->encoder_amf, AMF_VIDEO_ENCODER_ENABLE_VBAQ,
+    SET_AMF_VALUE(base_enc->encoder_amf, AMF_VIDEO_ENCODER_ENABLE_VBAQ,
         true);
 
     // Rate Control Properties
-    int64_t bitrate = enc->bitrate * 1000;
-    int64_t bitratePeak = enc->bitrate_peak * 1000;
+    int64_t bitrate = base_enc->bitrate * 1000;
+    int64_t bitratePeak = base_enc->bitrate_peak * 1000;
     if (enc->rate_control != AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_CONSTANT_QP) {
-        SET_AMF_VALUE_OR_FAIL(enc->encoder_amf,
+        SET_AMF_VALUE_OR_FAIL(base_enc->encoder_amf,
             AMF_VIDEO_ENCODER_TARGET_BITRATE,
             bitrate);
 
         SET_AMF_VALUE_OR_FAIL(
-            enc->encoder_amf, AMF_VIDEO_ENCODER_PEAK_BITRATE,
+            base_enc->encoder_amf, AMF_VIDEO_ENCODER_PEAK_BITRATE,
             bitratePeak);
     }
-    SET_AMF_VALUE_OR_FAIL(enc->encoder_amf, AMF_VIDEO_ENCODER_ENFORCE_HRD,
+    SET_AMF_VALUE_OR_FAIL(base_enc->encoder_amf, AMF_VIDEO_ENCODER_ENFORCE_HRD,
         enc->enforce_hdr);
 
-    SET_AMF_VALUE(enc->encoder_amf,
+    SET_AMF_VALUE(base_enc->encoder_amf,
         AMF_VIDEO_ENCODER_HIGH_MOTION_QUALITY_BOOST_ENABLE,
         enc->motion_boost);
 
     // VBV Buffer
     SET_AMF_VALUE_OR_FAIL(
-        enc->encoder_amf, AMF_VIDEO_ENCODER_VBV_BUFFER_SIZE,
+        base_enc->encoder_amf, AMF_VIDEO_ENCODER_VBV_BUFFER_SIZE,
         static_cast<amf_int64>(
             bitrate * enc->buffer_size));
 
     // Picture Control
     int keyinterv = enc->keyframe_interval;
-    int idrperiod = keyinterv * enc->frame_rate.num;
-    SET_AMF_VALUE_OR_FAIL(enc->encoder_amf, AMF_VIDEO_ENCODER_IDR_PERIOD,
+    int idrperiod = keyinterv * base_enc->frame_rate.num;
+    SET_AMF_VALUE_OR_FAIL(base_enc->encoder_amf, AMF_VIDEO_ENCODER_IDR_PERIOD,
         (int64_t)AMF_CLAMP(idrperiod, 0, 1000000));
-    SET_AMF_VALUE(enc->encoder_amf, AMF_VIDEO_ENCODER_DE_BLOCKING_FILTER,
+    SET_AMF_VALUE(base_enc->encoder_amf, AMF_VIDEO_ENCODER_DE_BLOCKING_FILTER,
         enc->de_blocking_filter);
-    AMF::Instance()->GetTrace()->SetGlobalLevel(
+    GetTrace(base_enc->amf_ctx)->SetGlobalLevel(
         AMF_TRACE_ERROR);
 
     //This property reduces polling latency.
-    SET_AMF_VALUE(enc->encoder_amf, L"TIMEOUT", 50);
-    enc->initialised = true;
+    SET_AMF_VALUE(base_enc->encoder_amf, L"TIMEOUT", 50);
+    base_enc->initialised = true;
     return TRUE;
 }
 
@@ -663,19 +620,21 @@ gst_amfh264enc_set_format(GstVideoEncoder* encoder,
 {
     GstAMFh264Enc* enc = GST_AMFH264ENC(encoder);
     GST_DEBUG_OBJECT(enc, "set_format");
-    enc->in_state = state;
+    enc->base_enc.in_state = state;
     GstVideoInfo info = state->info;
     GST_INFO_OBJECT (enc, "input caps: %" GST_PTR_FORMAT, state->caps);
 
-    enc->mem_type = GST_AMF_MEM_TYPE_SYSTEM;
+    enc->base_enc.mem_type = GST_AMF_MEM_TYPE_SYSTEM;
+#if defined(_WIN32)
     int n = gst_caps_get_size(state->caps);
     for (int i = 0; i < n; i++) {
         GstCapsFeatures* orig_features = gst_caps_get_features(state->caps, i);
         if (gst_caps_features_contains(orig_features, GST_CAPS_FEATURE_MEMORY_D3D11_MEMORY)) {
-            enc->mem_type = GST_AMF_MEM_TYPE_D3D11;
+            enc->base_enc.mem_type = GST_AMF_MEM_TYPE_D3D11;
             break;
         }
     }
+#endif
     GstStructure *s;
     GstCaps *out_caps;
     GstVideoCodecState *output_state;
@@ -689,43 +648,7 @@ gst_amfh264enc_set_format(GstVideoEncoder* encoder,
 
     GST_INFO_OBJECT (enc, "output caps: %" GST_PTR_FORMAT, output_state->caps);
     gst_video_codec_state_unref (output_state);
-
-    switch(enc->mem_type)
-    {
-        case GST_AMF_MEM_TYPE_D3D11:
-            break;//waiting for first frame to get device
-        case GST_AMF_MEM_TYPE_SYSTEM:
-        {
-            AMF_RESULT result = AMF_FAIL;
-            result = init_d3d11(enc->device_num, enc);
-            if (result != AMF_OK) {
-                GST_ERROR_OBJECT(enc, "Failed to create d3d11 device.");
-                return FALSE;
-            }
-            ID3D11Device* handle = gst_d3d11_device_get_device_handle(enc->device);
-            result = enc->context->InitDX11(handle, amf::AMF_DX11_1);
-            if (result != AMF_OK) {
-                GST_ERROR_OBJECT(enc, "Failed to init from d3d11.");
-                return FALSE;
-            }
-
-            // Create Encoder
-            result = AMF::Instance()->GetFactory()->CreateComponent(
-                    enc->context, AMFVideoEncoderVCE_AVC,
-                    &enc->encoder_amf);
-            if (result != AMF_OK) {
-                GST_ERROR_OBJECT(enc, "Failed to create h264 encoder.");
-                return FALSE;
-            }   
-            return setup_encoder(enc);   
-        }
-        default:
-        {
-            GST_ERROR_OBJECT(enc, "Unsupported memory type.");
-            return FALSE;
-        }        
-    }
- 
+    gst_amf_enc_set_latency(GST_AMF_BASE_ENC(encoder));
     return TRUE;
 }
 
@@ -737,189 +660,78 @@ gst_amfh264enc_propose_allocation(GstVideoEncoder* encoder, GstQuery* query)
     return TRUE;
 }
 
-static GstFlowReturn
-gst_amfh264enc_finish(GstVideoEncoder* encoder)
-{
-    GstAMFh264Enc* enc = GST_AMFH264ENC(encoder);
-    GST_DEBUG_OBJECT(enc, "finish");
-    switch(enc->mem_type)
-    {
-        case GST_AMF_MEM_TYPE_D3D11:
-        {
-            if (enc->device)
-                gst_object_unref (enc->device);
-            break;
-        }
-        case GST_AMF_MEM_TYPE_SYSTEM:
-        {
-            gst_clear_object (&enc->device);
-        }
-        default:
-        {
-            break;
-        }        
-    }
-    
-    return GST_FLOW_OK;
-}
-
-static GstFlowReturn
-gst_amfh264enc_handle_frame(GstVideoEncoder* encoder,
+static gboolean init_h264_encoder(GstVideoEncoder* encoder,
     GstVideoCodecFrame* frame)
 {
-    if (!frame)
-        return GST_FLOW_OK;
-    GstAMFh264Enc* enc = GST_AMFH264ENC(encoder);
-    amf::AMFDataPtr pData = NULL;
-    amf::AMFDataPtr pOutData = NULL;
-    amf::AMFSurfacePtr surface;
-    AMF_RESULT res = AMF_FAIL;
-    GstVideoFrame vframe;
-    GstVideoInfo *info = &enc->in_state->info;
-    GstMapFlags in_map_flags = GST_MAP_READ;
-    if (!gst_video_frame_map (&vframe, info, frame->input_buffer, in_map_flags)) {
-        gst_video_codec_frame_unref(frame);
-        return GST_FLOW_ERROR;
-    }
-    for (int i = 0; i < gst_buffer_n_memory(frame->input_buffer); i++) {
-        switch(enc->mem_type)
+    GstAMFBaseEnc* enc = GST_AMF_BASE_ENC(encoder);
+    if (enc->initialised)
+        return TRUE;
+    switch(enc->mem_type)
+    {
+#if defined(_WIN32)
+        case GST_AMF_MEM_TYPE_D3D11:
         {
-            case GST_AMF_MEM_TYPE_D3D11:
+            if (frame == nullptr)
+                return FALSE;
+            for (int i = 0; i < gst_buffer_n_memory(frame->input_buffer); i++) 
             {
-                GstD3D11Memory* mem = (GstD3D11Memory*)gst_buffer_peek_memory(frame->input_buffer, i);
-                    
+                GstD3D11Memory* mem = (GstD3D11Memory*)gst_buffer_peek_memory(frame->input_buffer, 0);
+                
                 if (!enc->initialised)
                 {
+                    AMF_RESULT res = AMF_FAIL;
                     ID3D11Device* handle = gst_d3d11_device_get_device_handle(mem->device);
-                    
                     res = enc->context->InitDX11(handle, amf::AMF_DX11_1);
                     if (res != AMF_OK) {
                         GST_ERROR_OBJECT(enc, "Failed to init from dx11.");
-                        gst_video_frame_unmap (&vframe);
-                        gst_video_codec_frame_unref(frame);
                         return GST_FLOW_ERROR;
                     }
                     enc->device = (GstD3D11Device *)gst_object_ref(mem->device);
-                    res = AMF::Instance()->GetFactory()->CreateComponent(
+                    res = GetFactory(enc->amf_ctx)->CreateComponent(
                             enc->context, AMFVideoEncoderVCE_AVC,
                             &enc->encoder_amf);
                     if (res != AMF_OK) {
-                        GST_ERROR_OBJECT(enc, "Failed to create h264 encoder.");
-                        gst_video_frame_unmap (&vframe);
-                        gst_video_codec_frame_unref(frame);
+                        GST_ERROR_OBJECT(enc, "Failed to create hevc encoder.");
                         return GST_FLOW_ERROR;
                     }
-                    setup_encoder(enc);
-                }
-                
-                CComPtr<ID3D11Texture2D> input_tex = gst_d3d11_memory_get_texture_handle(mem);
-                int in_subresource_index = gst_d3d11_memory_get_subresource_index (mem);
-                static const GUID AMFTextureArrayIndexGUID = { 0x28115527, 0xe7c3, 0x4b66, { 0x99, 0xd3, 0x4f, 0x2a, 0xe6, 0xb4, 0x7f, 0xaf } };
-                input_tex->SetPrivateData(AMFTextureArrayIndexGUID, sizeof(in_subresource_index), &in_subresource_index);
-                res = enc->context->CreateSurfaceFromDX11Native(input_tex, &surface, NULL);
-                if (res != AMF_OK) {
-                    AMF_LOG_ERROR(
-                        "CreateSurfaceFromDX11Native() failed  with error:  %ls\n",
-                        AMF::Instance()->GetTrace()->GetResultText(res));
-                    gst_video_frame_unmap (&vframe);
-                    gst_video_codec_frame_unref(frame);
-                    return GST_FLOW_ERROR;
                 }
                 break;
             }
-            case GST_AMF_MEM_TYPE_SYSTEM:
-            {
-                res = enc->context->AllocSurface(amf::AMF_MEMORY_HOST, amf::AMF_SURFACE_NV12, enc->frameW, enc->frameH, &surface);
-                if (res != AMF_OK) {
-                    GST_ERROR_OBJECT(enc, "Failed to create surface. Error:  %ls\n",
-                        AMF::Instance()->GetTrace()->GetResultText(res));
-                    gst_video_frame_unmap (&vframe);
-                    gst_video_codec_frame_unref(frame);
-                    return GST_FLOW_ERROR;
-                }
-
-                guint8 *src, *dest;
-                int planes = planes = surface->GetPlanesCount();
-                amf::AMFPlanePtr plane;
-                int dststride, srcstride, w, h;
-                for (int q = 0; q < planes; q++) 
-                {
-                    plane = surface->GetPlaneAt(q);
-                    w = GST_VIDEO_FRAME_COMP_WIDTH (&vframe, q);
-                    h = GST_VIDEO_FRAME_COMP_HEIGHT (&vframe, q);
-                    srcstride = GST_VIDEO_FRAME_PLANE_STRIDE (&vframe, q);
-                    dststride = plane->GetHPitch();
-                    src = (guint8  *)GST_VIDEO_FRAME_PLANE_DATA (&vframe, q);
-                    dest = (guint8  *)plane->GetNative();
-
-                    for (int j = 0; j < h; j++) 
-                    {
-                        memcpy (dest, src, w * 2);
-                        dest += dststride;
-                        src += srcstride;
-                    }
-                }
-                
-                break;
+            break;
+        }
+#endif
+        case GST_AMF_MEM_TYPE_SYSTEM:
+        {
+            AMF_RESULT result = AMF_FAIL;
+#if defined(_WIN32)
+            result = init_d3d11(enc->device_num, enc);
+            if (result != AMF_OK) {
+                GST_ERROR_OBJECT(enc, "Failed to create d3d11 device.");
+                return FALSE;
             }
-        }
-
-        int64_t tsLast = (int64_t)round((frame->pts - 1) * enc->timestamp_step);
-        int64_t tsNow = (int64_t)round(frame->pts * enc->timestamp_step);
-
-        surface->SetPts(tsNow);
-        surface->SetProperty(AMF_PRESENT_TIMESTAMP, frame->pts);
-        surface->SetDuration(tsNow - tsLast);  
-
-        res = enc->encoder_amf->SubmitInput(surface);
-        if (res != AMF_OK) {
-            AMF_LOG_ERROR("Fialed to sub  with error:  %ls\n",
-                        AMF::Instance()->GetTrace()->GetResultText(res));
-        }
-        while (true) {
-            res = enc->encoder_amf->QueryOutput(&pOutData);
-            if (res == AMF_OK)
-                break;
-            switch (res) {
-                case AMF_NEED_MORE_INPUT: {
-                    gst_video_frame_unmap (&vframe);
-                    gst_video_codec_frame_unref(frame);
-                    return GST_FLOW_OK;
-                }
-                case AMF_REPEAT: {
-                    continue;
-                }
-                default: {
-                    AMF_LOG_WARNING(
-                        "Fialed to QueryOutput  with code: %ls\n",
-                        AMF::Instance()->GetTrace()->GetResultText(res));
-                    break; 
-                }
+            ID3D11Device* handle = gst_d3d11_device_get_device_handle(enc->device);
+            result = enc->context->InitDX11(handle, amf::AMF_DX11_1);
+#else
+            result = amf::AMFContext1Ptr(enc->context)->InitVulkan(NULL);
+#endif
+            if (result != AMF_OK) {
+                GST_ERROR_OBJECT(enc, "Failed to init from d3d11.");
+                return FALSE;
             }
 
-            std::this_thread::sleep_for(enc->query_wait_time);
+            // Create Encoder
+            result = GetFactory(enc->amf_ctx)->CreateComponent(
+                    enc->context, AMFVideoEncoderVCE_AVC,
+                    &enc->encoder_amf);
+            if (result != AMF_OK) {
+                GST_ERROR_OBJECT(enc, "Failed to create h265 encoder.");
+                return FALSE;
+            }   
+            break;
         }
     }
-    amf::AMFBufferPtr packetData = amf::AMFBufferPtr(pOutData);
-    if (!packetData)
-    {
-        gst_video_frame_unmap (&vframe);
-        gst_video_codec_frame_unref(frame);
-        return GST_FLOW_ERROR;
-    }
-    frame->output_buffer =
-        gst_video_encoder_allocate_output_buffer(encoder, packetData->GetSize());
-    gst_buffer_fill(frame->output_buffer, 0, packetData->GetNative(),
-        packetData->GetSize());
-    uint64_t pktType;
-    packetData->GetProperty(AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE, &pktType);
-    if (pktType == AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_IDR) {
-        GST_VIDEO_CODEC_FRAME_SET_SYNC_POINT(frame);
-    }
-    else {
-        GST_VIDEO_CODEC_FRAME_UNSET_SYNC_POINT(frame);
-    }
-    gst_video_frame_unmap (&vframe);
-    
-    return gst_video_encoder_finish_frame(encoder, frame);
+    GstAMFh264Enc* enc_264 = GST_AMFH264ENC(encoder);
+    setup_encoder(enc_264);
+    enc->initialised = true;
+    return TRUE;
 }

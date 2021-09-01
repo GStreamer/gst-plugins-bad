@@ -1,4 +1,4 @@
-#include "amf-trace-writer.hpp"
+#include "amftracewriter.hpp"
 #include <iostream>
 #include <iomanip>
 #include <gst/gst.h>

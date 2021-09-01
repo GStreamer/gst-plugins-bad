@@ -1,23 +1,28 @@
 amfcodec_sources = [
-  'AMF_codec_plugin.cpp',
-  'gst-amf.cpp',
-  'amf-trace-writer.cpp',
+  'gstamf.cpp',
+  'amfcodecplugin.cpp',
+  'amftracewriter.cpp',
   'gstamfh264enc.cpp',
-  'gstamfh265enc.cpp'
+  'gstamfh265enc.cpp',
+  'gstamfencoder.cpp',
+  'gstamfcontext.cpp'
 ]
 
 extra_c_args = ['-DCOBJMACROS', '-DGST_USE_UNSTABLE_API']
 extra_cpp_args = ['-DGST_USE_UNSTABLE_API']
-extra_dep = [gstd3d11]
+if host_system == 'windows' and d3d11_option.enabled()
+  extra_dep = [gstd3d11]
+  if cc.has_header('dxva.h') and cc.has_header('d3d9.h')
+    extra_c_args += ['-DHAVE_DXVA_H']
+    extra_dep += [gstcodecs_dep]
+  endif
 
-if cc.has_header('dxva.h') and cc.has_header('d3d9.h')
-  extra_c_args += ['-DHAVE_DXVA_H']
-  extra_dep += [gstcodecs_dep]
+  if d3d11_conf.get('GST_D3D11_DXGI_HEADER_VERSION') >= 5 and d3d11_conf.get('GST_D3D11_HEADER_VERSION') >= 4
+    extra_c_args += ['-DHAVE_D3D11_VIDEO_PROC']
+  endif
 endif
 
-if d3d11_conf.get('GST_D3D11_DXGI_HEADER_VERSION') >= 5 and d3d11_conf.get('GST_D3D11_HEADER_VERSION') >= 4
-  extra_c_args += ['-DHAVE_D3D11_VIDEO_PROC']
-endif
+
 
 if cc.get_id() != 'msvc'
   extra_args = cc.get_supported_arguments([

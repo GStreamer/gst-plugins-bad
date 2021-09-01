@@ -2,8 +2,7 @@
 #include <memory>
 #include "AMF/include/core/Factory.h"
 #include "AMF/include/core/Trace.h"
-#include "AMF/include/components/VideoEncoderVCE.h"
-#include "amf-trace-writer.hpp"
+#include "amftracewriter.hpp"
 #include <map>
 #include <list>
 #include <memory>
@@ -26,7 +25,7 @@ GST_DEBUG_CATEGORY_EXTERN(gst_amfenc_debug);
 	if (result != AMF_OK) {                                      \
 		AMF_LOG_WARNING(                                         \
 			"Failed to set %ls, error: %ls.", name,              \
-			AMF::Instance()->GetTrace()->GetResultText(result)); \
+			trace->GetResultText(result)); \
 		return FALSE;                                               \
 	}
 #define SET_AMF_VALUE(object, name, val)                         \
@@ -34,7 +33,7 @@ GST_DEBUG_CATEGORY_EXTERN(gst_amfenc_debug);
 	if (result != AMF_OK) {                                      \
 		AMF_LOG_WARNING(                                         \
 			"Failed to set %ls, error: %ls.", name,              \
-			AMF::Instance()->GetTrace()->GetResultText(result)); \
+			trace->GetResultText(result)); \
 	}
 
 #define AMF_PRESENT_TIMESTAMP L"PTS"
@@ -66,54 +65,5 @@ enum
 	PROP_DE_BLOCKING
 };
 
-struct EncoderCaps {
-	struct NameValuePair {
-		int32_t value;
-		std::wstring name;
-	};
-	std::list<NameValuePair> rate_control_methods;
-};
-
-class AMF {
-public:
-	static void Initialize();
-	static AMF *Instance();
-	static void Finalize();
-
-private: // Private Initializer & Finalizer
-	AMF();
-	~AMF();
-
-public: // Remove all Copy operators
-	AMF(AMF const &) = delete;
-	void operator=(AMF const &) = delete;
-#pragma endregion Singleton
-
-public:
-	amf::AMFFactory *GetFactory();
-	amf::AMFTrace *GetTrace();
-	uint64_t GetRuntimeVersion();
-	void FillCaps();
-	EncoderCaps GetH264Caps(int deviceNum) const;
-	EncoderCaps GetHEVCCaps(int deviceNum) const;
-	int defaultDeviceH264() const;
-	int defaultDeviceHEVC() const;
-	bool H264Available() const;
-	bool HEVCAvailable() const;
-
-private:
-	/// AMF Values
-	HMODULE amf_module;
-	uint64_t amf_version;
-
-	/// AMF Functions
-	AMFQueryVersion_Fn amf_version_fun;
-	AMFInit_Fn amf_init_fun;
-
-	/// AMF Objects
-	amf::AMFFactory *factory;
-	amf::AMFTrace *trace;
-	std::unique_ptr<GstAMFTraceWriter> trace_writer;
-	std::map<int, EncoderCaps> h264_caps;
-	std::map<int, EncoderCaps> hevc_caps;
-};
+bool gst_amf_h264_available();
+bool gst_amf_h265_available();
