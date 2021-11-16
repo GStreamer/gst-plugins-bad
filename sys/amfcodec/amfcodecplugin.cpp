@@ -10,21 +10,20 @@ GST_DEBUG_CATEGORY (gst_amfenc_debug);
 GST_DEBUG_CATEGORY (gst_amfench264_debug);
 GST_DEBUG_CATEGORY (gst_amfench265_debug);
 
-static gboolean 
-plugin_init(GstPlugin* plugin)
+static gboolean
+plugin_init (GstPlugin * plugin)
 {
-    gboolean ret = TRUE;
-    if (gst_amf_h264_available())
-    {
-        ret |= GST_ELEMENT_REGISTER(amfh264enc, plugin);
-    }
-    if (gst_amf_h265_available())
-    {
-        ret |= GST_ELEMENT_REGISTER(amfh265enc, plugin);
-    }
+  gboolean ret = TRUE;
+  if (gst_amf_h264_available ()) {
+    ret |= GST_ELEMENT_REGISTER (amfh264enc, plugin);
+  }
+  if (gst_amf_h265_available ()) {
+    ret |= GST_ELEMENT_REGISTER (amfh265enc, plugin);
+  }
 
-    return ret;
+  return ret;
 }
+
 #ifndef PACKAGE
 #define PACKAGE "amfcodec"
 #endif
@@ -37,7 +36,7 @@ plugin_init(GstPlugin* plugin)
 #define GST_PACKAGE_ORIGIN "amfcodec"
 #endif
 
-GST_PLUGIN_DEFINE(GST_VERSION_MAJOR,
+GST_PLUGIN_DEFINE (GST_VERSION_MAJOR,
     GST_VERSION_MINOR,
     amfcodec,
     "AMF encoder/decoder plugin",
