@@ -40,6 +40,7 @@ struct _GstAMFBaseEnc
 	amf::AMFComponentPtr encoder_amf;
 	gboolean (*init_encoder) (GstVideoEncoder* encoder,
     GstVideoCodecFrame* frame);
+	gboolean (*is_sync_point) (const amf::AMFBufferPtr& packetData);
 	
 	int frameW;
 	int frameH;
@@ -54,6 +55,8 @@ struct _GstAMFBaseEnc
 	int 										device_num;
 	int64_t										bitrate;
 	int64_t 									bitrate_peak;
+
+	GAsyncQueue       *pending_queue;
 };
 
 struct _GstAMFBaseEncClass

@@ -138,8 +138,6 @@ static void gst_amfh265enc_set_property(GObject* object,
 static void gst_amfh265enc_get_property(GObject* object,
     guint property_id, GValue* value, GParamSpec* pspec);
 static void gst_amfh265enc_finalize(GObject* object);
-static gboolean gst_amfh265enc_start(GstVideoEncoder* encoder);
-static gboolean gst_amfh265enc_stop(GstVideoEncoder* encoder);
 static gboolean gst_amfh265enc_set_format(GstVideoEncoder* encoder,
     GstVideoCodecState* state);
 //static GstFlowReturn gst_amfh265enc_finish(GstVideoEncoder* encoder);
@@ -148,6 +146,7 @@ static gboolean gst_amfh265enc_propose_allocation(GstVideoEncoder* encoder,
 static gboolean amfh265enc_element_init(GstPlugin* plugin);
 static gboolean init_h265_encoder(GstVideoEncoder* encoder,
     GstVideoCodecFrame* frame);
+static gboolean is_sync_point_h265(const amf::AMFBufferPtr& packetData);
 
 static void
 gst_amfh265enc_class_init(GstAMFh265EncClass* klass)
@@ -186,15 +185,10 @@ gst_amfh265enc_class_init(GstAMFh265EncClass* klass)
 
     gobject_class->set_property = gst_amfh265enc_set_property;
     gobject_class->get_property = gst_amfh265enc_get_property;
-    gobject_class->finalize = gst_amfh265enc_finalize;
-    video_encoder_class->start = GST_DEBUG_FUNCPTR(gst_amfh265enc_start);
-    video_encoder_class->stop = GST_DEBUG_FUNCPTR(gst_amfh265enc_stop);
     video_encoder_class->set_format =
         GST_DEBUG_FUNCPTR(gst_amfh265enc_set_format);
     video_encoder_class->propose_allocation =
         GST_DEBUG_FUNCPTR(gst_amfh265enc_propose_allocation);
-    //video_encoder_class->finish = GST_DEBUG_FUNCPTR(gst_amfh265enc_finish);
-
     g_object_class_install_property(gobject_class, PROP_DEVICE_NUM,
         g_param_spec_int("device-num",
             "Device Number",
@@ -270,6 +264,7 @@ static void
 gst_amfh265enc_init(GstAMFh265Enc* enc)
 {
     enc->base_enc.init_encoder = init_h265_encoder;
+    enc->base_enc.is_sync_point = is_sync_point_h265;
     enc->rate_control = AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD_CBR;
     enc->usage = AMF_VIDEO_ENCODER_HEVC_USAGE_TRANSCONDING;
     enc->quality_preset = AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_QUALITY;
@@ -385,32 +380,6 @@ gst_amfh265enc_get_property(GObject* object, guint property_id,
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
         break;
     }
-}
-
-void
-gst_amfh265enc_finalize(GObject* object)
-{
-    GstAMFh265Enc* enc = GST_AMFH265ENC(object);
-
-    GST_DEBUG_OBJECT(enc, "finalize");
-}
-
-static gboolean
-gst_amfh265enc_start(GstVideoEncoder* encoder)
-{
-    GstAMFh265Enc* enc = GST_AMFH265ENC(encoder);
-    GST_DEBUG_OBJECT(enc, "start");
-
-    return TRUE;
-}
-
-static gboolean
-gst_amfh265enc_stop(GstVideoEncoder* encoder)
-{
-    GstAMFh265Enc* enc = GST_AMFH265ENC(encoder);
-    GST_DEBUG_OBJECT(enc, "stop");
-
-    return TRUE;
 }
 
 static gboolean setup_encoder(GstAMFh265Enc* enc)
@@ -640,4 +609,14 @@ gst_amfh265enc_propose_allocation(GstVideoEncoder* encoder, GstQuery* query)
     gst_query_add_allocation_meta(query, GST_VIDEO_META_API_TYPE, NULL);
 
     return TRUE;
+}
+
+static gboolean is_sync_point_h265(const amf::AMFBufferPtr& packetData)
+{
+    uint64_t pktType;
+    packetData->GetProperty(AMF_VIDEO_ENCODER_HEVC_OUTPUT_DATA_TYPE, &pktType);
+    if (pktType == AMF_VIDEO_ENCODER_HEVC_OUTPUT_DATA_TYPE_IDR) 
+        return TRUE;
+    else 
+        return FALSE;
 }

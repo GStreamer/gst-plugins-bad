@@ -204,9 +204,6 @@ static void gst_amfh264enc_set_property(GObject* object,
     guint property_id, const GValue* value, GParamSpec* pspec);
 static void gst_amfh264enc_get_property(GObject* object,
     guint property_id, GValue* value, GParamSpec* pspec);
-static void gst_amfh264enc_finalize(GObject* object);
-static gboolean gst_amfh264enc_start(GstVideoEncoder* encoder);
-static gboolean gst_amfh264enc_stop(GstVideoEncoder* encoder);
 static gboolean gst_amfh264enc_set_format(GstVideoEncoder* encoder,
     GstVideoCodecState* state);
 static gboolean gst_amfh264enc_propose_allocation(GstVideoEncoder* encoder,
@@ -214,6 +211,7 @@ static gboolean gst_amfh264enc_propose_allocation(GstVideoEncoder* encoder,
 static gboolean amfh264enc_element_init(GstPlugin* plugin);
 static gboolean init_h264_encoder(GstVideoEncoder* encoder,
     GstVideoCodecFrame* frame);
+static gboolean is_sync_point_h264(const amf::AMFBufferPtr& packetData);
 
 static void
 gst_amfh264enc_class_init(GstAMFh264EncClass* klass)
@@ -252,9 +250,6 @@ gst_amfh264enc_class_init(GstAMFh264EncClass* klass)
 
     gobject_class->set_property = gst_amfh264enc_set_property;
     gobject_class->get_property = gst_amfh264enc_get_property;
-    gobject_class->finalize = gst_amfh264enc_finalize;
-    video_encoder_class->start = GST_DEBUG_FUNCPTR(gst_amfh264enc_start);
-    video_encoder_class->stop = GST_DEBUG_FUNCPTR(gst_amfh264enc_stop);
     video_encoder_class->set_format =
         GST_DEBUG_FUNCPTR(gst_amfh264enc_set_format);
     video_encoder_class->propose_allocation =
@@ -342,6 +337,7 @@ static void
 gst_amfh264enc_init(GstAMFh264Enc* enc) 
 {
     enc->base_enc.init_encoder = init_h264_encoder;
+    enc->base_enc.is_sync_point = is_sync_point_h264;
     enc->rate_control = AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_CBR;
     enc->usage = AMF_VIDEO_ENCODER_USAGE_TRANSCONDING;
     enc->quality_preset = AMF_VIDEO_ENCODER_QUALITY_PRESET_QUALITY;
@@ -466,32 +462,6 @@ gst_amfh264enc_get_property(GObject* object, guint property_id,
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
         break;
     }
-}
-
-void
-gst_amfh264enc_finalize(GObject* object)
-{
-    GstAMFh264Enc* enc = GST_AMFH264ENC(object);
-
-    GST_DEBUG_OBJECT(enc, "finalize");
-}
-
-static gboolean
-gst_amfh264enc_start(GstVideoEncoder* encoder)
-{
-    GstAMFh264Enc* enc = GST_AMFH264ENC(encoder);
-    GST_DEBUG_OBJECT(enc, "start");
-
-    return TRUE;
-}
-
-static gboolean
-gst_amfh264enc_stop(GstVideoEncoder* encoder)
-{
-    GstAMFh264Enc* enc = GST_AMFH264ENC(encoder);
-    GST_DEBUG_OBJECT(enc, "stop");
-
-    return TRUE;
 }
 
 static gboolean setup_encoder(GstAMFh264Enc* enc)
@@ -734,4 +704,14 @@ static gboolean init_h264_encoder(GstVideoEncoder* encoder,
     setup_encoder(enc_264);
     enc->initialised = true;
     return TRUE;
+}
+
+static gboolean is_sync_point_h264(const amf::AMFBufferPtr& packetData)
+{
+    uint64_t pktType;
+    packetData->GetProperty(AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE, &pktType);
+    if (pktType == AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_IDR) 
+        return TRUE;
+    else 
+        return FALSE;
 }

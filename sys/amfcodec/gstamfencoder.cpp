@@ -10,6 +10,7 @@
 #include <string.h>
 #include "gstamf.hpp"
 #include "AMF/include/components/VideoEncoderHEVC.h"
+#include "AMF/include/components/VideoEncoderVCE.h"
 #include <thread>
 #include <chrono>
 #if defined(_WIN32)
@@ -18,6 +19,7 @@
     #include <gst/d3d11/gstd3d11utils.h>
 #endif
 #include <cmath>
+#defint ATTACHED_FRAME_REF L"frame_ref"
 
 G_DEFINE_ABSTRACT_TYPE(GstAMFBaseEnc, gst_amf_base_enc, GST_TYPE_VIDEO_ENCODER);
 GST_DEBUG_CATEGORY_EXTERN(gst_amfenc_debug);
@@ -36,8 +38,6 @@ static GstFlowReturn gst_amf_base_enc_finish(GstVideoEncoder* encoder);
 static gboolean gst_amf_base_enc_propose_allocation(GstVideoEncoder* encoder,
     GstQuery* query);
 static gboolean amf_base_enc_element_init(GstPlugin* plugin);
-static GstVideoCodecFrame *
-gst_amf_find_frame_with_pts (GstAMFBaseEnc * enc, guint64 framepts);
 static gboolean
 gst_amf_base_enc_stop_processing_thread (GstAMFBaseEnc * enc);
 static gboolean
@@ -45,27 +45,63 @@ gst_amf_base_enc_drain_encoder (GstAMFBaseEnc * enc);
 static gboolean
 gst_amf_start_processing_thread (GstAMFBaseEnc * enc);
 
-typedef struct _BufferPts BufferPts;
-struct _BufferPts
+static AMF_RESULT amf_set_property_buffer(amf::AMFSurface *object, const wchar_t *name, amf::AMFBuffer *val)
 {
-  guint64 timestamp;
-};
-
-static void
-buffer_pts_free (BufferPts * id)
-{
-  g_slice_free (BufferPts, id);
+    AMF_RESULT res;
+    amf::AMFVariant var(val);
+    res = object->SetProperty(name, var);
+    return res;
 }
 
-static BufferPts *
-buffer_pts_new (GstClockTime timestamp)
+static AMF_RESULT amf_get_property_buffer(amf::AMFData *object, const wchar_t *name, amf::AMFBuffer **val)
 {
-  BufferPts *id = g_slice_new (BufferPts);
-
-  id->timestamp = timestamp;
-
-  return id;
+    AMF_RESULT res;
+    amf::AMFVariant var;
+    res = object->GetProperty(name, &var);
+    if (res != AMF_OK)
+    {
+        return res;
+    }
+    amf::AMFGuid guid_AMFBuffer = amf::AMFBuffer::IID();
+    amf::AMFInterface *amf_interface = var.ToInterface();
+    res = amf_interface->QueryInterface(guid_AMFBuffer, (void**)val);
+    return res;
 }
+
+static amf::AMFBuffer *amf_create_buffer_with_frame_ref(GstVideoCodecFrame* frame, amf::AMFContext *context)
+{
+    amf::AMFBuffer *frame_ref_storage_buffer = NULL;
+    AMF_RESULT res;
+    res = context->AllocBuffer(amf::AMF_MEMORY_HOST, sizeof(&frame), &frame_ref_storage_buffer);
+    if (res == AMF_OK) {
+        GstVideoCodecFrame ** pointer = (GstVideoCodecFrame **)frame_ref_storage_buffer->GetNative();
+        *pointer = frame;
+    }
+    return frame_ref_storage_buffer;
+}
+
+static AMF_RESULT amf_get_frame_ref(amf::AMFData *object, const wchar_t *name, GstVideoCodecFrame** frame)
+{
+    amf::AMFBuffer *val;
+    AMF_RESULT res;
+    res = amf_get_property_buffer(object, name, &val);
+    if (res == AMF_OK)
+    {
+        GstVideoCodecFrame** frameP = (GstVideoCodecFrame **)val->GetNative();
+        * frame = *frameP;
+    }
+    val->Release();
+    return res;
+}
+
+static AMF_RESULT amf_attach_ref_texture(amf::AMFSurface *object, GstVideoCodecFrame* frame, const wchar_t *name, amf::AMFContext *context)
+{
+    amf::AMFBuffer *val = amf_create_buffer_with_frame_ref(frame, context);
+    AMF_RESULT res;
+    res = amf_set_property_buffer(object, name, val);
+    return res;
+}
+
 
 void
 gst_amf_enc_set_latency (GstAMFBaseEnc* encoder)
@@ -259,6 +295,7 @@ gst_amf_base_enc_start(GstVideoEncoder* encoder)
 {
     GstAMFBaseEnc* enc = GST_AMF_BASE_ENC(encoder);
     GST_DEBUG_OBJECT(enc, "start");
+    enc->pending_queue = g_async_queue_new ();
     return TRUE;
 }
 
@@ -268,6 +305,10 @@ gst_amf_base_enc_stop(GstVideoEncoder* encoder)
     GstAMFBaseEnc* enc = GST_AMF_BASE_ENC(encoder);
     GST_DEBUG_OBJECT(enc, "stop");
     gst_amf_base_enc_stop_processing_thread (enc);
+    if (enc->pending_queue) {
+        g_async_queue_unref (enc->pending_queue);
+        enc->pending_queue = NULL;
+    }
     return TRUE;
 }
 
@@ -308,45 +349,20 @@ gst_amf_base_enc_finish(GstVideoEncoder* encoder)
     return GST_FLOW_OK;
 }
 
-static GstVideoCodecFrame *
-gst_amf_find_frame_with_pts (GstAMFBaseEnc * enc, guint64 framepts)
-{
-  GList *l, *walk = gst_video_encoder_get_frames (GST_VIDEO_ENCODER (enc));
-  GstVideoCodecFrame *ret = NULL;
-
-  for (l = walk; l; l = l->next) {
-    GstVideoCodecFrame *frame = (GstVideoCodecFrame *) l->data;
-    BufferPts * pts = (BufferPts *)gst_video_codec_frame_get_user_data (frame);
-
-    if (!pts)
-      continue;
-
-    if (pts->timestamp == framepts) {
-      ret = frame;
-      break;
-    }
-  }
-
-  if (ret)
-    gst_video_codec_frame_ref (ret);
-
-   g_list_free_full (walk, (GDestroyNotify) gst_video_codec_frame_unref);
-
-  return ret;
-}
-
+static int counter = 0;
 static gpointer
 gst_amf_base_enc_processing_thread (gpointer user_data)
 {
     GstVideoEncoder *encoder = (GstVideoEncoder *)user_data;
     GstAMFBaseEnc *enc = (GstAMFBaseEnc*)user_data;
     GstVideoCodecFrame *frame = NULL;
+    amf::AMFSurface *pending_frame = NULL;
     amf::AMFDataPtr pOutData = NULL;
     AMF_RESULT res = AMF_FAIL;
     
     while (true) {
         res = enc->encoder_amf->QueryOutput(&pOutData);
-        if (res == AMF_EOF)
+        if (res == AMF_EOF )
         {
             GST_INFO_OBJECT (enc, "exiting thread");
             break;
@@ -358,6 +374,9 @@ gst_amf_base_enc_processing_thread (gpointer user_data)
             case AMF_REPEAT: {
                 break;
             }
+            case AMF_OK: {
+                break;
+            }
             default: {
                 AMF_LOG_WARNING(
                     "Fialed to QueryOutput  with code: %ls\n",
@@ -367,7 +386,31 @@ gst_amf_base_enc_processing_thread (gpointer user_data)
         }
         if (res != AMF_OK)
         {
-            std::this_thread::sleep_for(enc->query_wait_time);
+            if (g_async_queue_length(enc->pending_queue) > 0)
+            {
+                pending_frame = (amf::AMFSurface *)g_async_queue_pop (enc->pending_queue);
+#if defined(_WIN32)
+                if (enc->mem_type == GST_AMF_MEM_TYPE_D3D11)
+                {
+                    amf_get_frame_ref(pending_frame, ATTACHED_FRAME_REF, &frame);
+                    GstD3D11Memory* mem = (GstD3D11Memory*)gst_buffer_peek_memory(frame->input_buffer, 0);
+                    CComPtr<ID3D11Texture2D> input_tex = gst_d3d11_memory_get_texture_handle(mem);
+                    int in_subresource_index = gst_d3d11_memory_get_subresource_index (mem);
+                    static const GUID AMFTextureArrayIndexGUID = { 0x28115527, 0xe7c3, 0x4b66, { 0x99, 0xd3, 0x4f, 0x2a, 0xe6, 0xb4, 0x7f, 0xaf } };
+                    input_tex->SetPrivateData(AMFTextureArrayIndexGUID, sizeof(in_subresource_index), &in_subresource_index);
+                }
+#endif
+                res = enc->encoder_amf->SubmitInput(pending_frame);
+                if (res == AMF_OK)
+                {
+                    pending_frame->Release();
+                }
+                else
+                {
+                    g_async_queue_push_front (enc->pending_queue, pending_frame);
+                    std::this_thread::sleep_for(enc->query_wait_time);
+                }
+            }
             continue;
         }
         amf::AMFBufferPtr packetData = amf::AMFBufferPtr(pOutData);
@@ -375,19 +418,16 @@ gst_amf_base_enc_processing_thread (gpointer user_data)
         {
             continue;
         }
-        frame = gst_amf_find_frame_with_pts (enc, (guint64)packetData->GetPts());
+        amf_get_frame_ref(pOutData, ATTACHED_FRAME_REF, &frame);
         if (!frame)
         {
             continue;
         }
-        
-        frame->output_buffer =
-            gst_video_encoder_allocate_output_buffer(encoder, packetData->GetSize());
+        frame->output_buffer = gst_buffer_new_allocate(NULL, packetData->GetSize(), NULL);
         gst_buffer_fill(frame->output_buffer, 0, packetData->GetNative(),
             packetData->GetSize());
-        uint64_t pktType;
-        packetData->GetProperty(AMF_VIDEO_ENCODER_HEVC_OUTPUT_DATA_TYPE, &pktType);
-        if (pktType == AMF_VIDEO_ENCODER_HEVC_OUTPUT_DATA_TYPE_IDR) {
+            
+        if (enc->is_sync_point(packetData)) {
             GST_VIDEO_CODEC_FRAME_SET_SYNC_POINT(frame);
         }
         else {
@@ -396,7 +436,6 @@ gst_amf_base_enc_processing_thread (gpointer user_data)
         
         gst_video_encoder_finish_frame(encoder, frame);
     }
-    
     return NULL;
 }
 
@@ -405,14 +444,15 @@ gst_amf_base_enc_stop_processing_thread (GstAMFBaseEnc * enc)
 {
   if (enc->processing_thread == NULL)
     return TRUE;
-    /* We need to unlock the stream lock here because
-   * it can wait for gst_vtenc_enqueue_buffer() to
-   * handle a buffer... which will take the stream
-   * lock from another thread and then deadlock */
   AMF_RESULT res;
   GST_VIDEO_ENCODER_STREAM_UNLOCK (enc);
   while (true)
   {
+    if (g_async_queue_length(enc->pending_queue) > 0)
+    {
+        std::this_thread::sleep_for(enc->query_wait_time);
+        continue;
+    }
     res = enc->encoder_amf->Drain();
     if (res == AMF_OK)
         break;
@@ -451,7 +491,8 @@ gst_amf_base_enc_handle_frame(GstVideoEncoder* encoder,
         }
     }
     amf::AMFDataPtr pData = NULL;
-    amf::AMFSurfacePtr surface;
+    amf::AMFSurface * surface;
+    amf::AMFSurface *pending_frame = NULL;
     AMF_RESULT res = AMF_FAIL;
     GstVideoFrame vframe;
     GstVideoInfo *info = &enc->in_state->info;
@@ -478,8 +519,7 @@ gst_amf_base_enc_handle_frame(GstVideoEncoder* encoder,
                 int in_subresource_index = gst_d3d11_memory_get_subresource_index (mem);
                 static const GUID AMFTextureArrayIndexGUID = { 0x28115527, 0xe7c3, 0x4b66, { 0x99, 0xd3, 0x4f, 0x2a, 0xe6, 0xb4, 0x7f, 0xaf } };
                 input_tex->SetPrivateData(AMFTextureArrayIndexGUID, sizeof(in_subresource_index), &in_subresource_index);
-                res = enc->context->CreateSurfaceFromDX11Native(input_tex, &surface,
-                    NULL);
+                res = enc->context->CreateSurfaceFromDX11Native(input_tex, &surface, NULL);
                 if (res != AMF_OK) {
                     AMF_LOG_ERROR(
                         "CreateSurfaceFromDX11Native() failed  with error:  %ls\n",
@@ -488,6 +528,7 @@ gst_amf_base_enc_handle_frame(GstVideoEncoder* encoder,
                     gst_video_codec_frame_unref(frame);
                     return GST_FLOW_ERROR;
                 }
+                
                 break;
             }
 #endif
@@ -527,36 +568,23 @@ gst_amf_base_enc_handle_frame(GstVideoEncoder* encoder,
                 break;
             }
         }
-
+        res = amf_attach_ref_texture(surface, frame, ATTACHED_FRAME_REF, enc->context);
+        if (res != AMF_OK)
+        {
+            gst_video_frame_unmap (&vframe);
+            gst_video_codec_frame_unref(frame);
+            return GST_FLOW_ERROR;
+        }
         int64_t tsLast = (int64_t)round((frame->pts - 1) * enc->timestamp_step);
         int64_t tsNow = (int64_t)round(frame->pts * enc->timestamp_step);
 
         surface->SetPts(tsNow);
         surface->SetProperty(AMF_PRESENT_TIMESTAMP, frame->pts);
         surface->SetDuration(tsNow - tsLast);  
-
-        while(true)
-        {
-            res = enc->encoder_amf->SubmitInput(surface);
-            if (res == AMF_OK)
-                break;
-            if (res == AMF_INPUT_FULL)
-            {
-                std::this_thread::sleep_for(enc->query_wait_time);
-                continue;
-            }
-                
-            if (res != AMF_OK) {
-                AMF_LOG_ERROR("Failed to submit with error:  %ls\n",
-                    GetTrace(enc->amf_ctx)->GetResultText(res));
-            }
-        }
         
-        BufferPts * bufferPts = buffer_pts_new (tsNow);
-        gst_video_codec_frame_set_user_data (frame, bufferPts, (GDestroyNotify) buffer_pts_free);
+        g_async_queue_push (enc->pending_queue, surface);
     }
     
     gst_video_frame_unmap (&vframe);  
-    gst_video_codec_frame_unref (frame);
     return GST_FLOW_OK;
 }
