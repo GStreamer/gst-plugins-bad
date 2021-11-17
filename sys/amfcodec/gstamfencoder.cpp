@@ -19,7 +19,7 @@
 #include <gst/d3d11/gstd3d11utils.h>
 #endif
 #include <cmath>
-#defint ATTACHED_FRAME_REF L"frame_ref"
+#define ATTACHED_FRAME_REF L"frame_ref"
 
 G_DEFINE_ABSTRACT_TYPE (GstAMFBaseEnc, gst_amf_base_enc,
     GST_TYPE_VIDEO_ENCODER);

@@ -200,7 +200,6 @@ static gboolean gst_amfh264enc_set_format (GstVideoEncoder * encoder,
     GstVideoCodecState * state);
 static gboolean gst_amfh264enc_propose_allocation (GstVideoEncoder * encoder,
     GstQuery * query);
-static gboolean amfh264enc_element_init (GstPlugin * plugin);
 static gboolean init_h264_encoder (GstVideoEncoder * encoder,
     GstVideoCodecFrame * frame);
 static gboolean is_sync_point_h264 (const amf::AMFBufferPtr & packetData);
