@@ -937,6 +937,7 @@ gst_teletextdec_export_pango_page (GstTeletextDec * teletext, vbi_page * page,
   GString *subs;
   guint start, stop, k;
   gint i, j;
+  gboolean fgcolor;
 
   colors = (gchar **) g_malloc (sizeof (gchar *) * (rows + 1));
   colors[rows] = NULL;
@@ -944,13 +945,14 @@ gst_teletextdec_export_pango_page (GstTeletextDec * teletext, vbi_page * page,
   /* parse all the lines and approximate it's foreground color using the first
    * non null character */
   for (acp = page->text, i = 0; i < page->rows; acp += page->columns, i++) {
+    fg_color = FALSE
     for (j = 0; j < page->columns; j++) {
-      colors[i] = g_strdup (default_color_map[7]);
       if (acp[j].unicode != 0x20) {
-        colors[i] = g_strdup (default_color_map[acp[j].foreground]);
+        fg_color = TRUE;
         break;
       }
     }
+    colors[i] = fg_color ? g_strdup (default_color_map[acp[j].foreground]) : g_strdup (default_color_map[7]);
   }
 
   /* get an array of strings with each line of the telext page */
